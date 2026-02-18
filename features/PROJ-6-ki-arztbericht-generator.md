@@ -5,79 +5,115 @@
 **Last Updated:** 2026-02-17
 
 ## Dependencies
-- Requires: PROJ-1 (Authentifizierung & Rollenrechte — Heilpraktiker-Rolle)
-- Requires: PROJ-3 (Anamnese & Untersuchungsdokumentation)
-- Requires: PROJ-4 (Befund & Diagnose)
-- Requires: PROJ-5 (Behandlungsdokumentation)
+- Requires: PROJ-1 (Authentifizierung & Rollenrechte — alle Therapeuten-Rollen)
+- Requires: PROJ-3 (Anamnese & Untersuchungsdokumentation — für Heilpraktiker-Bericht)
+- Requires: PROJ-4 (Befund & Diagnose — für Heilpraktiker-Bericht)
+- Requires: PROJ-5 (Behandlungsdokumentation — für beide Berichtstypen)
+
+## Zwei Berichtslinien
+
+### Linie A: Arztbericht (Heilpraktiker)
+Vollständiger medizinischer Bericht für den zuweisenden/mitbehandelnden Arzt.
+Inhalt: Anamnese, klinischer Befund, ICD-10-Diagnose(n), Behandlungsverlauf mit NRS-Kurve, Therapieziel, Prognose, Empfehlung.
+
+### Linie B: Therapiebericht (Physiotherapeut)
+Kürzerer Verlaufsbericht, z.B. für den Arzt bei Rezeptverlängerung oder Weiterverordnung.
+Inhalt: Behandlungsverlauf (durchgeführte Maßnahmen, NRS-Entwicklung), Patientenreaktion, Empfehlung zur Weiterbehandlung mit Heilmittel X/Y, Behandlungsziel für nächste Verordnungsphase.
+Kein Diagnose-Abschnitt — Physiotherapeuten dürfen nicht diagnostizieren.
 
 ## User Stories
-- Als Heilpraktiker möchte ich per Klick einen Arztbericht generieren lassen, der automatisch Anamnese, Befund, Diagnose und Behandlungsverlauf eines Patienten zusammenfasst, damit ich keine Stunde für das Schreiben aufwende.
-- Als Heilpraktiker möchte ich den KI-Entwurf vor dem Versenden überarbeiten und ergänzen können, damit ich für den Inhalt verantwortlich bleibe.
-- Als Heilpraktiker möchte ich fertige Arztberichte als PDF exportieren und in der Akte archivieren, damit alles an einem Ort ist.
-- Als Heilpraktiker möchte ich einen Zeitraum wählen (z.B. letzten 3 Monate), aus dem die KI die Daten für den Bericht zieht.
+- Als Heilpraktiker möchte ich per Klick einen vollständigen Arztbericht generieren lassen (Anamnese, Befund, ICD-10-Diagnose, Behandlungsverlauf), damit ich keine Stunde für das Schreiben aufwende.
+- Als Physiotherapeut möchte ich einen Therapieverlaufsbericht generieren lassen (Behandlungsverlauf, NRS-Entwicklung, Maßnahmen, Weiterbehandlungsempfehlung), damit der Arzt die Verlängerung eines Heilmittelrezepts fundiert entscheiden kann.
+- Als Therapeut (HP oder PT) möchte ich den KI-Entwurf vor dem Versenden überarbeiten, damit ich für den Inhalt verantwortlich bleibe.
+- Als Therapeut möchte ich einen Zeitraum wählen (z.B. letzten 3 Monate), aus dem die KI die Daten für den Bericht zieht.
+- Als Therapeut möchte ich fertige Berichte als PDF exportieren und in der Akte archivieren.
+- Als Admin möchte ich alle Berichte aller Patienten einsehen (beide Typen).
 
 ## Acceptance Criteria
-- [ ] "Arztbericht generieren"-Button in der Patientenakte (nur für Heilpraktiker sichtbar)
-- [ ] Zeitraum-Auswahl: Datum-von / Datum-bis für die einzubeziehenden Dokumentationen
-- [ ] KI-Generierung: Claude API erstellt Arztbrief-Entwurf basierend auf: Stammdaten, Anamnese, Diagnosen (ICD-10), Behandlungsverlauf (NRS, Maßnahmen), Therapieziel
+- [ ] Tab "Berichte" in der Patientenakte sichtbar für Heilpraktiker UND Physiotherapeuten (und Admin)
+- [ ] Berichtstyp wird automatisch anhand der Rolle bestimmt — kein manuelles Umschalten
+- [ ] Zeitraum-Auswahl: Datum-von / Datum-bis für beide Berichtstypen
+- [ ] **Arztbericht (HP):** KI generiert auf Basis von Stammdaten + Anamnese + Befund/Diagnosen (ICD-10) + Behandlungsverlauf + Therapieziel/Prognose
+- [ ] **Therapiebericht (PT):** KI generiert auf Basis von Stammdaten + Behandlungsverlauf (Maßnahmen, NRS) + Weiterbehandlungsempfehlung — OHNE Diagnose-Abschnitt
 - [ ] Generierungsdauer: < 30 Sekunden mit Fortschrittsanzeige
 - [ ] Editor: Entwurf in bearbeitbarem Rich-Text-Editor (kein Raw-Markdown)
-- [ ] Professionelles Layout: Praxis-Briefkopf (Logo, Adresse, Datum), Empfänger-Feld (Arzt/Klinik)
-- [ ] Speichern & Archivieren: Finaler Bericht wird in `medical_reports` Tabelle gespeichert
-- [ ] PDF-Export: Korrekt formatiert, A4, mit Unterschriftsfeld
-- [ ] Versionierung: Jeder generierte Entwurf wird mit Timestamp gespeichert (Audit-Trail)
-- [ ] Server-seitige Absicherung: API-Route nur für Heilpraktiker und Admin
+- [ ] Professionelles Layout: Praxis-Briefkopf, Empfänger-Feld (Arzt/Klinik/Name)
+- [ ] Speichern & Archivieren: Finaler Bericht in `medical_reports` Tabelle mit `report_type`-Feld
+- [ ] PDF-Export: A4, mit Unterschriftsfeld
+- [ ] Audit-Trail: KI-Rohentwurf wird unveränderlich gespeichert
+- [ ] Server-seitige Absicherung: Berichtstyp wird serverseitig aus Rolle berechnet (kein Client-Override möglich)
+- [ ] Rate Limiting: Max 10 Generierungen pro Therapeut pro Stunde (rollenübergreifend)
 
 ## Edge Cases
 - Was passiert, wenn die Claude API nicht antwortet? → Timeout nach 60s, Fehlermeldung, erneut versuchen möglich
-- Was passiert, wenn zu wenig Dokumentation vorhanden ist (< 1 Behandlungseinheit)? → Warnung: "Zu wenig Daten für vollständigen Bericht" mit Hinweis welche Daten fehlen
-- Was passiert, wenn der Patient noch keine Diagnose hat (kein PROJ-4-Eintrag)? → Bericht ohne Diagnose-Abschnitt, Hinweis im Editor
+- Was passiert, wenn zu wenig Dokumentation vorhanden ist? → Warnung: "Zu wenig Daten für vollständigen Bericht" mit Hinweis welche Daten fehlen
+- Was passiert, wenn der Heilpraktiker-Patient noch keine Diagnose hat? → Arztbericht ohne Diagnose-Abschnitt, Hinweis im Editor
+- Was passiert, wenn ein Physiotherapeut versucht einen Arztbericht zu erstellen? → Server lehnt ab (403), nur eigener Berichtstyp erlaubt
 - Was passiert mit dem KI-Prompt? → Patientendaten werden NICHT zur KI-Verbesserung genutzt (Anthropic API: kein Training auf User Data bei API-Nutzung)
 
 ## Technical Requirements
-- Claude API: `claude-opus-4-6` für maximale Qualität der Arztberichte
-- System-Prompt: Strukturierter medizinischer Arztbrief-Prompt (deutsch, professionell)
+- Claude API: `claude-opus-4-6` für maximale Qualität beider Berichtstypen
+- Zwei System-Prompts: Einer für Arztberichte (HP), einer für Therapieberichte (PT)
 - Datenschutz: Patientenname im Prompt durch Pseudonym ersetzt, nach Generierung wiederhergestellt
-- Tabelle: `medical_reports` mit `patient_id`, `generated_by`, `draft_content`, `final_content`, `pdf_url`
-- PDF-Generierung: `@react-pdf/renderer` oder Puppeteer serverseitig
+- Tabelle: `medical_reports` mit `patient_id`, `generated_by`, `generated_by_role`, `report_type`, `draft_content`, `final_content`
 - Rate Limiting: Max 10 Generierungen pro Therapeut pro Stunde
 
 ---
 
 ## Tech Design (Solution Architect)
-**Designed:** 2026-02-18
+**Designed:** 2026-02-18 (überarbeitet: Dual-Report-Linie HP + PT)
+
+### Die zwei Berichtstypen im Vergleich
+
+| | Arztbericht (Heilpraktiker) | Therapiebericht (Physiotherapeut) |
+|---|---|---|
+| Wer erstellt ihn? | Heilpraktiker | Physiotherapeut |
+| Typischer Anlass | Überweisung, Mitbehandlung | Rezeptverlängerung, Weiterverordnung |
+| Datenquellen | Stammdaten + Anamnese + Befund/Diagnose (ICD-10) + Behandlungen | Stammdaten + Behandlungen (Maßnahmen, NRS) |
+| Enthält Diagnose? | Ja (ICD-10 Codes) | Nein (rechtlich unzulässig für PT) |
+| KI-Prompt | Medizinischer Arztbrief-Stil | Physiotherapeutischer Verlaufsbericht-Stil |
+| Länge (typisch) | 1–2 Seiten | 0,5–1 Seite |
 
 ### Seitenstruktur & Komponenten
 
 ```
-/os/patients/[id]                           ← Patientenakte
-+-- Tab: Arztberichte                       ← neuer Tab (nur Heilpraktiker + Admin)
-    +-- ArztberichtTab
+/os/patients/[id]
++-- Tab: "Berichte"                         ← sichtbar für HP + PT + Admin
+    +-- BerichteTab
+        +-- BerichtsTyp-Info-Banner
+        |   HP sieht: "Arztberichte"
+        |   PT sieht: "Therapieberichte"
+        |   Admin sieht: beide Typen mit Badge
         +-- "Neuen Bericht generieren" Button
-        +-- ArztberichtListe
-            +-- ArztberichtCard
-            |   (Datum, Empfänger, Status-Badge: Entwurf/Finalisiert, Aktionen)
+        +-- BerichteListe
+            +-- BerichtCard
+            |   (Datum, Typ-Badge: Arztbericht/Therapiebericht,
+            |    Empfänger, Status-Badge: Entwurf/Finalisiert, Aktionen)
             +-- Leer-Zustand
             +-- Lade-Skeleton
 
-/os/patients/[id]/arztbericht/new           ← Konfiguration vor Generierung
-+-- ArztberichtKonfigForm
+/os/patients/[id]/arztbericht/new           ← Konfigurationsformular (rollenadaptiv)
++-- BerichtKonfigForm
     +-- Zeitraum-Auswahl: Datum-von / Datum-bis
-    +-- Datenverfügbarkeit-Info
-    |   (z.B. "3 Behandlungen, 1 Befund im gewählten Zeitraum gefunden")
-    +-- Empfänger-Felder: Name (Arzt/Klinik), Adresse
-    +-- "Arztbericht generieren" Button
+    +-- Datenverfügbarkeits-Zusammenfassung
+    |   HP: "X Behandlungen, Y Befunde, Z Diagnosen gefunden"
+    |   PT: "X Behandlungen gefunden"
+    +-- Empfänger: Name (Arzt/Klinik) + Adresse
+    +-- [HP only] Heilmittelempfehlung-Freifeld (optional, vorausfüllen)
+    +-- [PT only] Verordnungsphase / gewünschte Heilmittel (Freitext-Hinweis an KI)
+    +-- "Bericht generieren" Button
     +-- KI-Fortschrittsanzeige (Spinner + Statustext, max 60s Timeout)
     → Weiterleitung zu [reportId] nach Erfolg
 
-/os/patients/[id]/arztbericht/[reportId]    ← Editor & Archivansicht
-+-- ArztberichtEditor
+/os/patients/[id]/arztbericht/[reportId]    ← Editor & Archivansicht (identisch für beide Typen)
++-- BerichtEditor
+    +-- Typ-Badge (Arztbericht / Therapiebericht) — read-only
     +-- Briefkopf-Vorschau (Praxis-Logo, Adresse, Datum, Empfänger — read-only)
     +-- TipTap Rich-Text-Editor (bearbeitbarer Entwurf)
     +-- "Als Entwurf speichern" Button
-    +-- "Finalisieren & archivieren" Button (sperrt Editor, setzt Status = finalisiert)
-    +-- "Als PDF exportieren" Button (window.print mit Briefkopf-Layout)
-    +-- Versions-Info: "Generiert am [Datum] — KI-Entwurf"
+    +-- "Finalisieren & archivieren" Button (sperrt Editor)
+    +-- "Als PDF exportieren" Button (window.print)
+    +-- Hinweis: "Generiert am [Datum] — KI-Entwurf — [Rolle] verantwortlich"
 ```
 
 ### Datenmodell
@@ -85,57 +121,73 @@
 **Tabelle `medical_reports`:**
 - `id` — UUID, Primärschlüssel
 - `patient_id` — Verknüpfung zum Patienten
-- `generated_by` — Heilpraktiker der den Bericht erstellt hat
+- `generated_by` — Therapeut der den Bericht erstellt hat
+- `generated_by_role` — `heilpraktiker` oder `physiotherapeut` (DB-Audit-Feld, serverseitig gesetzt)
+- `report_type` — `arztbericht` oder `therapiebericht` (aus Rolle abgeleitet, nicht vom Client steuerbar)
 - `date_from` / `date_to` — Zeitraum der einbezogenen Dokumentation
 - `recipient_name` — Empfänger (Arzt/Klinik)
 - `recipient_address` — Adresse des Empfängers (Freitext)
-- `draft_content` — Originaler KI-Entwurf (unveränderlich gespeichert — Audit-Trail)
-- `final_content` — Bearbeitete Endversion (JSON/HTML, vom Therapeuten editiert)
+- `extra_instructions` — Optionaler Hinweis an die KI (z.B. gewünschte Heilmittel bei PT)
+- `draft_content` — Originaler KI-Entwurf (unveränderlich — Audit-Trail)
+- `final_content` — Bearbeitete Endversion (vom Therapeuten editiert)
 - `status` — `entwurf` oder `finalisiert`
 - `created_at`, `updated_at`
 
-**Kein `pdf_url`:** PDF wird on-demand per window.print() aus dem gespeicherten `final_content` erzeugt — kein Supabase Storage nötig, konsistent mit PROJ-3/4/5.
+**RLS (Row Level Security):**
+- Heilpraktiker → liest/schreibt nur `arztbericht`-Einträge seiner eigenen Patienten
+- Physiotherapeut → liest/schreibt nur `therapiebericht`-Einträge seiner eigenen Patienten
+- Admin → liest/schreibt alle Typen
+- Patient → kein Zugriff
 
-**Rate Limiting (ohne externe Pakete):** API zählt `medical_reports`-Einträge des Therapeuten der letzten 60 Minuten direkt in der Datenbank — kein Redis, keine zusätzliche Tabelle.
+**Rate Limiting:** API zählt `medical_reports`-Einträge des Therapeuten der letzten 60 Minuten in der DB — kein Redis, kein extra Paket.
 
-**RLS:**
-- Heilpraktiker → liest/schreibt nur Berichte seiner eigenen Patienten
-- Admin → liest/schreibt alle
-- Physiotherapeut / Patient → kein Zugriff
-
-### KI-Generierungsablauf (Datenschutz-Design)
+### KI-Generierungsablauf nach Rolle
 
 ```
-1. Patient-Daten laden (Name, Anamnese, Befunde, Behandlungen)
-2. Name durch Pseudonym ersetzen: "Max Mustermann" → "Patient A"
-3. Strukturierten Prompt + pseudonymisierte Daten → Claude API (claude-opus-4-6)
-4. Antwort empfangen
-5. Pseudonym wieder durch echten Namen ersetzen
-6. draft_content (pseudonymisiert) + final_content (mit Namen) speichern
-```
+Gemeinsam (beide Rollen):
+1. Berichtstyp aus Rolle ableiten (server-side, nicht vom Client übernehmbar)
+2. Patient-Basisdaten laden (Name, Geburtsdatum, Versicherung)
+3. Name durch Pseudonym ersetzen: "Max Mustermann" → "Patient A"
 
-Patientendaten verlassen die Praxis pseudonymisiert → DSGVO-konform auch beim KI-Einsatz.
+Heilpraktiker (Arztbericht):
+4a. Anamnese-Einträge im Zeitraum laden
+4b. Befund/Diagnose-Einträge im Zeitraum laden (ICD-10 Codes + Beschreibungen)
+4c. Behandlungsverlauf im Zeitraum laden (Maßnahmen, NRS-Werte)
+
+Physiotherapeut (Therapiebericht):
+4d. Behandlungsverlauf im Zeitraum laden (Maßnahmen, NRS-Werte, Notizen)
+    — KEIN Zugriff auf Befund/Diagnose (RLS blockiert es ohnehin)
+
+Gemeinsam (beide Rollen):
+5. Passenden System-Prompt wählen (HP-Prompt oder PT-Prompt)
+6. Pseudonymisierte Daten + extra_instructions → Claude API (claude-opus-4-6)
+7. Antwort empfangen
+8. Pseudonym durch echten Patientennamen ersetzen
+9. draft_content (pseudonymisiert) + final_content (mit Namen) speichern
+```
 
 ### Tech-Entscheidungen
 
 | Entscheidung | Begründung |
 |---|---|
-| `@tiptap/react` + `@tiptap/starter-kit` als Rich-Text-Editor | Aktiv gewartet, Next.js-kompatibel, kein Raw-Markdown für medizinische Berichte, leichtgewichtiger als Quill |
-| `@anthropic-ai/sdk` für Claude API | Offizielle SDK, typsicher, unterstützt Streaming für Fortschrittsanzeige |
-| `claude-opus-4-6` (wie in Spec vorgegeben) | Beste Qualität für medizinische Sprache und Strukturierung |
-| window.print() für PDF (kein `@react-pdf/renderer`) | Konsistent mit PROJ-3/4/5; kein zusätzliches Paket; Briefkopf via print-CSS in globals.css bereits vorhanden |
-| Rate Limiting via DB-Count | Serverless-kompatibel (kein Redis nötig), einfach, kein neues Paket |
-| `draft_content` unveränderlich speichern | Audit-Trail: Therapeut kann beweisen, was die KI generiert hat vs. was er editiert hat |
-| Kein separater Wizard (1 Formular → direkte Generierung) | Reduziert UX-Komplexität; Zeitraum + Empfänger in einem Schritt → schneller als 3-Schritt-Wizard |
+| Gemeinsamer Tab "Berichte" statt separater Tabs | Beide Rollen sehen ihre eigenen Berichte im selben Tab — einfachere UX, weniger Tabs |
+| `report_type` serverseitig aus Rolle abgeleitet | Sicherheit: Kein Client kann seinen Berichtstyp fälschen — ein PT kann keinen Arztbericht mit ICD-Codes erstellen |
+| Zwei Claude-Prompts (HP + PT) | Andere Sprache, anderer Stil, anderer Inhalt — ein generischer Prompt wäre schlechter für beide |
+| Physiotherapeut lädt keine Befund-Daten | Datentrennung: PT hat ohnehin keinen RLS-Zugriff auf `diagnoses`; das Design entspricht der Realität |
+| `@tiptap/react` + `@tiptap/starter-kit` | Next.js-kompatibel, aktiv gewartet, kein Raw-Markdown — medizinische Berichte brauchen WYSIWYG |
+| `@anthropic-ai/sdk` (server-side only) | Offizielle SDK, typsicher — API-Key niemals im Browser-Bundle |
+| `claude-opus-4-6` | Beste Qualität für medizinische Fachsprache (Spec-Vorgabe) |
+| window.print() für PDF | Konsistent mit PROJ-3/4/5; kein extra Paket; Briefkopf-CSS bereits in globals.css |
+| `extra_instructions` Freifeld | PT kann gewünschte Heilmittel als Hinweis mitgeben → KI richtet Empfehlung gezielt aus |
 
 ### Neue Pakete
-- `@anthropic-ai/sdk` — Claude API Client (server-side only, niemals im Browser-Bundle)
-- `@tiptap/react` + `@tiptap/starter-kit` — Rich-Text-Editor für Berichtsbearbeitung
+- `@anthropic-ai/sdk` — Claude API Client (server-side only)
+- `@tiptap/react` + `@tiptap/starter-kit` — Rich-Text-Editor
 
 ### API-Übersicht
 ```
-GET  /api/patients/[id]/reports              → Liste aller Berichte (neueste zuerst)
-POST /api/patients/[id]/reports              → Generierung starten (ruft Claude auf)
+GET  /api/patients/[id]/reports              → Liste (HP sieht arztberichte, PT sieht therapieberichte)
+POST /api/patients/[id]/reports              → Generierung starten (report_type aus Rolle, ruft Claude auf)
 GET  /api/patients/[id]/reports/[reportId]   → Einzelnen Bericht laden
 PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder finalisieren
 ```
