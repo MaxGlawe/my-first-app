@@ -10,6 +10,7 @@ import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
 import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { BefundTab } from "@/components/diagnose/BefundTab"
 import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
+import { BerichteTab } from "@/components/arztbericht/BerichteTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -80,6 +81,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           {canSeeBefund && (
             <TabsTrigger value="befund">Befund & Diagnose</TabsTrigger>
           )}
+          <TabsTrigger value="berichte">Berichte</TabsTrigger>
           <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
         </TabsList>
 
@@ -108,6 +110,10 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
             <BefundTab patientId={patient.id} />
           </TabsContent>
         )}
+
+        <TabsContent value="berichte">
+          <BerichteTab patientId={patient.id} />
+        </TabsContent>
 
         <TabsContent value="trainingsplaene">
           <PlaceholderTab
