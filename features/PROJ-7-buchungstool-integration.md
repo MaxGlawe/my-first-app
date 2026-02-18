@@ -15,7 +15,7 @@
 - Als Patient möchte ich in der Patienten-App meine gebuchten Termine sehen, damit ich immer auf dem aktuellen Stand bin.
 
 ## Acceptance Criteria
-- [ ] Import-Funktion: Admin kann Patientenliste aus Buchungstool als CSV oder via API importieren
+- [x] Import-Funktion: Neue Patienten werden automatisch per Webhook (`patient.created`) in Praxis OS angelegt — kein manueller CSV-Import notwendig (Tech Design: Webhook-Push statt CSV)
 - [ ] Mapping: Name, E-Mail, Telefon, Geburtsdatum werden zugeordnet, Duplikate erkannt
 - [ ] Termin-Anzeige: In der Patientenakte werden kommende Termine aus dem Buchungstool angezeigt (read-only)
 - [ ] Patienten-App: Tab "Meine Termine" zeigt gebuchte Termine aus dem Buchungstool

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { MeineTermineKarte } from "@/components/app/MeineTermineKarte"
 
 export const metadata = {
   title: "Mein Dashboard | Praxis OS",
@@ -45,17 +46,7 @@ export default function PatientDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Meine Termine</CardTitle>
-            <CardDescription>Nächste Termine in der Praxis</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" disabled>
-              Kommt bald (PROJ-7)
-            </Button>
-          </CardContent>
-        </Card>
+        <MeineTermineKarte />
 
         <Card>
           <CardHeader>
