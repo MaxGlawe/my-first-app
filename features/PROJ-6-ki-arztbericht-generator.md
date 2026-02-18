@@ -231,7 +231,7 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 #### AC-6: Generierungsdauer < 30 Sekunden mit Fortschrittsanzeige
 - [x] Fortschrittsanzeige mit Spinner + Statustext-Rotation vorhanden (`BerichtKonfigForm` Zeilen 386–397)
 - [x] Technischer Timeout ist auf 60 Sekunden gesetzt (Spec: edge case — API Timeout)
-- [ ] BUG-1 (Low): Die Step-Rotation im Frontend-Fortschritt wechselt alle 8 Sekunden — bei einem 30-Sekunden-Ziel ist das zu langsam (nur ~3 Steps sichtbar bei 24s, letzter Step "Wird gespeichert" erscheint nie vor dem Redirect)
+- [x] BUG-1 (Low) FIXED: Step-Rotation auf 3s reduziert (BerichtKonfigForm.tsx)
 
 #### AC-7: Rich-Text-Editor (TipTap)
 - [x] `BerichtEditor.tsx` verwendet `@tiptap/react` + `StarterKit`
@@ -259,7 +259,7 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 - [x] `draft_content` wird nur beim INSERT gesetzt — kein PATCH-Feld dafur
 - [x] `updateReportSchema` enthalt kein `draft_content`-Feld — Schema-Ebene blockiert Update
 - [x] Kommentar im Code dokumentiert Intent (reportId/route.ts Zeile 141)
-- [ ] BUG-2 (Medium): Die RLS UPDATE-Policy pruft `status = 'entwurf'` auf Zeilen-Ebene ABER der Admin-Pfad in der RLS UPDATE-Policy hat kein `WITH CHECK` das `generated_by = auth.uid()` fur Admins erzwingt — Admin kann `draft_content` uber direkten DB-Zugriff uberschreiben (API-Ebene ist sicher, aber RLS-Ebene hat eine Lucke fur Admins bei direktem DB-Zugriff ohne die `status`-Prufung des API-Layers)
+- [x] BUG-2 (Medium) FIXED: `protect_draft_content()` BEFORE UPDATE Trigger in Migration hinzugefügt — draft_content jetzt auf DB-Ebene unveränderlich (wirft Exception bei Änderungsversuch)
 
 #### AC-12: Server-seitige Absicherung — Berichtstyp aus Rolle (kein Client-Override)
 - [x] `report_type` wird serverseitig aus `user_profiles.role` abgeleitet
@@ -284,12 +284,12 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 - [x] `DataAvailabilitySummary`-Komponente zeigt Warnung "Wenig Daten im Zeitraum"
 - [x] Spezifischer Hinweis: HP sieht Behandlungs- + Befund-Zahlen, PT nur Behandlungszahlen
 - [x] Bericht kann trotzdem generiert werden (kein harter Block — Therapeut entscheidet)
-- [ ] BUG-3 (Low): Wenn 0 Behandlungen UND 0 Befunde vorhanden sind, wird kein spezifischer Hinweis ausgegeben, welche Daten fehlen (nur generische Warnung) — Spec fordert "Hinweis welche Daten fehlen"
+- [x] BUG-3 (Low) FIXED: DataAvailabilitySummary zeigt jetzt separate Zeilen für fehlende Behandlungen, Befunde und Anamnesen
 
 #### EC-3: Heilpraktiker-Patient ohne Diagnose
 - [x] Server pruft graceful: `diagnosesSummary` bleibt leer-String wenn keine Diagnosen
 - [x] KI-Prompt enthalt "Keine Befund-/Diagnosedaten im Zeitraum dokumentiert."
-- [ ] BUG-4 (Low): Im Editor gibt es keinen expliziten Hinweis/Banner "Dieser Bericht enthalt keinen Diagnose-Abschnitt, da keine Diagnosen im Zeitraum dokumentiert waren" — Spec fordert "Hinweis im Editor"
+- [x] BUG-4 (Low) FIXED: Amber-Banner in BerichtEditor wenn report_type = arztbericht und kein ICD-10-Pattern im draft_content
 
 #### EC-4: Physiotherapeut versucht Arztbericht zu erstellen
 - [x] Server leitet `report_type = "therapiebericht"` fur PT ab — kein 403 notig
@@ -309,10 +309,10 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 
 #### EC-8 (nicht dokumentiert): Sehr langer Extra-Instructions-Text
 - [x] API: max 1000 Zeichen (Zod)
-- [ ] BUG-5 (Low): DB-Constraint erlaubt 2000 Zeichen fur `extra_instructions`, aber API-Zod-Schema begrenzt auf 1000 Zeichen — Inkonsistenz zwischen API-Validierung und DB-Constraint. Gleiche Inkonsistenz bei `recipient_name` (API: max 200, DB: max 500) und `recipient_address` (API: max 500, DB: max 1000)
+- [x] BUG-5 (Low) FIXED: Zod-Schema in BerichtKonfigForm und route.ts auf DB-Constraints angeglichen (recipient_name: 500, recipient_address: 1000, extra_instructions: 2000)
 
 #### EC-9 (nicht dokumentiert): Admin-Rolle — Berichtstyp-Label
-- [ ] BUG-6 (Medium): Admin-Rolle erhalt `reportLabel = "Arztbericht"` in `BerichteTab` und `BerichtKonfigForm`, obwohl Admin beide Berichtstypen sehen kann. Das Banner zeigt korrekt "Als Admin sehen Sie alle Berichte", aber der "Bericht generieren"-Button und die leere Zustandsseite zeigen nur "Arztbericht generieren" — dies ist irrefuhrend fur Admins, die eigentlich einen PT-Therapiebericht erstellen wollen konnten
+- [x] BUG-6 (Medium) FIXED: Admin-UI rollenadaptiv — BerichteTab zeigt "Bericht" als Label; BerichtKonfigForm zeigt RadioGroup für Arztbericht/Therapiebericht; API honoriert admin_report_type
 
 ---
 
@@ -328,8 +328,8 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 - [x] **DSGVO — Pseudonymisierung:** Patientenname im KI-Prompt durch "Patient A" ersetzt — echter Name erscheint nur in `final_content`.
 - [x] **RLS DELETE-Policy:** `USING (false)` — physische Loschung fur alle Rollen verboten.
 - [x] **UUID-Validation:** `UUID_REGEX` pruft alle Path-Parameter (patientId, reportId) — verhindert Path-Traversal.
-- [ ] **BUG-7 (Medium) — Security:** `data-availability`-Endpunkt (`GET /api/patients/[id]/reports/data-availability`) validiert `date_from` und `date_to` Query-Parameter nicht auf Format (YYYY-MM-DD). Ein Angreifer konnte SQL-Injection-Versuche uber diese Parameter senden — Supabase ORM schutzt zwar vor SQL-Injection, aber eine sehr lange oder bosarige Eingabe (z.B. SQLi-Payload als Datum) wird ungefiltert an die `.gte()` / `.lte()` Supabase-Calls weitergegeben. Empfehlung: Regex-Validierung hinzufugen wie im POST-Endpoint.
-- [ ] **BUG-8 (Low) — Security:** In `BerichtEditor.tsx` Zeile 237 existiert `const isFin = finalize || isSaving` — diese Variable wird nie verwendet (toter Code). Kein Sicherheitsproblem, aber ein Code-Qualitats-Issue.
+- [x] **BUG-7 (Medium) FIXED:** YYYY-MM-DD Regex-Validierung für date_from/date_to in data-availability/route.ts hinzugefügt — gibt 400 zurück bei ungültigem Format.
+- [x] **BUG-8 (Low) FIXED:** Toter Code `const isFin = finalize || isSaving` in BerichtEditor.tsx entfernt.
 - [x] **Keine exposed Secrets:** In der gesamten Frontend-Codebasis keine hardcodierten API-Keys gefunden.
 - [x] **Keine direkte DB-Manipulation vom Client:** Alle Supabase-Calls aus dem Frontend nutzen nur die `useReports`/`useReport`-Hooks uber REST-API — kein direkter Supabase-Client fur medical_reports.
 

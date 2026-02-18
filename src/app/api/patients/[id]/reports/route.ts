@@ -25,9 +25,12 @@ const createReportSchema = z.object({
   date_to: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "date_to muss im Format YYYY-MM-DD sein."),
-  recipient_name: z.string().min(1, "Empfänger-Name ist erforderlich.").max(200),
-  recipient_address: z.string().max(500).default(""),
-  extra_instructions: z.string().max(1000).optional().default(""),
+  recipient_name: z.string().min(1, "Empfänger-Name ist erforderlich.").max(500),
+  recipient_address: z.string().max(1000).default(""),
+  extra_instructions: z.string().max(2000).optional().default(""),
+  // Admin-only: allows choosing between arztbericht and therapiebericht
+  // Ignored for non-admin roles (server enforces role-based type)
+  admin_report_type: z.enum(["arztbericht", "therapiebericht"]).optional(),
 })
 
 // ── Normalize helper ───────────────────────────────────────────────────────────
@@ -162,14 +165,6 @@ export async function POST(
     return NextResponse.json({ error: "Keine Berechtigung zur Berichtsgenerierung." }, { status: 403 })
   }
 
-  // report_type wird serverseitig festgelegt — kein Client-Override
-  const reportType =
-    role === "heilpraktiker"
-      ? "arztbericht"
-      : role === "physiotherapeut"
-      ? "therapiebericht"
-      : "arztbericht" // Admin → Arztbericht als Default
-
   // generated_by_role reflects the actual DB role (admin stays "admin")
   const generatedByRole = role as "heilpraktiker" | "physiotherapeut" | "admin"
 
@@ -218,8 +213,18 @@ export async function POST(
     )
   }
 
-  const { date_from, date_to, recipient_name, recipient_address, extra_instructions } =
+  const { date_from, date_to, recipient_name, recipient_address, extra_instructions, admin_report_type } =
     parseResult.data
+
+  // report_type wird serverseitig festgelegt (nach Body-Parsing, damit admin_report_type verfügbar)
+  // Admin: honors admin_report_type if provided (both types are legitimate for admin)
+  // HP: always arztbericht | PT: always therapiebericht (security: no override possible)
+  const reportType =
+    role === "heilpraktiker"
+      ? "arztbericht"
+      : role === "physiotherapeut"
+      ? "therapiebericht"
+      : (admin_report_type ?? "arztbericht") // Admin → defaults to arztbericht
 
   // Datum-Logik prüfen
   if (new Date(date_from) > new Date(date_to)) {

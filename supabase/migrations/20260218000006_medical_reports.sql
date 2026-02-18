@@ -212,7 +212,29 @@ CREATE POLICY "medical_reports_delete" ON medical_reports
   USING (false);
 
 -- ----------------------------------------------------------------
--- 6. Grant helper function access (already granted in PROJ-2)
+-- 6. Immutable draft_content trigger (DSGVO audit trail)
+--
+-- draft_content is the pseudonymised KI raw output and must never
+-- be altered after creation. This trigger enforces that at the
+-- database level, independent of the API layer.
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION protect_draft_content()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.draft_content IS DISTINCT FROM OLD.draft_content THEN
+    RAISE EXCEPTION 'draft_content is immutable after creation (audit trail).';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_protect_draft_content ON medical_reports;
+CREATE TRIGGER trg_protect_draft_content
+  BEFORE UPDATE ON medical_reports
+  FOR EACH ROW EXECUTE FUNCTION protect_draft_content();
+
+-- ----------------------------------------------------------------
+-- 7. Grant helper function access (already granted in PROJ-2)
 -- ----------------------------------------------------------------
 GRANT EXECUTE ON FUNCTION get_my_role() TO authenticated;
 

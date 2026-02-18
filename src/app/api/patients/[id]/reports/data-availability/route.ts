@@ -34,6 +34,11 @@ export async function GET(
     return NextResponse.json({ error: "date_from und date_to sind erforderlich." }, { status: 400 })
   }
 
+  const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/
+  if (!DATE_REGEX.test(dateFrom) || !DATE_REGEX.test(dateTo)) {
+    return NextResponse.json({ error: "Ungültiges Datumsformat. Erwartet: YYYY-MM-DD." }, { status: 400 })
+  }
+
   const dateToEnd = dateTo + "T23:59:59"
 
   // Rolle ermitteln
