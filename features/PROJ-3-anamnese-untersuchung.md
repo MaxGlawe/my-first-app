@@ -318,4 +318,9 @@ Da kein laufender Browser-Testserver verfügbar, basiert diese Einschätzung auf
 - **Recommendation:** Fix BUG-3 (Critical) und BUG-4 (High) vor Deployment. BUG-8 (High Security) sollte ebenfalls behoben werden.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-02-18
+**Environment:** Development (localhost:3001)
+**GitHub:** https://github.com/MaxGlawe/my-first-app (branch: main, commit: 9751ab1)
+**Tag:** v1.3.0-PROJ-3
+**Status:** Code + DB migration live. Vercel production deployment deferred until MVP complete.
+**Note:** BUG-1, BUG-4 (PDF), BUG-5, BUG-6, BUG-7, BUG-9 deferred to next sprint.

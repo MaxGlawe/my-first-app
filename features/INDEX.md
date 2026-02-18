@@ -14,7 +14,7 @@
 |----|---------|--------|------|---------|
 | PROJ-1 | Authentifizierung & Rollenrechte | Deployed | [Spec](PROJ-1-auth-rollenrechte.md) | 2026-02-17 |
 | PROJ-2 | Patientenstammdaten | Deployed | [Spec](PROJ-2-patientenstammdaten.md) | 2026-02-17 |
-| PROJ-3 | Anamnese & Untersuchungsdokumentation | In Review | [Spec](PROJ-3-anamnese-untersuchung.md) | 2026-02-17 |
+| PROJ-3 | Anamnese & Untersuchungsdokumentation | Deployed | [Spec](PROJ-3-anamnese-untersuchung.md) | 2026-02-17 |
 | PROJ-4 | Befund & Diagnose (Heilpraktiker) | Planned | [Spec](PROJ-4-befund-diagnose-heilpraktiker.md) | 2026-02-17 |
 | PROJ-5 | Behandlungsdokumentation | Planned | [Spec](PROJ-5-behandlungsdokumentation.md) | 2026-02-17 |
 | PROJ-6 | KI-Arztbericht-Generator | Planned | [Spec](PROJ-6-ki-arztbericht-generator.md) | 2026-02-17 |
