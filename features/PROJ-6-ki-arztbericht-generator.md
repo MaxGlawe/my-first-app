@@ -1,8 +1,8 @@
 # PROJ-6: KI-Arztbericht-Generator
 
-## Status: Planned
+## Status: In Review
 **Created:** 2026-02-17
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-18
 
 ## Dependencies
 - Requires: PROJ-1 (Authentifizierung & Rollenrechte — alle Therapeuten-Rollen)
