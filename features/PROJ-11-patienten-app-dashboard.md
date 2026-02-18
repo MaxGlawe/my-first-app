@@ -1,6 +1,6 @@
 # PROJ-11: Patienten-App — Dashboard & Trainingspläne
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-02-17
 **Last Updated:** 2026-02-18
 
@@ -356,9 +356,38 @@ Alle benötigten UI-Komponenten (Progress, Card, Calendar, Badge, Collapsible) s
   - High: 0
   - Medium: 3 (BUG-2 calendar alignment, BUG-3 missing next day, BUG-4 timer interval)
   - Low: 3 (BUG-5 skip reason, BUG-6 media fallback, BUG-7 touch targets)
-- **Security:** 1 Critical authorization issue (BUG-1), all other security checks passed
-- **Production Ready:** NO
-- **Recommendation:** Fix BUG-1 (Critical: patients cannot complete sessions) and BUG-2, BUG-3, BUG-4 (Medium) before deployment. BUG-5, BUG-6, BUG-7 can be addressed in the next sprint.
+- **Security:** All issues resolved — BUG-1 (critical auth gap) fixed in `fix(PROJ-11)` commit
+- **Production Ready:** YES — all 7 bugs fixed
+
+### Bug Fix Summary
+
+| Bug | Severity | Status | Fix Commit |
+|-----|----------|--------|------------|
+| BUG-1 | Critical | Fixed | 5bd6ab5 — query `patients.user_id` bridge in completions route |
+| BUG-2 | Medium | Fixed | 5bd6ab5 — pad calendar grid to Monday-align headers |
+| BUG-3 | Medium | Fixed | 5bd6ab5 — pass `allAssignments` to HeuteKarte; show next_training_day |
+| BUG-4 | Medium | Fixed | 5bd6ab5 — remove `remaining` from PauseTimer useEffect deps; use onDoneRef |
+| BUG-5 | Low | Fixed | 5bd6ab5 — store skipReasons in SessionState |
+| BUG-6 | Low | Fixed | 5bd6ab5 — show exercise beschreibung as media fallback |
+| BUG-7 | Low | Fixed | 5bd6ab5 — SatzTracker h-10→h-12 (48px touch targets) |
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Trigger:** `git push origin main` → Vercel auto-deploy
+
+### New Routes (live)
+| Route | Type | Description |
+|-------|------|-------------|
+| `/app/dashboard` | Static | Patient dashboard (replaced placeholder) |
+| `/app/training` | Static | Today's training overview |
+| `/app/training/[zuweisungsId]` | Dynamic | Training session with SatzTracker & PauseTimer |
+| `/app/plans` | Static | Active & archived plan overview |
+| `/app/progress` | Static | 4-week calendar + streak + compliance |
+| `GET /api/me/profile` | Dynamic | Patient profile lookup via user_id bridge |
+| `GET /api/me/assignments` | Dynamic | Patient assignments with compliance + plan data |
+
+### DB Migration Applied
+- `supabase/migrations/20260218000013_patienten_app_bridge.sql`
+  - `patients.user_id UUID` bridge column
+  - Updated RLS on `patients`, `patient_assignments`, `assignment_completions`
