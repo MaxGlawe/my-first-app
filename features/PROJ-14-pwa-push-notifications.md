@@ -94,6 +94,7 @@ Jede Zeile = ein Gerät eines Patienten (Multi-Gerät-Support):
 - `VAPID_PUBLIC_KEY` — öffentlich, wird an den Browser übergeben
 - `VAPID_PRIVATE_KEY` — geheim, nur server-seitig
 - `VAPID_SUBJECT` — z.B. `mailto:praxis@example.com`
+- `CRON_SECRET` — zufälliger langer String; Supabase pg_cron sendet ihn im Header, API-Route prüft ihn (verhindert unautorisierte Cron-Aufrufe)
 
 ---
 
@@ -104,8 +105,8 @@ Jede Zeile = ein Gerät eines Patienten (Multi-Gerät-Support):
 | `POST /api/me/push/subscribe` | Patient speichert Browser-Subscription + Gerätetyp in DB |
 | `DELETE /api/me/push/unsubscribe` | Patient entfernt Subscription bei Permission-Entzug |
 | `PATCH /api/me/push/preferences` | Patient ändert reminder_enabled, reminder_time, chat_enabled |
-| `POST /api/push/send` | Interner Endpoint — sendet Push an Patient (von Chat-Route + Cron aufgerufen) |
-| `GET /api/cron/training-reminder` | Vercel Cron Endpoint — stündlich, sendet Training-Reminder |
+| `POST /api/push/send` | Interner Endpoint — sendet Push an Patient (von Chat-Route + Cron aufgerufen); via `CRON_SECRET` Header abgesichert |
+| `GET /api/cron/training-reminder` | Cron-Endpunkt (aufgerufen von Supabase pg_cron via pg_net) — stündlich, sendet Training-Reminder |
 
 ---
 
@@ -115,7 +116,9 @@ Jede Zeile = ein Gerät eines Patienten (Multi-Gerät-Support):
 `POST /api/patients/[id]/chat` ruft nach dem Speichern der Nachricht intern `sendPushToPatient()` auf — lädt alle aktiven Subscriptions des Patienten, sendet Push an jedes Gerät.
 
 **Training-Erinnerung (täglich, stündlich geprüft):**
-Vercel Cron Job (in `vercel.json` konfiguriert, läuft stündlich) → `/api/cron/training-reminder` prüft: Welche Patienten haben heute Training + deren `reminder_time` liegt in der letzten Stunde? → Push senden.
+Supabase **pg_cron** (DB-Level Scheduler) ruft stündlich via **pg_net** (Supabase HTTP-Extension) den Endpoint `/api/cron/training-reminder` der Next.js App auf. Der Endpoint prüft: Welche Patienten haben heute Training + deren `reminder_time` liegt in der letzten Stunde? → Push senden.
+
+Vorteile gegenüber Vercel Cron: funktioniert unabhängig vom Hosting-Anbieter (Vercel, eigener Server, Docker). Die Next.js App muss nur erreichbar sein. Der Endpoint ist mit `CRON_SECRET` Header abgesichert — nur Supabase kennt das Secret.
 
 ---
 
