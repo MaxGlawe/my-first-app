@@ -40,7 +40,104 @@
 ---
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+**Designed:** 2026-02-18
+
+### Component Structure
+
+```
+/os/patients/[id]  (Bestehende Patientendetail-Seite — neuer Tab)
++-- PatientDetailHeader (bestehend)
++-- Tabs (bestehend, neuer Tab wird hinzugefügt)
+    +-- Stammdaten / Anamnese / Behandlung / Befund / Termine / Berichte  (bestehend)
+    +-- "Hausaufgaben" Tab (NEU)
+        +-- HausaufgabenTab
+            +-- HausaufgabenHeader
+            |   +-- Neue Zuweisung Button → öffnet ZuweisungsDialog
+            +-- AktiveZuweisungen Section
+            |   +-- ZuweisungsKarte (pro aktive Zuweisung)
+            |       +-- Plan-Name + Beschreibung-Preview
+            |       +-- Zeitraum (Startdatum – Enddatum)
+            |       +-- Wochentage-Badges (Mo Di Mi Do Fr Sa So)
+            |       +-- Compliance-Ring (% erledigt, 7-Tage)
+            |       +-- Notiz an Patient
+            |       +-- Aktionen: Bearbeiten / Deaktivieren
+            +-- AbgelaufeneZuweisungen Section (eingeklappt, toggle)
+                +-- ZuweisungsKarte (archiviert, read-only, grau)
+
+ZuweisungsDialog (Modal — Neue Zuweisung / Bearbeiten)
++-- Schritt 1: Plan auswählen (Combobox aus eigenen Training Plans)
++-- Schritt 2: Zeitraum (Startdatum / Enddatum DatePicker)
++-- Schritt 3: Trainingstage (7 Checkbox-Buttons Mo–So)
++-- Notiz an Patienten (Freitext, optional)
++-- "Zuweisen" Button / "Änderungen speichern" Button
+
+/os/hausaufgaben  (Therapeuten-Compliance-Dashboard, neue Seite)
++-- DashboardHeader
+|   +-- Datum-Anzeige ("Heute, 18. Feb.")
+|   +-- Filter: Alle Patienten / Nur mit aktivem Plan
++-- KomplianzTabelle
+    +-- KomplianzZeile (pro Patient mit aktivem Plan)
+        +-- Patient Name + Avatar
+        +-- Aktive Pläne (Anzahl)
+        +-- Hat heute trainiert? (Ja/Nein Badge)
+        +-- 7-Tage Compliance-Rate (Fortschrittsbalken %)
+        +-- Link → Patientendetail / Hausaufgaben-Tab
+```
+
+### Datenmodell
+
+**Tabelle `patient_assignments`:**
+- ID
+- Patient-ID (FK auf patients)
+- Plan-ID (FK auf training_plans — optional, NULL bei Ad-hoc)
+- Therapeuten-ID (FK auf auth.users)
+- Startdatum, Enddatum
+- Aktive Wochentage (Text-Array: `["mo", "di", "do"]`)
+- Status: `aktiv` / `abgelaufen` / `deaktiviert`
+- Ad-hoc Übungen (JSONB, optional — Liste von Übungs-IDs mit Parametern, wenn kein Plan)
+- Notiz an Patienten (Freitext, max. 1000 Zeichen)
+- Erstellt am, Aktualisiert am
+
+**Tabelle `assignment_completions`:**
+- ID
+- Zuweisung-ID (FK auf patient_assignments)
+- Einheiten-ID (FK auf plan_units, optional — welche Einheit des Plans)
+- Erledigt-Datum (nur das Datum, kein Timestamp — ein Eintrag pro Tag pro Einheit)
+- Erledigt-Timestamp (wann genau)
+- Markiert von (Patient-ID)
+
+**Compliance-Berechnung (server-seitig):**
+- Erwartete Sessions im Zeitraum = Anzahl der Tage im Zeitraum × matching Wochentage
+- Erledigte Sessions = Anzahl `assignment_completions` im Zeitraum
+- Compliance % = erledigte / erwartete × 100
+
+### API-Endpunkte
+
+| Route | Zweck |
+|---|---|
+| `GET /api/patients/[id]/assignments` | Alle Zuweisungen für einen Patienten (aktiv + abgelaufen) |
+| `POST /api/patients/[id]/assignments` | Neue Zuweisung erstellen |
+| `PUT /api/patients/[id]/assignments/[aId]` | Zuweisung bearbeiten (Zeitraum, Plan, Tage) |
+| `DELETE /api/patients/[id]/assignments/[aId]` | Zuweisung deaktivieren (soft) |
+| `GET /api/hausaufgaben/dashboard` | Compliance-Übersicht aller Patienten des Therapeuten |
+| `POST /api/assignments/[id]/completions` | Einheit als erledigt markieren (für PROJ-11 Patient App) |
+
+### Tech-Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| Neuer "Hausaufgaben"-Tab im bestehenden Patientenprofil | Kein neues Routing nötig — Therapeut bleibt im Kontext des Patienten; konsistent mit Anamnese/Behandlung/Befund-Tabs |
+| Wochentage als Text-Array `["mo", "di"]` | Flexibel, human-readable, einfach zu filtern — kein Bitmask-Encoding |
+| Plan-FK (kein Snapshot) | Pläne nutzen Soft-Delete und werden nie überschrieben (save_training_plan immer neu insert) — das FK-Referenz-Prinzip reicht als "Snapshot" |
+| Ad-hoc Übungen via JSONB in derselben Tabelle | Vermeidet extra Tabelle für einfachen Use-Case; wenn `plan_id = null` und `adhoc_exercises` befüllt → Ad-hoc-Modus |
+| Compliance-Rate server-seitig berechnet | Logik ist datums-sensitiv (relative zu heute) — nicht sinnvoll im Client zu halten |
+| Separates `/os/hausaufgaben` Dashboard | Therapeut braucht Bird's-Eye-View über alle Patienten — nicht nur einen; eigene Seite sinnvoll |
+| `assignment_completions` jetzt anlegen | PROJ-11 (Patient App) wird diese Tabelle nutzen — Schema muss vorab existieren |
+
+### Keine neuen Pakete
+
+Alle benötigten UI-Komponenten (DatePicker via `Popover + Calendar`, Checkboxen, Badges, Progress) sind bereits über shadcn/ui verfügbar. Datums-Arithmetik mit JavaScript `Date` built-in.
 
 ## QA Test Results
 _To be added by /qa_
