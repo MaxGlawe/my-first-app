@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { MessageCircle } from "lucide-react"
+import { ChatUnreadBadge } from "@/components/chat/ChatPosteingang"
 
 export const metadata = {
   title: "Dashboard | Praxis OS",
@@ -120,6 +121,7 @@ export default function TherapistDashboardPage() {
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-emerald-600" />
               Nachrichten
+              <ChatUnreadBadge />
             </CardTitle>
             <CardDescription>Patientengespräche und Posteingang</CardDescription>
           </CardHeader>

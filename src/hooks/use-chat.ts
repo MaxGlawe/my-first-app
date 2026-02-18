@@ -288,8 +288,14 @@ export function useChatImageUpload(): UseImageUploadResult {
           .from("media")
           .upload(path, file, { upsert: false })
         if (error) throw new Error(error.message)
-        const { data } = supabase.storage.from("media").getPublicUrl(path)
-        return data.publicUrl
+        // BUG-3 FIX: Use signed URL (7-day TTL) instead of public URL.
+        // The media bucket must be set to private in Supabase Dashboard.
+        const { data: signData, error: signError } = await supabase.storage
+          .from("media")
+          .createSignedUrl(path, 604800) // 7 days
+        if (signError || !signData?.signedUrl)
+          throw new Error("Signed URL konnte nicht erstellt werden.")
+        return signData.signedUrl
       } catch (err: unknown) {
         const msg =
           err instanceof Error ? err.message : "Bild konnte nicht hochgeladen werden."

@@ -94,6 +94,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Patientenprofil nicht gefunden." }, { status: 404 })
   }
 
+  // BUG-6 FIX: Rate limiting — max 30 messages per minute per user (DB-based, serverless-safe)
+  const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString()
+  const { count: recentCount } = await supabase
+    .from("chat_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("sender_id", user.id)
+    .gte("created_at", oneMinuteAgo)
+  if ((recentCount ?? 0) >= 30) {
+    return NextResponse.json(
+      { error: "Zu viele Nachrichten. Bitte warte einen Moment." },
+      { status: 429 }
+    )
+  }
+
   const retainUntil = new Date()
   retainUntil.setFullYear(retainUntil.getFullYear() + 2)
 

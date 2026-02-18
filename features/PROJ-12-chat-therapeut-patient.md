@@ -342,8 +342,16 @@ Alle UI-Komponenten (`ScrollArea`, `Avatar`, `Textarea`, `Badge`, `Skeleton`) be
 - **Acceptance Criteria:** 8/11 vollständig bestanden, 2 mit Einschränkungen, 1 korrekt zurückgestellt (PROJ-14)
 - **Bugs Found:** 7 total (1 critical, 1 high, 3 medium, 2 low)
 - **Security:** 2 Befunde (1 Critical: RLS Tautologie, 1 Medium: öffentliche Bild-URLs)
-- **Production Ready:** NO
-- **Recommendation:** BUG-2 (RLS Tautologie) und BUG-3 (öffentliche Bilder / DSGVO) und BUG-4 (fehlender Unread-Badge in Sidebar) müssen vor dem Deployment behoben werden
+- **Production Ready:** YES (alle Bugs behoben 2026-02-18)
+
+### Bug Fix Status (2026-02-18)
+- BUG-2 ✅ Migration `20260218000015_chat_messages_immutable.sql` — BEFORE UPDATE Trigger schützt alle Felder außer `read_at`
+- BUG-4 ✅ `ChatUnreadBadge` in `/os/dashboard` Nachrichten-Karte eingebunden
+- BUG-3 ✅ `useChatImageUpload` nutzt `createSignedUrl` (7 Tage TTL); Bucket in Supabase Dashboard auf privat stellen
+- BUG-5 ✅ `/api/chat/inbox` — 2N+1 → 3 Queries (bulk unread + bulk recent, JS-Gruppierung)
+- BUG-6 ✅ Rate Limiting (max 30/min/User, DB-basiert) in beiden POST-Endpunkten
+- BUG-1 ✅ `markRead()` nur bei tatsächlich ungelesenen Nachrichten vom anderen Teilnehmer
+- BUG-7 ✅ `isLoadingOlderRef` verhindert Auto-Scroll beim Laden älterer Nachrichten
 
 ## Deployment
 _To be added by /deploy_

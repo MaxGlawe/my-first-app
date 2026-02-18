@@ -76,18 +76,31 @@ export function ChatFenster({
   const bottomRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // BUG-7 FIX: Track when the user manually loads older messages so the
+  // auto-scroll effect can skip scrolling to the bottom in that case.
+  const isLoadingOlderRef = useRef(false)
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages — but NOT when loading older ones
   useEffect(() => {
+    if (isLoadingOlderRef.current) {
+      // Older messages were prepended; preserve the user's reading position
+      isLoadingOlderRef.current = false
+      return
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Mark as read when component mounts and when messages change
+  // BUG-1 FIX: Only call markRead() when there are actually unread messages
+  // from the other party. The previous implementation fired on every
+  // messages.length change (including own Realtime echoes).
+  const hasUnreadFromOther = messages.some(
+    (m) => m.sender_id !== currentUserId && !m.read_at
+  )
   useEffect(() => {
-    if (messages.length > 0 && patientId) {
+    if (hasUnreadFromOther && patientId) {
       markRead()
     }
-  }, [messages.length, patientId, markRead])
+  }, [hasUnreadFromOther, patientId, markRead])
 
   // ── File selection ─────────────────────────────────────────────────────────
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,7 +206,16 @@ export function ChatFenster({
         {/* Load older button */}
         {hasOlder && (
           <div className="flex justify-center mb-4">
-            <Button variant="ghost" size="sm" onClick={loadOlder} className="text-xs text-slate-500">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                // BUG-7 FIX: set flag before loadOlder so the messages useEffect skips scroll
+                isLoadingOlderRef.current = true
+                loadOlder()
+              }}
+              className="text-xs text-slate-500"
+            >
               Ältere Nachrichten laden
             </Button>
           </div>
