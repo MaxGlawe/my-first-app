@@ -285,13 +285,13 @@ export function useChatImageUpload(): UseImageUploadResult {
         const ext = file.name.split(".").pop() ?? "jpg"
         const path = `chat/${patientId}/${Date.now()}.${ext}`
         const { error } = await supabase.storage
-          .from("media")
+          .from("chat-media")
           .upload(path, file, { upsert: false })
         if (error) throw new Error(error.message)
         // BUG-3 FIX: Use signed URL (7-day TTL) instead of public URL.
         // The media bucket must be set to private in Supabase Dashboard.
         const { data: signData, error: signError } = await supabase.storage
-          .from("media")
+          .from("chat-media")
           .createSignedUrl(path, 604800) // 7 days
         if (signError || !signData?.signedUrl)
           throw new Error("Signed URL konnte nicht erstellt werden.")
