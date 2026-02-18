@@ -89,10 +89,16 @@ export async function GET(request: NextRequest) {
 
   // Volltext-Suche nach Name oder Geburtsdatum
   if (search.trim()) {
+    // Sanitize: remove PostgREST delimiters, escape LIKE wildcards
     const term = search.trim()
-    query = query.or(
-      `vorname.ilike.%${term}%,nachname.ilike.%${term}%,geburtsdatum.ilike.%${term}%`
-    )
+      .replace(/[,()]/g, "")   // Remove PostgREST filter delimiters
+      .replace(/%/g, "\\%")    // Escape LIKE wildcard %
+      .replace(/_/g, "\\_")    // Escape LIKE wildcard _
+    if (term) {
+      query = query.or(
+        `vorname.ilike.%${term}%,nachname.ilike.%${term}%,geburtsdatum.ilike.%${term}%`
+      )
+    }
   }
 
   const { data, error, count } = await query

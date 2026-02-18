@@ -128,6 +128,21 @@ export function StammdatenTab({ patient, onRefresh }: StammdatenTabProps) {
 
       toast.success("Stammdaten gespeichert.")
       setIsEditing(false)
+      // Sync defaultValues so a subsequent Cancel shows the newly saved state
+      reset({
+        vorname: payload.vorname,
+        nachname: payload.nachname,
+        geburtsdatum: payload.geburtsdatum,
+        geschlecht: payload.geschlecht,
+        telefon: payload.telefon ?? "",
+        email: payload.email ?? "",
+        strasse: payload.strasse ?? "",
+        plz: payload.plz ?? "",
+        ort: payload.ort ?? "",
+        krankenkasse: payload.krankenkasse ?? "",
+        versichertennummer: payload.versichertennummer ?? "",
+        interne_notizen: payload.interne_notizen ?? "",
+      })
       onRefresh()
     } catch {
       setServerError("Ein unerwarteter Fehler ist aufgetreten.")
