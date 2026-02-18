@@ -113,10 +113,10 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 
 ## QA Test Results
 
-**Tested:** 2026-02-18
+**Tested:** 2026-02-18 (Re-Test nach Developer Fixes)
 **App URL:** http://localhost:3000
 **Tester:** QA Engineer (AI)
-**Build:** Passing — `npm run build` compiled successfully with 0 errors
+**Build:** Passing — `npm run build` compiled successfully with 0 errors (alle 22 Routen inkl. `/os/patients/[id]/befund/[befundId]/edit`)
 
 ---
 
@@ -126,9 +126,10 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 - [x] `Icd10Combobox` implementiert mit shadcn `Command` + `Popover`
 - [x] Filtert nach Code UND Bezeichnung gleichzeitig (case-insensitive)
 - [x] Zeigt bis zu 80 Treffer bei Suche, 50 beim Öffnen ohne Eingabe
-- [x] ICD-10-GM Datei lokal eingebettet (`public/data/icd10-gm.json`, 194 Einträge aus M-, G-, S- und Z-Kapiteln)
+- [x] ICD-10-GM Datei lokal eingebettet (`public/data/icd10-gm.json`, 282 Einträge aus M-, G-, S-, E-, F-, I-, J-, K-, N-, R-, T-, Z-Kapiteln)
+- [x] G-Kapitel (Neurologie, 40 Codes) jetzt vorhanden — G43 Migräne, G54 Nervenwurzelkompression etc. auffindbar
 - [x] Mehrfachdiagnosen: Hauptdiagnose + bis zu 5 Nebendiagnosen, je mit eigenem `Icd10Combobox`
-- [ ] BUG-1 (Medium): ICD-10-GM Datei enthält nur ~194 Codes — die Spec spricht von ~1.200 häufigsten Codes. Der Katalog ist deutlich kleiner als dokumentiert und deckt nur M-, S- und Z-Kapitel ab (keine G-Kapitel für Neurologie trotz Spec-Erwähnung).
+- [ ] BUG-1 (Medium): ICD-10-GM Datei enthält 282 Codes (verbessert von 194) — die Spec spricht von ~1.200 häufigsten Codes. Der Katalog deckt nun 12 Kapitel ab, bleibt aber deutlich unter dem spezifizierten Umfang (~24% der Zielgröße).
 
 #### AC-2: Befundbericht-Formular — alle Felder vorhanden
 - [x] Klinischer Befund (Freitext, Pflichtfeld mit Validierung)
@@ -156,10 +157,10 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 
 #### AC-5: Middleware blockiert `/os/befund/*` und `/os/patients/[id]/befund/*` für Physiotherapeuten
 - [x] Middleware-Regel in `supabase-middleware.ts` vorhanden
-- [x] Regex `/^\/os\/patients\/[^/]+\/befund(\/|$)/` blockiert korrekt alle Subpfade
+- [x] Regex `/^\/os\/patients\/[^/]+\/befund(\/|$)/` blockiert korrekt alle Subpfade inkl. `/edit`
 - [x] `pathname.startsWith('/os/befund')` als Legacy-Guard für Top-Level-Route
 - [x] Redirect zu `/403` bei Zugriff als Physiotherapeut
-- [ ] BUG-2 (Low): Die Spec nennt auch `/os/diagnose/*` als zu blockierende Route, diese Route existiert nicht in der Implementierung. Die tatsächlich implementierte Route `/os/patients/[id]/befund/*` ist korrekt blockiert. Kein Sicherheitsproblem, aber Diskrepanz zur Spec.
+- [ ] BUG-2 (Low): Die Spec nennt auch `/os/diagnose/*` als zu blockierende Route, diese Route existiert nicht in der Implementierung. Die tatsächlich implementierte Route `/os/patients/[id]/befund/*` ist korrekt blockiert. Kein Sicherheitsproblem, nur Spec-Diskrepanz.
 
 #### AC-6: Befundübersicht — chronologisch, mit Datum und Therapeut
 - [x] `BefundTab` listet alle Befunde eines Patienten, neueste zuerst (`ORDER BY created_at DESC`)
@@ -174,13 +175,13 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 - [x] RLS UPDATE-Policy: Nur Entwürfe editierbar, nur `created_by = auth.uid()` oder Admin
 - [x] `BefundView`: "Bearbeiten"-Button nur sichtbar wenn `canEdit && isDraft`
 - [x] `canEdit` berechnet korrekt: `isAdmin || (isHeilpraktiker && currentUserId === record.created_by)`
-- [ ] BUG-3 (High): Es gibt keine Edit-Seite (`/os/patients/[id]/befund/[befundId]/edit`). Der "Bearbeiten"-Button in `BefundView` verlinkt auf `href={...befundId}/edit}`, aber diese Route existiert nicht. Das Bearbeiten eines Entwurfs ist damit im Frontend **nicht funktionsfähig**, obwohl die API `PATCH` korrekt implementiert ist.
+- [x] **FIXED (war BUG-3):** Edit-Seite `/os/patients/[id]/befund/[befundId]/edit` existiert jetzt mit vollständigem `BefundEditForm` inkl. Zod-Validierung, Freitext-Pflichtnotiz-Validierung, Entwurf- und Abschließen-Buttons
 
 #### AC-8: Befund-PDF-Export
 - [x] "Als PDF exportieren"-Button in `BefundView` implementiert
 - [x] `window.print()` wird aufgerufen
 - [x] Print-only-Styles via `print:hidden` Klassen (Tailwind): Buttons und Audit-Hinweis werden im Druck ausgeblendet
-- [ ] BUG-4 (Low): Kein dediziertes `@media print` CSS — der Druck verwendet das normale Layout. Für einen professionellen PDF-Export fehlen print-spezifische Stile (z.B. saubere Seitenumbrüche, Kopf-/Fußzeile mit Patientenname). Funktioniert technisch, aber das Ergebnis ist suboptimal.
+- [x] **FIXED (war BUG-4):** `globals.css` enthält vollständiges `@media print` mit A4 Seitenlayout (`@page { margin: 2cm; size: A4 }`), Seitenumbruch-Regeln (`page-break-inside: avoid`), B&W-Farbnormalisierung und `.print-header` Klasse für Praxiskopfzeile
 
 ---
 
@@ -189,32 +190,32 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 #### EC-1: Veralteter/ungültiger ICD-Code — Warnung bei Eingabe
 - [x] `Icd10Combobox` zeigt Warnung: "Dieser Code ist in der aktuellen ICD-10-GM Datei nicht hinterlegt — bitte prüfen." wenn `value` gesetzt, aber Code nicht in der lokalen Liste gefunden wird
 - [x] Freitext-Fallback: Wenn kein Code gefunden, Button "Als Freitext-Diagnose übernehmen" in `CommandEmpty`
-- [ ] BUG-5 (Medium): Der Freitext-Fallback aus der `CommandEmpty`-Ansicht setzt `bezeichnung: "(Freitext)"` fest, aber es gibt keine serverseitige Validierung, die einen Freitext-Code **ablehnt** — ein Angreifer kann beliebige Codes über die API einschleusen. Die Spec verlangt bei Freitext-Diagnose eine Pflichtnotiz (`freitextNotiz`). Die API erzwingt diese Pflicht jedoch nicht — das Feld `freitextNotiz` ist `optional().default("")`. Im Frontend erscheint nur ein UI-Hinweis, aber keine Pflichtvalidierung.
+- [x] **FIXED (war BUG-5):** Serverseitige `superRefine`-Validierung in beiden API-Routen: wenn `icd10 = null` und `freitextDiagnose` gesetzt, wird `freitextNotiz` als Pflichtfeld erzwungen (422 Unprocessable Entity wenn leer). Gilt für POST und PATCH.
 
 #### EC-2: Physiotherapeut versucht über API eine Diagnose zu speichern → 403 + Log-Eintrag
 - [x] API blockt mit 403 und `console.warn`-Security-Log in `POST` und `PATCH`
 - [x] `GET` gibt ebenfalls 403 zurück — kein versehentliches Datenleck
 
 #### EC-3: Kein passender ICD-Code — Freitext-Diagnose mit Pflichtnotiz
-- [x] UI-Warnung bei Freitext-Diagnose sichtbar
-- [x] Notiz-Feld vorhanden und durch Placeholder angedeutet als wichtig
-- [ ] BUG-5 (wie oben): Keine serverseitige Pflichtvalidierung der `freitextNotiz` wenn `freitextDiagnose` gesetzt ist und `icd10 = null`
+- [x] UI-Warnung bei Freitext-Diagnose sichtbar ("Freitext-Diagnose — bitte Pflichtnotiz ergänzen.")
+- [x] Notiz-Feld vorhanden, Zod-`superRefine` im Client-Formular erzwingt Eingabe
+- [x] **FIXED (war BUG-5):** Serverseitige Pflichtvalidierung der `freitextNotiz` wenn `freitextDiagnose` gesetzt und `icd10 = null` — sowohl `BefundForm` als auch `BefundEditForm` haben identische Validierungslogik
 
 ---
 
 ### Security Audit Results
 
 - [x] **Authentication:** Alle API-Routen prüfen `supabase.auth.getUser()` → 401 ohne Session
-- [x] **Authorization (Rollentrennung):** Physiotherapeut erhält 403 auf GET/POST/PATCH. Middleware blockt Zugriff auf Frontend-Routen. RLS als dritte Sicherheitsschicht im DB-Layer.
+- [x] **Authorization (Rollentrennung):** Physiotherapeut erhält 403 auf GET/POST/PATCH. Middleware blockt Zugriff auf Frontend-Routen inkl. `/edit`. RLS als dritte Sicherheitsschicht im DB-Layer.
 - [x] **Authorization (Datenisolation Heilpraktiker):** RLS-SELECT-Policy stellt sicher, dass Heilpraktiker nur Diagnosen seiner eigenen Patienten sieht (`patients.therapeut_id = auth.uid()`)
 - [x] **Defense-in-Depth:** Drei unabhängige Schichten: Middleware → API-Rollencheck → RLS
 - [x] **Audit-Feld `created_by_role`:** DB-Constraint `CHECK (created_by_role = 'heilpraktiker')` verhindert, dass ein Admin versehentlich einen anderen Wert setzt. API setzt immer `"heilpraktiker"` hardcoded.
 - [x] **Immutability:** `status = 'abgeschlossen'` ist auf API-Ebene (409) und RLS-Ebene gleichzeitig blockiert für Updates. RLS-DELETE-Policy gibt `USING (false)` → kein physisches Löschen möglich.
-- [x] **Input Validation:** Zod-Schemas auf allen API-Routen (POST + PATCH). UUID-Format-Validierung für URL-Parameter.
+- [x] **Input Validation:** Zod-Schemas auf allen API-Routen (POST + PATCH) inkl. `superRefine` für Freitext-Pflichtnotiz. UUID-Format-Validierung für URL-Parameter.
 - [x] **XSS:** React rendert alle Felder als Text (kein `dangerouslySetInnerHTML`). `whitespace-pre-wrap` in `ReadonlyField` — keine HTML-Injection möglich.
 - [x] **IDOR (Insecure Direct Object Reference):** API prüft `patient_id` aus URL gegen DB; RLS stellt sicher, dass nur eigene Patienten zugänglich sind. Befund-Lookup kombiniert `.eq("patient_id", patientId)` mit `.eq("id", befundId)` — cross-patient access auf Befunde ist blockiert.
-- [ ] **BUG-6 (Medium):** Die `PATCH`-Route erlaubt es einem Admin, den `created_by_role`-Wert **nicht** zu überschreiben (nicht im patchSchema vorhanden) — das ist korrekt. Jedoch hat die RLS-UPDATE-`WITH CHECK`-Klausel `created_by_role = 'heilpraktiker'` — ein Admin, der aus Versehen einen anderen Wert setzt (nicht über UI möglich), würde vom DB-Layer gestoppt. Dies ist kein aktives Sicherheitsproblem, da die API den Wert nicht akzeptiert.
-- [ ] **BUG-7 (Medium):** Die ICD-10-GM JSON-Datei liegt in `public/data/icd10-gm.json` und ist damit öffentlich über das Netz abrufbar (`/data/icd10-gm.json`). Dies enthält **keine** Patientendaten, ist also kein DSGVO-Problem. Die Codes sind frei verfügbar. Kein Sicherheitsproblem, aber erwähnenswert für das Tech-Design.
+- [x] **`created_by_role` Immutability:** `patchSchema` enthält `created_by_role` nicht — kein Überschreiben über API möglich. Zusätzlich DB-Level-Absicherung via RLS `WITH CHECK (created_by_role = 'heilpraktiker')`.
+- [x] **Public ICD-10-GM JSON:** `public/data/icd10-gm.json` ist öffentlich abrufbar. Enthält keine Patientendaten (DSGVO-konform). Codes sind öffentlich verfügbare medizinische Klassifikationsdaten. Kein Sicherheitsproblem.
 - [x] **Rate Limiting:** Kein explizites Rate Limiting auf den Diagnose-Routen — identisch zum restlichen System (PROJ-1, PROJ-2, PROJ-3 haben das gleiche Niveau). Kein Rückschritt gegenüber existierenden Features.
 - [x] **No secrets in responses:** API-Antworten enthalten keine internen IDs oder Tokens jenseits der normalen Datenbankfelder.
 
@@ -222,13 +223,13 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 
 ### Bugs Found
 
-#### BUG-1: ICD-10-GM Katalog deutlich kleiner als spezifiziert
+#### BUG-1: ICD-10-GM Katalog kleiner als spezifiziert (teilweise verbessert)
 - **Severity:** Medium
 - **Steps to Reproduce:**
   1. Öffne Befundformular als Heilpraktiker
-  2. Suche in der Hauptdiagnose-Combobox nach einem neurologischen ICD-Code (z.B. "G43" für Migräne oder "G54" für Nervenwurzelkompression)
-  3. Expected: Treffer gefunden — Spec verspricht G-Kapitel (Neurologie) und ~1.200 Codes
-  4. Actual: Kein Treffer. Die JSON-Datei enthält nur 194 Codes aus M- und S-Kapiteln (Bewegungsapparat + Verletzungen) plus einige Z-Codes. G-Kapitel fehlt komplett.
+  2. Suche nach seltenen neurologischen oder kardiovaskulären Codes (z.B. "G20" Parkinson, "I63" Hirninfarkt, "F32" depressive Episode)
+  3. Expected: Breite Abdeckung — Spec verspricht ~1.200 häufigste Codes
+  4. Actual: 282 Codes vorhanden (verbessert von 194). G-Kapitel (40 Codes), F-Kapitel (10 Codes), I-Kapitel (6 Codes) ergänzt. Dennoch nur ~24% des spezifizierten Umfangs erreicht. Seltene Codes aus A-, B-, C-, D-, H-, L-, O-, P-, Q-Kapiteln fehlen komplett.
 - **Priority:** Fix before deployment
 
 #### BUG-2: Spec nennt `/os/diagnose/*` als zu blockierende Route, die nicht existiert
@@ -239,35 +240,6 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
   3. Expected: `/os/diagnose/*` wird auch blockiert
   4. Actual: Die Route `/os/diagnose/*` existiert in der App nicht. Die Implementierung nutzt korrekt `/os/patients/[id]/befund/*`. Kein Sicherheitsrisiko, nur Spec-Diskrepanz.
 - **Priority:** Fix in next sprint (Spec aktualisieren oder Route ergänzen, je nach Intention)
-
-#### BUG-3: Edit-Seite für Befund-Entwurf fehlt
-- **Severity:** High
-- **Steps to Reproduce:**
-  1. Erstelle einen Befundbericht als Entwurf (Status: "Entwurf")
-  2. Öffne den Befundbericht in der Detailansicht `/os/patients/[id]/befund/[befundId]`
-  3. Klicke den "Bearbeiten"-Button
-  4. Expected: Formular zum Bearbeiten des Entwurfs öffnet sich
-  5. Actual: 404-Fehler — die Route `/os/patients/[id]/befund/[befundId]/edit` existiert nicht. Weder die Page-Datei noch das Edit-Formular ist implementiert.
-- **Priority:** Fix before deployment
-
-#### BUG-4: PDF-Export ohne professionelle Print-Styles
-- **Severity:** Low
-- **Steps to Reproduce:**
-  1. Öffne einen abgeschlossenen Befundbericht
-  2. Klicke "Als PDF exportieren"
-  3. Expected: Professioneller PDF-Druck mit sauberem Layout, Kopfzeile, Seitenumbrüchen
-  4. Actual: Browser-Druck-Dialog mit dem normalen Webseiten-Layout. `print:hidden` ist gesetzt für UI-Elemente, aber kein spezifisches Print-CSS für Typografie, Seitenränder oder Kopf-/Fußzeilen.
-- **Priority:** Fix in next sprint
-
-#### BUG-5: Freitext-Diagnose ohne serverseitige Pflichtnotiz-Validierung
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Öffne Befundformular
-  2. Wähle keine ICD-10-Diagnose (lasse Feld leer), tippe nichts in Freitext-Diagnose
-  3. Alternativ: Sende direkt via API POST mit `{ icd10: null, sicherheitsgrad: "gesichert", freitextDiagnose: "Eigenerfundene Diagnose", freitextNotiz: "" }`
-  4. Expected: Server lehnt ab wenn `icd10 = null`, `freitextDiagnose` gesetzt aber `freitextNotiz` leer
-  5. Actual: Server akzeptiert — `freitextNotiz` ist `optional().default("")`. Die Pflichtnotiz-Anforderung ist nur als UI-Hinweis kommuniziert, nicht erzwungen.
-- **Priority:** Fix before deployment
 
 ---
 
@@ -291,12 +263,12 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 ---
 
 ### Summary
-- **Acceptance Criteria:** 6/8 vollständig bestanden (AC-1 mit Einschränkung, AC-7 und AC-8 mit Bugs)
-- **Bugs Found:** 5 total (0 critical, 1 high, 2 medium, 2 low)
-- **Security:** Gut — Defense-in-Depth korrekt implementiert (Middleware + API + RLS). Keine kritischen Sicherheitslücken.
+- **Acceptance Criteria:** 7/8 vollständig bestanden (AC-1 mit Einschränkung durch BUG-1)
+- **Bugs Found:** 2 total (0 critical, 0 high, 1 medium, 1 low) — BUG-3, BUG-4, BUG-5 wurden vom Entwickler behoben
+- **Security:** Gut — Defense-in-Depth korrekt implementiert (Middleware + API + RLS). Keine kritischen oder hohen Sicherheitslücken.
 - **Build:** Passing — keine TypeScript-Fehler, keine Build-Warnungen
-- **Production Ready:** NO — BUG-3 (fehlende Edit-Seite) und BUG-5 (fehlende Pflichtnotiz-Validierung) müssen vor Deployment behoben werden.
-- **Recommendation:** Fix BUG-3 und BUG-5 zuerst, dann BUG-1 (ICD-Katalog erweitern). BUG-2 und BUG-4 können im nächsten Sprint folgen.
+- **Production Ready:** NO — BUG-1 (ICD-10-Katalog nur 282/1.200 Codes) muss vor Deployment auf ausreichende Abdeckung erweitert werden.
+- **Recommendation:** ICD-10-GM JSON auf ~1.200 häufigste Codes erweitern. BUG-2 kann in nächstem Sprint per Spec-Update (Wording anpassen) behoben werden.
 
 ## Deployment
 _To be added by /deploy_
