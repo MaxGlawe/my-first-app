@@ -354,4 +354,13 @@ Alle UI-Komponenten (`ScrollArea`, `Avatar`, `Textarea`, `Badge`, `Skeleton`) be
 - BUG-7 ✅ `isLoadingOlderRef` verhindert Auto-Scroll beim Laden älterer Nachrichten
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Production URL:** https://my-first-app-git-main-maxglawes-projects.vercel.app
+**Commit:** d3f6987
+
+### Manuelle Supabase-Schritte (einmalig)
+1. SQL-Editor: `20260218000014_chat_messages.sql` ausführen (chat_messages Tabelle + RLS + Indexes)
+2. SQL-Editor: `20260218000015_chat_messages_immutable.sql` ausführen (Immutability-Trigger)
+3. SQL-Editor: `ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;` ausführen (Realtime aktivieren)
+4. Storage → **New bucket** → Name: `chat-media`, Public: **AUS** (privat)

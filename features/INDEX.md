@@ -23,7 +23,7 @@
 | PROJ-9 | Trainingsplan-Builder (Drag & Drop) | Deployed | [Spec](PROJ-9-trainingsplan-builder.md) | 2026-02-17 |
 | PROJ-10 | Hausaufgaben-Zuweisung | Deployed | [Spec](PROJ-10-hausaufgaben-zuweisung.md) | 2026-02-17 |
 | PROJ-11 | Patienten-App: Dashboard & Trainingspläne | Deployed | [Spec](PROJ-11-patienten-app-dashboard.md) | 2026-02-17 |
-| PROJ-12 | Patienten-App: Chat (Therapeut ↔ Patient) | In Review | [Spec](PROJ-12-chat-therapeut-patient.md) | 2026-02-17 |
+| PROJ-12 | Patienten-App: Chat (Therapeut ↔ Patient) | Deployed | [Spec](PROJ-12-chat-therapeut-patient.md) | 2026-02-17 |
 | PROJ-13 | Kurs-System (Skalierbares Gruppen-Angebot) | Planned | [Spec](PROJ-13-kurs-system.md) | 2026-02-17 |
 | PROJ-14 | PWA-Setup & Push-Notifications | Planned | [Spec](PROJ-14-pwa-push-notifications.md) | 2026-02-17 |
 
