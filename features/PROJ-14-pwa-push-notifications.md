@@ -352,4 +352,16 @@ SW übernimmt automatisch via next-pwa:
 | BUG-4 | High | **Fixed** `0475477` | Added `GET /api/me/push/preferences`; hook fetches DB preferences on mount |
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Commit:** `107222a`
+**DB Migration:** `20260218000016_push_subscriptions.sql` — applied in Supabase
+
+### Setup Required After Deploy
+- [ ] Vercel: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `CRON_SECRET` Env-Vars setzen + Redeploy
+- [ ] Supabase: `CREATE EXTENSION IF NOT EXISTS pg_net;`
+- [ ] Supabase: pg_cron Job für `/api/cron/training-reminder` einrichten (stündlich)
+
+### Pending (Next Sprint)
+- BUG-1: Manifest icon `purpose` aufteilen (any / maskable getrennt)
+- BUG-2: iOS Install-Prompt nur in Safari anzeigen (navigator.vendor Check)

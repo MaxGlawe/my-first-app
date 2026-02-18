@@ -25,7 +25,7 @@
 | PROJ-11 | Patienten-App: Dashboard & Trainingspläne | Deployed | [Spec](PROJ-11-patienten-app-dashboard.md) | 2026-02-17 |
 | PROJ-12 | Patienten-App: Chat (Therapeut ↔ Patient) | Deployed | [Spec](PROJ-12-chat-therapeut-patient.md) | 2026-02-17 |
 | PROJ-13 | Kurs-System (Skalierbares Gruppen-Angebot) | Planned | [Spec](PROJ-13-kurs-system.md) | 2026-02-17 |
-| PROJ-14 | PWA-Setup & Push-Notifications | In Review | [Spec](PROJ-14-pwa-push-notifications.md) | 2026-02-17 |
+| PROJ-14 | PWA-Setup & Push-Notifications | Deployed | [Spec](PROJ-14-pwa-push-notifications.md) | 2026-02-17 |
 
 <!-- Add features above this line -->
 
