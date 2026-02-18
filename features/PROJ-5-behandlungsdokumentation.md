@@ -280,4 +280,21 @@ US (Ultraschall), TENS, Wärme, Kälte, Elektrotherapie, Atemtherapie, Freitext
 - **Recommendation:** Fix BUG-1, BUG-2, BUG-4 before deployment; BUG-3 and BUG-5 can be fixed in next sprint
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Production URL:** https://my-first-app-sigma-teal.vercel.app
+**Git Tag:** v1.5.0-PROJ-5
+
+### Pre-Deployment Checklist
+- [x] `npm run build` passed (0 TypeScript errors)
+- [x] All 5 QA bugs fixed (BUG-1, BUG-2, BUG-3, BUG-4, BUG-5)
+- [x] Supabase migration applied: `20260218000005_treatment_sessions.sql`
+- [x] RLS UPDATE policy patched (Admin bypass after 24h)
+- [x] Code committed and pushed to GitHub (main branch)
+- [x] Vercel auto-deployed via GitHub integration
+
+### Database Migration Applied
+- Table `treatment_sessions` created with RLS
+- `locked_at` computed via BEFORE INSERT trigger (`created_at + 24h`)
+- 5 performance indexes created
+- RLS: SELECT / INSERT / UPDATE / DELETE policies active

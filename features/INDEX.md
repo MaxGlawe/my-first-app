@@ -16,7 +16,7 @@
 | PROJ-2 | Patientenstammdaten | Deployed | [Spec](PROJ-2-patientenstammdaten.md) | 2026-02-17 |
 | PROJ-3 | Anamnese & Untersuchungsdokumentation | Deployed | [Spec](PROJ-3-anamnese-untersuchung.md) | 2026-02-17 |
 | PROJ-4 | Befund & Diagnose (Heilpraktiker) | Deployed | [Spec](PROJ-4-befund-diagnose-heilpraktiker.md) | 2026-02-18 |
-| PROJ-5 | Behandlungsdokumentation | In Review | [Spec](PROJ-5-behandlungsdokumentation.md) | 2026-02-17 |
+| PROJ-5 | Behandlungsdokumentation | Deployed | [Spec](PROJ-5-behandlungsdokumentation.md) | 2026-02-17 |
 | PROJ-6 | KI-Arztbericht-Generator | Planned | [Spec](PROJ-6-ki-arztbericht-generator.md) | 2026-02-17 |
 | PROJ-7 | Buchungstool-Integration | Planned | [Spec](PROJ-7-buchungstool-integration.md) | 2026-02-17 |
 | PROJ-8 | Übungsdatenbank-Verwaltung | Planned | [Spec](PROJ-8-uebungsdatenbank.md) | 2026-02-17 |
