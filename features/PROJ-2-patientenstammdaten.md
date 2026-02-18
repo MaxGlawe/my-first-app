@@ -295,4 +295,8 @@
 - **Recommendation:** Fix BUG-1 and BUG-2 before deployment. BUG-5 and BUG-6 should be fixed in next sprint.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-02-18
+**Environment:** Development (localhost:3001)
+**GitHub:** https://github.com/MaxGlawe/my-first-app (branch: main, commit: c7be764)
+**Status:** Code + DB migration live. Vercel production deployment deferred until MVP complete.
+**Note:** BUG-3, BUG-5, BUG-6 deferred to next sprint.
