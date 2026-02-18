@@ -1,6 +1,6 @@
 # PROJ-10: Hausaufgaben-Zuweisung
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-02-17
 **Last Updated:** 2026-02-18
 
@@ -317,4 +317,22 @@ All 6 bugs fixed 2026-02-18:
 | BUG-6 | Auto-expire in GET `/api/patients/[id]/assignments` changed from `await` to `void` (fire-and-forget). GET is now effectively read-only from caller's perspective. | `patients/[id]/assignments/route.ts` |
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Git Tag:** v1.10.0-PROJ-10
+
+### Migrations Applied
+Run in Supabase SQL Editor before going live:
+- `supabase/migrations/20260218000012_hausaufgaben_zuweisung.sql`
+  - Creates `patient_assignments` table with RLS policies and indexes
+  - Creates `assignment_completions` table with RLS policies and indexes
+
+### New Routes
+- `/os/hausaufgaben` — Therapeuten Compliance-Dashboard
+- `/os/patients/[id]?tab=hausaufgaben` — Hausaufgaben Tab im Patientenprofil
+
+### API Routes
+- `GET/POST /api/patients/[id]/assignments`
+- `GET/PUT/DELETE /api/patients/[id]/assignments/[aId]`
+- `GET /api/hausaufgaben/dashboard`
+- `POST/GET /api/assignments/[id]/completions`

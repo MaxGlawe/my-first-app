@@ -99,6 +99,20 @@ export default function TherapistDashboardPage() {
             </Button>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Hausaufgaben-Compliance</CardTitle>
+            <CardDescription>Compliance-Übersicht aller Patienten</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/os/hausaufgaben">
+              <Button className="w-full">
+                Zum Compliance-Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
