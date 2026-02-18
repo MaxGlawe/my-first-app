@@ -1,6 +1,7 @@
 "use client"
 
 import { use } from "react"
+import { useSearchParams } from "next/navigation"
 import { usePatient } from "@/hooks/use-patients"
 import { useUserRole } from "@/hooks/use-user-role"
 import { PatientDetailHeader } from "@/components/patients/PatientDetailHeader"
@@ -8,6 +9,7 @@ import { StammdatenTab } from "@/components/patients/StammdatenTab"
 import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
 import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { BefundTab } from "@/components/diagnose/BefundTab"
+import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -42,6 +44,7 @@ function PatientDetailSkeleton() {
 
 export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = use(params)
+  const searchParams = useSearchParams()
   const { patient, isLoading: patientLoading, error, refresh } = usePatient(id)
   const { isLoading: roleLoading, isHeilpraktiker, isAdmin } = useUserRole()
 
@@ -68,11 +71,12 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
     <div className="container mx-auto py-8 px-4 max-w-5xl">
       <PatientDetailHeader patient={patient} onRefresh={refresh} />
 
-      <Tabs defaultValue="stammdaten" className="mt-2">
+      <Tabs defaultValue={searchParams.get("tab") ?? "stammdaten"} className="mt-2">
         <TabsList className="mb-6">
           <TabsTrigger value="stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine">Termine</TabsTrigger>
           <TabsTrigger value="dokumentation">Dokumentation</TabsTrigger>
+          <TabsTrigger value="behandlungen">Behandlungen</TabsTrigger>
           {canSeeBefund && (
             <TabsTrigger value="befund">Befund & Diagnose</TabsTrigger>
           )}
@@ -93,6 +97,10 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
 
         <TabsContent value="dokumentation">
           <AnamnesisTab patientId={patient.id} />
+        </TabsContent>
+
+        <TabsContent value="behandlungen">
+          <BehandlungTab patientId={patient.id} />
         </TabsContent>
 
         {canSeeBefund && (
