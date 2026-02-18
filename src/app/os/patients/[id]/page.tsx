@@ -7,6 +7,7 @@ import { useUserRole } from "@/hooks/use-user-role"
 import { PatientDetailHeader } from "@/components/patients/PatientDetailHeader"
 import { StammdatenTab } from "@/components/patients/StammdatenTab"
 import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
+import { TermineTab } from "@/components/patients/TermineTab"
 import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { BefundTab } from "@/components/diagnose/BefundTab"
 import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
@@ -90,10 +91,10 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         </TabsContent>
 
         <TabsContent value="termine">
-          <PlaceholderTab
-            title="Terminhistorie"
-            description="Vergangene und zukünftige Termine des Patienten werden hier nach der Buchungstool-Integration angezeigt."
-            projId="PROJ-7 — Buchungstool-Integration"
+          <TermineTab
+            patientId={patient.id}
+            patientName={`${patient.vorname} ${patient.nachname}`}
+            bookingSystemId={patient.booking_system_id}
           />
         </TabsContent>
 

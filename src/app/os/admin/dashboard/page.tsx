@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 export const metadata = {
   title: "Admin Dashboard | Praxis OS",
@@ -42,6 +43,23 @@ export default function AdminDashboardPage() {
             <Button variant="outline" className="w-full" disabled>
               Kommt bald (PROJ-2)
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              Integrationen
+              <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
+                Aktiv
+              </Badge>
+            </CardTitle>
+            <CardDescription>Buchungstool verbinden und Webhook konfigurieren</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <a href="/os/admin/integrations">
+              <Button variant="outline" className="w-full">Integrationen verwalten</Button>
+            </a>
           </CardContent>
         </Card>
 
