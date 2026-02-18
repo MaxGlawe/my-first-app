@@ -62,13 +62,29 @@ export default function TherapistDashboardPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Übungsdatenbank</CardTitle>
+            <CardDescription>Übungen verwalten und durchsuchen</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/os/exercises">
+              <Button className="w-full">
+                Zur Übungsdatenbank
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Trainingspläne</CardTitle>
             <CardDescription>Trainingspläne erstellen und zuweisen</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full" disabled>
-              Kommt bald (PROJ-9)
-            </Button>
+            <Link href="/os/training-plans">
+              <Button className="w-full">
+                Zu den Trainingsplänen
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
