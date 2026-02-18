@@ -1,6 +1,6 @@
 # PROJ-14: PWA-Setup & Push-Notifications
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-02-17
 **Last Updated:** 2026-02-17
 
@@ -41,7 +41,119 @@
 ---
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+**Designed:** 2026-02-18
+
+---
+
+### Kern-Entscheidung: Service Worker
+
+Empfehlung: **`@ducanh2912/next-pwa`** — aktiv gepflegter Fork von next-pwa mit explizitem Next.js App Router Support. Generiert den Service Worker automatisch beim Build, braucht nur minimale Konfiguration in `next.config.ts`.
+
+---
+
+### Component Structure (Seitenstruktur)
+
+```
+/app/einstellungen  (neue Seite)
++-- EinstellungenPage
+    +-- InstallSection
+    |   +-- InstallPrompt  (Android: nativer Browser-Banner)
+    |   +-- iOsAnleitung   (Sheet mit Schritt-für-Schritt Guide)
+    |       "Safari → Teilen → Zum Home-Bildschirm"
+    +-- BenachrichtigungsSection
+        +-- PushPermissionButton  (Aktivieren / Deaktivieren)
+        +-- Switch: Training-Erinnerung  (an/aus)
+        |   +-- UhrzeitPicker  (z.B. 08:00)
+        +-- Switch: Chat-Benachrichtigungen  (an/aus)
+
+/app/dashboard  (bestehend — neue Einstellungen-Karte)
+
+PatientenNavigation  (bestehend — keine neuen Tabs)
+→ Einstellungen erreichbar via Dashboard-Karte
+```
+
+---
+
+### Datenmodell
+
+**Neue DB-Tabelle: `push_subscriptions`**
+
+Jede Zeile = ein Gerät eines Patienten (Multi-Gerät-Support):
+
+- `id` — Eindeutige ID
+- `patient_id` → FK zu patients
+- `subscription_json` → Browser-PushSubscription-Objekt als JSONB (Endpoint + Verschlüsselungs-Keys)
+- `device_type` → "ios" / "android" / "desktop"
+- `reminder_enabled` → Training-Erinnerung an/aus (Standard: true)
+- `reminder_time` → Uhrzeit als "HH:MM" (Standard: "08:00")
+- `chat_enabled` → Chat-Benachrichtigungen an/aus (Standard: true)
+- `created_at`, `updated_at`
+
+**Neue ENV-Variablen:**
+- `VAPID_PUBLIC_KEY` — öffentlich, wird an den Browser übergeben
+- `VAPID_PRIVATE_KEY` — geheim, nur server-seitig
+- `VAPID_SUBJECT` — z.B. `mailto:praxis@example.com`
+
+---
+
+### Neue API-Endpunkte
+
+| Route | Zweck |
+|---|---|
+| `POST /api/me/push/subscribe` | Patient speichert Browser-Subscription + Gerätetyp in DB |
+| `DELETE /api/me/push/unsubscribe` | Patient entfernt Subscription bei Permission-Entzug |
+| `PATCH /api/me/push/preferences` | Patient ändert reminder_enabled, reminder_time, chat_enabled |
+| `POST /api/push/send` | Interner Endpoint — sendet Push an Patient (von Chat-Route + Cron aufgerufen) |
+| `GET /api/cron/training-reminder` | Vercel Cron Endpoint — stündlich, sendet Training-Reminder |
+
+---
+
+### Push-Auslöser
+
+**Chat-Benachrichtigung (sofort):**
+`POST /api/patients/[id]/chat` ruft nach dem Speichern der Nachricht intern `sendPushToPatient()` auf — lädt alle aktiven Subscriptions des Patienten, sendet Push an jedes Gerät.
+
+**Training-Erinnerung (täglich, stündlich geprüft):**
+Vercel Cron Job (in `vercel.json` konfiguriert, läuft stündlich) → `/api/cron/training-reminder` prüft: Welche Patienten haben heute Training + deren `reminder_time` liegt in der letzten Stunde? → Push senden.
+
+---
+
+### Service Worker & Manifest
+
+```
+public/
++-- manifest.json       (Name, Icons, Theme Color, display: "standalone")
++-- icons/
+    +-- icon-192.png
+    +-- icon-512.png
+    +-- apple-touch-icon.png
+```
+
+SW übernimmt automatisch via next-pwa:
+- Precaching aller `/app/*`-Seiten + statischer Assets
+- Push-Event-Handler: zeigt Notification mit Titel, Body, Icon, Klick-URL
+
+---
+
+### Tech-Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| `@ducanh2912/next-pwa` | Einziger aktiv gepflegter next-pwa Fork mit App Router Support; keine manuelle SW-Konfiguration |
+| `web-push` | Standard-VAPID-Library; kein externer Push-Dienst (Firebase/OneSignal); volle Kontrolle, DSGVO-konform |
+| Vercel Cron (statt Supabase Edge Function) | Bereits im Stack; einfachere Logs; kein neues Supabase-Feature aktivieren |
+| JSONB für Subscription | Browser-PushSubscription ist verschachteltes Objekt — JSONB ideal, kein Schema-Mapping |
+| Per-Device-Subscription | Spec fordert Multi-Gerät; jede Browser-Subscription ist geräteeinzigartig |
+| iOS-Anleitung (manuell) | iOS unterstützt keinen Auto-Banner; "Teilen → Zum Home-Bildschirm"-Guide ist der einzige Weg |
+
+### Neue Packages
+
+| Package | Zweck |
+|---|---|
+| `@ducanh2912/next-pwa` | Service Worker + PWA-Manifest für Next.js App Router |
+| `web-push` | Server-seitiges VAPID-Push-Senden |
+| `@types/web-push` | TypeScript-Types |
 
 ## QA Test Results
 _To be added by /qa_
