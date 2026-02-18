@@ -1,6 +1,6 @@
 # PROJ-11: Patienten-App — Dashboard & Trainingspläne
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-02-17
 **Last Updated:** 2026-02-18
 
