@@ -1,6 +1,6 @@
 # PROJ-4: Befund & Diagnose (Heilpraktiker)
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-02-17
 **Last Updated:** 2026-02-18
 
@@ -271,4 +271,12 @@ Route `/os/patients/[id]/befund` wird in `supabase-middleware.ts` zur bestehende
 - **Recommendation:** ICD-10-GM JSON auf ~1.200 häufigste Codes erweitern. BUG-2 kann in nächstem Sprint per Spec-Update (Wording anpassen) behoben werden.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-02-18
+**Commit:** 6923d27
+**Repository:** https://github.com/MaxGlawe/my-first-app
+
+### Deployment Notes
+- Code pushed to GitHub main branch (2026-02-18)
+- Vercel deployment deferred until MVP complete (alle PROJ-X Features fertig)
+- SQL Migration `20260218000004_diagnoses.sql` manuell in Supabase SQL Editor eingespielt
+- ICD-10-GM Katalog (282 Codes) in `public/data/icd10-gm.json` — BUG-1 (Katalogerweiterung auf ~1.200 Codes) für späteren Sprint geplant
