@@ -2,10 +2,12 @@
 
 import { use } from "react"
 import { usePatient } from "@/hooks/use-patients"
+import { useUserRole } from "@/hooks/use-user-role"
 import { PatientDetailHeader } from "@/components/patients/PatientDetailHeader"
 import { StammdatenTab } from "@/components/patients/StammdatenTab"
 import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
 import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
+import { BefundTab } from "@/components/diagnose/BefundTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -40,7 +42,11 @@ function PatientDetailSkeleton() {
 
 export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = use(params)
-  const { patient, isLoading, error, refresh } = usePatient(id)
+  const { patient, isLoading: patientLoading, error, refresh } = usePatient(id)
+  const { isLoading: roleLoading, isHeilpraktiker, isAdmin } = useUserRole()
+
+  const isLoading = patientLoading || roleLoading
+  const canSeeBefund = isHeilpraktiker || isAdmin
 
   if (isLoading) {
     return <PatientDetailSkeleton />
@@ -67,6 +73,9 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           <TabsTrigger value="stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine">Termine</TabsTrigger>
           <TabsTrigger value="dokumentation">Dokumentation</TabsTrigger>
+          {canSeeBefund && (
+            <TabsTrigger value="befund">Befund & Diagnose</TabsTrigger>
+          )}
           <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
         </TabsList>
 
@@ -85,6 +94,12 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         <TabsContent value="dokumentation">
           <AnamnesisTab patientId={patient.id} />
         </TabsContent>
+
+        {canSeeBefund && (
+          <TabsContent value="befund">
+            <BefundTab patientId={patient.id} />
+          </TabsContent>
+        )}
 
         <TabsContent value="trainingsplaene">
           <PlaceholderTab

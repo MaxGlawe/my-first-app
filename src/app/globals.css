@@ -83,3 +83,96 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Print Styles (Befund PDF Export) ────────────────────────────────────── */
+@media print {
+  /* Hide navigation, sidebars, and interactive elements */
+  nav,
+  aside,
+  header,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Page layout */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+
+  body {
+    background: white;
+    color: black;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  /* Make the content fill the page */
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Print header with practice info */
+  .print-header {
+    display: block;
+    border-bottom: 2px solid black;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 9pt;
+    color: #444;
+  }
+
+  /* Avoid page breaks inside diagnosis blocks */
+  .space-y-4,
+  .space-y-8,
+  [class*="rounded"],
+  [class*="border"] {
+    page-break-inside: avoid;
+  }
+
+  /* Section headings get a page break hint */
+  h2,
+  h3 {
+    page-break-after: avoid;
+  }
+
+  /* Remove colored backgrounds — print in black/white */
+  [class*="bg-purple"],
+  [class*="bg-amber"],
+  [class*="bg-green"],
+  [class*="bg-muted"],
+  [class*="bg-slate"] {
+    background: white !important;
+  }
+
+  /* Ensure borders show in print */
+  [class*="border"] {
+    border-color: #ccc !important;
+  }
+
+  /* Badge text visible in B&W */
+  [class*="Badge"],
+  .badge {
+    border: 1px solid #666 !important;
+    color: black !important;
+    background: white !important;
+    font-weight: 600;
+  }
+
+  /* Monospace ICD codes */
+  .font-mono {
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+  }
+
+  /* Footer on every page */
+  @page {
+    @bottom-center {
+      content: "Praxis OS — Vertrauliches Dokument — Seite " counter(page) " von " counter(pages);
+      font-size: 8pt;
+      color: #666;
+    }
+  }
+}

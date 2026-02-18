@@ -73,8 +73,14 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Physiotherapeuten cannot access Heilpraktiker routes (/os/befund/*)
-    if (role === 'physiotherapeut' && pathname.startsWith('/os/befund')) {
+    // Physiotherapeuten cannot access Heilpraktiker routes:
+    //   - /os/befund/* (top-level legacy route guard)
+    //   - /os/patients/[id]/befund/* (PROJ-4: Befund & Diagnose)
+    if (
+      role === 'physiotherapeut' &&
+      (pathname.startsWith('/os/befund') ||
+        /^\/os\/patients\/[^/]+\/befund(\/|$)/.test(pathname))
+    ) {
       url.pathname = '/403'
       return NextResponse.redirect(url)
     }
