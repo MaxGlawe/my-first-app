@@ -243,7 +243,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
 
 ### Bugs Found
 
-#### BUG-1: FormData Feldnamen-Mismatch Frontend/Backend (Upload komplett defekt)
+#### BUG-1: FormData Feldnamen-Mismatch Frontend/Backend (Upload komplett defekt) — **FIXED**
 - **Severity:** Critical
 - **Steps to Reproduce:**
   1. Gehe zu /os/exercises
@@ -256,7 +256,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
   - `src/app/api/exercises/upload/route.ts` Line 65-66 (liest snake_case)
 - **Priority:** Fix before deployment
 
-#### BUG-2: Upload-Antwort-Feldname falsch ausgelesen
+#### BUG-2: Upload-Antwort-Feldname falsch ausgelesen — **FIXED**
 - **Severity:** Critical
 - **Steps to Reproduce:**
   1. Selbst wenn BUG-1 behoben wäre, liest Frontend `json.url` aus der Upload-Antwort
@@ -267,7 +267,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
   - `src/components/exercises/MediaUploadField.tsx` Line 87 (`resolve(json.url)` muss `resolve(json.media_url)`)
 - **Priority:** Fix before deployment
 
-#### BUG-3: Media-Upload für neue Übungen nicht möglich (fehlende exercise_id)
+#### BUG-3: Media-Upload für neue Übungen nicht möglich (fehlende exercise_id) — **FIXED**
 - **Severity:** High
 - **Steps to Reproduce:**
   1. Gehe zu /os/exercises → "Neue Übung"
@@ -280,7 +280,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
   - `src/app/api/exercises/upload/route.ts` Lines 76-79 (UUID-Validierung)
 - **Priority:** Fix before deployment
 
-#### BUG-4: WebP-Bilder vom Frontend akzeptiert, vom Backend abgelehnt
+#### BUG-4: WebP-Bilder vom Frontend akzeptiert, vom Backend abgelehnt — **FIXED**
 - **Severity:** Medium
 - **Steps to Reproduce:**
   1. Versuche ein WebP-Bild hochzuladen
@@ -293,7 +293,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
 - **Fix Option:** WebP zu `ALLOWED_IMAGE_TYPES` hinzufügen: `"image/webp": "webp"` ODER Frontend-Accept entfernen
 - **Priority:** Fix before deployment
 
-#### BUG-5: Favoriten-Filter zeigt Übungen aller User (Datenschutz-Problem)
+#### BUG-5: Favoriten-Filter zeigt Übungen aller User (Datenschutz-Problem) — **FIXED**
 - **Severity:** High
 - **Steps to Reproduce:**
   1. User A und User B favorisieren je eine Übung
@@ -306,7 +306,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
 - **Fix:** Supabase-Join mit User-Filterbedingung verwenden: `exercise_favorites!inner(user_id).eq("exercise_favorites.user_id", user.id)` oder Subquery
 - **Priority:** Fix before deployment
 
-#### BUG-6: Kein Broken-Link-Indikator für defekte Video-URLs
+#### BUG-6: Kein Broken-Link-Indikator für defekte Video-URLs — **FIXED**
 - **Severity:** Medium
 - **Steps to Reproduce:**
   1. Eine Übung hat eine media_url die nicht mehr erreichbar ist
@@ -317,7 +317,7 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
   - `src/components/exercises/UebungsDetailSheet.tsx` Lines 128-135
 - **Priority:** Fix in next sprint (Spec-Anforderung, aber nicht blockierend)
 
-#### BUG-7: Name-Feld maxLength Inkonsistenz (120 UI vs 200 API)
+#### BUG-7: Name-Feld maxLength Inkonsistenz (120 UI vs 200 API) — **FIXED**
 - **Severity:** Low
 - **Steps to Reproduce:**
   1. Versuche einen Namen mit 121-200 Zeichen einzugeben
@@ -330,11 +330,10 @@ Keine — alle UI-Komponenten (Command, Dialog, Sheet, Badge, Progress) sind ber
 ---
 
 ### Summary
-- **Acceptance Criteria:** 6/8 vollständig bestanden, 2 mit kritischen Bugs (AC-2 Upload, AC-4 Favoriten-Filter)
-- **Bugs Found:** 7 total (2 Critical, 2 High, 2 Medium, 1 Low)
+- **Acceptance Criteria:** 8/8 bestanden (nach Bug-Fixes)
+- **Bugs Found:** 7 total — alle FIXED (2 Critical, 2 High, 2 Medium, 1 Low)
 - **Security:** Grundsätzlich solide (Auth, RLS, Zod-Validation, UUID-Checks) — ein Medium-Issue (orphan blobs) ohne Daten-Kompromittierungsrisiko
-- **Production Ready:** NO
-- **Recommendation:** Fix BUG-1 bis BUG-5 vor Deployment. BUG-6 und BUG-7 können im nächsten Sprint behoben werden.
+- **Production Ready:** YES (nach Build-Verifikation)
 
 ## Deployment
 _To be added by /deploy_
