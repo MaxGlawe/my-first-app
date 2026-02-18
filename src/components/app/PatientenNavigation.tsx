@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Dumbbell, ClipboardList, TrendingUp } from "lucide-react"
+import { Home, Dumbbell, ClipboardList, TrendingUp, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const NAV_ITEMS = [
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/app/training", label: "Training", icon: Dumbbell },
   { href: "/app/plans", label: "Pläne", icon: ClipboardList },
   { href: "/app/progress", label: "Fortschritt", icon: TrendingUp },
+  { href: "/app/chat", label: "Nachrichten", icon: MessageCircle },
 ]
 
 export function PatientenNavigation() {

@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { MessageCircle } from "lucide-react"
 
 export const metadata = {
   title: "Dashboard | Praxis OS",
@@ -109,6 +110,23 @@ export default function TherapistDashboardPage() {
             <Link href="/os/hausaufgaben">
               <Button className="w-full">
                 Zum Compliance-Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-emerald-600" />
+              Nachrichten
+            </CardTitle>
+            <CardDescription>Patientengespräche und Posteingang</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/os/chat">
+              <Button className="w-full">
+                Zum Posteingang
               </Button>
             </Link>
           </CardContent>

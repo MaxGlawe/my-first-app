@@ -13,6 +13,7 @@ import { BefundTab } from "@/components/diagnose/BefundTab"
 import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
 import { BerichteTab } from "@/components/arztbericht/BerichteTab"
 import { HausaufgabenTab } from "@/components/hausaufgaben/HausaufgabenTab"
+import { ChatTab } from "@/components/chat/ChatTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -86,6 +87,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           <TabsTrigger value="berichte">Berichte</TabsTrigger>
           <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
           <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
+          <TabsTrigger value="chat">Chat</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stammdaten">
@@ -128,6 +130,10 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
 
         <TabsContent value="hausaufgaben">
           <HausaufgabenTab patientId={patient.id} />
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <ChatTab patientId={patient.id} isArchived={!!patient.archived_at} />
         </TabsContent>
       </Tabs>
     </div>
