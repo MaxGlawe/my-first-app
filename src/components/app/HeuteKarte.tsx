@@ -8,6 +8,8 @@ import type { PatientAppAssignment } from "@/hooks/use-patient-app"
 
 interface HeuteKarteProps {
   todayAssignments: PatientAppAssignment[]
+  // BUG-3 FIX: full list needed to find next_training_day when no training today
+  allAssignments?: PatientAppAssignment[]
 }
 
 function formatDate(dateStr: string): string {
@@ -56,7 +58,7 @@ function estimateDurationMinutes(assignment: PatientAppAssignment): number {
   return Math.max(5, Math.round(totalSeconds / 60))
 }
 
-export function HeuteKarte({ todayAssignments }: HeuteKarteProps) {
+export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarteProps) {
   const today = new Date().toLocaleDateString("de-DE", {
     weekday: "long",
     day: "numeric",
@@ -65,6 +67,12 @@ export function HeuteKarte({ todayAssignments }: HeuteKarteProps) {
 
   // No training today
   if (todayAssignments.length === 0) {
+    // BUG-3 FIX: find the soonest next training day across all active assignments
+    const nextDay = allAssignments
+      .map((a) => a.next_training_day)
+      .filter((d): d is string => !!d)
+      .sort()[0] ?? null
+
     return (
       <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
@@ -77,6 +85,14 @@ export function HeuteKarte({ todayAssignments }: HeuteKarteProps) {
           </div>
         </div>
         <p className="text-slate-500 text-sm">Heute kein Training geplant. Genieß die Erholung!</p>
+        {nextDay && (
+          <p className="text-xs text-slate-400 mt-2">
+            Nächstes Training:{" "}
+            <span className="font-semibold text-slate-500">
+              {formatDate(nextDay)}
+            </span>
+          </p>
+        )}
       </div>
     )
   }

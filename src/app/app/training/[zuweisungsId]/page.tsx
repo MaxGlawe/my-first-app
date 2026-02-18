@@ -68,13 +68,18 @@ interface SessionState {
   exerciseIndex: number
   completedSets: number[] // number of completed sets per exercise
   skipped: number[] // exercise indices that were skipped
+  // BUG-5 FIX: store the optional skip reason per exercise index
+  skipReasons: Record<number, string>
 }
 
 function loadSession(assignmentId: string): SessionState | null {
   try {
     const raw = localStorage.getItem(getSessionKey(assignmentId))
     if (!raw) return null
-    return JSON.parse(raw) as SessionState
+    const parsed = JSON.parse(raw) as SessionState
+    // BUG-5 FIX: handle sessions saved before skipReasons was added
+    if (!parsed.skipReasons) parsed.skipReasons = {}
+    return parsed
   } catch {
     return null
   }
@@ -159,28 +164,34 @@ function PauseTimer({
   const [remaining, setRemaining] = useState(seconds)
   const [running, setRunning] = useState(true)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  // BUG-4 FIX: keep onDone in a ref so the interval effect doesn't need it as a dependency.
+  // Without this, changing onDone would restart the interval on every render.
+  const onDoneRef = useRef(onDone)
+  useEffect(() => { onDoneRef.current = onDone }, [onDone])
 
   useEffect(() => {
-    if (running && remaining > 0) {
-      intervalRef.current = setInterval(() => {
-        setRemaining((r) => {
-          if (r <= 1) {
-            clearInterval(intervalRef.current!)
-            onDone()
-            return 0
-          }
-          return r - 1
-        })
-      }, 1000)
-    }
+    // BUG-4 FIX: only depend on `running`, NOT on `remaining`.
+    // Previously `remaining` was in the dep array, which restarted the interval every second
+    // and could cause double-speed counting after pause/resume.
+    // The functional setRemaining(r => ...) gives us the latest value without a dependency.
+    if (!running) return
+    intervalRef.current = setInterval(() => {
+      setRemaining((r) => {
+        if (r <= 1) {
+          clearInterval(intervalRef.current!)
+          onDoneRef.current()
+          return 0
+        }
+        return r - 1
+      })
+    }, 1000)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [running, remaining, onDone])
+  }, [running])
 
   const toggle = () => {
     setRunning((r) => !r)
-    if (intervalRef.current) clearInterval(intervalRef.current)
   }
 
   const pct = Math.round(((seconds - remaining) / seconds) * 100)
@@ -224,18 +235,27 @@ function MediaAnzeige({
   url,
   type,
   name,
+  beschreibung,
 }: {
   url: string | null
   type: "image" | "video" | null
   name: string
+  // BUG-6 FIX: show text description as fallback when media is unavailable
+  beschreibung: string | null
 }) {
   const [imgError, setImgError] = useState(false)
 
   if (!url || imgError) {
     return (
-      <div className="w-full h-48 rounded-2xl bg-slate-100 flex flex-col items-center justify-center text-slate-300">
-        <ImageOff className="h-10 w-10 mb-2" />
-        <p className="text-xs">Kein Bild verfügbar</p>
+      <div className="w-full rounded-2xl bg-slate-50 border border-slate-200 p-5">
+        {beschreibung ? (
+          <p className="text-sm text-slate-600 leading-relaxed">{beschreibung}</p>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-32 text-slate-300">
+            <ImageOff className="h-10 w-10 mb-2" />
+            <p className="text-xs">Kein Bild verfügbar</p>
+          </div>
+        )}
       </div>
     )
   }
@@ -307,7 +327,7 @@ function SatzTracker({
           return (
             <div
               key={i}
-              className={`flex-1 h-10 rounded-xl flex items-center justify-center text-sm font-semibold transition-colors ${
+              className={`flex-1 h-12 rounded-xl flex items-center justify-center text-sm font-semibold transition-colors ${
                 done
                   ? "bg-emerald-500 text-white"
                   : "bg-slate-100 text-slate-400"
@@ -412,6 +432,7 @@ export default function TrainingSessionPage() {
         exerciseIndex: 0,
         completedSets: new Array(exercises.length).fill(0),
         skipped: [],
+        skipReasons: {},
       }
       setSession(initial)
       saveSession(assignmentId, initial)
@@ -455,15 +476,23 @@ export default function TrainingSessionPage() {
   }, [updateSession])
 
   const handleSkip = useCallback(() => {
+    // BUG-5 FIX: store the skip reason in session state (previously discarded)
+    const reason = skipReason.trim()
     setShowSkipDialog(false)
     setSkipReason("")
-    updateSession((s) => ({
-      ...s,
-      skipped: [...s.skipped, s.exerciseIndex],
-      exerciseIndex: s.exerciseIndex + 1,
-    }))
+    updateSession((s) => {
+      const newReasons = reason
+        ? { ...s.skipReasons, [s.exerciseIndex]: reason }
+        : s.skipReasons
+      return {
+        ...s,
+        skipped: [...s.skipped, s.exerciseIndex],
+        skipReasons: newReasons,
+        exerciseIndex: s.exerciseIndex + 1,
+      }
+    })
     setShowSteps(false)
-  }, [updateSession])
+  }, [updateSession, skipReason])
 
   const handleFinish = useCallback(async () => {
     if (!assignment) return
@@ -567,6 +596,7 @@ export default function TrainingSessionPage() {
             url={currentExercise.media_url}
             type={currentExercise.media_type}
             name={currentExercise.name}
+            beschreibung={currentExercise.beschreibung}
           />
 
           <div className="p-5 space-y-4">

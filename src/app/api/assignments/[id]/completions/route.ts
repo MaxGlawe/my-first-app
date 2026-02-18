@@ -136,7 +136,17 @@ export async function POST(
 
   const isAdmin = profile?.role === "admin"
   const isTherapist = assignment.therapist_id === user.id
-  const isPatient = assignment.patient_id === user.id // when Patient App auth is implemented (PROJ-11)
+
+  // BUG-1 FIX (PROJ-11): assignment.patient_id is the clinic UUID (patients.id), not the
+  // auth UUID (auth.users.id). These are different. We look up patients.user_id = auth.uid()
+  // to check if the logged-in user is the patient who owns this assignment.
+  const { data: patientRecord } = await supabase
+    .from("patients")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("id", patient_id)
+    .maybeSingle()
+  const isPatient = !!patientRecord
 
   if (!isAdmin && !isTherapist && !isPatient) {
     return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })

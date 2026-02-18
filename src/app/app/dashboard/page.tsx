@@ -65,7 +65,7 @@ export default function PatientDashboardPage() {
         <>
           {/* Today's training card */}
           {hasAnyAssignment ? (
-            <HeuteKarte todayAssignments={todayAssignments} />
+            <HeuteKarte todayAssignments={todayAssignments} allAssignments={assignments} />
           ) : (
             <NoAssignmentState />
           )}

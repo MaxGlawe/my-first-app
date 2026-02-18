@@ -94,10 +94,27 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Group by week (7 days)
-  const weeks: Date[][] = []
-  for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7))
+  // BUG-2 FIX: Pad the grid so the first cell always lands on Monday.
+  // JS getDay(): 0=Sun, 1=Mon, ..., 6=Sat → Monday-first offset:
+  const firstDay = days[0]
+  const dowFirst = firstDay.getDay()
+  const paddingBefore = dowFirst === 0 ? 6 : dowFirst - 1 // 0 if Mon, 6 if Sun
+
+  // Build padded cell array: null = empty padding cell, Date = real day
+  const gridCells: (Date | null)[] = [
+    ...Array<null>(paddingBefore).fill(null),
+    ...days,
+  ]
+  // Pad end to complete the last row (so grid always has full weeks)
+  const remainder = gridCells.length % 7
+  if (remainder !== 0) {
+    for (let i = 0; i < 7 - remainder; i++) gridCells.push(null)
+  }
+
+  // Group into weeks of 7
+  const weeks: (Date | null)[][] = []
+  for (let i = 0; i < gridCells.length; i += 7) {
+    weeks.push(gridCells.slice(i, i + 7))
   }
 
   const DOW_LABELS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
@@ -120,6 +137,10 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-1">
             {week.map((day, di) => {
+              if (!day) {
+                // Empty padding cell
+                return <div key={di} className="aspect-square" />
+              }
               const status = getDayStatus(day, assignments)
               const isToday = day.getTime() === today.getTime()
               const dayNum = day.getDate()
