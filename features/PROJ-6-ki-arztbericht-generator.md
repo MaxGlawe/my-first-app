@@ -425,4 +425,9 @@ PATCH /api/patients/[id]/reports/[reportId]  → Entwurf aktualisieren oder fina
 **Recommendation:** Fix BUG-2 und BUG-7 vor Deployment. BUG-6 (Admin-UX) ist Medium und sollte ebenfalls vor Go-Live adressiert werden. BUG-1, BUG-3, BUG-4, BUG-5, BUG-8 konnen im nachsten Sprint behoben werden.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-02-18
+**Production URL:** https://my-first-app-sigma-teal.vercel.app
+**Git Tag:** v1.6.0-PROJ-6
+
+**Status:** Deployed — alle 8 QA-Bugs behoben vor Deployment
+**Hinweis:** `ANTHROPIC_API_KEY` muss in Vercel Dashboard (Settings → Environment Variables) eingetragen werden, damit die KI-Generierung in Production funktioniert. Alle anderen Features (Tab anzeigen, Berichte laden, Editor, PDF) funktionieren ohne den Key.
