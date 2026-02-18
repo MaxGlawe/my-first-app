@@ -12,6 +12,7 @@ import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { BefundTab } from "@/components/diagnose/BefundTab"
 import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
 import { BerichteTab } from "@/components/arztbericht/BerichteTab"
+import { HausaufgabenTab } from "@/components/hausaufgaben/HausaufgabenTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -84,6 +85,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           )}
           <TabsTrigger value="berichte">Berichte</TabsTrigger>
           <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
+          <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stammdaten">
@@ -119,9 +121,13 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         <TabsContent value="trainingsplaene">
           <PlaceholderTab
             title="Trainingspläne"
-            description="Zugewiesene Trainingspläne und Hausaufgaben des Patienten werden hier nach Implementierung des Trainingsplan-Builders angezeigt."
-            projId="PROJ-9, PROJ-10"
+            description="Trainingspläne des Patienten — über den Hausaufgaben-Tab zuweisen."
+            projId="PROJ-9"
           />
+        </TabsContent>
+
+        <TabsContent value="hausaufgaben">
+          <HausaufgabenTab patientId={patient.id} />
         </TabsContent>
       </Tabs>
     </div>
