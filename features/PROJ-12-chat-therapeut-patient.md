@@ -152,7 +152,198 @@ Supabase Realtime Channels: Das `<ChatFenster>` abonniert den Kanal `chat:patien
 Alle UI-Komponenten (`ScrollArea`, `Avatar`, `Textarea`, `Badge`, `Skeleton`) bereits via shadcn/ui installiert. Supabase Realtime ist in `@supabase/supabase-js` enthalten. Kein neues Package nötig.
 
 ## QA Test Results
-_To be added by /qa_
+
+**Tested:** 2026-02-18
+**App URL:** http://localhost:3000
+**Tester:** QA Engineer (AI)
+
+### Acceptance Criteria Status
+
+#### AC-1: Chat-Interface (messages left/right, timestamp, read-status)
+- [x] Nachrichten des Senders erscheinen rechts (grün), Empfänger links (weiß)
+- [x] Zeitstempel an jeder Nachricht (Format HH:MM)
+- [x] Datums-Trennlinien zwischen Tagen (Heute / Gestern / DD.MM.YYYY)
+- [x] Einzel-Haken (✓) = Gesendet, Doppel-Haken (✓✓) = Gelesen — korrekt implementiert
+
+#### AC-2: Therapeuten-Posteingang (Liste aller Gespräche, Unread-Counter)
+- [x] `/os/chat`-Seite zeigt Liste aller zugewiesenen Patienten-Gespräche
+- [x] Letzte Nachricht + relativer Zeitstempel in der Karte
+- [x] Unread-Badge mit Anzahl ungelesener Nachrichten
+- [x] Link direkt zum Chat-Tab in der Patienten-Detailseite (`?tab=chat`)
+- [ ] BUG-4: Kein Echtzeit-Unread-Badge (Glocken-Icon) in der Therapeuten-Sidebar-Navigation — `ChatUnreadBadge`-Komponente ist implementiert, aber nicht in die OS-Sidebar eingebunden
+
+#### AC-3: Text-Nachrichten bis 2000 Zeichen
+- [x] Zeichenzähler erscheint ab 80 % (1600 Zeichen) — clientseitige Einschränkung
+- [x] Server-seitige Validierung via Zod (`max(2000)`)
+- [x] DB-Constraint `CHECK (char_length(content) <= 2000)` als dritte Sicherheitsstufe
+
+#### AC-4: Medien-Upload (JPG/PNG/HEIC, max 10 MB)
+- [x] Dateiauswahl auf JPG, PNG, HEIC/HEIF beschränkt
+- [x] Größenprüfung clientseitig (> 10 MB wird abgewiesen mit Fehlermeldung)
+- [x] Bildvorschau vor dem Senden
+- [x] Entfernen-Button für ausstehende Bilder
+- [ ] BUG-3: Bilder werden in einem öffentlichen Supabase-Storage-Bucket gespeichert und sind über direkte URL ohne Authentifizierung abrufbar (keine Signed URLs)
+
+#### AC-5: Echtzeit (Supabase Realtime)
+- [x] Supabase Realtime Channel `chat:patient:{patient_id}` abonniert
+- [x] INSERT-Events aktualisieren die Nachrichtenliste sofort
+- [x] UPDATE-Events (read_at) werden sofort übertragen (Gelesen-Haken)
+- [x] Doppelt-Einfüge-Schutz implementiert (Duplikat-Check per Message-ID)
+
+#### AC-6: Gelesen-Status
+- [x] `markRead()` wird beim Laden der Komponente und bei neuen Nachrichten aufgerufen
+- [ ] BUG-1: `markRead()` wird bei JEDEM `messages`-Array-Längen-Wechsel ausgelöst — auch wenn nur eigene Nachrichten via Realtime eintreffen. Dadurch werden eigene Nachrichten fälschlicherweise als "gelesen" markiert (da der PATCH-Filter `neq("sender_id", user.id)` das serverseitig abfängt, kein Datenverlust — aber unnötige API-Aufrufe bei jedem Realtime-Event)
+
+#### AC-7: Push-Notification (PROJ-14)
+- [x] Korrekt als Abhängigkeit von PROJ-14 dokumentiert und zurückgestellt — kein Fehler
+
+#### AC-8: Therapeut In-App-Benachrichtigung (Glocken-Icon)
+- [ ] BUG-4: `ChatUnreadBadge`-Komponente ist vollständig implementiert (`/components/chat/ChatPosteingang.tsx`, Zeile 184–192), aber wird in der OS-Sidebar-Navigation nicht verwendet. Der Unread-Counter fehlt im Navigations-Element
+
+#### AC-9: Chat nur zwischen Patient und zugewiesenem Therapeuten
+- [x] RLS-Policy `chat_select` beschränkt Zugriff korrekt via `patients.therapeut_id` und `patients.user_id`
+- [x] RLS-Policy `chat_insert` verhindert Schreiben in fremde Konversationen
+
+#### AC-10: DSGVO (verschlüsselte Speicherung, 2-Jahres-Aufbewahrung)
+- [x] Supabase at-rest AES-256 Verschlüsselung aktiviert (DSGVO-konform für MVP)
+- [x] `retain_until`-Spalte vorhanden und korrekt auf `created_at + 2 Jahre` gesetzt
+- [x] Index auf `retain_until` für zukünftigen pg_cron-Job vorhanden
+- [x] Admin-only DELETE-Policy für Moderationsfälle korrekt implementiert
+
+#### AC-11: Kein Chat mit nicht-zugewiesenen Patienten (RLS)
+- [x] RLS enforced auf DB-Ebene (doppelt abgesichert: API + RLS)
+- [ ] BUG-2: RLS UPDATE `WITH CHECK`-Klausel enthält eine Tautologie: `patient_id = patient_id AND sender_id = sender_id` — beide Bedingungen sind immer TRUE, da eine Spalte mit sich selbst verglichen wird. Dadurch werden alle Felder (einschließlich `content`, `media_url`) bei einem UPDATE nicht geschützt
+
+---
+
+### Edge Cases Status
+
+#### EC-1: Therapeut im Urlaub (Abwesenheitsstatus)
+- [ ] BUG (Low): Abwesenheitsstatus (`status "Abwesend"` mit automatischer Antwort) ist in der Spec als Edge Case dokumentiert, aber nicht implementiert. `ChatHeader` unterstützt `statusLabel`-Prop, jedoch gibt es keine Möglichkeit für den Therapeuten, diesen Status zu setzen
+
+#### EC-2: Admin sperrt Konversation (bei belästigenden Nachrichten)
+- [ ] BUG (Low): Keine UI für Admins zum Sperren einer Konversation implementiert. Der DB-Layer hat eine Admin-DELETE-Policy, aber kein "lock"-Konzept. Akzeptabel für MVP, sollte aber dokumentiert werden
+
+#### EC-3: Bild-Upload bei schlechter Verbindung (Retry)
+- [x] Upload-Fehler wird angezeigt (uploadError)
+- [x] Retry-Button für fehlgeschlagene Sendeversuche implementiert
+- [x] Pending-Image bleibt nach Fehler erhalten (wird nicht geleert)
+
+#### EC-4: Archivierter Patient (Chat readonly)
+- [x] `readOnly`-Prop in `ChatFenster` wird korrekt übergeben
+- [x] `/api/me/chat/profile` gibt `is_archived`-Flag zurück
+- [x] `ChatTab` übergibt `isArchived={!!patient.archived_at}` korrekt
+- [x] Read-only Banner wird angezeigt: "Dieser Chat ist archiviert. Keine neuen Nachrichten möglich."
+
+#### EC-5: Patient ohne zugewiesenen Therapeuten
+- [x] Korrekte Fehlermeldung: "Du hast noch keinen zugewiesenen Therapeuten." — keine Ausnahme
+
+#### EC-6: Pagination / ältere Nachrichten laden
+- [x] Cursor-Pagination via `created_at` implementiert
+- [x] "Ältere Nachrichten laden"-Button erscheint wenn `hasOlder === true`
+- [ ] BUG (Medium): `loadOlder()` hängt `[...older, ...prev]` vor — jedoch wird der Scroll-Anker nach oben nicht gesetzt. Der Nutzer verliert nach dem Laden älterer Nachrichten seine aktuelle Scrollposition (springt an den Anfang)
+
+---
+
+### Security Audit Results
+
+- [x] **Authentifizierung:** Alle API-Routen prüfen `supabase.auth.getUser()` vor jeder Operation
+- [ ] **BUG-2 (Critical): RLS UPDATE WITH CHECK Tautologie** — `patient_id = patient_id AND sender_id = sender_id` schützt keine anderen Felder. Ein authentifizierter Empfänger könnte über einen direkten Supabase-Aufruf `content` oder `media_url` einer empfangenen Nachricht ändern
+- [ ] **BUG-3 (Medium): Öffentliche Bild-URLs** — Bilder werden in einem öffentlichen Storage-Bucket gespeichert. Jeder mit dem URL kann das Bild sehen, ohne sich anzumelden. Für medizinische Kommunikation (DSGVO) sollten Signed URLs mit kurzer Ablaufzeit verwendet werden
+- [x] **Autorisierung:** RLS verhindert, dass Therapeuten fremde Patienten-Chats lesen
+- [x] **Input-Validierung:** Zod-Schemas validieren alle Eingaben serverseitig; Dateiformat und -größe werden clientseitig validiert
+- [x] **SQL-Injection:** Supabase ORM (parameterized queries) verwendet — kein Risiko
+- [x] **XSS:** React rendert `message.content` als Text (`<p>` Tag mit `{message.content}`), kein `dangerouslySetInnerHTML` — sicher
+- [ ] **BUG-6 (Medium): Kein Rate Limiting** — `POST /api/me/chat` und `POST /api/patients/[id]/chat` haben keine Rate-Limiting-Mechanismen. Ein Patient könnte tausende Nachrichten pro Minute senden
+- [x] **UUID-Validierung:** `patientId` wird via Regex validiert (`UUID_REGEX`) bevor Datenbankabfragen gestellt werden
+- [ ] **BUG (Low): E-Mail-Fallback in `resolvePatient`** — Wenn ein Nutzer sich mit einer E-Mail-Adresse registriert, die mit einem bestehenden Patienten-Datensatz übereinstimmt (aber `user_id` nicht gesetzt ist), wird er diesem Patienten zugeordnet. Dieses Verhalten ist aus PROJ-11 übernommen, sollte aber mit dem Auth-Flow abgestimmt sein
+
+---
+
+### Bugs Found
+
+#### BUG-1: markRead() löst bei jedem Realtime-Event aus (eigene Nachrichten)
+- **Severity:** Low
+- **Steps to Reproduce:**
+  1. Patient sendet eine Nachricht
+  2. Realtime-Event fügt Nachricht zur Liste hinzu (`messages.length` ändert sich)
+  3. `useEffect([messages.length])` feuert erneut
+  4. `PATCH /api/me/chat/read` wird unnötig aufgerufen
+- **Expected:** `markRead()` nur aufrufen, wenn es ungelesene Nachrichten vom anderen Teilnehmer gibt
+- **Actual:** `markRead()` wird bei jeder Längenänderung der Nachrichtenliste ausgelöst (inklusive eigene Nachrichten)
+- **Priority:** Fix in next sprint (serverseitiger Filter verhindert Datenverlust, aber unnötige Requests)
+
+#### BUG-2: RLS UPDATE WITH CHECK Tautologie — keine Feldsperre außer read_at
+- **Severity:** Critical
+- **File:** `supabase/migrations/20260218000014_chat_messages.sql`, Zeile 131–134
+- **Steps to Reproduce:**
+  1. Als Patient, empfange eine Nachricht vom Therapeuten
+  2. Sende direkt via Supabase-Client: `supabase.from('chat_messages').update({ content: 'MANIPULIERT', read_at: new Date() }).eq('id', messageId)`
+  3. Expected: Update wird abgewiesen, da nur `read_at` geändert werden darf
+  4. Actual: `content` kann beliebig geändert werden, da `WITH CHECK (patient_id = patient_id AND sender_id = sender_id)` immer TRUE ist
+- **Fix Required:** `WITH CHECK` muss die tatsächlichen Spaltenwerte aus der Anfrage mit den bestehenden vergleichen. Da PostgreSQL in `WITH CHECK` keinen einfachen Vergleich mit `OLD.*` erlaubt, sollte stattdessen ein BEFORE UPDATE Trigger verwendet werden, der alle Felder außer `read_at` schützt
+- **Priority:** Fix before deployment
+
+#### BUG-3: Bilder werden öffentlich ohne Authentifizierung gespeichert (DSGVO-Risiko)
+- **Severity:** Medium
+- **File:** `src/hooks/use-chat.ts`, Zeile 291 (`getPublicUrl`)
+- **Steps to Reproduce:**
+  1. Patient sendet ein Bild im Chat
+  2. Kopiere die `media_url` aus der Nachricht
+  3. Öffne die URL im Inkognito-Fenster ohne Anmeldung
+  4. Expected: Zugriff verweigert (401 oder 403)
+  5. Actual: Bild ist öffentlich abrufbar
+- **Fix Required:** Supabase Storage Bucket `media` muss auf privat gestellt werden; `getPublicUrl` durch `createSignedUrl` mit kurzem TTL (z.B. 1 Stunde) ersetzen; `NachrichtBubble` muss Signed URL laden
+- **Priority:** Fix before deployment (DSGVO-Anforderung für medizinische Bilddaten)
+
+#### BUG-4: ChatUnreadBadge nicht in OS-Sidebar-Navigation eingebunden
+- **Severity:** High
+- **File:** OS-Sidebar-Komponente (nicht Teil dieses Commits — Badge-Komponente existiert, aber nicht angebunden)
+- **Steps to Reproduce:**
+  1. Patient sendet eine Nachricht an Therapeuten
+  2. Therapeut navigiert im OS-System (Sidebar sichtbar)
+  3. Expected: Glocken-Icon / Nachrichten-Link zeigt Unread-Badge mit Anzahl
+  4. Actual: Kein Badge sichtbar — `ChatUnreadBadge` ist implementiert aber nicht in Sidebar eingebunden
+- **Priority:** Fix before deployment (Kern-Anforderung aus User Story: "keinen Kontakt verpassen")
+
+#### BUG-5: N+1-Datenbankabfragen im Inbox-Endpoint (Performance)
+- **Severity:** Medium
+- **File:** `src/app/api/chat/inbox/route.ts`, Zeile 44–78
+- **Steps to Reproduce:**
+  1. Therapeut mit 50 Patienten öffnet `/os/chat`
+  2. Endpoint führt 1 Query für Patienten + 2 Queries pro Patient aus (letzte Nachricht + Unread-Count)
+  3. Bei 50 Patienten: 101 sequentielle Datenbankabfragen
+  4. Expected: < 3 Queries via JOIN/Aggregat
+  5. Actual: 2N+1 Queries (bei N Patienten)
+- **Priority:** Fix in next sprint (bei wenigen Patienten akzeptabel, skaliert aber schlecht)
+
+#### BUG-6: Kein Rate Limiting auf Chat-Endpunkten
+- **Severity:** Medium
+- **File:** `src/app/api/me/chat/route.ts`, `src/app/api/patients/[id]/chat/route.ts`
+- **Steps to Reproduce:**
+  1. Als Patient, sende schnell hintereinander 1000 Nachrichten via API-Script
+  2. Expected: Request wird nach N Nachrichten/Minute gedrosselt (429)
+  3. Actual: Keine Begrenzung — Spam möglich, Storage-Kosten und DB-Last steigen unbegrenzt
+- **Priority:** Fix in next sprint
+
+#### BUG-7: Scroll-Position nach "Ältere Nachrichten laden" verloren
+- **Severity:** Low
+- **File:** `src/hooks/use-chat.ts`, Zeile 137–140 (`loadOlder`)
+- **Steps to Reproduce:**
+  1. Öffne Chat mit > 50 Nachrichten
+  2. Klicke "Ältere Nachrichten laden"
+  3. Expected: Scroll-Position bleibt auf der zuletzt gelesenen Nachricht erhalten
+  4. Actual: Auto-Scroll springt zum Ende der Nachrichtenliste (wegen `useEffect([messages])` → `scrollIntoView`)
+- **Priority:** Fix in next sprint
+
+---
+
+### Summary
+- **Acceptance Criteria:** 8/11 vollständig bestanden, 2 mit Einschränkungen, 1 korrekt zurückgestellt (PROJ-14)
+- **Bugs Found:** 7 total (1 critical, 1 high, 3 medium, 2 low)
+- **Security:** 2 Befunde (1 Critical: RLS Tautologie, 1 Medium: öffentliche Bild-URLs)
+- **Production Ready:** NO
+- **Recommendation:** BUG-2 (RLS Tautologie) und BUG-3 (öffentliche Bilder / DSGVO) und BUG-4 (fehlender Unread-Badge in Sidebar) müssen vor dem Deployment behoben werden
 
 ## Deployment
 _To be added by /deploy_
