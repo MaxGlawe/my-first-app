@@ -200,8 +200,9 @@ export async function GET(
     )
   }
 
-  // Auto-expire assignments whose end_date has passed (status still 'aktiv')
-  await supabase
+  // BUG-6 FIX: Auto-expire runs as fire-and-forget so GET stays effectively read-only
+  // from the caller's perspective (no response delay from the write).
+  void supabase
     .from("patient_assignments")
     .update({ status: "abgelaufen" })
     .eq("patient_id", patientId)

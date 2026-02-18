@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Pencil, Power, ClipboardList, MessageSquare } from "lucide-react"
+import { Pencil, Power, ClipboardList, MessageSquare, CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
 import type { PatientAssignment, Wochentag } from "@/types/hausaufgaben"
 
@@ -78,6 +78,7 @@ interface ZuweisungsKarteProps {
   isArchived?: boolean
   onEdit?: (assignment: PatientAssignment) => void
   onDeactivated?: () => void
+  onCompleted?: () => void
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -88,11 +89,42 @@ export function ZuweisungsKarte({
   isArchived = false,
   onEdit,
   onDeactivated,
+  onCompleted,
 }: ZuweisungsKarteProps) {
   const [isDeactivating, setIsDeactivating] = useState(false)
+  const [isMarkingDone, setIsMarkingDone] = useState(false)
+  const [markedToday, setMarkedToday] = useState(false)
 
   const isAdHoc = !assignment.plan_id
   const complianceValue = assignment.compliance_7days ?? 0
+
+  async function handleMarkDone() {
+    setIsMarkingDone(true)
+    try {
+      const res = await fetch(`/api/assignments/${assignment.id}/completions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (res.status === 409) {
+        toast.info("Für heute bereits als erledigt markiert.")
+        setMarkedToday(true)
+        return
+      }
+      if (!res.ok) {
+        toast.error(json.error ?? "Fehler beim Markieren.")
+        return
+      }
+      toast.success("Heute als erledigt markiert!")
+      setMarkedToday(true)
+      onCompleted?.()
+    } catch {
+      toast.error("Ein unerwarteter Fehler ist aufgetreten.")
+    } finally {
+      setIsMarkingDone(false)
+    }
+  }
 
   async function handleDeactivate() {
     setIsDeactivating(true)
@@ -215,7 +247,18 @@ export function ZuweisungsKarte({
 
         {/* Actions (only for active) */}
         {!isArchived && (
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1 flex-wrap">
+            {/* BUG-2 FIX: "Als erledigt markieren" button for therapist view */}
+            <Button
+              variant={markedToday ? "secondary" : "default"}
+              size="sm"
+              className="h-7 text-xs gap-1.5"
+              onClick={handleMarkDone}
+              disabled={isMarkingDone || markedToday}
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {markedToday ? "Heute erledigt" : "Als erledigt markieren"}
+            </Button>
             <Button
               variant="outline"
               size="sm"

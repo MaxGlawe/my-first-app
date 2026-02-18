@@ -37,10 +37,9 @@ const createCompletionSchema = z.object({
   // Optional: which plan unit was completed (e.g., specific training day)
   unit_id: z.string().uuid("Ungültige Einheiten-ID.").optional().nullable(),
 
-  // The patient this completion belongs to.
-  // When called from the Patient App, this should match auth.uid().
-  // Therapists may specify the patient's ID for backdating.
-  patient_id: z.string().uuid("Ungültige Patienten-ID."),
+  // BUG-3 FIX: patient_id is taken from the assignment record (server-side),
+  // not trusted from the client. This prevents therapists from submitting
+  // completions for patients that don't belong to the assignment.
 })
 
 // ── POST /api/assignments/[id]/completions ────────────────────────────────────
@@ -87,7 +86,7 @@ export async function POST(
     )
   }
 
-  const { completed_date, unit_id, patient_id } = parseResult.data
+  const { completed_date, unit_id } = parseResult.data
 
   // Resolve the completed_date: default to today
   const resolvedDate =
@@ -124,13 +123,9 @@ export async function POST(
     )
   }
 
-  // Verify patient_id matches the assignment's patient
-  if (assignment.patient_id !== patient_id) {
-    return NextResponse.json(
-      { error: "Die Patienten-ID stimmt nicht mit der Zuweisung überein." },
-      { status: 422 }
-    )
-  }
+  // BUG-3 FIX: patient_id is always taken from the assignment record — never from the body.
+  // This prevents any client-side manipulation of who gets the completion attributed to.
+  const patient_id = assignment.patient_id
 
   // Authorization: must be the patient, the therapist who owns the assignment, or admin
   const { data: profile } = await supabase
@@ -141,7 +136,7 @@ export async function POST(
 
   const isAdmin = profile?.role === "admin"
   const isTherapist = assignment.therapist_id === user.id
-  const isPatient = assignment.patient_id === user.id // when Patient App auth is implemented
+  const isPatient = assignment.patient_id === user.id // when Patient App auth is implemented (PROJ-11)
 
   if (!isAdmin && !isTherapist && !isPatient) {
     return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
@@ -12,6 +12,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Plus, ClipboardList, ChevronDown, ChevronRight, RefreshCw } from "lucide-react"
+import { toast } from "sonner"
 import { useAssignments } from "@/hooks/use-assignments"
 import { ZuweisungsKarte } from "./ZuweisungsKarte"
 import { ZuweisungsDialog } from "./ZuweisungsDialog"
@@ -73,11 +74,34 @@ export function HausaufgabenTab({ patientId }: HausaufgabenTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editAssignment, setEditAssignment] = useState<PatientAssignment | null>(null)
   const [archivedOpen, setArchivedOpen] = useState(false)
+  const notifiedExpiredRef = useRef(false)
 
   const activeAssignments = assignments.filter((a) => a.status === "aktiv")
   const archivedAssignments = assignments.filter(
     (a) => a.status === "abgelaufen" || a.status === "deaktiviert"
   )
+
+  // BUG-4 FIX: Notify therapist about recently expired assignments on first load
+  useEffect(() => {
+    if (isLoading || error || notifiedExpiredRef.current) return
+    const today = new Date().toISOString().split("T")[0]
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0]
+    const recentlyExpired = assignments.filter(
+      (a) =>
+        a.status === "abgelaufen" &&
+        a.end_date >= sevenDaysAgoStr &&
+        a.end_date <= today
+    )
+    if (recentlyExpired.length > 0) {
+      notifiedExpiredRef.current = true
+      toast.warning(
+        `${recentlyExpired.length} Hausaufgabe${recentlyExpired.length > 1 ? "n sind" : " ist"} kürzlich abgelaufen.`,
+        { description: "Prüfe die archivierten Zuweisungen und weise ggf. neu zu." }
+      )
+    }
+  }, [assignments, isLoading, error])
 
   function handleNew() {
     setEditAssignment(null)
@@ -191,6 +215,7 @@ export function HausaufgabenTab({ patientId }: HausaufgabenTabProps) {
                   isArchived={false}
                   onEdit={handleEdit}
                   onDeactivated={refresh}
+                  onCompleted={refresh}
                 />
               ))}
             </div>

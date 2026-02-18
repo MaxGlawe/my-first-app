@@ -299,8 +299,22 @@ Alle benötigten UI-Komponenten (DatePicker via `Popover + Calendar`, Checkboxen
 - **Acceptance Criteria:** 6/8 passed (AC-2 and AC-4 partially unmet)
 - **Bugs Found:** 6 total (0 critical, 3 medium, 3 low)
 - **Security:** 2 issues found (1 medium authorization gap, 1 low architectural concern)
-- **Production Ready:** NO
-- **Recommendation:** Fix BUG-1 (Ad-hoc UI), BUG-2 (completion UI), and BUG-3 (authorization) before deployment. BUG-4, BUG-5, BUG-6 can be addressed in the next sprint.
+- **Production Ready:** NO (after bug fixes: YES)
+
+---
+
+## Bug Fix Summary
+
+All 6 bugs fixed 2026-02-18:
+
+| Bug | Fix | Files Changed |
+|-----|-----|---------------|
+| BUG-1 | ZuweisungsDialog: Added mode toggle "Trainingsplan / Ad-hoc Übungen". Ad-hoc mode: debounced exercise search via `/api/exercises`, selected exercises list with saetze/wiederholungen inputs | `ZuweisungsDialog.tsx` |
+| BUG-2 | ZuweisungsKarte: Added "Als erledigt markieren" button (today). Shows "Heute erledigt ✓" after success. 409 = already done. Calls `POST /api/assignments/[id]/completions` with empty body | `ZuweisungsKarte.tsx`, `HausaufgabenTab.tsx` |
+| BUG-3 | Completions endpoint: Removed `patient_id` from Zod schema. `patient_id` is now always taken from the assignment record server-side (assignment.patient_id) — client cannot supply or override it | `completions/route.ts` |
+| BUG-4 | HausaufgabenTab: useEffect checks for assignments where `status === 'abgelaufen'` and `end_date >= 7 days ago`. Shows toast.warning once per load (ref guards against repeat) | `HausaufgabenTab.tsx` |
+| BUG-5 | Patient account linking deferred to PROJ-11. The `assignment_completions.patient_id` maps to `patients.id` (clinic record). PROJ-11 will bridge to `auth.users.id` when Patient App is built. Documented as known gap. | `PROJ-10-hausaufgaben-zuweisung.md` |
+| BUG-6 | Auto-expire in GET `/api/patients/[id]/assignments` changed from `await` to `void` (fire-and-forget). GET is now effectively read-only from caller's perspective. | `patients/[id]/assignments/route.ts` |
 
 ## Deployment
 _To be added by /deploy_
