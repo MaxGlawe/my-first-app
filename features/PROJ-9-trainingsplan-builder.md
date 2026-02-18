@@ -390,4 +390,22 @@ All 10 bugs fixed. Build passes with 0 TypeScript errors.
 **Production Ready: YES** (after applying migration)
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-02-18
+**Status:** Deployed to production via Vercel (auto-deploy from main branch push)
+**Git Tag:** `v1.9.0-PROJ-9`
+**Commit:** `d1706fc`
+
+### Pre-Deployment Checklist
+- [x] `npm run build` — clean, 0 TypeScript errors
+- [x] QA passed — all 10 bugs fixed
+- [x] Migrations applied in Supabase:
+  - `20260218000009_exercises.sql` (PROJ-8)
+  - `20260218000010_training_plans.sql` (4 tables, RLS, triggers)
+  - `20260218000011_training_plans_fixes.sql` (atomic save RPC, admin RLS, archive trigger)
+- [x] No secrets committed
+- [x] All code committed and pushed to remote
+
+### Post-Deployment Notes
+- The `save_training_plan` RPC function must be applied in Supabase before the builder can save plans
+- Supabase Storage buckets (`exercise-images`, `exercise-videos`) must be created manually

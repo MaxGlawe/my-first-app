@@ -20,7 +20,7 @@
 | PROJ-6 | KI-Arztbericht-Generator | Deployed | [Spec](PROJ-6-ki-arztbericht-generator.md) | 2026-02-17 |
 | PROJ-7 | Buchungstool-Integration | Deployed | [Spec](PROJ-7-buchungstool-integration.md) | 2026-02-17 |
 | PROJ-8 | Übungsdatenbank-Verwaltung | Deployed | [Spec](PROJ-8-uebungsdatenbank.md) | 2026-02-17 |
-| PROJ-9 | Trainingsplan-Builder (Drag & Drop) | In Review | [Spec](PROJ-9-trainingsplan-builder.md) | 2026-02-17 |
+| PROJ-9 | Trainingsplan-Builder (Drag & Drop) | Deployed | [Spec](PROJ-9-trainingsplan-builder.md) | 2026-02-17 |
 | PROJ-10 | Hausaufgaben-Zuweisung | Planned | [Spec](PROJ-10-hausaufgaben-zuweisung.md) | 2026-02-17 |
 | PROJ-11 | Patienten-App: Dashboard & Trainingspläne | Planned | [Spec](PROJ-11-patienten-app-dashboard.md) | 2026-02-17 |
 | PROJ-12 | Patienten-App: Chat (Therapeut ↔ Patient) | Planned | [Spec](PROJ-12-chat-therapeut-patient.md) | 2026-02-17 |
