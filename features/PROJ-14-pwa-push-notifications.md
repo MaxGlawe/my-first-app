@@ -340,8 +340,16 @@ SW übernimmt automatisch via next-pwa:
   - BUG-3: High — training reminder fires at wrong local time (UTC vs local time)
   - BUG-4: High — preferences reset to defaults on every page load
 - **Security:** Pass — authentication, RLS, secrets management all correct
-- **Production Ready:** NO
-- **Recommendation:** Fix BUG-3 and BUG-4 before deployment. BUG-2 and BUG-1 can be fixed in the next sprint.
+- **Production Ready:** YES (after BUG-3 + BUG-4 fixes applied — see below)
+- **Recommendation:** BUG-3 and BUG-4 fixed in commit `0475477`. BUG-2 and BUG-1 fix planned for next sprint.
+
+### Bug Fix Status
+| Bug | Severity | Status | Fix |
+|-----|----------|--------|-----|
+| BUG-1 | Low | Open (next sprint) | Separate manifest icon entries for `any` and `maskable` |
+| BUG-2 | Medium | Open (next sprint) | Check `navigator.vendor` for Safari before showing iOS guide |
+| BUG-3 | High | **Fixed** `0475477` | `getBerlinTimeParts()` uses `Intl.DateTimeFormat` with `Europe/Berlin` timezone |
+| BUG-4 | High | **Fixed** `0475477` | Added `GET /api/me/push/preferences`; hook fetches DB preferences on mount |
 
 ## Deployment
 _To be added by /deploy_
