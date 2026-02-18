@@ -5,6 +5,7 @@ import { usePatient } from "@/hooks/use-patients"
 import { PatientDetailHeader } from "@/components/patients/PatientDetailHeader"
 import { StammdatenTab } from "@/components/patients/StammdatenTab"
 import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
+import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -82,11 +83,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         </TabsContent>
 
         <TabsContent value="dokumentation">
-          <PlaceholderTab
-            title="Anamnese & Dokumentation"
-            description="Anamnesen, Untersuchungsbefunde, Behandlungsdokumentationen und Diagnosen werden hier angezeigt."
-            projId="PROJ-3, PROJ-4, PROJ-5"
-          />
+          <AnamnesisTab patientId={patient.id} />
         </TabsContent>
 
         <TabsContent value="trainingsplaene">
