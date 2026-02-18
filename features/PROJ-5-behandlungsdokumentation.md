@@ -42,7 +42,91 @@
 ---
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+**Designed:** 2026-02-18
+
+### Seitenstruktur & Komponenten
+
+```
+/os/patients/[id]                                ← Patientenakte (existiert bereits)
++-- Tab: Behandlungen                            ← neuer Tab (alle Therapeuten + Admin)
+    +-- BehandlungTab
+        +-- NrsVerlaufChart                      ← recharts LineChart: NRS start/end über Zeit
+        +-- "Neue Behandlung" Button
+        +-- BehandlungTimeline
+            +-- BehandlungCard
+            |   (Datum, Therapeut, Maßnahmen-Badges, NRS start→end, Dauer, Status-Badge)
+            +-- Leer-Zustand
+            +-- Lade-Skeleton
+
+/os/patients/[id]/behandlung/new                 ← Neue Behandlung erfassen
++-- BehandlungForm
+    +-- Datum (auto: heute, überschreibbar)
+    +-- Behandlungsdauer (Minuten, Zahlenfeld)
+    +-- NRS Beginn (Slider 0-10)
+    +-- Maßnahmen-Auswahl (Checkbox-Gruppe)
+    |   KG | MT | MLD | US | TENS | Wärme | Kälte | Elektrotherapie | Atemtherapie
+    +-- Freitext: Patientenreaktion & Besonderheiten
+    +-- NRS Ende (Slider 0-10)
+    +-- Nächste Schritte (Freitext)
+    +-- "Wie letzte Behandlung" Button  ← füllt Maßnahmen der letzten Session vor
+    +-- Auto-Save Indikator (30s Debounce, useDebounce aus PROJ-2 wiederverwendet)
+    +-- "Als Entwurf speichern" / "Abschließen & bestätigen" Buttons
+
+/os/patients/[id]/behandlung/[sessionId]         ← Behandlungsansicht (read-only)
++-- BehandlungView
+    +-- Alle Felder read-only dargestellt
+    +-- Sperr-Hinweis: "Bearbeitbar bis [Datum+24h]" oder "Gesperrt (Admin kann freischalten)"
+    +-- "Bearbeiten" Button (nur wenn < 24h alt UND Entwurf/eigene Behandlung oder Admin)
+    +-- "Als PDF exportieren" Button (window.print)
+
+/os/patients/[id]/behandlung/[sessionId]/edit    ← Behandlung bearbeiten (< 24h)
++-- BehandlungEditForm
+    (gleiche Felder wie BehandlungForm, vorausgefüllt via PATCH-Endpoint)
+```
+
+### Datenmodell
+
+**Tabelle `treatment_sessions`:**
+- `id` — UUID, Primärschlüssel
+- `patient_id` — Verknüpfung zum Patienten
+- `therapist_id` — Durchführender Therapeut (= created_by)
+- `session_date` — Datum der Behandlung (DATE, nicht DATETIME — Beginn zählt)
+- `duration_minutes` — Behandlungsdauer in Minuten (Integer, optional)
+- `measures` — JSONB-Array der Maßnahmen (z.B. `["KG", "MT", "Wärme"]` + Freitext)
+- `nrs_before` — Schmerzwert Beginn (Integer 0–10)
+- `nrs_after` — Schmerzwert Ende (Integer 0–10, nullable)
+- `notes` — Freitext: Patientenreaktion, Besonderheiten (max 5.000 Zeichen)
+- `next_steps` — Nächste Schritte für Folgeeinheit (Freitext, max 2.000 Zeichen)
+- `status` — `entwurf` oder `abgeschlossen`
+- `confirmed_at` — Zeitstempel der Therapeuten-Bestätigung (beim Abschließen)
+- `locked_at` — Automatische Sperrzeit: `created_at + 24 Stunden` (vom Server berechnet)
+- `created_at`, `updated_at`
+
+**Maßnahmen-Katalog (statisch im Frontend, keine eigene Tabelle nötig):**
+KG (Krankengymnastik), MT (Manuelle Therapie), MLD (Manuelle Lymphdrainage),
+US (Ultraschall), TENS, Wärme, Kälte, Elektrotherapie, Atemtherapie, Freitext
+
+**NRS-Verlaufsdaten:** API liefert sortierte Liste von `(session_date, nrs_before, nrs_after)` für recharts LineChart — kein eigener Aggregations-Endpoint nötig, da Daten bereits in der Behandlungshistorie enthalten sind.
+
+**RLS (Row Level Security):**
+- Therapeut → liest/schreibt nur eigene Patienten-Sessions
+- Admin → liest/schreibt alle
+- Patient → kein Zugriff (über `/app/*` wird separat in PROJ-11 gebaut)
+
+### Tech-Entscheidungen
+
+| Entscheidung | Begründung |
+|---|---|
+| `recharts` für NRS-Chart | Leichtgewichtig, React-nativ, beste Next.js-Kompatibilität; shadcn/ui Chart-Komponente basiert darauf |
+| `locked_at = created_at + 24h` (serverberechnet) | Server setzt den Wert — Manipulation über Client ausgeschlossen |
+| Auto-Save mit `useDebounce` (30s) | Hook bereits in PROJ-2 implementiert, wiederverwendbar ohne neue Abhängigkeit |
+| Maßnahmen-Katalog hardcoded im Frontend | Liste ist stabil, keine DB-Tabelle nötig, kein Admin-Interface erforderlich |
+| Gleiche Seitenstruktur wie PROJ-3/4 | Konsistenz für Therapeuten (Tab in Patientenakte → New-Seite → Detail-Seite → Edit-Seite) |
+| `session_date` als DATE (nicht TIMESTAMP) | Über-Mitternacht-Problem gelöst: Datum des Behandlungsbeginns wird gespeichert |
+| Mehrere Sessions pro Tag erlaubt | Zeitstempel differenziert, keine Unique-Constraint auf `(patient_id, session_date)` |
+
+### Neue Pakete
+- `recharts` — NRS-Verlaufschart (LineChart mit zwei Linien: NRS Beginn + NRS Ende)
 
 ## QA Test Results
 _To be added by /qa_
