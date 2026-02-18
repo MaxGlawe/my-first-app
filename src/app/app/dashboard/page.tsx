@@ -13,7 +13,7 @@ import {
   getActiveAssignments,
   overallCompliance7Days,
 } from "@/hooks/use-patient-app"
-import { AlertTriangle, ClipboardList, TrendingUp } from "lucide-react"
+import { AlertTriangle, ClipboardList, TrendingUp, Settings, Bell } from "lucide-react"
 
 export default function PatientDashboardPage() {
   const { assignments, isLoading, error } = usePatientApp()
@@ -104,6 +104,25 @@ export default function PatientDashboardPage() {
 
           {/* Appointments */}
           <MeineTermineKarte />
+
+          {/* Settings shortcut */}
+          <Link href="/app/einstellungen" className="block">
+            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                  <Settings className="h-5 w-5 text-slate-500" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-700">Einstellungen</p>
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+                    <Bell className="h-3 w-3" aria-hidden="true" />
+                    App installieren &amp; Benachrichtigungen
+                  </p>
+                </div>
+              </div>
+              <TrendingUp className="h-4 w-4 text-slate-300 rotate-90" aria-hidden="true" />
+            </div>
+          </Link>
         </>
       )}
     </div>

@@ -2,6 +2,9 @@
  * PROJ-12: GET  /api/patients/[id]/chat — Therapeut lädt Nachrichten für einen Patienten
  *          POST /api/patients/[id]/chat — Therapeut sendet Nachricht an Patient
  *
+ * PROJ-14: POST also triggers a Web Push notification to the patient
+ *          (if patient has push subscriptions with chat_enabled = true)
+ *
  * Access: Therapist (own patients) + Admin
  * RLS: Enforced at DB level
  */
@@ -9,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { sendPushToPatient } from "@/lib/push"
 
 const PAGE_SIZE = 50
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -137,6 +141,26 @@ export async function POST(
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 })
   }
+
+  // PROJ-14: Fire-and-forget push notification to the patient.
+  // We do NOT await this — push delivery must never block the chat response.
+  // Only sends to subscriptions with chat_enabled = true.
+  sendPushToPatient(
+    patientId,
+    {
+      title: "Neue Nachricht",
+      body: content?.trim()
+        ? content.trim().slice(0, 100)
+        : "Dein Therapeut hat dir eine Nachricht geschickt.",
+      icon: "/icons/icon-192.png",
+      url: "/app/chat",
+      tag: "chat-message",
+    },
+    { chatEnabled: true }
+  ).catch((err) => {
+    // Push failures are non-critical — log but never crash the chat endpoint
+    console.error("[chat] Push notification error:", err)
+  })
 
   return NextResponse.json({ message }, { status: 201 })
 }
