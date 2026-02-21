@@ -24,7 +24,7 @@ REGELN:
 - Verwende HTML-Tags: <h2>, <p>, <ul>, <li>, <strong>
 - Fragen sollen Kernverständnis prüfen, nicht Detailwissen
 - Erklärungen sollen motivierend und praxisnah sein
-- Antworte NUR mit validem JSON — kein umgebender Text, keine Markdown-Codeblöcke`
+- Nutze das bereitgestellte Tool, um deine Antwort strukturiert zurückzugeben`
 
 function buildCurriculumPrompt(hauptproblem: string): string {
   return `Erstelle einen 10-teiligen Wissenskurs für das Hauptproblem: "${hauptproblem}"
@@ -43,46 +43,64 @@ Typischer Lehrplan-Aufbau:
 - Lektion 7-8: Praktische Tipps für den Alltag
 - Lektion 9-10: Langfristige Prävention und Selbstmanagement
 
-Antworte als JSON:
-{
-  "curriculum": [
-    { "number": 1, "topic": "Thema der ersten Lektion" },
-    { "number": 2, "topic": "Thema der zweiten Lektion" },
-    { "number": 3, "topic": "..." },
-    { "number": 4, "topic": "..." },
-    { "number": 5, "topic": "..." },
-    { "number": 6, "topic": "..." },
-    { "number": 7, "topic": "..." },
-    { "number": 8, "topic": "..." },
-    { "number": 9, "topic": "..." },
-    { "number": 10, "topic": "..." }
-  ],
-  "title": "Lektion 1: [Thema]",
-  "lesson_content": "<h2>[Überschrift]</h2><p>...</p>...",
-  "quizzes": [
-    {
-      "question_number": 1,
-      "question_text": "Frage...",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correct_index": 0,
-      "explanation": "Richtig, weil..."
+Nutze das Tool "save_curriculum", um dein Ergebnis zurückzugeben.`
+}
+
+// Tool definition for structured output
+const curriculumTool: Anthropic.Tool = {
+  name: "save_curriculum",
+  description: "Speichert den generierten Lehrplan, die erste Lektion und die Quizfragen.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      curriculum: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            number: { type: "number", description: "Lektionsnummer (1-10)" },
+            topic: { type: "string", description: "Thema der Lektion" },
+          },
+          required: ["number", "topic"],
+        },
+        description: "Array mit 10 Lektionsthemen",
+      },
+      title: {
+        type: "string",
+        description: "Titel der ersten Lektion, z.B. 'Lektion 1: Was ist Rückenschmerz?'",
+      },
+      lesson_content: {
+        type: "string",
+        description: "HTML-Inhalt der ersten Lektion (250-400 Wörter). Verwende <h2>, <p>, <ul>, <li>, <strong>.",
+      },
+      quizzes: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            question_number: { type: "number" },
+            question_text: { type: "string" },
+            options: {
+              type: "array",
+              items: { type: "string" },
+              description: "4 Antwortoptionen",
+            },
+            correct_index: {
+              type: "number",
+              description: "Index der richtigen Antwort (0-3)",
+            },
+            explanation: {
+              type: "string",
+              description: "Kurze Erklärung warum die Antwort richtig ist",
+            },
+          },
+          required: ["question_number", "question_text", "options", "correct_index", "explanation"],
+        },
+        description: "3 Multiple-Choice-Fragen",
+      },
     },
-    {
-      "question_number": 2,
-      "question_text": "...",
-      "options": ["...", "...", "...", "..."],
-      "correct_index": 1,
-      "explanation": "..."
-    },
-    {
-      "question_number": 3,
-      "question_text": "...",
-      "options": ["...", "...", "...", "..."],
-      "correct_index": 2,
-      "explanation": "..."
-    }
-  ]
-}`
+    required: ["curriculum", "title", "lesson_content", "quizzes"],
+  },
 }
 
 interface GeneratedCurriculumContent {
@@ -178,7 +196,7 @@ export async function POST(request: NextRequest) {
       .neq("status", "archiviert")
   }
 
-  // Generate curriculum + first lesson via Claude
+  // Generate curriculum + first lesson via Claude (using tool_use for guaranteed valid JSON)
   let generated: GeneratedCurriculumContent
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -187,25 +205,27 @@ export async function POST(request: NextRequest) {
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
       system: SYSTEM_PROMPT,
+      tools: [curriculumTool],
+      tool_choice: { type: "tool", name: "save_curriculum" },
       messages: [{ role: "user", content: buildCurriculumPrompt(hauptproblem) }],
     })
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 60_000)
+      setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 90_000)
     )
 
     const message = await Promise.race([claudePromise, timeoutPromise])
-    const content = message.content[0]
-    if (content.type !== "text") {
-      throw new Error("Unerwartetes Antwortformat.")
+
+    // Extract tool_use result
+    const toolBlock = message.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+    )
+
+    if (!toolBlock) {
+      throw new Error("KI hat kein strukturiertes Ergebnis zurückgegeben.")
     }
 
-    // Parse JSON from response (handle potential markdown wrapping)
-    let jsonStr = content.text.trim()
-    if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "")
-    }
-    generated = JSON.parse(jsonStr) as GeneratedCurriculumContent
+    generated = toolBlock.input as GeneratedCurriculumContent
 
     // Validate structure
     if (

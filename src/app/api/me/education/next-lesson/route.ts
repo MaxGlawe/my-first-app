@@ -163,6 +163,33 @@ export async function POST(request: NextRequest) {
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+    const lessonTool: Anthropic.Tool = {
+      name: "save_lesson",
+      description: "Speichert die generierte Lektion und Quizfragen.",
+      input_schema: {
+        type: "object" as const,
+        properties: {
+          title: { type: "string", description: "Titel der Lektion" },
+          lesson_content: { type: "string", description: "HTML-Inhalt der Lektion (200-350 Wörter)" },
+          quizzes: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                question_number: { type: "number" },
+                question_text: { type: "string" },
+                options: { type: "array", items: { type: "string" } },
+                correct_index: { type: "number" },
+                explanation: { type: "string" },
+              },
+              required: ["question_number", "question_text", "options", "correct_index", "explanation"],
+            },
+          },
+        },
+        required: ["title", "lesson_content", "quizzes"],
+      },
+    }
+
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 2048,
@@ -173,7 +200,9 @@ REGELN:
 - Verwende HTML-Tags: <h2>, <p>, <ul>, <li>, <strong>
 - Fragen sollen Kernverständnis prüfen
 - Motivierend und praxisnah
-- Antworte NUR mit validem JSON`,
+- Nutze das bereitgestellte Tool, um deine Antwort strukturiert zurückzugeben`,
+      tools: [lessonTool],
+      tool_choice: { type: "tool", name: "save_lesson" },
       messages: [{
         role: "user",
         content: `Erstelle Lektion ${nextLessonNumber} von ${totalLessons} für den Wissenskurs "${hauptproblem}".
@@ -186,29 +215,19 @@ Erstelle:
 1. Eine verständliche Lektion (200-350 Wörter) in HTML zum Thema "${topic}"
 2. 3 Multiple-Choice-Fragen (4 Optionen je Frage)
 
-Antworte als JSON:
-{
-  "title": "Lektion ${nextLessonNumber}: ${topic}",
-  "lesson_content": "<h2>${topic}</h2><p>...</p>...",
-  "quizzes": [
-    { "question_number": 1, "question_text": "...", "options": ["A", "B", "C", "D"], "correct_index": 0, "explanation": "..." },
-    { "question_number": 2, "question_text": "...", "options": ["A", "B", "C", "D"], "correct_index": 1, "explanation": "..." },
-    { "question_number": 3, "question_text": "...", "options": ["A", "B", "C", "D"], "correct_index": 2, "explanation": "..." }
-  ]
-}`,
+Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
       }],
     })
 
-    const content = message.content[0]
-    if (content.type !== "text") {
-      throw new Error("Unerwartetes Antwortformat.")
+    const toolBlock = message.content.find(
+      (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
+    )
+
+    if (!toolBlock) {
+      throw new Error("KI hat kein strukturiertes Ergebnis zurückgegeben.")
     }
 
-    let jsonStr = content.text.trim()
-    if (jsonStr.startsWith("```")) {
-      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "")
-    }
-    const generated = JSON.parse(jsonStr) as {
+    const generated = toolBlock.input as {
       title: string
       lesson_content: string
       quizzes: Array<{
