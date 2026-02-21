@@ -1,7 +1,7 @@
 {
   "name": "Praxis OS",
   "short_name": "Praxis OS",
-  "description": "Deine Übungen, Trainingspläne und Nachrichten von deinem Therapeuten",
+  "description": "Praxis OS — Powered by Physiotherapie Glawe",
   "start_url": "/app/dashboard",
   "scope": "/",
   "display": "standalone",

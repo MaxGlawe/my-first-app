@@ -97,8 +97,16 @@ export function LoginForm({ errorParam }: LoginFormProps) {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Praxis OS</CardTitle>
+      <CardHeader className="space-y-3 text-center">
+        {/* Logo / Branding */}
+        <div className="flex flex-col items-center gap-2">
+          <img
+            src="/images/Physio Logo_ausgeschnitten.png"
+            alt="Physiotherapie Glawe"
+            className="h-20 w-20 object-contain"
+          />
+          <CardTitle className="text-2xl font-bold">Praxis OS</CardTitle>
+        </div>
         <CardDescription>
           Melde dich mit deiner E-Mail-Adresse und deinem Passwort an.
         </CardDescription>
@@ -152,13 +160,16 @@ export function LoginForm({ errorParam }: LoginFormProps) {
         </form>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-3">
         <a
           href="/login/reset-password"
           className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors"
         >
           Passwort vergessen?
         </a>
+        <p className="text-[11px] text-slate-400">
+          Powered by <span className="font-medium">Physiotherapie Glawe</span>
+        </p>
       </CardFooter>
     </Card>
   )

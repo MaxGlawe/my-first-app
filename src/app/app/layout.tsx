@@ -1,10 +1,8 @@
-import type { Metadata } from "next"
-import { PatientenNavigation } from "@/components/app/PatientenNavigation"
+"use client"
 
-export const metadata: Metadata = {
-  title: "Praxis OS — Patienten-App",
-  description: "Deine Übungen, Trainingspläne und Termine",
-}
+import { PatientenNavigation } from "@/components/app/PatientenNavigation"
+import { OnboardingWizard } from "@/components/app/OnboardingWizard"
+import { CheckInGate } from "@/components/app/CheckInGate"
 
 export default function PatientenAppLayout({
   children,
@@ -13,8 +11,11 @@ export default function PatientenAppLayout({
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Main content with bottom padding for nav bar */}
-      <main className="pb-20">{children}</main>
+      <OnboardingWizard>
+        <CheckInGate>
+          <main className="pb-20">{children}</main>
+        </CheckInGate>
+      </OnboardingWizard>
 
       {/* Mobile bottom navigation */}
       <PatientenNavigation />

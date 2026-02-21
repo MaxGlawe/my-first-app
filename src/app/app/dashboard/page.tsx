@@ -151,47 +151,27 @@ function StreakCard({ streak }: { streak: number }) {
   )
 }
 
-// ── Check-in Banner ──────────────────────────────────────────────────────────
+// ── Check-in Status (compact — the gate handles the full check-in prompt) ───
 
-function CheckInBanner({ hasCheckedInToday }: { hasCheckedInToday: boolean }) {
-  if (hasCheckedInToday) {
-    return (
-      <div className="rounded-2xl bg-teal-50 border border-teal-200 p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-teal-100 flex items-center justify-center shrink-0">
-          <Heart className="h-5 w-5 text-teal-600" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-teal-700">Check-in erledigt</p>
-          <p className="text-xs text-teal-500">Du hast heute schon eingetragen.</p>
-        </div>
-        <Link href="/app/befindlichkeit">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-teal-600 hover:text-teal-700 hover:bg-teal-100"
-          >
-            Ändern
-          </Button>
-        </Link>
-      </div>
-    )
-  }
+function CheckInStatus({ hasCheckedInToday }: { hasCheckedInToday: boolean }) {
+  if (!hasCheckedInToday) return null
 
   return (
-    <Link href="/app/befindlichkeit" className="block">
-      <div className="rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 p-4 flex items-center gap-3 text-white shadow-sm hover:shadow-md transition-shadow">
-        <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-          <Heart className="h-5 w-5 text-white" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Wie geht es dir heute?</p>
-          <p className="text-xs text-white/80">
-            Trage dein Befinden ein — hilft deinem Therapeuten.
-          </p>
-        </div>
-        <ChevronRight className="h-5 w-5 text-white/60 shrink-0" />
+    <div className="rounded-2xl bg-teal-50 border border-teal-200 p-3 flex items-center gap-3">
+      <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+        <Heart className="h-4 w-4 text-teal-600" />
       </div>
-    </Link>
+      <p className="text-sm text-teal-700 font-medium flex-1">Check-in erledigt</p>
+      <Link href="/app/befindlichkeit">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-teal-600 hover:text-teal-700 hover:bg-teal-100 text-xs h-7"
+        >
+          Bearbeiten
+        </Button>
+      </Link>
+    </div>
   )
 }
 
@@ -281,8 +261,8 @@ export default function PatientDashboardPage() {
           {/* Daily Insight — KI Tipp des Tages */}
           <DailyInsightCard />
 
-          {/* Check-in Banner */}
-          <CheckInBanner hasCheckedInToday={!!todayEntry} />
+          {/* Check-in Status (compact — gate handles the full prompt) */}
+          <CheckInStatus hasCheckedInToday={!!todayEntry} />
 
           {/* Weekly Summary */}
           <WeeklySummaryCard />

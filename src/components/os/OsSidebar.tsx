@@ -98,9 +98,11 @@ export function OsSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/os/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold text-sm">
-                  P
-                </div>
+                <img
+                  src="/images/Physio Logo_ausgeschnitten.png"
+                  alt="Physiotherapie Glawe"
+                  className="aspect-square size-8 rounded-lg object-contain"
+                />
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">Praxis OS</span>
                   <span className="truncate text-xs text-muted-foreground">{roleSubtitle}</span>

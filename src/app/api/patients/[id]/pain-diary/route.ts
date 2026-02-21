@@ -35,7 +35,7 @@ export async function GET(
 
   const { data: entries, error } = await supabase
     .from("pain_diary_entries")
-    .select("id, entry_date, pain_level, wellbeing, notes, created_at")
+    .select("id, entry_date, pain_level, wellbeing, sleep_quality, stress_level, movement_restriction, pain_location, notes, created_at")
     .eq("patient_id", patientId)
     .gte("entry_date", sinceDate)
     .order("entry_date", { ascending: true })

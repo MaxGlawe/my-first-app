@@ -7,6 +7,10 @@ export interface PainDiaryEntry {
   entry_date: string
   pain_level: number
   wellbeing: number
+  sleep_quality: number | null
+  stress_level: number | null
+  movement_restriction: number | null
+  pain_location: string[]
   notes: string | null
   created_at: string
 }
@@ -20,6 +24,10 @@ interface UsePainDiaryResult {
   saveEntry: (data: {
     pain_level: number
     wellbeing: number
+    sleep_quality?: number | null
+    stress_level?: number | null
+    movement_restriction?: number | null
+    pain_location?: string[]
     notes?: string | null
   }) => Promise<boolean>
   isSaving: boolean
@@ -67,6 +75,10 @@ export function usePainDiary(): UsePainDiaryResult {
     async (data: {
       pain_level: number
       wellbeing: number
+      sleep_quality?: number | null
+      stress_level?: number | null
+      movement_restriction?: number | null
+      pain_location?: string[]
       notes?: string | null
     }): Promise<boolean> => {
       setIsSaving(true)

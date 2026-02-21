@@ -5,11 +5,12 @@
  * Zeigt Schmerz- und Wohlbefindlichkeits-Verlauf eines Patienten.
  */
 
+import { useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { usePatientPainDiary } from "@/hooks/use-pain-diary"
 import type { PainDiaryEntry } from "@/hooks/use-pain-diary"
-import { Heart, TrendingDown, TrendingUp, Minus, Calendar, MessageSquare } from "lucide-react"
+import { Heart, TrendingDown, TrendingUp, Minus, Calendar, MessageSquare, Moon, Brain, Move, MapPin } from "lucide-react"
 
 interface BefindlichkeitTabProps {
   patientId: string
@@ -17,16 +18,39 @@ interface BefindlichkeitTabProps {
 
 // ── Trend helper ─────────────────────────────────────────────────────────────
 
-function getTrend(entries: PainDiaryEntry[], key: "pain_level" | "wellbeing"): "up" | "down" | "stable" {
-  if (entries.length < 3) return "stable"
-  const recent = entries.slice(-7)
+type NumericKey = "pain_level" | "wellbeing" | "sleep_quality" | "stress_level" | "movement_restriction"
+
+function getTrend(entries: PainDiaryEntry[], key: NumericKey): "up" | "down" | "stable" {
+  // Filter entries that have a value for this key
+  const valid = entries.filter((e) => e[key] != null)
+  if (valid.length < 3) return "stable"
+  const recent = valid.slice(-7)
   const first = recent.slice(0, Math.ceil(recent.length / 2))
   const last = recent.slice(Math.ceil(recent.length / 2))
-  const avgFirst = first.reduce((s, e) => s + e[key], 0) / first.length
-  const avgLast = last.reduce((s, e) => s + e[key], 0) / last.length
+  const avgFirst = first.reduce((s, e) => s + (e[key] ?? 0), 0) / first.length
+  const avgLast = last.reduce((s, e) => s + (e[key] ?? 0), 0) / last.length
   const diff = avgLast - avgFirst
   if (Math.abs(diff) < 0.5) return "stable"
   return diff > 0 ? "up" : "down"
+}
+
+function getAvg(entries: PainDiaryEntry[], key: NumericKey): number | null {
+  const valid = entries.filter((e) => e[key] != null)
+  if (valid.length === 0) return null
+  return Math.round((valid.reduce((s, e) => s + (e[key] ?? 0), 0) / valid.length) * 10) / 10
+}
+
+function getTopLocations(entries: PainDiaryEntry[], max = 5): { label: string; count: number }[] {
+  const counts: Record<string, number> = {}
+  for (const e of entries) {
+    for (const loc of e.pain_location ?? []) {
+      counts[loc] = (counts[loc] || 0) + 1
+    }
+  }
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, max)
+    .map(([label, count]) => ({ label, count }))
 }
 
 function TrendIcon({ trend, goodDirection }: { trend: "up" | "down" | "stable"; goodDirection: "up" | "down" }) {
@@ -40,7 +64,25 @@ function TrendIcon({ trend, goodDirection }: { trend: "up" | "down" | "stable"; 
 
 // ── SVG Line Chart ───────────────────────────────────────────────────────────
 
+const CHART_LINES: {
+  key: NumericKey
+  label: string
+  color: string
+  fillAlpha: string
+  defaultOn: boolean
+}[] = [
+  { key: "pain_level", label: "Schmerz", color: "#ef4444", fillAlpha: "0.06", defaultOn: true },
+  { key: "wellbeing", label: "Wohlbefinden", color: "#14b8a6", fillAlpha: "0.08", defaultOn: true },
+  { key: "sleep_quality", label: "Schlaf", color: "#3b82f6", fillAlpha: "0.06", defaultOn: false },
+  { key: "stress_level", label: "Stress", color: "#f97316", fillAlpha: "0.06", defaultOn: false },
+  { key: "movement_restriction", label: "Bewegung", color: "#8b5cf6", fillAlpha: "0.06", defaultOn: false },
+]
+
 function VerlaufChart({ entries }: { entries: PainDiaryEntry[] }) {
+  const [activeLines, setActiveLines] = useState<Set<NumericKey>>(() =>
+    new Set(CHART_LINES.filter((l) => l.defaultOn).map((l) => l.key))
+  )
+
   if (entries.length === 0) return null
 
   const sorted = [...entries].sort(
@@ -59,26 +101,35 @@ function VerlaufChart({ entries }: { entries: PainDiaryEntry[] }) {
     return padding.top + chartH - (val / 10) * chartH
   }
 
-  function buildPath(key: "pain_level" | "wellbeing") {
-    return sorted
-      .map((e, i) => {
-        const x = padding.left + i * xStep
-        const y = toY(e[key])
-        return `${i === 0 ? "M" : "L"} ${x} ${y}`
-      })
-      .join(" ")
+  function buildPath(key: NumericKey) {
+    const segments: string[] = []
+    let started = false
+    sorted.forEach((e, i) => {
+      const val = e[key]
+      if (val == null) return
+      const x = padding.left + i * xStep
+      const y = toY(val)
+      segments.push(`${!started ? "M" : "L"} ${x} ${y}`)
+      started = true
+    })
+    return segments.join(" ")
   }
 
-  const painPath = buildPath("pain_level")
-  const wellbeingPath = buildPath("wellbeing")
+  function toggleLine(key: NumericKey) {
+    setActiveLines((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   const yLabels = [0, 2, 4, 6, 8, 10]
 
-  // Show date labels every ~7 entries
   const labelInterval = Math.max(1, Math.floor(sorted.length / 5))
   const xLabels: { x: number; label: string }[] = sorted
     .filter((_, i) => i % labelInterval === 0 || i === sorted.length - 1)
-    .map((e, _, arr) => {
+    .map((e) => {
       const idx = sorted.indexOf(e)
       return {
         x: padding.left + idx * xStep,
@@ -89,13 +140,16 @@ function VerlaufChart({ entries }: { entries: PainDiaryEntry[] }) {
       }
     })
 
+  // Check which optional lines have data
+  const hasData = (key: NumericKey) => sorted.some((e) => e[key] != null)
+
   return (
     <div className="border rounded-lg p-4 bg-white">
       <h3 className="text-sm font-semibold text-slate-700 mb-3">
         Verlauf (letzte {sorted.length} Tage)
       </h3>
 
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" aria-label="Schmerz- und Wohlbefindlichkeitsverlauf">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" aria-label="Befindlichkeitsverlauf">
         {/* Grid */}
         {yLabels.map((v) => (
           <g key={v}>
@@ -120,38 +174,50 @@ function VerlaufChart({ entries }: { entries: PainDiaryEntry[] }) {
           </text>
         ))}
 
-        {/* Wellbeing area */}
-        <path
-          d={`${wellbeingPath} L ${padding.left + (sorted.length - 1) * xStep} ${toY(0)} L ${padding.left} ${toY(0)} Z`}
-          fill="rgba(20, 184, 166, 0.08)"
-        />
-        <path d={wellbeingPath} fill="none" stroke="#14b8a6" strokeWidth={2.5} strokeLinecap="round" />
-
-        {/* Pain area */}
-        <path
-          d={`${painPath} L ${padding.left + (sorted.length - 1) * xStep} ${toY(0)} L ${padding.left} ${toY(0)} Z`}
-          fill="rgba(239, 68, 68, 0.06)"
-        />
-        <path d={painPath} fill="none" stroke="#ef4444" strokeWidth={2.5} strokeLinecap="round" />
-
-        {/* Data points */}
-        {sorted.map((e, i) => (
-          <g key={i}>
-            <circle cx={padding.left + i * xStep} cy={toY(e.wellbeing)} r={3} fill="#14b8a6" />
-            <circle cx={padding.left + i * xStep} cy={toY(e.pain_level)} r={3} fill="#ef4444" />
-          </g>
-        ))}
+        {/* Lines for active metrics */}
+        {CHART_LINES.filter((l) => activeLines.has(l.key) && hasData(l.key)).map((line) => {
+          const path = buildPath(line.key)
+          return (
+            <g key={line.key}>
+              <path d={path} fill="none" stroke={line.color} strokeWidth={2.5} strokeLinecap="round" />
+              {sorted.map((e, i) => {
+                const val = e[line.key]
+                if (val == null) return null
+                return (
+                  <circle
+                    key={i}
+                    cx={padding.left + i * xStep}
+                    cy={toY(val)}
+                    r={3}
+                    fill={line.color}
+                  />
+                )
+              })}
+            </g>
+          )
+        })}
       </svg>
 
-      <div className="flex items-center gap-5 mt-3 text-xs text-slate-500">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-5 rounded bg-red-500" />
-          Schmerz (NRS)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-5 rounded bg-teal-500" />
-          Wohlbefinden
-        </span>
+      {/* Legend with toggles */}
+      <div className="flex flex-wrap items-center gap-2 mt-3">
+        {CHART_LINES.filter((l) => l.key === "pain_level" || l.key === "wellbeing" || hasData(l.key)).map((line) => (
+          <button
+            key={line.key}
+            type="button"
+            onClick={() => toggleLine(line.key)}
+            className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border transition-colors ${
+              activeLines.has(line.key)
+                ? "border-slate-300 bg-white text-slate-600"
+                : "border-transparent bg-slate-100 text-slate-400"
+            }`}
+          >
+            <span
+              className="h-2 w-4 rounded"
+              style={{ backgroundColor: activeLines.has(line.key) ? line.color : "#cbd5e1" }}
+            />
+            {line.label}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -179,7 +245,7 @@ function RecentEntries({ entries }: { entries: PainDiaryEntry[] }) {
               <Calendar className="h-4 w-4 text-slate-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 text-sm">
+              <div className="flex items-center gap-3 text-sm flex-wrap">
                 <span className="font-medium text-slate-700">
                   {new Date(entry.entry_date).toLocaleDateString("de-DE", {
                     weekday: "short",
@@ -195,6 +261,42 @@ function RecentEntries({ entries }: { entries: PainDiaryEntry[] }) {
                   WB {entry.wellbeing}/10
                 </span>
               </div>
+              {/* Extra metrics row */}
+              {(entry.sleep_quality != null || entry.stress_level != null || entry.movement_restriction != null) && (
+                <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
+                  {entry.sleep_quality != null && (
+                    <span className="flex items-center gap-1">
+                      <Moon className="h-3 w-3 text-blue-400" />
+                      {entry.sleep_quality}/10
+                    </span>
+                  )}
+                  {entry.stress_level != null && (
+                    <span className="flex items-center gap-1">
+                      <Brain className="h-3 w-3 text-orange-400" />
+                      {entry.stress_level}/10
+                    </span>
+                  )}
+                  {entry.movement_restriction != null && (
+                    <span className="flex items-center gap-1">
+                      <Move className="h-3 w-3 text-purple-400" />
+                      {entry.movement_restriction}/10
+                    </span>
+                  )}
+                </div>
+              )}
+              {/* Pain locations */}
+              {entry.pain_location && entry.pain_location.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {entry.pain_location.map((loc) => (
+                    <span
+                      key={loc}
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600"
+                    >
+                      {loc}
+                    </span>
+                  ))}
+                </div>
+              )}
               {entry.notes && (
                 <div className="flex items-start gap-1.5 mt-1">
                   <MessageSquare className="h-3 w-3 text-slate-400 mt-0.5 shrink-0" />
@@ -255,14 +357,25 @@ export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
   const latest = entries[entries.length - 1]
   const painTrend = getTrend(entries, "pain_level")
   const wellbeingTrend = getTrend(entries, "wellbeing")
-  const avgPain = Math.round((entries.reduce((s, e) => s + e.pain_level, 0) / entries.length) * 10) / 10
-  const avgWellbeing = Math.round((entries.reduce((s, e) => s + e.wellbeing, 0) / entries.length) * 10) / 10
+  const sleepTrend = getTrend(entries, "sleep_quality")
+  const stressTrend = getTrend(entries, "stress_level")
+  const movementTrend = getTrend(entries, "movement_restriction")
+
+  const avgPain = getAvg(entries, "pain_level")
+  const avgWellbeing = getAvg(entries, "wellbeing")
+  const avgSleep = getAvg(entries, "sleep_quality")
+  const avgStress = getAvg(entries, "stress_level")
+  const avgMovement = getAvg(entries, "movement_restriction")
+
+  const topLocations = getTopLocations(entries)
+  const hasSleepData = entries.some((e) => e.sleep_quality != null)
+  const hasStressData = entries.some((e) => e.stress_level != null)
+  const hasMovementData = entries.some((e) => e.movement_restriction != null)
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
+      {/* Primary stats — Pain + Wellbeing */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Latest pain */}
         <div className="border rounded-lg p-3 bg-white text-center">
           <p className="text-xs text-slate-400 font-medium">Aktuell (Schmerz)</p>
           <p className="text-2xl font-bold text-red-500 mt-1">{latest.pain_level}/10</p>
@@ -274,7 +387,6 @@ export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
           </div>
         </div>
 
-        {/* Latest wellbeing */}
         <div className="border rounded-lg p-3 bg-white text-center">
           <p className="text-xs text-slate-400 font-medium">Aktuell (Wohlbef.)</p>
           <p className="text-2xl font-bold text-teal-600 mt-1">{latest.wellbeing}/10</p>
@@ -286,20 +398,92 @@ export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
           </div>
         </div>
 
-        {/* Average pain */}
         <div className="border rounded-lg p-3 bg-white text-center">
           <p className="text-xs text-slate-400 font-medium">Durchschnitt (S)</p>
-          <p className="text-2xl font-bold text-slate-700 mt-1">{avgPain}</p>
+          <p className="text-2xl font-bold text-slate-700 mt-1">{avgPain ?? "–"}</p>
           <p className="text-[10px] text-slate-400">letzte {entries.length} Tage</p>
         </div>
 
-        {/* Average wellbeing */}
         <div className="border rounded-lg p-3 bg-white text-center">
           <p className="text-xs text-slate-400 font-medium">Durchschnitt (WB)</p>
-          <p className="text-2xl font-bold text-slate-700 mt-1">{avgWellbeing}</p>
+          <p className="text-2xl font-bold text-slate-700 mt-1">{avgWellbeing ?? "–"}</p>
           <p className="text-[10px] text-slate-400">letzte {entries.length} Tage</p>
         </div>
       </div>
+
+      {/* Secondary stats — Sleep, Stress, Movement (only if data exists) */}
+      {(hasSleepData || hasStressData || hasMovementData) && (
+        <div className="grid grid-cols-3 gap-3">
+          {hasSleepData && (
+            <div className="border rounded-lg p-3 bg-white text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Moon className="h-3.5 w-3.5 text-blue-400" />
+                <p className="text-xs text-slate-400 font-medium">Schlaf</p>
+              </div>
+              <p className="text-xl font-bold text-blue-500">{avgSleep ?? "–"}</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <TrendIcon trend={sleepTrend} goodDirection="up" />
+                <span className="text-[10px] text-slate-400">
+                  {sleepTrend === "up" ? "Besser" : sleepTrend === "down" ? "Schlechter" : "Stabil"}
+                </span>
+              </div>
+            </div>
+          )}
+          {hasStressData && (
+            <div className="border rounded-lg p-3 bg-white text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Brain className="h-3.5 w-3.5 text-orange-400" />
+                <p className="text-xs text-slate-400 font-medium">Stress</p>
+              </div>
+              <p className="text-xl font-bold text-orange-500">{avgStress ?? "–"}</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <TrendIcon trend={stressTrend} goodDirection="down" />
+                <span className="text-[10px] text-slate-400">
+                  {stressTrend === "down" ? "Weniger" : stressTrend === "up" ? "Mehr" : "Stabil"}
+                </span>
+              </div>
+            </div>
+          )}
+          {hasMovementData && (
+            <div className="border rounded-lg p-3 bg-white text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Move className="h-3.5 w-3.5 text-purple-400" />
+                <p className="text-xs text-slate-400 font-medium">Bewegung</p>
+              </div>
+              <p className="text-xl font-bold text-purple-500">{avgMovement ?? "–"}</p>
+              <div className="flex items-center justify-center gap-1 mt-0.5">
+                <TrendIcon trend={movementTrend} goodDirection="down" />
+                <span className="text-[10px] text-slate-400">
+                  {movementTrend === "down" ? "Besser" : movementTrend === "up" ? "Eingeschränkter" : "Stabil"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Top pain locations */}
+      {topLocations.length > 0 && (
+        <div className="border rounded-lg p-4 bg-white">
+          <div className="flex items-center gap-2 mb-3">
+            <MapPin className="h-4 w-4 text-slate-400" />
+            <h3 className="text-sm font-semibold text-slate-700">Häufigste Schmerzlokalisationen</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {topLocations.map(({ label, count }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200"
+              >
+                {label}
+                <span className="text-[10px] font-semibold text-slate-400">
+                  {count}x
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Chart */}
       <VerlaufChart entries={entries} />

@@ -48,6 +48,16 @@ export default function EinstellungenPage() {
           </Button>
         </form>
       </div>
+
+      {/* Credits */}
+      <div className="pt-4 pb-2 text-center space-y-1">
+        <p className="text-xs text-slate-400">
+          Powered by <span className="font-medium text-slate-500">Physiotherapie Glawe</span>
+        </p>
+        <p className="text-[10px] text-slate-300">
+          Designed by Max Glawe &middot; v1.0
+        </p>
+      </div>
     </div>
   )
 }

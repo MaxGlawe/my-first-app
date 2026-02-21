@@ -11,6 +11,10 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 const createEntrySchema = z.object({
   pain_level: z.number().int().min(0).max(10),
   wellbeing: z.number().int().min(0).max(10),
+  sleep_quality: z.number().int().min(0).max(10).optional().nullable(),
+  stress_level: z.number().int().min(0).max(10).optional().nullable(),
+  movement_restriction: z.number().int().min(0).max(10).optional().nullable(),
+  pain_location: z.array(z.string()).optional().default([]),
   notes: z.string().max(2000).optional().nullable(),
   entry_date: z
     .string()
@@ -52,7 +56,7 @@ export async function GET() {
 
   const { data: entries, error } = await supabase
     .from("pain_diary_entries")
-    .select("id, entry_date, pain_level, wellbeing, notes, created_at")
+    .select("id, entry_date, pain_level, wellbeing, sleep_quality, stress_level, movement_restriction, pain_location, notes, created_at")
     .eq("patient_id", patient.id)
     .gte("entry_date", sinceDate)
     .order("entry_date", { ascending: false })
@@ -118,7 +122,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { pain_level, wellbeing, notes, entry_date } = parseResult.data
+  const { pain_level, wellbeing, sleep_quality, stress_level, movement_restriction, pain_location, notes, entry_date } = parseResult.data
   const date = entry_date ?? new Date().toISOString().split("T")[0]
 
   // Upsert: one entry per patient per day
@@ -130,12 +134,16 @@ export async function POST(request: NextRequest) {
         entry_date: date,
         pain_level,
         wellbeing,
+        sleep_quality: sleep_quality ?? null,
+        stress_level: stress_level ?? null,
+        movement_restriction: movement_restriction ?? null,
+        pain_location: pain_location ?? [],
         notes: notes ?? null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "patient_id,entry_date" }
     )
-    .select("id, entry_date, pain_level, wellbeing, notes, created_at")
+    .select("id, entry_date, pain_level, wellbeing, sleep_quality, stress_level, movement_restriction, pain_location, notes, created_at")
     .single()
 
   if (error) {
