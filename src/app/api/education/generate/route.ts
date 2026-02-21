@@ -228,41 +228,39 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = toolBlock.input as any
 
-    // Coerce fields that Claude sometimes returns as JSON strings instead of objects
-    const parseSafe = (val: unknown): unknown => {
-      if (typeof val === "string") {
-        try { return JSON.parse(val) } catch { return val }
-      }
-      return val
+    // Dump the raw structure for debugging
+    const rawKeys = Object.keys(raw)
+    const rawDump: Record<string, string> = {}
+    for (const key of rawKeys) {
+      const val = raw[key]
+      const t = Array.isArray(val) ? `array[${val.length}]` : typeof val
+      const preview = typeof val === "string" ? val.slice(0, 200) : JSON.stringify(val)?.slice(0, 200)
+      rawDump[key] = `${t}: ${preview}`
     }
+    console.log("[POST /api/education/generate] RAW tool input keys:", rawKeys)
+    console.log("[POST /api/education/generate] RAW tool input dump:", JSON.stringify(rawDump))
 
     generated = {
-      curriculum: Array.isArray(raw.curriculum) ? raw.curriculum : parseSafe(raw.curriculum),
-      title: typeof raw.title === "string" ? raw.title : String(raw.title ?? ""),
-      lesson_content: typeof raw.lesson_content === "string" ? raw.lesson_content : String(raw.lesson_content ?? ""),
-      quizzes: Array.isArray(raw.quizzes) ? raw.quizzes : parseSafe(raw.quizzes),
+      curriculum: raw.curriculum,
+      title: raw.title,
+      lesson_content: raw.lesson_content,
+      quizzes: raw.quizzes,
     } as GeneratedCurriculumContent
 
-    // Log what we received for debugging
-    console.log("[POST /api/education/generate] Tool response:", JSON.stringify({
-      hasCurriculum: Array.isArray(generated.curriculum),
-      curriculumLength: Array.isArray(generated.curriculum) ? generated.curriculum.length : typeof generated.curriculum,
-      hasTitle: !!generated.title,
-      hasContent: !!generated.lesson_content,
-      quizzesIsArray: Array.isArray(generated.quizzes),
-      quizzesLength: Array.isArray(generated.quizzes) ? generated.quizzes.length : typeof generated.quizzes,
-    }))
+    // Validate & fix structure
+    if (!Array.isArray(generated.curriculum) || !Array.isArray(generated.quizzes)) {
+      console.error("[POST /api/education/generate] STRUCTURE ISSUE - curriculum isArray:", Array.isArray(generated.curriculum), "quizzes isArray:", Array.isArray(generated.quizzes))
+      console.error("[POST /api/education/generate] Full raw input:", JSON.stringify(raw).slice(0, 2000))
+      throw new Error(`Ungültige KI-Antwort-Struktur. Siehe Server-Logs.`)
+    }
 
-    // Validate structure (lenient: accept >= 5 curriculum items, >= 1 quiz)
     if (
-      !Array.isArray(generated.curriculum) ||
       generated.curriculum.length < 5 ||
       !generated.title ||
       !generated.lesson_content ||
-      !Array.isArray(generated.quizzes) ||
       generated.quizzes.length < 1
     ) {
-      throw new Error(`Ungültige KI-Antwort: curriculum=${Array.isArray(generated.curriculum) ? generated.curriculum.length : typeof generated.curriculum}, quizzes=${Array.isArray(generated.quizzes) ? generated.quizzes.length : typeof generated.quizzes}, title=${!!generated.title}, content=${!!generated.lesson_content}`)
+      throw new Error(`Ungültige KI-Antwort: curriculum=${generated.curriculum.length}, quizzes=${generated.quizzes.length}, title=${!!generated.title}, content=${!!generated.lesson_content}`)
     }
 
     // Pad curriculum to 10 if less than 10
