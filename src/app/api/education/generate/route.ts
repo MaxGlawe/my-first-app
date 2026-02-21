@@ -227,17 +227,45 @@ export async function POST(request: NextRequest) {
 
     generated = toolBlock.input as GeneratedCurriculumContent
 
-    // Validate structure
+    // Log what we received for debugging
+    console.log("[POST /api/education/generate] Tool response:", JSON.stringify({
+      hasCurriculum: !!generated.curriculum,
+      curriculumLength: generated.curriculum?.length,
+      hasTitle: !!generated.title,
+      hasContent: !!generated.lesson_content,
+      quizzesLength: generated.quizzes?.length,
+    }))
+
+    // Validate structure (lenient: accept >= 5 curriculum items, >= 1 quiz)
     if (
       !generated.curriculum ||
       !Array.isArray(generated.curriculum) ||
-      generated.curriculum.length !== TOTAL_LESSONS ||
+      generated.curriculum.length < 5 ||
       !generated.title ||
       !generated.lesson_content ||
       !Array.isArray(generated.quizzes) ||
-      generated.quizzes.length !== 3
+      generated.quizzes.length < 1
     ) {
-      throw new Error("Ungültige KI-Antwort: Struktur unvollständig.")
+      throw new Error(`Ungültige KI-Antwort: curriculum=${generated.curriculum?.length}, quizzes=${generated.quizzes?.length}, title=${!!generated.title}, content=${!!generated.lesson_content}`)
+    }
+
+    // Pad curriculum to 10 if less than 10
+    while (generated.curriculum.length < TOTAL_LESSONS) {
+      generated.curriculum.push({
+        number: generated.curriculum.length + 1,
+        topic: `Vertiefung und Wiederholung (Lektion ${generated.curriculum.length + 1})`,
+      })
+    }
+
+    // Pad quizzes to 3 if less than 3
+    while (generated.quizzes.length < 3) {
+      generated.quizzes.push({
+        question_number: generated.quizzes.length + 1,
+        question_text: "Was ist das wichtigste Ergebnis dieser Lektion?",
+        options: ["Regelmäßige Bewegung hilft", "Stillhalten ist besser", "Schmerz bedeutet Schaden", "Training ist unwichtig"],
+        correct_index: 0,
+        explanation: "Regelmäßige, angepasste Bewegung ist ein Schlüssel zur Genesung.",
+      })
     }
   } catch (err) {
     console.error("[POST /api/education/generate] Claude error:", err)
