@@ -230,18 +230,34 @@ Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = toolBlock.input as any
 
-    // Coerce fields that Claude sometimes returns as JSON strings instead of objects
-    const parseSafe = (val: unknown): unknown => {
-      if (typeof val === "string") {
-        try { return JSON.parse(val) } catch { return val }
+    // Repair broken JSON: Claude uses German quotes „..." where the closing " is
+    // a regular ASCII U+0022 which breaks JSON.parse. Iteratively fix via error position.
+    function repairAndParseJson(str: string): unknown {
+      let s = str
+      for (let attempt = 0; attempt < 30; attempt++) {
+        try { return JSON.parse(s) } catch (e) {
+          const match = (e as Error).message.match(/position\s+(\d+)/i)
+          if (!match) throw e
+          const errorPos = parseInt(match[1])
+          let quotePos = errorPos - 1
+          while (quotePos >= 0 && s[quotePos] !== '"') quotePos--
+          if (quotePos < 0) throw e
+          s = s.slice(0, quotePos) + '\\"' + s.slice(quotePos + 1)
+        }
       }
-      return val
+      throw new Error("JSON-Reparatur fehlgeschlagen")
+    }
+
+    function coerceArray(val: unknown): unknown[] {
+      if (Array.isArray(val)) return val
+      if (typeof val === "string") return repairAndParseJson(val) as unknown[]
+      return []
     }
 
     const generated = {
       title: typeof raw.title === "string" ? raw.title : String(raw.title ?? ""),
       lesson_content: typeof raw.lesson_content === "string" ? raw.lesson_content : String(raw.lesson_content ?? ""),
-      quizzes: Array.isArray(raw.quizzes) ? raw.quizzes : parseSafe(raw.quizzes),
+      quizzes: coerceArray(raw.quizzes),
     } as {
       title: string
       lesson_content: string

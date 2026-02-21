@@ -234,22 +234,37 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw = toolBlock.input as any
 
+    // Repair broken JSON: Claude uses German quotes „..." where the closing " is
+    // a regular ASCII U+0022 which breaks JSON.parse. This iteratively finds and
+    // escapes the offending quotes using the parse error position.
+    function repairAndParseJson(str: string): unknown {
+      let s = str
+      for (let attempt = 0; attempt < 30; attempt++) {
+        try {
+          return JSON.parse(s)
+        } catch (e) {
+          const match = (e as Error).message.match(/position\s+(\d+)/i)
+          if (!match) throw e
+          const errorPos = parseInt(match[1])
+          // Find the " just before the error position that was wrongly treated as a closing quote
+          let quotePos = errorPos - 1
+          while (quotePos >= 0 && s[quotePos] !== '"') quotePos--
+          if (quotePos < 0) throw e
+          // Escape this quote so JSON.parse treats it as content, not structure
+          s = s.slice(0, quotePos) + '\\"' + s.slice(quotePos + 1)
+        }
+      }
+      throw new Error("JSON-Reparatur nach 30 Versuchen fehlgeschlagen")
+    }
+
     // The API sometimes returns nested arrays as JSON strings — robustly coerce them
     function coerceArray(val: unknown, fieldName: string): unknown[] {
       if (Array.isArray(val)) return val
       if (typeof val === "string") {
-        console.log(`[education/generate] ${fieldName} is string (${val.length} chars), attempting parse...`)
-        // Try direct parse
-        try { return JSON.parse(val) } catch (e1) {
-          console.error(`[education/generate] ${fieldName} JSON.parse failed:`, (e1 as Error).message)
-          console.error(`[education/generate] ${fieldName} first 300 chars:`, val.slice(0, 300))
-          console.error(`[education/generate] ${fieldName} last 300 chars:`, val.slice(-300))
-          // Try fixing common issues: sometimes the string has literal \n or unescaped newlines
-          try { return JSON.parse(val.replace(/\n/g, "\\n")) } catch {
-            // noop
-          }
-          throw new Error(`${fieldName} ist kein gültiges JSON: ${(e1 as Error).message}`)
-        }
+        console.log(`[education/generate] ${fieldName} is string (${val.length} chars), repairing & parsing...`)
+        const parsed = repairAndParseJson(val)
+        if (Array.isArray(parsed)) return parsed
+        throw new Error(`${fieldName} wurde geparst, ist aber kein Array`)
       }
       throw new Error(`${fieldName} hat unerwarteten Typ: ${typeof val}`)
     }
