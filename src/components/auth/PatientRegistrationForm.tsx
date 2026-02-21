@@ -65,46 +65,22 @@ export function PatientRegistrationForm({ token, prefill }: PatientRegistrationF
     setServerError(null)
 
     try {
-      const { supabase } = await import("@/lib/supabase")
-
-      // Sign up the user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            first_name: data.firstName,
-            last_name: data.lastName,
-            invite_token: token,
-          },
-        },
+      // Use server-side registration (auto-confirms user, no confirmation email needed)
+      const res = await fetch(`/api/patients/invite/${token}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+        }),
       })
 
-      if (signUpError) {
-        if (signUpError.message.includes("already registered")) {
-          setServerError("Diese E-Mail-Adresse ist bereits registriert.")
-        } else {
-          setServerError("Ein Fehler ist aufgetreten. Bitte versuche es erneut.")
-        }
-        return
-      }
+      const result = await res.json()
 
-      if (!authData.user) {
-        setServerError("Registrierung fehlgeschlagen. Bitte versuche es erneut.")
-        return
-      }
-
-      // If we have a prefill (came from invite), try to complete the registration
-      if (prefill) {
-        try {
-          await fetch(`/api/patients/invite/${token}/complete`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          })
-        } catch {
-          // Non-critical — profile can be linked later
-        }
-        router.push("/app/dashboard")
+      if (!res.ok) {
+        setServerError(result.error || "Ein Fehler ist aufgetreten. Bitte versuche es erneut.")
         return
       }
 
@@ -122,8 +98,8 @@ export function PatientRegistrationForm({ token, prefill }: PatientRegistrationF
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Konto erstellt!</CardTitle>
           <CardDescription>
-            Willkommen bei Praxis OS! Bitte überprüfe deine E-Mails und bestätige deine Adresse,
-            um dich anzumelden.
+            Willkommen bei Praxis OS! Dein Konto ist bereit.
+            Du kannst dich jetzt mit deiner E-Mail und deinem Passwort anmelden.
           </CardDescription>
         </CardHeader>
         <CardFooter>
@@ -131,7 +107,7 @@ export function PatientRegistrationForm({ token, prefill }: PatientRegistrationF
             href="/login"
             className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors"
           >
-            Zur Anmeldung
+            Jetzt anmelden
           </a>
         </CardFooter>
       </Card>
