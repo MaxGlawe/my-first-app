@@ -37,8 +37,9 @@ export async function updateSession(request: NextRequest) {
   const publicRoutes = ['/login', '/login/reset-password']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
   const isInviteRoute = pathname.startsWith('/invite/')
+  const isInviteApi = pathname.startsWith('/api/patients/invite/')
 
-  if (!user && !isPublicRoute && !isInviteRoute) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
