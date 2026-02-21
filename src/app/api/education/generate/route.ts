@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
 
     const claudePromise = anthropic.messages.create({
       model: "claude-sonnet-4-6",
-      max_tokens: 4096,
+      max_tokens: 16384,
       system: SYSTEM_PROMPT,
       tools: [curriculumTool],
       tool_choice: { type: "tool", name: "save_curriculum" },
@@ -211,10 +211,16 @@ export async function POST(request: NextRequest) {
     })
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 90_000)
+      setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 120_000)
     )
 
     const message = await Promise.race([claudePromise, timeoutPromise])
+
+    // Check if response was truncated
+    if (message.stop_reason === "max_tokens") {
+      console.error("[POST /api/education/generate] Response truncated! stop_reason=max_tokens")
+      throw new Error("KI-Antwort wurde abgeschnitten. Bitte erneut versuchen.")
+    }
 
     // Extract tool_use result
     const toolBlock = message.content.find(
@@ -225,42 +231,20 @@ export async function POST(request: NextRequest) {
       throw new Error("KI hat kein strukturiertes Ergebnis zurückgegeben.")
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = toolBlock.input as any
+    generated = toolBlock.input as GeneratedCurriculumContent
 
-    // Dump the raw structure for debugging
-    const rawKeys = Object.keys(raw)
-    const rawDump: Record<string, string> = {}
-    for (const key of rawKeys) {
-      const val = raw[key]
-      const t = Array.isArray(val) ? `array[${val.length}]` : typeof val
-      const preview = typeof val === "string" ? val.slice(0, 200) : JSON.stringify(val)?.slice(0, 200)
-      rawDump[key] = `${t}: ${preview}`
-    }
-    console.log("[POST /api/education/generate] RAW tool input keys:", rawKeys)
-    console.log("[POST /api/education/generate] RAW tool input dump:", JSON.stringify(rawDump))
+    console.log("[POST /api/education/generate] stop_reason:", message.stop_reason, "curriculum:", generated.curriculum?.length, "quizzes:", generated.quizzes?.length)
 
-    generated = {
-      curriculum: raw.curriculum,
-      title: raw.title,
-      lesson_content: raw.lesson_content,
-      quizzes: raw.quizzes,
-    } as GeneratedCurriculumContent
-
-    // Validate & fix structure
-    if (!Array.isArray(generated.curriculum) || !Array.isArray(generated.quizzes)) {
-      console.error("[POST /api/education/generate] STRUCTURE ISSUE - curriculum isArray:", Array.isArray(generated.curriculum), "quizzes isArray:", Array.isArray(generated.quizzes))
-      console.error("[POST /api/education/generate] Full raw input:", JSON.stringify(raw).slice(0, 2000))
-      throw new Error(`Ungültige KI-Antwort-Struktur. Siehe Server-Logs.`)
-    }
-
+    // Validate structure
     if (
+      !Array.isArray(generated.curriculum) ||
       generated.curriculum.length < 5 ||
       !generated.title ||
       !generated.lesson_content ||
+      !Array.isArray(generated.quizzes) ||
       generated.quizzes.length < 1
     ) {
-      throw new Error(`Ungültige KI-Antwort: curriculum=${generated.curriculum.length}, quizzes=${generated.quizzes.length}, title=${!!generated.title}, content=${!!generated.lesson_content}`)
+      throw new Error(`Ungültige KI-Antwort: curriculum=${Array.isArray(generated.curriculum) ? generated.curriculum.length : typeof generated.curriculum}, quizzes=${Array.isArray(generated.quizzes) ? generated.quizzes.length : typeof generated.quizzes}`)
     }
 
     // Pad curriculum to 10 if less than 10
