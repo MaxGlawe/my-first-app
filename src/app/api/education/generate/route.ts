@@ -231,20 +231,46 @@ export async function POST(request: NextRequest) {
       throw new Error("KI hat kein strukturiertes Ergebnis zurückgegeben.")
     }
 
-    generated = toolBlock.input as GeneratedCurriculumContent
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = toolBlock.input as any
+
+    // The API sometimes returns nested arrays as JSON strings — robustly coerce them
+    function coerceArray(val: unknown, fieldName: string): unknown[] {
+      if (Array.isArray(val)) return val
+      if (typeof val === "string") {
+        console.log(`[education/generate] ${fieldName} is string (${val.length} chars), attempting parse...`)
+        // Try direct parse
+        try { return JSON.parse(val) } catch (e1) {
+          console.error(`[education/generate] ${fieldName} JSON.parse failed:`, (e1 as Error).message)
+          console.error(`[education/generate] ${fieldName} first 300 chars:`, val.slice(0, 300))
+          console.error(`[education/generate] ${fieldName} last 300 chars:`, val.slice(-300))
+          // Try fixing common issues: sometimes the string has literal \n or unescaped newlines
+          try { return JSON.parse(val.replace(/\n/g, "\\n")) } catch {
+            // noop
+          }
+          throw new Error(`${fieldName} ist kein gültiges JSON: ${(e1 as Error).message}`)
+        }
+      }
+      throw new Error(`${fieldName} hat unerwarteten Typ: ${typeof val}`)
+    }
+
+    generated = {
+      curriculum: coerceArray(raw.curriculum, "curriculum"),
+      title: raw.title,
+      lesson_content: raw.lesson_content,
+      quizzes: coerceArray(raw.quizzes, "quizzes"),
+    } as GeneratedCurriculumContent
 
     console.log("[POST /api/education/generate] stop_reason:", message.stop_reason, "curriculum:", generated.curriculum?.length, "quizzes:", generated.quizzes?.length)
 
     // Validate structure
     if (
-      !Array.isArray(generated.curriculum) ||
       generated.curriculum.length < 5 ||
       !generated.title ||
       !generated.lesson_content ||
-      !Array.isArray(generated.quizzes) ||
       generated.quizzes.length < 1
     ) {
-      throw new Error(`Ungültige KI-Antwort: curriculum=${Array.isArray(generated.curriculum) ? generated.curriculum.length : typeof generated.curriculum}, quizzes=${Array.isArray(generated.quizzes) ? generated.quizzes.length : typeof generated.quizzes}`)
+      throw new Error(`Ungültige KI-Antwort: curriculum=${generated.curriculum.length}, quizzes=${generated.quizzes.length}`)
     }
 
     // Pad curriculum to 10 if less than 10
