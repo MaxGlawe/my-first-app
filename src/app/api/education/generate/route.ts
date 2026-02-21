@@ -201,20 +201,41 @@ export async function POST(request: NextRequest) {
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-    const claudePromise = anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 16384,
-      system: SYSTEM_PROMPT,
-      tools: [curriculumTool],
-      tool_choice: { type: "tool", name: "save_curriculum" },
-      messages: [{ role: "user", content: buildCurriculumPrompt(hauptproblem) }],
-    })
+    // Retry logic for rate limits (429)
+    let message: Anthropic.Message | null = null
+    const MAX_RETRIES = 3
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        const claudePromise = anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          tools: [curriculumTool],
+          tool_choice: { type: "tool", name: "save_curriculum" },
+          messages: [{ role: "user", content: buildCurriculumPrompt(hauptproblem) }],
+        })
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 120_000)
-    )
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("CLAUDE_TIMEOUT")), 120_000)
+        )
 
-    const message = await Promise.race([claudePromise, timeoutPromise])
+        message = await Promise.race([claudePromise, timeoutPromise])
+        break // Success — exit retry loop
+      } catch (retryErr) {
+        const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr)
+        if (errMsg.includes("429") && attempt < MAX_RETRIES - 1) {
+          const waitSeconds = (attempt + 1) * 15 // 15s, 30s, 45s
+          console.log(`[education/generate] Rate limited (attempt ${attempt + 1}), waiting ${waitSeconds}s...`)
+          await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
+          continue
+        }
+        throw retryErr
+      }
+    }
+
+    if (!message) {
+      throw new Error("Keine Antwort nach Wiederholungsversuchen erhalten.")
+    }
 
     // Check if response was truncated
     if (message.stop_reason === "max_tokens") {

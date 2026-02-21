@@ -190,10 +190,15 @@ export async function POST(request: NextRequest) {
       },
     }
 
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 2048,
-      system: `Du bist ein erfahrener Physiotherapeut und Gesundheitspädagoge. Erstelle eine einzelne Wissenslektion für Patienten.
+    // Retry logic for rate limits (429)
+    let message: Anthropic.Message | null = null
+    const MAX_RETRIES = 3
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        message = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2048,
+          system: `Du bist ein erfahrener Physiotherapeut und Gesundheitspädagoge. Erstelle eine einzelne Wissenslektion für Patienten.
 
 REGELN:
 - Schreibe auf B1-Deutsch (einfache Sprache)
@@ -201,11 +206,11 @@ REGELN:
 - Fragen sollen Kernverständnis prüfen
 - Motivierend und praxisnah
 - Nutze das bereitgestellte Tool, um deine Antwort strukturiert zurückzugeben`,
-      tools: [lessonTool],
-      tool_choice: { type: "tool", name: "save_lesson" },
-      messages: [{
-        role: "user",
-        content: `Erstelle Lektion ${nextLessonNumber} von ${totalLessons} für den Wissenskurs "${hauptproblem}".
+          tools: [lessonTool],
+          tool_choice: { type: "tool", name: "save_lesson" },
+          messages: [{
+            role: "user",
+            content: `Erstelle Lektion ${nextLessonNumber} von ${totalLessons} für den Wissenskurs "${hauptproblem}".
 
 Thema dieser Lektion: "${topic}"
 
@@ -216,8 +221,24 @@ Erstelle:
 2. 3 Multiple-Choice-Fragen (4 Optionen je Frage)
 
 Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
-      }],
-    })
+          }],
+        })
+        break
+      } catch (retryErr) {
+        const errMsg = retryErr instanceof Error ? retryErr.message : String(retryErr)
+        if (errMsg.includes("429") && attempt < MAX_RETRIES - 1) {
+          const waitSeconds = (attempt + 1) * 15
+          console.log(`[education/next-lesson] Rate limited (attempt ${attempt + 1}), waiting ${waitSeconds}s...`)
+          await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
+          continue
+        }
+        throw retryErr
+      }
+    }
+
+    if (!message) {
+      throw new Error("Keine Antwort nach Wiederholungsversuchen erhalten.")
+    }
 
     const toolBlock = message.content.find(
       (block): block is Anthropic.ToolUseBlock => block.type === "tool_use"
