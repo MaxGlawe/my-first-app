@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   // Use empty turbopack config to silence the webpack/turbopack mismatch error
   // while still allowing next-pwa to function during production builds.
   turbopack: {},
+  allowedDevOrigins: ["192.168.178.49"],
 }
 
 export default withPWA(nextConfig)

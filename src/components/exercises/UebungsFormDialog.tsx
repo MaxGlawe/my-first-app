@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ScrollArea } from "@/components/ui/scroll-area"
+// ScrollArea replaced with overflow-y-auto div for reliable scrolling
 import { Separator } from "@/components/ui/separator"
 import {
   Select,
@@ -196,7 +196,7 @@ export function UebungsFormDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6">
           <form id="exercise-form" onSubmit={handleSubmit} className="space-y-6 py-4">
             {/* Name */}
             <div className="space-y-2">
@@ -223,6 +223,23 @@ export function UebungsFormDialog({
                 placeholder="Kurze Beschreibung der Übung und ihres Zwecks..."
                 rows={3}
                 maxLength={500}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Medien-Upload */}
+            <div className="space-y-2">
+              <Label>Bild oder Video</Label>
+              <p className="text-xs text-muted-foreground">
+                Lade ein Bild oder Video hoch, das die Übungsausführung zeigt.
+              </p>
+              <MediaUploadField
+                mediaUrl={form.media_url}
+                mediaType={form.media_type}
+                onUploadComplete={handleMediaUpload}
+                onClear={handleMediaClear}
+                exerciseId={exercise?.id}
               />
             </div>
 
@@ -327,20 +344,6 @@ export function UebungsFormDialog({
 
             <Separator />
 
-            {/* Medien-Upload */}
-            <div className="space-y-2">
-              <Label>Medien (Bild oder Video)</Label>
-              <MediaUploadField
-                mediaUrl={form.media_url}
-                mediaType={form.media_type}
-                onUploadComplete={handleMediaUpload}
-                onClear={handleMediaClear}
-                exerciseId={exercise?.id}
-              />
-            </div>
-
-            <Separator />
-
             {/* Standard-Parameter */}
             <div className="space-y-3">
               <Label>Standard-Parameter (Vorlage für Trainingspläne)</Label>
@@ -435,7 +438,7 @@ export function UebungsFormDialog({
               </Alert>
             )}
           </form>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="px-6 py-4 border-t gap-2">
           <Button

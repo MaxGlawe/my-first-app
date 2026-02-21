@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { Search, Plus, Filter, X } from "lucide-react"
+import { Search, Plus, Filter, X, Dumbbell } from "lucide-react"
 import { MUSKELGRUPPEN, SCHWIERIGKEITSGRAD_LABELS } from "@/types/exercise"
 import type { ExerciseFilter, Schwierigkeitsgrad, ExerciseQuelle } from "@/types/exercise"
 
@@ -73,11 +73,16 @@ export function UebungenHeader({
     <div className="mb-6 space-y-4">
       {/* Title row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Übungsdatenbank</h1>
-          <p className="text-muted-foreground mt-1">
-            Übungen verwalten, filtern und zur Bibliothek hinzufügen
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <Dumbbell className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Übungsdatenbank</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Übungen verwalten, filtern und zur Bibliothek hinzufügen
+            </p>
+          </div>
         </div>
         <Button onClick={onNewExercise} className="whitespace-nowrap self-start sm:self-auto">
           <Plus className="mr-2 h-4 w-4" />

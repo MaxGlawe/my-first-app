@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ClipboardList, RefreshCw, CheckCircle2, XCircle } from "lucide-react"
+import { ClipboardList, RefreshCw, CheckCircle2, XCircle, BookOpen } from "lucide-react"
 import { useComplianceDashboard } from "@/hooks/use-assignments"
 import type { PatientComplianceRow } from "@/types/hausaufgaben"
 
@@ -54,7 +54,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-7 w-52" />
         <Skeleton className="h-9 w-36" />
       </div>
-      <div className="border rounded-lg">
+      <div className="border border-slate-200 rounded-2xl bg-white shadow-sm">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
             <Skeleton className="h-9 w-9 rounded-full" />
@@ -125,9 +125,14 @@ export function KomplianzDashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hausaufgaben-Compliance</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{formatTodayHeader()}</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <BookOpen className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Hausaufgaben-Compliance</h1>
+            <p className="text-sm text-slate-500 mt-0.5">{formatTodayHeader()}</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Select
@@ -150,7 +155,7 @@ export function KomplianzDashboard() {
 
       {/* Empty state */}
       {filteredRows.length === 0 ? (
-        <Card className="border-dashed">
+        <Card className="border-dashed rounded-2xl">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-blue-100 p-4 mb-4">
               <ClipboardList className="h-6 w-6 text-blue-600" />
@@ -168,7 +173,7 @@ export function KomplianzDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>

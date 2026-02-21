@@ -29,6 +29,10 @@ export function useExercises(options: UseExercisesOptions): UseExercisesResult {
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), [])
 
+  // Serialize muskelgruppen to a stable string to avoid infinite re-render loops.
+  // Without this, a new [] reference on every render causes useEffect to re-trigger endlessly.
+  const muskelgruppenKey = filter.muskelgruppen.join(",")
+
   useEffect(() => {
     let cancelled = false
 
@@ -49,8 +53,8 @@ export function useExercises(options: UseExercisesOptions): UseExercisesResult {
         if (filter.schwierigkeitsgrad) {
           params.set("schwierigkeitsgrad", filter.schwierigkeitsgrad)
         }
-        if (filter.muskelgruppen.length > 0) {
-          params.set("muskelgruppen", filter.muskelgruppen.join(","))
+        if (muskelgruppenKey) {
+          params.set("muskelgruppen", muskelgruppenKey)
         }
 
         const res = await fetch(`/api/exercises?${params.toString()}`)
@@ -79,7 +83,7 @@ export function useExercises(options: UseExercisesOptions): UseExercisesResult {
     return () => {
       cancelled = true
     }
-  }, [filter.search, filter.schwierigkeitsgrad, filter.muskelgruppen, filter.quelle, page, refreshKey])
+  }, [filter.search, filter.schwierigkeitsgrad, muskelgruppenKey, filter.quelle, page, refreshKey])
 
   return { exercises, totalCount, isLoading, error, refresh }
 }

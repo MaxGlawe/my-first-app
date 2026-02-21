@@ -1,5 +1,10 @@
 "use client"
 
+/**
+ * PROJ-16: Progress Page 2.0
+ * Now includes: Pain/Wellbeing chart, Achievements, plus existing calendar & stats
+ */
+
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -9,12 +14,17 @@ import {
   getActiveAssignments,
 } from "@/hooks/use-patient-app"
 import type { PatientAppAssignment } from "@/hooks/use-patient-app"
+import { useStreak } from "@/hooks/use-streak"
+import { usePainDiary } from "@/hooks/use-pain-diary"
+import type { Achievement } from "@/hooks/use-streak"
+import type { PainDiaryEntry } from "@/hooks/use-pain-diary"
 import {
   ArrowLeft,
   AlertTriangle,
   Flame,
   CheckCircle2,
   TrendingUp,
+  Heart,
 } from "lucide-react"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -23,7 +33,6 @@ function buildLast4WeeksDays(): Date[] {
   const days: Date[] = []
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  // Go back 27 days (4 weeks = 28 days including today)
   const start = new Date(today)
   start.setDate(today.getDate() - 27)
   const cursor = new Date(start)
@@ -70,7 +79,6 @@ function getDayStatus(
 
 function computeStreak(days: Date[], assignments: PatientAppAssignment[]): number {
   let streak = 0
-  // Walk backwards from today until we hit a missed training day
   const trainingDays = [...days]
     .reverse()
     .filter((d) => {
@@ -94,24 +102,19 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // BUG-2 FIX: Pad the grid so the first cell always lands on Monday.
-  // JS getDay(): 0=Sun, 1=Mon, ..., 6=Sat → Monday-first offset:
   const firstDay = days[0]
   const dowFirst = firstDay.getDay()
-  const paddingBefore = dowFirst === 0 ? 6 : dowFirst - 1 // 0 if Mon, 6 if Sun
+  const paddingBefore = dowFirst === 0 ? 6 : dowFirst - 1
 
-  // Build padded cell array: null = empty padding cell, Date = real day
   const gridCells: (Date | null)[] = [
     ...Array<null>(paddingBefore).fill(null),
     ...days,
   ]
-  // Pad end to complete the last row (so grid always has full weeks)
   const remainder = gridCells.length % 7
   if (remainder !== 0) {
     for (let i = 0; i < 7 - remainder; i++) gridCells.push(null)
   }
 
-  // Group into weeks of 7
   const weeks: (Date | null)[][] = []
   for (let i = 0; i < gridCells.length; i += 7) {
     weeks.push(gridCells.slice(i, i + 7))
@@ -123,7 +126,6 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
     <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
       <h2 className="text-sm font-semibold text-slate-700 mb-4">Letzte 4 Wochen</h2>
 
-      {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {DOW_LABELS.map((d) => (
           <div key={d} className="text-center text-[10px] font-medium text-slate-400">
@@ -132,15 +134,11 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
         ))}
       </div>
 
-      {/* Calendar cells */}
       <div className="space-y-1">
         {weeks.map((week, wi) => (
           <div key={wi} className="grid grid-cols-7 gap-1">
             {week.map((day, di) => {
-              if (!day) {
-                // Empty padding cell
-                return <div key={di} className="aspect-square" />
-              }
+              if (!day) return <div key={di} className="aspect-square" />
               const status = getDayStatus(day, assignments)
               const isToday = day.getTime() === today.getTime()
               const dayNum = day.getDate()
@@ -169,7 +167,6 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
         ))}
       </div>
 
-      {/* Legend */}
       <div className="flex items-center gap-4 mt-4 text-xs text-slate-400">
         <span className="flex items-center gap-1.5">
           <span className="h-3 w-3 rounded bg-emerald-500" />
@@ -188,30 +185,234 @@ function CalendarGrid({ assignments }: { assignments: PatientAppAssignment[] }) 
   )
 }
 
+// ── Pain/Wellbeing Chart (SVG line chart) ────────────────────────────────────
+
+function BefindlichkeitsChart({ entries }: { entries: PainDiaryEntry[] }) {
+  if (entries.length === 0) return null
+
+  // Sort by date ascending for chart
+  const sorted = [...entries].sort(
+    (a, b) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime()
+  )
+
+  const width = 320
+  const height = 140
+  const padding = { top: 10, right: 10, bottom: 25, left: 30 }
+  const chartW = width - padding.left - padding.right
+  const chartH = height - padding.top - padding.bottom
+
+  const xStep = sorted.length > 1 ? chartW / (sorted.length - 1) : chartW / 2
+
+  function toY(val: number) {
+    return padding.top + chartH - (val / 10) * chartH
+  }
+
+  function buildPath(key: "pain_level" | "wellbeing") {
+    return sorted
+      .map((e, i) => {
+        const x = padding.left + i * xStep
+        const y = toY(e[key])
+        return `${i === 0 ? "M" : "L"} ${x} ${y}`
+      })
+      .join(" ")
+  }
+
+  const painPath = buildPath("pain_level")
+  const wellbeingPath = buildPath("wellbeing")
+
+  // Y axis labels
+  const yLabels = [0, 5, 10]
+
+  // X axis labels (show first, middle, last date)
+  const xLabels: { x: number; label: string }[] = []
+  if (sorted.length >= 1) {
+    xLabels.push({
+      x: padding.left,
+      label: new Date(sorted[0].entry_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+    })
+  }
+  if (sorted.length >= 3) {
+    const mid = Math.floor(sorted.length / 2)
+    xLabels.push({
+      x: padding.left + mid * xStep,
+      label: new Date(sorted[mid].entry_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+    })
+  }
+  if (sorted.length >= 2) {
+    xLabels.push({
+      x: padding.left + (sorted.length - 1) * xStep,
+      label: new Date(sorted[sorted.length - 1].entry_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }),
+    })
+  }
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Heart className="h-4 w-4 text-teal-500" />
+        <h2 className="text-sm font-semibold text-slate-700">Befindlichkeit</h2>
+      </div>
+
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" aria-label="Befindlichkeits-Verlauf">
+        {/* Grid lines */}
+        {yLabels.map((v) => (
+          <g key={v}>
+            <line
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={toY(v)}
+              y2={toY(v)}
+              stroke="#e2e8f0"
+              strokeWidth={1}
+            />
+            <text
+              x={padding.left - 5}
+              y={toY(v) + 3}
+              textAnchor="end"
+              className="text-[8px] fill-slate-400"
+            >
+              {v}
+            </text>
+          </g>
+        ))}
+
+        {/* X labels */}
+        {xLabels.map((xl, i) => (
+          <text
+            key={i}
+            x={xl.x}
+            y={height - 5}
+            textAnchor="middle"
+            className="text-[8px] fill-slate-400"
+          >
+            {xl.label}
+          </text>
+        ))}
+
+        {/* Wellbeing line (teal) */}
+        <path d={wellbeingPath} fill="none" stroke="#14b8a6" strokeWidth={2} strokeLinecap="round" />
+        {sorted.map((e, i) => (
+          <circle
+            key={`w-${i}`}
+            cx={padding.left + i * xStep}
+            cy={toY(e.wellbeing)}
+            r={3}
+            fill="#14b8a6"
+          />
+        ))}
+
+        {/* Pain line (red) */}
+        <path d={painPath} fill="none" stroke="#ef4444" strokeWidth={2} strokeLinecap="round" />
+        {sorted.map((e, i) => (
+          <circle
+            key={`p-${i}`}
+            cx={padding.left + i * xStep}
+            cy={toY(e.pain_level)}
+            r={3}
+            fill="#ef4444"
+          />
+        ))}
+      </svg>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-4 rounded bg-red-500" />
+          Schmerz
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2 w-4 rounded bg-teal-500" />
+          Wohlbefinden
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── Achievements Grid ────────────────────────────────────────────────────────
+
+function AchievementsGrid({ achievements }: { achievements: Achievement[] }) {
+  if (achievements.length === 0) return null
+
+  return (
+    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+      <h2 className="text-sm font-semibold text-slate-700 mb-4">Achievements</h2>
+
+      <div className="grid grid-cols-2 gap-3">
+        {achievements.map((ach) => (
+          <div
+            key={ach.id}
+            className={`rounded-xl p-3 text-center border ${
+              ach.unlocked
+                ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200"
+                : "bg-slate-50 border-slate-200"
+            }`}
+          >
+            <span className={`text-2xl ${ach.unlocked ? "" : "grayscale opacity-40"}`}>
+              {ach.icon}
+            </span>
+            <p
+              className={`text-xs font-semibold mt-1 ${
+                ach.unlocked ? "text-amber-700" : "text-slate-400"
+              }`}
+            >
+              {ach.name}
+            </p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{ach.description}</p>
+
+            {/* Progress bar */}
+            {!ach.unlocked && (
+              <div className="mt-2">
+                <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-400 transition-all"
+                    style={{ width: `${ach.progress}%` }}
+                  />
+                </div>
+                <p className="text-[9px] text-slate-400 mt-0.5">
+                  {ach.current}/{ach.target}
+                </p>
+              </div>
+            )}
+            {ach.unlocked && (
+              <p className="text-[9px] text-amber-600 font-medium mt-1">Erreicht!</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ProgressPage() {
   const { assignments, isLoading, error } = usePatientApp()
+  const {
+    streak: apiStreak,
+    achievements,
+    isLoading: streakLoading,
+  } = useStreak()
+  const { entries: painEntries, isLoading: diaryLoading } = usePainDiary()
+
   const active = getActiveAssignments(assignments)
-  const allAssignments = assignments // include past for calendar
+  const allAssignments = assignments
 
   const days = buildLast4WeeksDays()
-  const streak = computeStreak(days, allAssignments)
+  const streak = apiStreak || computeStreak(days, allAssignments)
 
   // Total completions in last 4 weeks
   const last28Start = days[0]?.toISOString().split("T")[0] ?? ""
-  const today = new Date().toISOString().split("T")[0]
+  const todayStr = new Date().toISOString().split("T")[0]
 
   const totalDone = allAssignments.reduce((sum, a) => {
     return (
       sum +
       (a.completed_dates ?? []).filter(
-        (d) => d >= last28Start && d <= today
+        (d) => d >= last28Start && d <= todayStr
       ).length
     )
   }, 0)
 
-  // Expected in last 4 weeks
   const totalExpected = days.filter((d) => {
     const s = getDayStatus(d, allAssignments)
     return s === "done" || s === "missed"
@@ -219,6 +420,8 @@ export default function ProgressPage() {
 
   const overallCompliance =
     totalExpected > 0 ? Math.min(100, Math.round((totalDone / totalExpected) * 100)) : 0
+
+  const isFullyLoaded = !isLoading && !streakLoading && !diaryLoading
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-lg space-y-6">
@@ -244,7 +447,7 @@ export default function ProgressPage() {
       )}
 
       {/* Loading */}
-      {isLoading && (
+      {!isFullyLoaded && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-3">
             <Skeleton className="h-24 rounded-2xl" />
@@ -252,14 +455,14 @@ export default function ProgressPage() {
             <Skeleton className="h-24 rounded-2xl" />
           </div>
           <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
         </div>
       )}
 
-      {!isLoading && !error && (
+      {isFullyLoaded && !error && (
         <>
           {/* Stats cards */}
           <div className="grid grid-cols-3 gap-3">
-            {/* Streak */}
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 text-center">
               <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center mx-auto mb-2">
                 <Flame className="h-5 w-5 text-orange-500" />
@@ -268,7 +471,6 @@ export default function ProgressPage() {
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">Tage Streak</p>
             </div>
 
-            {/* Total sessions */}
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 text-center">
               <div className="h-9 w-9 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2">
                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
@@ -277,7 +479,6 @@ export default function ProgressPage() {
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">Einheiten</p>
             </div>
 
-            {/* Compliance */}
             <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 text-center">
               <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-2">
                 <TrendingUp className="h-5 w-5 text-blue-500" />
@@ -289,6 +490,12 @@ export default function ProgressPage() {
 
           {/* Calendar */}
           <CalendarGrid assignments={allAssignments} />
+
+          {/* Pain/Wellbeing Chart — NEW */}
+          <BefindlichkeitsChart entries={painEntries} />
+
+          {/* Achievements — NEW */}
+          <AchievementsGrid achievements={achievements} />
 
           {/* No assignments */}
           {assignments.length === 0 && (

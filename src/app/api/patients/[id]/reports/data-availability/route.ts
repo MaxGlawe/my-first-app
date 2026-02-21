@@ -41,8 +41,10 @@ export async function GET(
 
   const dateToEnd = dateTo + "T23:59:59"
 
-  // Rolle ermitteln
-  const { data: profile } = await supabase
+  // Rolle ermitteln (service client bypasses RLS on user_profiles)
+  const { createSupabaseServiceClient } = await import("@/lib/supabase-service")
+  const serviceClient = createSupabaseServiceClient()
+  const { data: profile } = await serviceClient
     .from("user_profiles")
     .select("role")
     .eq("id", user.id)

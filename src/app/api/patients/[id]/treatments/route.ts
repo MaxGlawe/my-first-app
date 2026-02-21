@@ -82,9 +82,7 @@ function normalizeSession(r: {
   locked_at: string | null
   created_at: string
   updated_at: string
-  user_profiles?: { full_name?: string } | null
-}) {
-  const profile = r.user_profiles as { full_name?: string } | null
+}, therapistName: string | null = null) {
   return {
     id: r.id,
     patient_id: r.patient_id,
@@ -101,7 +99,7 @@ function normalizeSession(r: {
     locked_at: r.locked_at,
     created_at: r.created_at,
     updated_at: r.updated_at,
-    therapist_name: profile?.full_name ?? null,
+    therapist_name: therapistName,
   }
 }
 
@@ -151,7 +149,6 @@ export async function GET(
   }
 
   // Fetch sessions — RLS (treatment_sessions_select) ensures therapist only sees own patients
-  // Join therapist name for display in BehandlungCard / BehandlungView
   const { data: sessions, error } = await supabase
     .from("treatment_sessions")
     .select(`
@@ -169,10 +166,7 @@ export async function GET(
       confirmed_at,
       locked_at,
       created_at,
-      updated_at,
-      user_profiles!therapist_id (
-        full_name
-      )
+      updated_at
     `)
     .eq("patient_id", patientId)
     .order("session_date", { ascending: false })
@@ -187,8 +181,24 @@ export async function GET(
     )
   }
 
+  // Resolve therapist names via separate query (no FK dependency)
+  const therapistIds = [...new Set((sessions ?? []).map((r) => r.therapist_id).filter(Boolean))]
+  let profileMap: Record<string, string> = {}
+  if (therapistIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("id, first_name, last_name")
+      .in("id", therapistIds)
+    profileMap = Object.fromEntries(
+      (profiles ?? []).map((p) => [p.id, [p.first_name, p.last_name].filter(Boolean).join(" ")])
+    )
+  }
+
   const normalized = (sessions ?? []).map((r) =>
-    normalizeSession(r as Parameters<typeof normalizeSession>[0])
+    normalizeSession(
+      r as Parameters<typeof normalizeSession>[0],
+      r.therapist_id ? (profileMap[r.therapist_id] || null) : null
+    )
   )
 
   return NextResponse.json({ sessions: normalized })
@@ -323,11 +333,10 @@ export async function POST(
     )
   }
 
-  // Return without user_profiles join (fresh insert — caller can refetch for full view)
-  const session = normalizeSession({
-    ...(created as Parameters<typeof normalizeSession>[0]),
-    user_profiles: null,
-  })
+  const session = normalizeSession(
+    created as Parameters<typeof normalizeSession>[0],
+    null
+  )
 
   return NextResponse.json({ session }, { status: 201 })
 }

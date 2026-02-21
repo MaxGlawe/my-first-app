@@ -73,14 +73,45 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Physiotherapeuten cannot access Heilpraktiker routes:
-    //   - /os/befund/* (top-level legacy route guard)
-    //   - /os/patients/[id]/befund/* (PROJ-4: Befund & Diagnose)
+    // Helper: clinical routes that only Physio/HP/Admin may access
+    const isClinicalRoute =
+      pathname.startsWith('/os/befund') ||
+      /^\/os\/patients\/[^/]+\/befund(\/|$)/.test(pathname) ||
+      /^\/os\/patients\/[^/]+\/behandlung(\/|$)/.test(pathname) ||
+      /^\/os\/patients\/[^/]+\/arztbericht(\/|$)/.test(pathname)
+
+    // Physiotherapeuten cannot access Heilpraktiker-only routes (Befund & Diagnose)
     if (
       role === 'physiotherapeut' &&
       (pathname.startsWith('/os/befund') ||
         /^\/os\/patients\/[^/]+\/befund(\/|$)/.test(pathname))
     ) {
+      url.pathname = '/403'
+      return NextResponse.redirect(url)
+    }
+
+    // Praeventionstrainer / Personal Trainer: no access to clinical documentation
+    if (
+      (role === 'praeventionstrainer' || role === 'personal_trainer') &&
+      isClinicalRoute
+    ) {
+      url.pathname = '/403'
+      return NextResponse.redirect(url)
+    }
+
+    // Praxismanagement: restricted access
+    // - Can READ clinical routes (handled at component level with read-only banner)
+    // - Cannot access therapy tools (exercises, training plans, courses, etc.)
+    // - Cannot access Funktionsuntersuchung or Trainingsdokumentation
+    const isTherapyToolRoute =
+      pathname.startsWith('/os/exercises') ||
+      pathname.startsWith('/os/training-plans') ||
+      pathname.startsWith('/os/hausaufgaben') ||
+      pathname.startsWith('/os/courses') ||
+      /^\/os\/patients\/[^/]+\/funktionsuntersuchung(\/|$)/.test(pathname) ||
+      /^\/os\/patients\/[^/]+\/trainingsdoku(\/|$)/.test(pathname)
+
+    if (role === 'praxismanagement' && isTherapyToolRoute) {
       url.pathname = '/403'
       return NextResponse.redirect(url)
     }

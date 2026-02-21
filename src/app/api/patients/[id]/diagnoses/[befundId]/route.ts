@@ -82,10 +82,7 @@ async function loadRecord(
       prognose,
       therapiedauer_wochen,
       created_at,
-      updated_at,
-      user_profiles!created_by (
-        full_name
-      )
+      updated_at
     `)
     .eq("id", befundId)
     .eq("patient_id", patientId)
@@ -158,8 +155,17 @@ export async function GET(
     )
   }
 
-  // Flatten joined profile data
-  const profile = record.user_profiles as { full_name?: string } | null
+  // Resolve created_by name via separate query (no FK dependency)
+  let createdByName: string | null = null
+  if (record.created_by) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("first_name, last_name")
+      .eq("id", record.created_by)
+      .single()
+    createdByName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null : null
+  }
+
   const normalized = {
     id: record.id,
     patient_id: record.patient_id,
@@ -174,7 +180,7 @@ export async function GET(
     therapiedauer_wochen: record.therapiedauer_wochen,
     created_at: record.created_at,
     updated_at: record.updated_at,
-    created_by_name: profile?.full_name ?? null,
+    created_by_name: createdByName,
   }
 
   return NextResponse.json({ record: normalized })

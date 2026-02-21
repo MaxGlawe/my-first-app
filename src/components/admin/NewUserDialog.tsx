@@ -30,7 +30,7 @@ const newUserSchema = z.object({
   firstName: z.string().min(2, "Vorname muss mindestens 2 Zeichen lang sein."),
   lastName: z.string().min(2, "Nachname muss mindestens 2 Zeichen lang sein."),
   email: z.string().email("Bitte gib eine gültige E-Mail-Adresse ein."),
-  role: z.enum(["admin", "heilpraktiker", "physiotherapeut", "patient"]).refine(
+  role: z.enum(["admin", "heilpraktiker", "physiotherapeut", "patient", "praeventionstrainer", "personal_trainer", "praxismanagement"]).refine(
     (val) => val !== undefined,
     { message: "Bitte wähle eine Rolle aus." }
   ),
@@ -46,6 +46,9 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "admin", label: "Admin" },
   { value: "heilpraktiker", label: "Heilpraktiker" },
   { value: "physiotherapeut", label: "Physiotherapeut" },
+  { value: "praeventionstrainer", label: "Präventionstrainer" },
+  { value: "personal_trainer", label: "Personal Trainer" },
+  { value: "praxismanagement", label: "Praxismanagement" },
   { value: "patient", label: "Patient" },
 ]
 
@@ -107,24 +110,22 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
         return
       }
 
-      // For therapists and admins, use Supabase admin invite
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
-        data.email,
-        {
-          data: {
-            first_name: data.firstName,
-            last_name: data.lastName,
-            role: data.role,
-          },
-        }
-      )
+      // For therapists and admins, invite via server-side API (needs service role key)
+      const res = await fetch("/api/admin/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: data.role,
+        }),
+      })
 
-      if (inviteError) {
-        if (inviteError.message.includes("already registered")) {
-          setServerError("Diese E-Mail-Adresse ist bereits registriert.")
-        } else {
-          setServerError("Nutzer konnte nicht eingeladen werden: " + inviteError.message)
-        }
+      const json = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setServerError(json.error ?? "Nutzer konnte nicht eingeladen werden.")
         return
       }
 

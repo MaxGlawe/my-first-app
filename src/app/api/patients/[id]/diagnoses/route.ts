@@ -144,10 +144,7 @@ export async function GET(
       prognose,
       therapiedauer_wochen,
       created_at,
-      updated_at,
-      user_profiles!created_by (
-        full_name
-      )
+      updated_at
     `)
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
@@ -161,26 +158,35 @@ export async function GET(
     )
   }
 
-  // Flatten joined user_profiles data into created_by_name
-  const normalized = (records ?? []).map((r) => {
-    const profile = r.user_profiles as { full_name?: string } | null
-    return {
-      id: r.id,
-      patient_id: r.patient_id,
-      created_by: r.created_by,
-      created_by_role: r.created_by_role,
-      status: r.status,
-      klinischer_befund: r.klinischer_befund,
-      hauptdiagnose: r.hauptdiagnose,
-      nebendiagnosen: r.nebendiagnosen,
-      therapieziel: r.therapieziel,
-      prognose: r.prognose,
-      therapiedauer_wochen: r.therapiedauer_wochen,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-      created_by_name: profile?.full_name ?? null,
-    }
-  })
+  // Resolve created_by names via separate query (no FK dependency)
+  const creatorIds = [...new Set((records ?? []).map((r) => r.created_by).filter(Boolean))]
+  let profileMap: Record<string, string> = {}
+  if (creatorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("id, first_name, last_name")
+      .in("id", creatorIds)
+    profileMap = Object.fromEntries(
+      (profiles ?? []).map((p) => [p.id, [p.first_name, p.last_name].filter(Boolean).join(" ")])
+    )
+  }
+
+  const normalized = (records ?? []).map((r) => ({
+    id: r.id,
+    patient_id: r.patient_id,
+    created_by: r.created_by,
+    created_by_role: r.created_by_role,
+    status: r.status,
+    klinischer_befund: r.klinischer_befund,
+    hauptdiagnose: r.hauptdiagnose,
+    nebendiagnosen: r.nebendiagnosen,
+    therapieziel: r.therapieziel,
+    prognose: r.prognose,
+    therapiedauer_wochen: r.therapiedauer_wochen,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    created_by_name: profileMap[r.created_by] ?? null,
+  }))
 
   return NextResponse.json({ records: normalized })
 }

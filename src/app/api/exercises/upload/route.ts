@@ -6,7 +6,7 @@
  * Returns the public URL for storing in the exercises table.
  *
  * Form data fields:
- *   - file: File (JPG/PNG ≤5MB | MP4/WebM ≤200MB)
+ *   - file: File (JPG/PNG ≤5MB | MP4/WebM ≤50MB)
  *   - exercise_id: UUID (the exercise this media belongs to)
  *   - media_type: "image" | "video"
  *
@@ -22,7 +22,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024          // 5 MB
-const VIDEO_MAX_BYTES = 200 * 1024 * 1024        // 200 MB
+const VIDEO_MAX_BYTES = 50 * 1024 * 1024          // 50 MB
 
 const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
     if (file.size > VIDEO_MAX_BYTES) {
       return NextResponse.json(
-        { error: "Video darf maximal 200 MB groß sein." },
+        { error: "Video darf maximal 50 MB groß sein." },
         { status: 422 }
       )
     }

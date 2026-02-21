@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ArrowLeft, Undo2, Eye, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowLeft, Undo2, Eye, Printer, CheckCircle2, Loader2 } from "lucide-react"
 import Link from "next/link"
 
 type SaveStatus = "saved" | "saving" | "unsaved"
@@ -24,6 +24,7 @@ interface BuilderHeaderProps {
   canUndo: boolean
   onUndo: () => void
   onPreview: () => void
+  onPrint: () => void
 }
 
 export function BuilderHeader({
@@ -35,6 +36,7 @@ export function BuilderHeader({
   canUndo,
   onUndo,
   onPreview,
+  onPrint,
 }: BuilderHeaderProps) {
   const [editing, setEditing] = useState(false)
   const [localName, setLocalName] = useState(planName)
@@ -135,6 +137,18 @@ export function BuilderHeader({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Rückgängig (Ctrl+Z)</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
+      {/* Print */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" onClick={onPrint} aria-label="Plan drucken">
+              <Printer className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Plan drucken</TooltipContent>
         </Tooltip>
       </TooltipProvider>
 

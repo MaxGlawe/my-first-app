@@ -68,9 +68,7 @@ function normalizeSession(r: {
   locked_at: string | null
   created_at: string
   updated_at: string
-  user_profiles?: { full_name?: string } | null
-}) {
-  const profile = r.user_profiles as { full_name?: string } | null
+}, therapistName: string | null = null) {
   return {
     id: r.id,
     patient_id: r.patient_id,
@@ -87,7 +85,7 @@ function normalizeSession(r: {
     locked_at: r.locked_at,
     created_at: r.created_at,
     updated_at: r.updated_at,
-    therapist_name: profile?.full_name ?? null,
+    therapist_name: therapistName,
   }
 }
 
@@ -116,10 +114,7 @@ async function loadSession(
       confirmed_at,
       locked_at,
       created_at,
-      updated_at,
-      user_profiles!therapist_id (
-        full_name
-      )
+      updated_at
     `)
     .eq("id", sessionId)
     .eq("patient_id", patientId)
@@ -177,8 +172,19 @@ export async function GET(
     )
   }
 
+  // Resolve therapist name via separate query (no FK dependency)
+  let therapistName: string | null = null
+  if (session.therapist_id) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("first_name, last_name")
+      .eq("id", session.therapist_id)
+      .single()
+    therapistName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null : null
+  }
+
   return NextResponse.json({
-    session: normalizeSession(session as Parameters<typeof normalizeSession>[0]),
+    session: normalizeSession(session as Parameters<typeof normalizeSession>[0], therapistName),
   })
 }
 
@@ -380,10 +386,18 @@ export async function PATCH(
     )
   }
 
+  // Resolve therapist name for response
+  let updatedTherapistName: string | null = null
+  if (updated.therapist_id) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("first_name, last_name")
+      .eq("id", updated.therapist_id as string)
+      .single()
+    updatedTherapistName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null : null
+  }
+
   return NextResponse.json({
-    session: normalizeSession({
-      ...(updated as Parameters<typeof normalizeSession>[0]),
-      user_profiles: null,
-    }),
+    session: normalizeSession(updated as Parameters<typeof normalizeSession>[0], updatedTherapistName),
   })
 }

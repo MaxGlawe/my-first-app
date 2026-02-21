@@ -34,7 +34,11 @@ import {
   Timer,
   ImageOff,
   PartyPopper,
+  BookOpen,
 } from "lucide-react"
+import { LessonScreen } from "@/components/education/LessonScreen"
+import { QuizScreen } from "@/components/education/QuizScreen"
+import type { EducationModule } from "@/types/education"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,17 +131,17 @@ function flattenExercises(assignment: PatientAppAssignment): FlatExercise[] {
       }
     }
   } else {
-    // Ad-hoc exercises
+    // Ad-hoc exercises (enriched with media data from API)
     for (const ae of assignment.adhoc_exercises ?? []) {
       result.push({
         id: ae.exercise_id,
         exerciseId: ae.exercise_id,
         name: ae.exercise_name ?? "Übung",
-        muskelgruppen: [],
-        beschreibung: ae.anmerkung ?? null,
-        ausfuehrung: null,
-        media_url: null,
-        media_type: null,
+        muskelgruppen: ae.muskelgruppen ?? [],
+        beschreibung: ae.beschreibung ?? ae.anmerkung ?? null,
+        ausfuehrung: ae.ausfuehrung ?? null,
+        media_url: ae.media_url ?? null,
+        media_type: ae.media_type ?? null,
         params: {
           saetze: ae.saetze,
           wiederholungen: ae.wiederholungen ?? null,
@@ -266,7 +270,7 @@ function MediaAnzeige({
         src={url}
         controls
         playsInline
-        className="w-full h-48 rounded-2xl object-cover bg-black"
+        className="w-full h-48 rounded-2xl object-contain bg-black"
         onError={() => setImgError(true)}
         aria-label={`Video: ${name}`}
       />
@@ -278,7 +282,7 @@ function MediaAnzeige({
     <img
       src={url}
       alt={name}
-      className="w-full h-48 rounded-2xl object-cover"
+      className="w-full h-48 rounded-2xl object-contain bg-slate-50"
       onError={() => setImgError(true)}
     />
   )
@@ -412,6 +416,12 @@ export default function TrainingSessionPage() {
   // Derived flat exercise list
   const exercises: FlatExercise[] = assignment ? flattenExercises(assignment) : []
 
+  // PROJ-17: Education flow state (multi-lesson curriculum)
+  const [educationPhase, setEducationPhase] = useState<"loading" | "lesson" | "quiz" | "training">("loading")
+  const [educationModule, setEducationModule] = useState<EducationModule | null>(null)
+  const [lessonProgress, setLessonProgress] = useState<{ current: number; total: number; completed: number } | null>(null)
+  const [quizScore, setQuizScore] = useState<{ score: number; total: number } | null>(null)
+
   // Session state (persisted to localStorage)
   const [session, setSession] = useState<SessionState | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -439,6 +449,48 @@ export default function TrainingSessionPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignment?.id, exercises.length])
+
+  // PROJ-17: Fetch next lesson from the multi-lesson curriculum
+  useEffect(() => {
+    if (!assignment) return
+    if (!assignment.hauptproblem) {
+      setEducationPhase("training")
+      return
+    }
+    async function fetchNextLesson() {
+      try {
+        const res = await fetch("/api/me/education/next-lesson", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hauptproblem: assignment!.hauptproblem }),
+        })
+        if (!res.ok) {
+          setEducationPhase("training")
+          return
+        }
+        const data = await res.json()
+        if (!data.lesson) {
+          // No lesson available (all completed, no curriculum, etc.)
+          if (data.reason === "all_completed") {
+            setLessonProgress({ current: data.total, total: data.total, completed: data.completed })
+          }
+          setEducationPhase("training")
+          return
+        }
+        setEducationModule(data.lesson)
+        setLessonProgress({
+          current: data.lessonNumber,
+          total: data.totalLessons,
+          completed: data.completed,
+        })
+        setEducationPhase("lesson")
+      } catch {
+        setEducationPhase("training")
+      }
+    }
+    fetchNextLesson()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignment?.id, assignment?.hauptproblem])
 
   const currentIndex = session?.exerciseIndex ?? 0
   const currentExercise = exercises[currentIndex]
@@ -521,8 +573,32 @@ export default function TrainingSessionPage() {
     }
   }, [assignment, assignmentId, router])
 
+  // PROJ-17: Education flow screens
+  if (educationPhase === "lesson" && educationModule) {
+    return (
+      <LessonScreen
+        module={educationModule}
+        lessonProgress={lessonProgress}
+        onComplete={() => setEducationPhase("quiz")}
+      />
+    )
+  }
+
+  if (educationPhase === "quiz" && educationModule) {
+    return (
+      <QuizScreen
+        moduleId={educationModule.id}
+        quizzes={educationModule.quizzes}
+        onComplete={(score, total) => {
+          setQuizScore({ score, total })
+          setEducationPhase("training")
+        }}
+      />
+    )
+  }
+
   // Loading state
-  if (isLoading || !session) {
+  if (isLoading || !session || educationPhase === "loading") {
     return (
       <div className="container mx-auto py-6 px-4 max-w-lg space-y-4">
         <Skeleton className="h-10 w-32 rounded-xl" />
@@ -583,6 +659,12 @@ export default function TrainingSessionPage() {
             Übung {currentIndex + 1} von {exercises.length}
           </p>
         </div>
+        {quizScore && (
+          <Badge variant="outline" className="shrink-0 gap-1 text-teal-700 border-teal-300 bg-teal-50">
+            <BookOpen className="h-3 w-3" />
+            {quizScore.score}/{quizScore.total}
+          </Badge>
+        )}
       </div>
 
       {/* Progress bar */}

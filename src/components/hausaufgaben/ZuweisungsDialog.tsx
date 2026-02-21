@@ -25,11 +25,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { CalendarIcon, Loader2, Search, X, Dumbbell, ClipboardList } from "lucide-react"
+import { CalendarIcon, Loader2, Search, X, Dumbbell, ClipboardList, BookOpen, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import type { PatientAssignment, Wochentag, AdhocExercise } from "@/types/hausaufgaben"
 import type { TrainingPlanListItem } from "@/types/training-plan"
 import type { Exercise } from "@/types/exercise"
+import type { EducationModule } from "@/types/education"
+import { HAUPTPROBLEME } from "@/types/education"
+import { EducationPreviewDialog } from "@/components/education/EducationPreviewDialog"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -96,6 +99,13 @@ export function ZuweisungsDialog({
   const [exerciseSearchLoading, setExerciseSearchLoading] = useState(false)
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Hauptproblem + Education state (PROJ-17)
+  const [hauptproblem, setHauptproblem] = useState<string>("")
+  const [customHauptproblem, setCustomHauptproblem] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedModule, setGeneratedModule] = useState<EducationModule | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+
   // Shared form state
   const [startDate, setStartDate] = useState<string>("")
   const [endDate, setEndDate] = useState<string>("")
@@ -121,6 +131,8 @@ export function ZuweisungsDialog({
       setEndDate(editAssignment.end_date)
       setActiveDays(editAssignment.active_days)
       setNotiz(editAssignment.notiz ?? "")
+      setHauptproblem(editAssignment.hauptproblem ?? "")
+      setCustomHauptproblem("")
     } else {
       // Defaults: today → +4 weeks, Mo–Fr
       const today = new Date()
@@ -135,6 +147,9 @@ export function ZuweisungsDialog({
       setEndDate(formatDate(fourWeeks))
       setActiveDays(["mo", "di", "mi", "do", "fr"])
       setNotiz("")
+      setHauptproblem("")
+      setCustomHauptproblem("")
+      setGeneratedModule(null)
     }
   }, [open, editAssignment])
 
@@ -224,6 +239,39 @@ export function ZuweisungsDialog({
     )
   }
 
+  const resolvedHauptproblem = hauptproblem === "Sonstiges" ? customHauptproblem.trim() : hauptproblem
+
+  async function handleGenerateEducation() {
+    if (!resolvedHauptproblem) {
+      toast.error("Bitte wähle zuerst ein Hauptproblem aus.")
+      return
+    }
+    setIsGenerating(true)
+    try {
+      const res = await fetch("/api/education/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hauptproblem: resolvedHauptproblem }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error ?? "Wissensinhalte konnten nicht generiert werden.")
+        return
+      }
+      setGeneratedModule(data.module)
+      setPreviewOpen(true)
+      if (data.cached) {
+        toast.info("Wissensinhalte aus Cache geladen (bereits vorhanden).")
+      } else {
+        toast.success("Wissensinhalte erfolgreich generiert!")
+      }
+    } catch {
+      toast.error("Fehler bei der KI-Generierung.")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -259,6 +307,7 @@ export function ZuweisungsDialog({
               end_date: endDate,
               active_days: activeDays,
               notiz: notiz.trim() || null,
+              hauptproblem: resolvedHauptproblem || null,
             }
           : {
               plan_id: null,
@@ -267,6 +316,7 @@ export function ZuweisungsDialog({
               end_date: endDate,
               active_days: activeDays,
               notiz: notiz.trim() || null,
+              hauptproblem: resolvedHauptproblem || null,
             }
 
       const url = isEditing
@@ -501,6 +551,63 @@ export function ZuweisungsDialog({
             </div>
           )}
 
+          {/* PROJ-17: Hauptproblem Selector + Education */}
+          <div className="space-y-2">
+            <Label>Hauptproblem (optional)</Label>
+            <Select value={hauptproblem} onValueChange={setHauptproblem}>
+              <SelectTrigger>
+                <SelectValue placeholder="Hauptproblem auswählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                {HAUPTPROBLEME.map((hp) => (
+                  <SelectItem key={hp} value={hp}>
+                    {hp}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hauptproblem === "Sonstiges" && (
+              <Input
+                placeholder="Hauptproblem eingeben..."
+                value={customHauptproblem}
+                onChange={(e) => setCustomHauptproblem(e.target.value)}
+                maxLength={200}
+              />
+            )}
+            {resolvedHauptproblem && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateEducation}
+                disabled={isGenerating}
+                className="w-full"
+              >
+                {isGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isGenerating ? "KI generiert Wissensinhalte..." : "Wissensinhalte generieren"}
+              </Button>
+            )}
+            {generatedModule && (
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="w-full text-left rounded-lg border border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-800 px-3 py-2 text-sm flex items-center gap-2 hover:bg-teal-100 dark:hover:bg-teal-950/50 transition-colors"
+              >
+                <BookOpen className="h-4 w-4 text-teal-600 shrink-0" />
+                <span className="flex-1 font-medium text-teal-900 dark:text-teal-100 truncate">
+                  {generatedModule.title}
+                </span>
+                <span className="text-xs text-teal-600 dark:text-teal-400 shrink-0">
+                  {generatedModule.status === "freigegeben" ? "Freigegeben" : "Entwurf"}
+                </span>
+              </button>
+            )}
+          </div>
+
           {/* Step 2: Zeitraum */}
           <div className="grid grid-cols-2 gap-3">
             {/* Startdatum */}
@@ -631,6 +738,16 @@ export function ZuweisungsDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* PROJ-17: Education Preview Dialog */}
+      {generatedModule && (
+        <EducationPreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          module={generatedModule}
+          onModuleUpdate={setGeneratedModule}
+        />
+      )}
     </Dialog>
   )
 }

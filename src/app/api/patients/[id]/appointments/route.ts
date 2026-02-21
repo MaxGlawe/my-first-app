@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -64,9 +65,10 @@ export async function GET(
   }
 
   // ---- Fetch cached appointments ----
-  // Return all appointments (upcoming + past), ordered by date descending.
-  // Frontend handles the upcoming/past split.
-  const { data: appointments, error: appointmentsError } = await supabase
+  // Use service client to bypass RLS on appointments table (auth already verified above).
+  // The RLS policy references a table the anon role cannot read directly.
+  const serviceClient = createSupabaseServiceClient()
+  const { data: appointments, error: appointmentsError } = await serviceClient
     .from("appointments")
     .select(
       "id, patient_id, booking_system_appointment_id, scheduled_at, duration_minutes, therapist_name, service_name, status, synced_at"

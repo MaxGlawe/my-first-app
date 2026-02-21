@@ -38,6 +38,8 @@ const updateAssignmentSchema = z
       .max(7),
 
     notiz: z.string().max(1000).optional().nullable(),
+
+    hauptproblem: z.string().min(2).max(200).optional().nullable(),
   })
   .refine((data) => data.start_date <= data.end_date, {
     message: "Das Startdatum muss vor oder gleich dem Enddatum sein.",
@@ -109,7 +111,7 @@ export async function GET(
     .from("patient_assignments")
     .select(`
       id, patient_id, therapist_id, plan_id, start_date, end_date,
-      active_days, status, adhoc_exercises, notiz, created_at, updated_at,
+      active_days, status, adhoc_exercises, notiz, hauptproblem, created_at, updated_at,
       training_plans!left (name, beschreibung)
     `)
     .eq("id", assignmentId)
@@ -139,6 +141,7 @@ export async function GET(
       status: row.status,
       adhoc_exercises: row.adhoc_exercises ?? null,
       notiz: row.notiz ?? null,
+      hauptproblem: row.hauptproblem ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       plan_name: plan?.name ?? null,
@@ -216,7 +219,7 @@ export async function PUT(
     )
   }
 
-  const { start_date, end_date, active_days, notiz } = parseResult.data
+  const { start_date, end_date, active_days, notiz, hauptproblem } = parseResult.data
 
   // Determine correct status after date change:
   // If end_date is now in the past → mark as abgelaufen, else restore to aktiv
@@ -230,11 +233,12 @@ export async function PUT(
       end_date,
       active_days,
       notiz: notiz?.trim() || null,
+      hauptproblem: hauptproblem !== undefined ? (hauptproblem?.trim() || null) : undefined,
       status: newStatus,
     })
     .eq("id", assignmentId)
     .select(
-      "id, patient_id, therapist_id, plan_id, start_date, end_date, active_days, status, adhoc_exercises, notiz, created_at, updated_at"
+      "id, patient_id, therapist_id, plan_id, start_date, end_date, active_days, status, adhoc_exercises, notiz, hauptproblem, created_at, updated_at"
     )
     .single()
 

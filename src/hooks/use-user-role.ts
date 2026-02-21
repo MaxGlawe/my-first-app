@@ -3,13 +3,17 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 
-export type UserRole = "admin" | "heilpraktiker" | "physiotherapeut" | "patient"
+export type UserRole = "admin" | "heilpraktiker" | "physiotherapeut" | "patient" | "praeventionstrainer" | "personal_trainer" | "praxismanagement"
 
 interface UseUserRoleResult {
   role: UserRole | null
   isLoading: boolean
   isHeilpraktiker: boolean
   isAdmin: boolean
+  isTrainer: boolean
+  isPraxismanagement: boolean
+  /** Trainer roles that do Funktionsuntersuchung + Trainingsdokumentation */
+  isFunktionsRole: boolean
 }
 
 export function useUserRole(): UseUserRoleResult {
@@ -54,10 +58,15 @@ export function useUserRole(): UseUserRoleResult {
     }
   }, [])
 
+  const isTrainer = role === "praeventionstrainer" || role === "personal_trainer"
+
   return {
     role,
     isLoading,
     isHeilpraktiker: role === "heilpraktiker",
     isAdmin: role === "admin",
+    isTrainer,
+    isPraxismanagement: role === "praxismanagement",
+    isFunktionsRole: isTrainer,
   }
 }

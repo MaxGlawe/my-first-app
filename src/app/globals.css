@@ -84,7 +84,7 @@
   }
 }
 
-/* ── Print Styles (Befund PDF Export) ────────────────────────────────────── */
+/* ── Print Styles (Arztbericht / Therapiebericht PDF Export) ───────────── */
 @media print {
   /* Hide navigation, sidebars, and interactive elements */
   nav,
@@ -94,17 +94,18 @@
     display: none !important;
   }
 
-  /* Page layout */
+  /* Page layout — A4 with professional margins */
   @page {
-    margin: 2cm;
+    margin: 2cm 2.5cm;
     size: A4;
   }
 
   body {
-    background: white;
-    color: black;
-    font-size: 11pt;
-    line-height: 1.5;
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.7;
+    font-family: "Georgia", "Times New Roman", serif;
   }
 
   /* Make the content fill the page */
@@ -114,51 +115,80 @@
     margin: 0 !important;
   }
 
-  /* Print header with practice info */
-  .print-header {
-    display: block;
-    border-bottom: 2px solid black;
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-    font-size: 9pt;
-    color: #444;
+  /* Briefkopf styling for print */
+  .briefkopf-container {
+    border: none !important;
+    border-bottom: 2px solid black !important;
+    border-radius: 0 !important;
+    padding-bottom: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    background: white !important;
   }
 
-  /* Avoid page breaks inside diagnosis blocks */
+  /* Editor content: professional report typography */
+  .prose {
+    font-size: 12pt !important;
+    line-height: 1.7 !important;
+    color: black !important;
+  }
+
+  .prose h2 {
+    font-size: 13pt !important;
+    font-weight: 700 !important;
+    margin-top: 1.2em !important;
+    margin-bottom: 0.4em !important;
+    border-bottom: none !important;
+    page-break-after: avoid;
+  }
+
+  .prose p {
+    margin-bottom: 0.6em !important;
+    orphans: 3;
+    widows: 3;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-bottom: 0.6em !important;
+  }
+
+  .prose strong {
+    font-weight: 700 !important;
+  }
+
+  /* Avoid page breaks inside blocks */
   .space-y-4,
-  .space-y-8,
-  [class*="rounded"],
-  [class*="border"] {
+  .space-y-8 {
     page-break-inside: avoid;
   }
 
-  /* Section headings get a page break hint */
+  /* Section headings: avoid orphans */
   h2,
   h3 {
     page-break-after: avoid;
   }
 
-  /* Remove colored backgrounds — print in black/white */
+  /* Remove all colored backgrounds */
   [class*="bg-purple"],
   [class*="bg-amber"],
   [class*="bg-green"],
   [class*="bg-muted"],
-  [class*="bg-slate"] {
+  [class*="bg-slate"],
+  [class*="bg-white"] {
     background: white !important;
   }
 
-  /* Ensure borders show in print */
+  /* Clean borders for print */
   [class*="border"] {
-    border-color: #ccc !important;
+    border-color: #999 !important;
   }
 
-  /* Badge text visible in B&W */
-  [class*="Badge"],
-  .badge {
-    border: 1px solid #666 !important;
-    color: black !important;
-    background: white !important;
-    font-weight: 600;
+  /* Hide card shadows and borders in print */
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+  .print\:border-none {
+    border: none !important;
   }
 
   /* Monospace ICD codes */
@@ -170,9 +200,9 @@
   /* Footer on every page */
   @page {
     @bottom-center {
-      content: "Praxis OS — Vertrauliches Dokument — Seite " counter(page) " von " counter(pages);
+      content: "Praxis OS — Vertraulich — Seite " counter(page) " von " counter(pages);
       font-size: 8pt;
-      color: #666;
+      color: #888;
     }
   }
 }

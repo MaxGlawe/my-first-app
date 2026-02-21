@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Plus } from "lucide-react"
+import { Search, Plus, ClipboardList } from "lucide-react"
 import type { PlanFilter } from "@/types/training-plan"
 
 interface TrainingsplaeneHeaderProps {
@@ -29,11 +29,16 @@ export function TrainingsplaeneHeader({
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Trainingspläne</h1>
-          <p className="text-muted-foreground mt-1">
-            Erstelle und verwalte individuelle Trainingspläne für deine Patienten.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+            <ClipboardList className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Trainingspläne</h1>
+            <p className="text-sm text-slate-500 mt-0.5">
+              Individuelle Trainingspläne erstellen und verwalten
+            </p>
+          </div>
         </div>
         <Button onClick={onNewPlan} className="gap-2">
           <Plus className="h-4 w-4" />

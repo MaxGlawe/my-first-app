@@ -111,7 +111,7 @@ export async function GET(
       order,
       params,
       is_archived_exercise,
-      exercises!left(name, media_url, media_type, muskelgruppen)
+      exercises!left(name, beschreibung, ausfuehrung, media_url, media_type, muskelgruppen)
       `
     )
     .in("unit_id", (units ?? []).map((u) => u.id))
@@ -141,6 +141,8 @@ export async function GET(
           .map((e) => {
             const exerciseData = e.exercises as unknown as {
               name: string
+              beschreibung?: string | null
+              ausfuehrung?: { nummer: number; beschreibung: string }[] | null
               media_url?: string | null
               media_type?: string | null
               muskelgruppen?: string[]
@@ -153,6 +155,8 @@ export async function GET(
               params: e.params,
               is_archived_exercise: e.is_archived_exercise,
               exercise_name: exerciseData?.name ?? null,
+              exercise_beschreibung: exerciseData?.beschreibung ?? null,
+              exercise_ausfuehrung: exerciseData?.ausfuehrung ?? null,
               exercise_media_url: exerciseData?.media_url ?? null,
               exercise_media_type: exerciseData?.media_type ?? null,
               exercise_muskelgruppen: exerciseData?.muskelgruppen ?? [],

@@ -14,6 +14,10 @@ import { BehandlungTab } from "@/components/behandlung/BehandlungTab"
 import { BerichteTab } from "@/components/arztbericht/BerichteTab"
 import { HausaufgabenTab } from "@/components/hausaufgaben/HausaufgabenTab"
 import { ChatTab } from "@/components/chat/ChatTab"
+import { FunktionsuntersuchungTab } from "@/components/funktionsuntersuchung/FunktionsuntersuchungTab"
+import { TrainingsdokuTab } from "@/components/trainingsdoku/TrainingsdokuTab"
+import { BefindlichkeitTab } from "@/components/befindlichkeit/BefindlichkeitTab"
+import { EdukationTab } from "@/components/education/EdukationTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -50,10 +54,23 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = use(params)
   const searchParams = useSearchParams()
   const { patient, isLoading: patientLoading, error, refresh } = usePatient(id)
-  const { isLoading: roleLoading, isHeilpraktiker, isAdmin } = useUserRole()
+  const {
+    isLoading: roleLoading,
+    isHeilpraktiker,
+    isAdmin,
+    isTrainer,
+    isPraxismanagement,
+    isFunktionsRole,
+  } = useUserRole()
 
   const isLoading = patientLoading || roleLoading
+
+  // Clinical roles (HP, Physio, Admin) see Befund tab
   const canSeeBefund = isHeilpraktiker || isAdmin
+  // Trainer roles see Funktionsuntersuchung + Trainingsdoku instead of clinical tabs
+  const isClinicalRole = isHeilpraktiker || isAdmin || (!isTrainer && !isPraxismanagement)
+  // Praxismanagement sees everything read-only
+  const readOnly = isPraxismanagement
 
   if (isLoading) {
     return <PatientDetailSkeleton />
@@ -76,22 +93,46 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
       <PatientDetailHeader patient={patient} onRefresh={refresh} />
 
       <Tabs defaultValue={searchParams.get("tab") ?? "stammdaten"} className="mt-2">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine">Termine</TabsTrigger>
-          <TabsTrigger value="dokumentation">Dokumentation</TabsTrigger>
-          <TabsTrigger value="behandlungen">Behandlungen</TabsTrigger>
-          {canSeeBefund && (
-            <TabsTrigger value="befund">Befund & Diagnose</TabsTrigger>
+
+          {/* Clinical roles: Anamnese + Dokumentation + Befund */}
+          {(isClinicalRole || readOnly) && (
+            <>
+              <TabsTrigger value="dokumentation">Anamnese/Untersuchung</TabsTrigger>
+              <TabsTrigger value="behandlungen">Dokumentation</TabsTrigger>
+            </>
           )}
+          {(canSeeBefund || readOnly) && (
+            <TabsTrigger value="befund">Befund</TabsTrigger>
+          )}
+
+          {/* Trainer roles: Funktionsuntersuchung + Trainingsdoku */}
+          {(isFunktionsRole || readOnly) && (
+            <>
+              <TabsTrigger value="funktionsuntersuchung">Funktionsuntersuchung</TabsTrigger>
+              <TabsTrigger value="trainingsdoku">Trainingsdoku</TabsTrigger>
+            </>
+          )}
+
           <TabsTrigger value="berichte">Berichte</TabsTrigger>
-          <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
-          <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
+
+          {/* Therapy tools tabs — hidden for praxismanagement (no access) */}
+          {!isPraxismanagement && (
+            <>
+              <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
+              <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
+            </>
+          )}
+
           <TabsTrigger value="chat">Chat</TabsTrigger>
+          <TabsTrigger value="befindlichkeit">Befindlichkeit</TabsTrigger>
+          <TabsTrigger value="edukation">Edukation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="stammdaten">
-          <StammdatenTab patient={patient} onRefresh={refresh} />
+          <StammdatenTab patient={patient} onRefresh={refresh} hideInterneNotizen={isPraxismanagement} />
         </TabsContent>
 
         <TabsContent value="termine">
@@ -102,38 +143,64 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           />
         </TabsContent>
 
-        <TabsContent value="dokumentation">
-          <AnamnesisTab patientId={patient.id} />
-        </TabsContent>
-
-        <TabsContent value="behandlungen">
-          <BehandlungTab patientId={patient.id} />
-        </TabsContent>
-
-        {canSeeBefund && (
+        {/* Clinical tabs */}
+        {(isClinicalRole || readOnly) && (
+          <>
+            <TabsContent value="dokumentation">
+              <AnamnesisTab patientId={patient.id} />
+            </TabsContent>
+            <TabsContent value="behandlungen">
+              <BehandlungTab patientId={patient.id} />
+            </TabsContent>
+          </>
+        )}
+        {(canSeeBefund || readOnly) && (
           <TabsContent value="befund">
             <BefundTab patientId={patient.id} />
           </TabsContent>
+        )}
+
+        {/* Trainer/Funktions tabs */}
+        {(isFunktionsRole || readOnly) && (
+          <>
+            <TabsContent value="funktionsuntersuchung">
+              <FunktionsuntersuchungTab patientId={patient.id} readOnly={readOnly} />
+            </TabsContent>
+            <TabsContent value="trainingsdoku">
+              <TrainingsdokuTab patientId={patient.id} readOnly={readOnly} />
+            </TabsContent>
+          </>
         )}
 
         <TabsContent value="berichte">
           <BerichteTab patientId={patient.id} />
         </TabsContent>
 
-        <TabsContent value="trainingsplaene">
-          <PlaceholderTab
-            title="Trainingspläne"
-            description="Trainingspläne des Patienten — über den Hausaufgaben-Tab zuweisen."
-            projId="PROJ-9"
-          />
-        </TabsContent>
-
-        <TabsContent value="hausaufgaben">
-          <HausaufgabenTab patientId={patient.id} />
-        </TabsContent>
+        {!isPraxismanagement && (
+          <>
+            <TabsContent value="trainingsplaene">
+              <PlaceholderTab
+                title="Trainingspläne"
+                description="Trainingspläne des Patienten — über den Hausaufgaben-Tab zuweisen."
+                projId="PROJ-9"
+              />
+            </TabsContent>
+            <TabsContent value="hausaufgaben">
+              <HausaufgabenTab patientId={patient.id} />
+            </TabsContent>
+          </>
+        )}
 
         <TabsContent value="chat">
           <ChatTab patientId={patient.id} isArchived={!!patient.archived_at} />
+        </TabsContent>
+
+        <TabsContent value="befindlichkeit">
+          <BefindlichkeitTab patientId={patient.id} />
+        </TabsContent>
+
+        <TabsContent value="edukation">
+          <EdukationTab patientId={patient.id} />
         </TabsContent>
       </Tabs>
     </div>

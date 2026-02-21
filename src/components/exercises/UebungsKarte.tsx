@@ -103,7 +103,7 @@ export function UebungsKarte({
             <img
               src={exercise.media_url}
               alt={exercise.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : exercise.media_url && exercise.media_type === "video" && !videoError ? (
             <video

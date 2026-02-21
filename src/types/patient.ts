@@ -30,6 +30,12 @@ export interface Patient {
   therapeut_id: string
   archived_at?: string | null
   booking_system_id?: string | null
+
+  // Invite / App-Bridge
+  user_id?: string | null
+  invite_token?: string | null
+  invite_sent_at?: string | null
+  invite_status?: "invited" | "registered" | null
 }
 
 export interface PatientFormValues {

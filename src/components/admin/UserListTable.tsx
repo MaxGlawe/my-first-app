@@ -35,7 +35,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NewUserDialog } from "./NewUserDialog"
 
-export type UserRole = "admin" | "heilpraktiker" | "physiotherapeut" | "patient"
+export type UserRole = "admin" | "heilpraktiker" | "physiotherapeut" | "patient" | "praeventionstrainer" | "personal_trainer" | "praxismanagement"
 export type UserStatus = "aktiv" | "inaktiv"
 
 export interface UserProfile {
@@ -54,6 +54,9 @@ const ROLE_LABELS: Record<UserRole, string> = {
   heilpraktiker: "Heilpraktiker",
   physiotherapeut: "Physiotherapeut",
   patient: "Patient",
+  praeventionstrainer: "Präventionstrainer",
+  personal_trainer: "Personal Trainer",
+  praxismanagement: "Praxismanagement",
 }
 
 const ROLE_COLORS: Record<UserRole, string> = {
@@ -61,6 +64,9 @@ const ROLE_COLORS: Record<UserRole, string> = {
   heilpraktiker: "bg-purple-100 text-purple-800 border-purple-200",
   physiotherapeut: "bg-blue-100 text-blue-800 border-blue-200",
   patient: "bg-green-100 text-green-800 border-green-200",
+  praeventionstrainer: "bg-amber-100 text-amber-800 border-amber-200",
+  personal_trainer: "bg-orange-100 text-orange-800 border-orange-200",
+  praxismanagement: "bg-slate-100 text-slate-800 border-slate-200",
 }
 
 export function UserListTable() {

@@ -4,9 +4,7 @@ import { useState } from "react"
 import { useDraggable } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
@@ -15,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Star, GripVertical, Dumbbell } from "lucide-react"
+import { Search, Star, GripVertical, Dumbbell, Plus } from "lucide-react"
 import { useExercises } from "@/hooks/use-exercises"
 import { useDebounce } from "@/hooks/use-debounce"
 import { MUSKELGRUPPEN } from "@/types/exercise"
@@ -24,9 +22,10 @@ import type { Exercise } from "@/types/exercise"
 // ---- Draggable exercise item ----
 interface LibraryExerciseItemProps {
   exercise: Exercise
+  onAdd?: (exercise: Exercise) => void
 }
 
-function LibraryExerciseItem({ exercise }: LibraryExerciseItemProps) {
+function LibraryExerciseItem({ exercise, onAdd }: LibraryExerciseItemProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `library-exercise-${exercise.id}`,
     data: {
@@ -44,16 +43,16 @@ function LibraryExerciseItem({ exercise }: LibraryExerciseItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-2 p-2.5 rounded-lg border bg-card hover:bg-accent/50 cursor-grab active:cursor-grabbing transition-colors group ${
+      className={`flex items-center gap-2 p-2.5 rounded-lg border bg-card hover:bg-accent/50 transition-colors group ${
         isDragging ? "shadow-lg" : ""
       }`}
-      aria-label={`Übung ${exercise.name} ziehen`}
+      aria-label={`Übung ${exercise.name}`}
     >
       {/* Drag handle */}
       <div
         {...listeners}
         {...attributes}
-        className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors shrink-0"
+        className="text-muted-foreground/50 group-hover:text-muted-foreground transition-colors shrink-0 cursor-grab active:cursor-grabbing"
       >
         <GripVertical className="h-4 w-4" />
       </div>
@@ -85,18 +84,35 @@ function LibraryExerciseItem({ exercise }: LibraryExerciseItemProps) {
       {exercise.is_favorite && (
         <Star className="h-3.5 w-3.5 text-amber-500 shrink-0 fill-amber-500" />
       )}
+
+      {/* Add button */}
+      {onAdd && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary hover:bg-primary/10"
+          onClick={(e) => {
+            e.stopPropagation()
+            onAdd(exercise)
+          }}
+          aria-label={`${exercise.name} zum Plan hinzufügen`}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   )
 }
 
 // ---- Main Library Panel ----
-interface LibraryPanelProps {
+export interface LibraryPanelProps {
   className?: string
+  onAddExercise?: (exercise: Exercise) => void
 }
 
-export function LibraryPanel({ className }: LibraryPanelProps) {
+export function LibraryPanel({ className, onAddExercise }: LibraryPanelProps) {
   const [rawSearch, setRawSearch] = useState("")
-  const [muskelgruppe, setMuskelgruppe] = useState("")
+  const [muskelgruppe, setMuskelgruppe] = useState("__all__")
   const [favoritenOnly, setFavoritenOnly] = useState(false)
 
   const debouncedSearch = useDebounce(rawSearch, 300)
@@ -104,7 +120,7 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
   const { exercises, isLoading, error } = useExercises({
     filter: {
       search: debouncedSearch,
-      muskelgruppen: muskelgruppe ? [muskelgruppe] : [],
+      muskelgruppen: muskelgruppe && muskelgruppe !== "__all__" ? [muskelgruppe] : [],
       schwierigkeitsgrad: "",
       quelle: favoritenOnly ? "favoriten" : "alle",
     },
@@ -147,7 +163,7 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
             <SelectValue placeholder="Alle Muskelgruppen" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Alle Muskelgruppen</SelectItem>
+            <SelectItem value="__all__">Alle Muskelgruppen</SelectItem>
             {MUSKELGRUPPEN.map((mg) => (
               <SelectItem key={mg} value={mg}>
                 {mg}
@@ -158,7 +174,7 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
       </div>
 
       {/* Exercise list */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto min-h-0">
         <div className="p-3 space-y-1.5">
           {isLoading &&
             Array.from({ length: 6 }).map((_, i) => (
@@ -185,16 +201,21 @@ export function LibraryPanel({ className }: LibraryPanelProps) {
           {!isLoading &&
             !error &&
             exercises.map((exercise) => (
-              <LibraryExerciseItem key={exercise.id} exercise={exercise} />
+              <LibraryExerciseItem
+                key={exercise.id}
+                exercise={exercise}
+                onAdd={onAddExercise}
+              />
             ))}
         </div>
-      </ScrollArea>
+      </div>
 
-      {/* Count */}
+      {/* Count + hint */}
       {!isLoading && !error && (
         <div className="p-3 border-t">
           <p className="text-xs text-muted-foreground text-center">
             {exercises.length} Übung{exercises.length !== 1 ? "en" : ""}
+            {onAddExercise && " — Klicke + oder ziehe"}
           </p>
         </div>
       )}

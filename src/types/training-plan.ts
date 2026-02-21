@@ -18,6 +18,8 @@ export interface PlanExercise {
   is_archived_exercise: boolean
   // Joined from exercises table:
   exercise_name?: string
+  exercise_beschreibung?: string | null
+  exercise_ausfuehrung?: { nummer: number; beschreibung: string }[] | null
   exercise_media_url?: string | null
   exercise_media_type?: "image" | "video" | null
   exercise_muskelgruppen?: string[]

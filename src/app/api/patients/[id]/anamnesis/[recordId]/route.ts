@@ -16,8 +16,8 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // ----------------------------------------------------------------
 
 const painPointSchema = z.object({
-  x: z.number().min(0).max(120), // SVG viewBox width (BodySchema: BODY_SVG_WIDTH = 120)
-  y: z.number().min(0).max(300), // SVG viewBox height (BodySchema: BODY_SVG_HEIGHT = 300)
+  x: z.number().min(0).max(200), // SVG viewBox width (BodySchema: BODY_SVG_WIDTH = 200)
+  y: z.number().min(0).max(400), // SVG viewBox height (BodySchema: BODY_SVG_HEIGHT = 400)
   view: z.enum(["anterior", "posterior"]),
 })
 
@@ -73,10 +73,7 @@ async function loadRecord(supabase: Awaited<ReturnType<typeof createSupabaseServ
       status,
       data,
       created_at,
-      updated_at,
-      user_profiles!created_by (
-        full_name
-      )
+      updated_at
     `)
     .eq("id", recordId)
     .eq("patient_id", patientId)
@@ -133,8 +130,17 @@ export async function GET(
     )
   }
 
-  // Flatten joined profile data
-  const profile = record.user_profiles as { full_name?: string } | null
+  // Resolve created_by name via separate query (no FK dependency)
+  let createdByName: string | null = null
+  if (record.created_by) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("first_name, last_name")
+      .eq("id", record.created_by)
+      .single()
+    createdByName = profile ? [profile.first_name, profile.last_name].filter(Boolean).join(" ") || null : null
+  }
+
   const normalized = {
     id: record.id,
     patient_id: record.patient_id,
@@ -144,7 +150,7 @@ export async function GET(
     data: record.data,
     created_at: record.created_at,
     updated_at: record.updated_at,
-    created_by_name: profile?.full_name ?? null,
+    created_by_name: createdByName,
   }
 
   return NextResponse.json({ record: normalized })

@@ -16,8 +16,8 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // ----------------------------------------------------------------
 
 const painPointSchema = z.object({
-  x: z.number().min(0).max(120), // SVG viewBox width (BodySchema: BODY_SVG_WIDTH = 120)
-  y: z.number().min(0).max(300), // SVG viewBox height (BodySchema: BODY_SVG_HEIGHT = 300)
+  x: z.number().min(0).max(200), // SVG viewBox width (BodySchema: BODY_SVG_WIDTH = 200)
+  y: z.number().min(0).max(400), // SVG viewBox height (BodySchema: BODY_SVG_HEIGHT = 400)
   view: z.enum(["anterior", "posterior"]),
 })
 
@@ -129,10 +129,7 @@ export async function GET(
       status,
       data,
       created_at,
-      updated_at,
-      user_profiles!created_by (
-        full_name
-      )
+      updated_at
     `)
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
@@ -146,21 +143,30 @@ export async function GET(
     )
   }
 
-  // Flatten the joined user_profiles data into created_by_name
-  const normalized = (records ?? []).map((r) => {
-    const profile = r.user_profiles as { full_name?: string } | null
-    return {
-      id: r.id,
-      patient_id: r.patient_id,
-      created_by: r.created_by,
-      version: r.version,
-      status: r.status,
-      data: r.data,
-      created_at: r.created_at,
-      updated_at: r.updated_at,
-      created_by_name: profile?.full_name ?? null,
-    }
-  })
+  // Resolve created_by names via separate query (no FK dependency)
+  const creatorIds = [...new Set((records ?? []).map((r) => r.created_by).filter(Boolean))]
+  let profileMap: Record<string, string> = {}
+  if (creatorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("id, first_name, last_name")
+      .in("id", creatorIds)
+    profileMap = Object.fromEntries(
+      (profiles ?? []).map((p) => [p.id, [p.first_name, p.last_name].filter(Boolean).join(" ")])
+    )
+  }
+
+  const normalized = (records ?? []).map((r) => ({
+    id: r.id,
+    patient_id: r.patient_id,
+    created_by: r.created_by,
+    version: r.version,
+    status: r.status,
+    data: r.data,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    created_by_name: profileMap[r.created_by] ?? null,
+  }))
 
   return NextResponse.json({ records: normalized })
 }

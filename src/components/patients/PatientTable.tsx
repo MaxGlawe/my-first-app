@@ -65,7 +65,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
 
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -117,7 +117,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>

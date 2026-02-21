@@ -131,6 +131,7 @@ export async function GET() {
       status,
       adhoc_exercises,
       notiz,
+      hauptproblem,
       created_at,
       updated_at,
       training_plans!left (
@@ -200,6 +201,33 @@ export async function GET() {
     completionsByAssignment[c.assignment_id].push(c.completed_date)
   }
 
+  // Enrich ad-hoc exercises with media data from the exercises table
+  const adhocExerciseIds = new Set<string>()
+  for (const row of rows) {
+    if (!row.plan_id && Array.isArray(row.adhoc_exercises)) {
+      for (const ae of row.adhoc_exercises as Array<{ exercise_id: string }>) {
+        if (ae.exercise_id) adhocExerciseIds.add(ae.exercise_id)
+      }
+    }
+  }
+
+  let exerciseMediaMap: Record<string, { media_url: string | null; media_type: string | null; beschreibung: string | null; ausfuehrung: unknown; muskelgruppen: string[] }> = {}
+  if (adhocExerciseIds.size > 0) {
+    const { data: exerciseRows } = await supabase
+      .from("exercises")
+      .select("id, media_url, media_type, beschreibung, ausfuehrung, muskelgruppen")
+      .in("id", Array.from(adhocExerciseIds))
+    for (const ex of exerciseRows ?? []) {
+      exerciseMediaMap[ex.id] = {
+        media_url: ex.media_url,
+        media_type: ex.media_type,
+        beschreibung: ex.beschreibung,
+        ausfuehrung: ex.ausfuehrung,
+        muskelgruppen: ex.muskelgruppen,
+      }
+    }
+  }
+
   // Build enriched assignments
   const assignments = rows.map((row) => {
     const activeDays = (row.active_days as string[]) ?? []
@@ -259,8 +287,21 @@ export async function GET() {
       end_date: row.end_date,
       active_days: activeDays,
       status: row.status,
-      adhoc_exercises: row.adhoc_exercises ?? null,
+      adhoc_exercises: Array.isArray(row.adhoc_exercises)
+        ? (row.adhoc_exercises as Array<Record<string, unknown>>).map((ae) => {
+            const media = exerciseMediaMap[ae.exercise_id as string]
+            return {
+              ...ae,
+              media_url: media?.media_url ?? null,
+              media_type: media?.media_type ?? null,
+              beschreibung: media?.beschreibung ?? (ae.anmerkung as string | null) ?? null,
+              ausfuehrung: media?.ausfuehrung ?? null,
+              muskelgruppen: media?.muskelgruppen ?? [],
+            }
+          })
+        : null,
       notiz: row.notiz ?? null,
+      hauptproblem: row.hauptproblem ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       // Joined plan data

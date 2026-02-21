@@ -125,7 +125,7 @@ export function UebungsDetailSheet({
                   <img
                     src={exercise.media_url}
                     alt={exercise.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : videoError ? (
                   // BUG-6: Broken-link indicator

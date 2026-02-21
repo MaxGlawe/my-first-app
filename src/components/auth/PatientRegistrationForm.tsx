@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -31,9 +32,15 @@ type RegistrationFormValues = z.infer<typeof registrationSchema>
 
 interface PatientRegistrationFormProps {
   token: string
+  prefill?: {
+    vorname: string
+    nachname: string
+    email: string
+  }
 }
 
-export function PatientRegistrationForm({ token }: PatientRegistrationFormProps) {
+export function PatientRegistrationForm({ token, prefill }: PatientRegistrationFormProps) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -44,6 +51,13 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
     formState: { errors },
   } = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
+    defaultValues: prefill
+      ? {
+          firstName: prefill.vorname,
+          lastName: prefill.nachname,
+          email: prefill.email,
+        }
+      : undefined,
   })
 
   const onSubmit = async (data: RegistrationFormValues) => {
@@ -77,6 +91,20 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
 
       if (!authData.user) {
         setServerError("Registrierung fehlgeschlagen. Bitte versuche es erneut.")
+        return
+      }
+
+      // If we have a prefill (came from invite), try to complete the registration
+      if (prefill) {
+        try {
+          await fetch(`/api/patients/invite/${token}/complete`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          })
+        } catch {
+          // Non-critical — profile can be linked later
+        }
+        router.push("/app/dashboard")
         return
       }
 
@@ -115,7 +143,9 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">Konto erstellen</CardTitle>
         <CardDescription>
-          Du wurdest eingeladen, der Patienten-App beizutreten. Erstelle jetzt dein Konto.
+          {prefill
+            ? `Hallo ${prefill.vorname}! Erstelle jetzt dein Konto für die Patienten-App.`
+            : "Du wurdest eingeladen, der Patienten-App beizutreten. Erstelle jetzt dein Konto."}
         </CardDescription>
       </CardHeader>
 
@@ -135,6 +165,8 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
                 type="text"
                 placeholder="Max"
                 autoComplete="given-name"
+                readOnly={!!prefill}
+                className={prefill ? "bg-muted" : ""}
                 aria-describedby={errors.firstName ? "firstname-error" : undefined}
                 {...register("firstName")}
               />
@@ -152,6 +184,8 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
                 type="text"
                 placeholder="Mustermann"
                 autoComplete="family-name"
+                readOnly={!!prefill}
+                className={prefill ? "bg-muted" : ""}
                 aria-describedby={errors.lastName ? "lastname-error" : undefined}
                 {...register("lastName")}
               />
@@ -170,6 +204,8 @@ export function PatientRegistrationForm({ token }: PatientRegistrationFormProps)
               type="email"
               placeholder="name@example.de"
               autoComplete="email"
+              readOnly={!!prefill}
+              className={prefill ? "bg-muted" : ""}
               aria-describedby={errors.email ? "email-error" : undefined}
               {...register("email")}
             />

@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import type { Patient } from "@/types/patient"
-import { Camera, Archive, ArchiveRestore, ArrowLeft, AlertTriangle } from "lucide-react"
+import { Camera, Archive, ArchiveRestore, ArrowLeft, AlertTriangle, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
 interface PatientDetailHeaderProps {
@@ -45,6 +45,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [isSendingInvite, setIsSendingInvite] = useState(false)
 
   const isArchived = !!patient.archived_at
 
@@ -140,6 +141,30 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
     }
   }
 
+  const handleSendInvite = async () => {
+    setIsSendingInvite(true)
+    try {
+      const res = await fetch(`/api/patients/${patient.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      })
+
+      const json = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        toast.error(json.error ?? "Einladung konnte nicht gesendet werden.")
+        return
+      }
+
+      toast.success(json.message ?? "Einladung wurde gesendet.")
+      onRefresh()
+    } catch {
+      toast.error("Ein unerwarteter Fehler ist aufgetreten.")
+    } finally {
+      setIsSendingInvite(false)
+    }
+  }
+
   return (
     <div className="mb-6">
       {/* Back navigation */}
@@ -198,6 +223,16 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
               ) : (
                 <Badge className="bg-green-500 hover:bg-green-600">Aktiv</Badge>
               )}
+              {patient.invite_status === "registered" && (
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                  App aktiv
+                </Badge>
+              )}
+              {patient.invite_status === "invited" && (
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                  Eingeladen
+                </Badge>
+              )}
             </div>
             <p className="text-muted-foreground text-sm mt-0.5">
               {getAlter(patient.geburtsdatum)} &middot;{" "}
@@ -209,6 +244,28 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Invite button */}
+          {patient.email && patient.invite_status !== "registered" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSendInvite}
+              disabled={isSendingInvite}
+            >
+              {patient.invite_status === "invited" ? (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  {isSendingInvite ? "Sende..." : "Erneut einladen"}
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  {isSendingInvite ? "Sende..." : "Zur App einladen"}
+                </>
+              )}
+            </Button>
+          )}
+
           {isArchived ? (
             <Button
               variant="outline"

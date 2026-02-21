@@ -27,9 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Separator } from "@/components/ui/separator"
 import { KrankenkasseCombobox } from "./KrankenkasseCombobox"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Mail } from "lucide-react"
+import { toast } from "sonner"
 
 const patientSchema = z.object({
   vorname: z.string().min(1, "Vorname ist erforderlich.").max(100),
@@ -63,11 +65,13 @@ export function NewPatientForm() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null)
   const [pendingData, setPendingData] = useState<PatientFormValues | null>(null)
+  const [sendInvite, setSendInvite] = useState(false)
 
   const {
     register,
     handleSubmit,
     control,
+    watch,
     formState: { errors },
   } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -75,6 +79,8 @@ export function NewPatientForm() {
       geschlecht: undefined,
     },
   })
+
+  const watchedEmail = watch("email")
 
   const checkDuplicate = async (
     vorname: string,
@@ -97,19 +103,21 @@ export function NewPatientForm() {
     setServerError(null)
 
     try {
+      const email = data.email?.trim() || null
       const payload = {
         vorname: data.vorname.trim(),
         nachname: data.nachname.trim(),
         geburtsdatum: data.geburtsdatum,
         geschlecht: data.geschlecht,
         telefon: data.telefon?.trim() || null,
-        email: data.email?.trim() || null,
+        email,
         strasse: data.strasse?.trim() || null,
         plz: data.plz?.trim() || null,
         ort: data.ort?.trim() || null,
         krankenkasse: data.krankenkasse?.trim() || null,
         versichertennummer: data.versichertennummer?.trim() || null,
         interne_notizen: data.interne_notizen?.trim() || null,
+        send_invite: sendInvite && !!email,
       }
 
       const res = await fetch("/api/patients", {
@@ -123,6 +131,12 @@ export function NewPatientForm() {
       if (!res.ok) {
         setServerError(json.error ?? "Patient konnte nicht gespeichert werden. Bitte versuche es erneut.")
         return
+      }
+
+      if (json.invite_sent) {
+        toast.success("Patient angelegt und Einladung per E-Mail gesendet.")
+      } else if (json.invite_error) {
+        toast.warning(`Patient angelegt. Einladung fehlgeschlagen: ${json.invite_error}`)
       }
 
       router.push(`/os/patients/${json.patient.id}`)
@@ -327,6 +341,27 @@ export function NewPatientForm() {
                 </p>
               )}
             </div>
+
+            {/* App invite checkbox — only visible when email is filled */}
+            {watchedEmail && watchedEmail.includes("@") && (
+              <div className="flex items-start gap-3 sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                <Checkbox
+                  id="send_invite"
+                  checked={sendInvite}
+                  onCheckedChange={(checked) => setSendInvite(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="grid gap-0.5">
+                  <Label htmlFor="send_invite" className="cursor-pointer flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    Einladung zur Patienten-App per E-Mail senden
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Der Patient erhält eine E-Mail mit einem Link zur Registrierung.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="strasse">Straße und Hausnummer</Label>

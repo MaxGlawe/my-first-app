@@ -47,7 +47,7 @@ const formSchema = z.object({
   recipient_name: z.string().min(1, "Empfänger-Name ist erforderlich.").max(500),
   recipient_address: z.string().max(1000),
   extra_instructions: z.string().max(2000),
-  admin_report_type: z.enum(["arztbericht", "therapiebericht"]).optional(),
+  admin_report_type: z.enum(["arztbericht", "therapiebericht", "funktionsanalyse"]).optional(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -127,13 +127,13 @@ function DataAvailabilitySummary({
 
 export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
   const router = useRouter()
-  const { role, isLoading: roleLoading, isHeilpraktiker, isAdmin } = useUserRole()
+  const { role, isLoading: roleLoading, isHeilpraktiker, isAdmin, isTrainer } = useUserRole()
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationStep, setGenerationStep] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   const reportLabel =
-    isHeilpraktiker || isAdmin ? "Arztbericht" : "Therapiebericht"
+    isTrainer ? "Funktionsanalyse" : isHeilpraktiker || isAdmin ? "Arztbericht" : "Therapiebericht"
 
   // Default: letzte 3 Monate
   const today = new Date()
@@ -166,8 +166,12 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
 
   const generationSteps = [
     "Patientendaten werden geladen…",
-    "Behandlungsverlauf wird analysiert…",
-    isHeilpraktiker || isAdmin
+    isTrainer
+      ? "Funktionsuntersuchungen werden analysiert…"
+      : "Behandlungsverlauf wird analysiert…",
+    isTrainer
+      ? "Trainingsdokumentation wird aufbereitet…"
+      : isHeilpraktiker || isAdmin
       ? "Befunde und Diagnosen werden einbezogen…"
       : "Maßnahmen und NRS-Verlauf werden aufbereitet…",
     "KI-Bericht wird generiert…",
@@ -251,7 +255,9 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
                 {reportLabel} generieren
               </CardTitle>
               <CardDescription className="text-xs mt-0.5">
-                {isHeilpraktiker || isAdmin
+                {isTrainer
+                  ? "KI erstellt einen Funktionsanalyse-Bericht mit Janda-Befunden, Trainingsverlauf und Trainingsempfehlung."
+                  : isHeilpraktiker || isAdmin
                   ? "KI erstellt einen vollständigen medizinischen Arztbrief mit Anamnese, Befund, ICD-10-Diagnosen und Behandlungsverlauf."
                   : "KI erstellt einen Therapieverlaufsbericht mit Maßnahmen, NRS-Entwicklung und Weiterbehandlungsempfehlung (ohne Diagnoseabschnitt)."}
               </CardDescription>
@@ -276,9 +282,9 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
             <RadioGroup
               value={adminReportType}
               onValueChange={(val) =>
-                setValue("admin_report_type", val as "arztbericht" | "therapiebericht")
+                setValue("admin_report_type", val as "arztbericht" | "therapiebericht" | "funktionsanalyse")
               }
-              className="flex gap-6"
+              className="flex flex-wrap gap-6"
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="arztbericht" id="type-arzt" />
@@ -290,6 +296,12 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
                 <RadioGroupItem value="therapiebericht" id="type-therapie" />
                 <Label htmlFor="type-therapie" className="text-sm cursor-pointer">
                   Therapiebericht <span className="text-xs text-muted-foreground">(Physiotherapeut)</span>
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="funktionsanalyse" id="type-funktion" />
+                <Label htmlFor="type-funktion" className="text-sm cursor-pointer">
+                  Funktionsanalyse <span className="text-xs text-muted-foreground">(Trainer)</span>
                 </Label>
               </div>
             </RadioGroup>
@@ -394,12 +406,16 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            {isHeilpraktiker || isAdmin
+            {isTrainer
+              ? "Trainingsempfehlung / Hinweise (optional)"
+              : isHeilpraktiker || isAdmin
               ? "Heilmittelempfehlung (optional)"
               : "Gewünschte Heilmittel / Hinweise (optional)"}
           </CardTitle>
           <CardDescription className="text-xs">
-            {isHeilpraktiker || isAdmin
+            {isTrainer
+              ? "Hinweis an die KI — z.B. besondere Schwerpunkte, Trainingsempfehlung oder Ziele für die Funktionsanalyse."
+              : isHeilpraktiker || isAdmin
               ? "Optionaler Freitext für die KI — z.B. gewünschte Empfehlungen oder besondere Schwerpunkte des Berichts."
               : "Hinweis an die KI — z.B. gewünschte Heilmittel für die Weiterverordnung (KG, MT, etc.) oder spezifische Behandlungsziele."}
           </CardDescription>
@@ -408,7 +424,9 @@ export function BerichtKonfigForm({ patientId }: BerichtKonfigFormProps) {
           <Textarea
             id="extra_instructions"
             placeholder={
-              isHeilpraktiker || isAdmin
+              isTrainer
+                ? "z.B. Bitte Schwerpunkt auf Hüftmobilität und Rumpfstabilität legen…"
+                : isHeilpraktiker || isAdmin
                 ? "z.B. Bitte eine Empfehlung für Fortsetzung der MT herausarbeiten…"
                 : "z.B. Bitte 10 Einheiten KG + 6 Einheiten MT für die nächste Verordnungsphase empfehlen…"
             }

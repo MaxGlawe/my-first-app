@@ -78,7 +78,19 @@ export async function GET(request: NextRequest) {
     ? muskelgruppenRaw.split(",").map((m) => m.trim()).filter(Boolean)
     : []
 
-  // Base query — join favorites for the current user
+  // Fetch user's favorite exercise IDs upfront (separate query to avoid join issues)
+  let userFavIds = new Set<string>()
+  try {
+    const { data: userFavRows } = await supabase
+      .from("exercise_favorites")
+      .select("exercise_id")
+      .eq("user_id", user.id)
+    userFavIds = new Set((userFavRows ?? []).map((r) => r.exercise_id))
+  } catch {
+    // exercise_favorites table might not exist yet — continue without favorites
+  }
+
+  // Base query — no join, favorites are merged below
   let query = supabase
     .from("exercises")
     .select(
@@ -98,8 +110,7 @@ export async function GET(request: NextRequest) {
       standard_pause_sekunden,
       is_public,
       is_archived,
-      created_by,
-      exercise_favorites!left(user_id)
+      created_by
       `,
       { count: "exact" }
     )
@@ -154,25 +165,20 @@ export async function GET(request: NextRequest) {
   const { data, error, count } = await query
 
   if (error) {
-    console.error("[GET /api/exercises] Supabase error:", error)
+    console.error("[GET /api/exercises] Supabase error:", error.message, error.details, error.hint)
     return NextResponse.json(
-      { error: "Übungen konnten nicht geladen werden." },
+      { error: `Übungen konnten nicht geladen werden: ${error.message}` },
       { status: 500 }
     )
   }
 
-  // Map: add is_favorite computed field from the join
-  const exercises = (data ?? []).map((row) => {
-    const favorites = row.exercise_favorites as { user_id: string }[] | null
-    const is_favorite =
-      Array.isArray(favorites) && favorites.some((f) => f.user_id === user.id)
+  console.log(`[GET /api/exercises] Found ${data?.length ?? 0} exercises (total: ${count})`)
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { exercise_favorites: _fav, ...rest } = row as typeof row & {
-      exercise_favorites: unknown
-    }
-    return { ...rest, is_favorite }
-  })
+  // Add is_favorite computed field from the pre-fetched favorites set
+  const exercises = (data ?? []).map((row) => ({
+    ...row,
+    is_favorite: userFavIds.has(row.id),
+  }))
 
   return NextResponse.json({
     exercises,
@@ -223,20 +229,9 @@ export async function POST(request: NextRequest) {
 
   const values = parseResult.data
 
-  // Only admins can create public (Praxis-Bibliothek) exercises directly
-  let isPublic = false
-  if (values.is_public === true) {
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    if (profile?.role === "admin") {
-      isPublic = true
-    }
-    // Non-admins silently create private exercises even if they sent is_public=true
-  }
+  // All staff can create public exercises (visible to whole practice)
+  // Default to public=true unless explicitly set to false
+  const isPublic = values.is_public !== false
 
   const payload = {
     name: values.name,

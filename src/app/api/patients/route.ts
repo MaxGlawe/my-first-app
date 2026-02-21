@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { generateToken } from "@/lib/tokens"
 
 const PAGE_SIZE = 20
 
@@ -35,6 +37,7 @@ const createPatientSchema = z.object({
   krankenkasse: z.string().max(200).optional().nullable(),
   versichertennummer: z.string().max(50).optional().nullable(),
   interne_notizen: z.string().max(5000).optional().nullable(),
+  send_invite: z.boolean().optional(),
 })
 
 // ----------------------------------------------------------------
@@ -180,7 +183,7 @@ export async function POST(request: NextRequest) {
   const { data: created, error: insertError } = await supabase
     .from("patients")
     .insert(payload)
-    .select("id, vorname, nachname, geburtsdatum, geschlecht")
+    .select("id, vorname, nachname, geburtsdatum, geschlecht, email")
     .single()
 
   if (insertError) {
@@ -191,5 +194,61 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  return NextResponse.json({ patient: created }, { status: 201 })
+  // ── Invite to app (optional) ────────────────────────────────────
+  let invite_error: string | undefined
+  const email = data.email?.trim()
+
+  if (data.send_invite && email) {
+    try {
+      const serviceClient = createSupabaseServiceClient()
+      const inviteToken = generateToken()
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+
+      const { data: authData, error: inviteErr } =
+        await serviceClient.auth.admin.inviteUserByEmail(email, {
+          data: {
+            role: "patient",
+            patient_id: created.id,
+            first_name: data.vorname,
+            last_name: data.nachname,
+          },
+          redirectTo: `${siteUrl}/invite/${inviteToken}`,
+        })
+
+      if (inviteErr) {
+        console.error("[POST /api/patients] Invite error:", inviteErr)
+        invite_error = inviteErr.message.includes("already")
+          ? "Diese E-Mail-Adresse ist bereits registriert."
+          : "Einladung konnte nicht gesendet werden."
+      } else {
+        // Link auth user to patient and store invite token
+        const { error: updateErr } = await serviceClient
+          .from("patients")
+          .update({
+            invite_token: inviteToken,
+            invite_sent_at: new Date().toISOString(),
+            invite_status: "invited",
+            user_id: authData.user?.id ?? null,
+          })
+          .eq("id", created.id)
+
+        if (updateErr) {
+          console.error("[POST /api/patients] Invite update error:", updateErr)
+          invite_error = "Einladung gesendet, aber Status konnte nicht gespeichert werden."
+        }
+      }
+    } catch (err) {
+      console.error("[POST /api/patients] Invite exception:", err)
+      invite_error = "Einladung konnte nicht gesendet werden."
+    }
+  }
+
+  return NextResponse.json(
+    {
+      patient: created,
+      invite_sent: data.send_invite && email && !invite_error,
+      ...(invite_error ? { invite_error } : {}),
+    },
+    { status: 201 }
+  )
 }

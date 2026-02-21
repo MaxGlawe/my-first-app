@@ -42,6 +42,8 @@ type StammdatenFormValues = z.infer<typeof stammdatenSchema>
 interface StammdatenTabProps {
   patient: Patient
   onRefresh: () => void
+  /** Hide internal notes section (e.g. for Praxismanagement) */
+  hideInterneNotizen?: boolean
 }
 
 function ReadonlyField({ label, value }: { label: string; value?: string | null }) {
@@ -53,7 +55,7 @@ function ReadonlyField({ label, value }: { label: string; value?: string | null 
   )
 }
 
-export function StammdatenTab({ patient, onRefresh }: StammdatenTabProps) {
+export function StammdatenTab({ patient, onRefresh, hideInterneNotizen }: StammdatenTabProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -214,18 +216,20 @@ export function StammdatenTab({ patient, onRefresh }: StammdatenTabProps) {
         </div>
 
         {/* Interne Notizen */}
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-base font-semibold">Interne Notizen</h3>
-            <p className="text-xs text-muted-foreground">Nur für Therapeuten sichtbar</p>
-            <Separator className="mt-2" />
+        {!hideInterneNotizen && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold">Interne Notizen</h3>
+              <p className="text-xs text-muted-foreground">Nur für Therapeuten sichtbar</p>
+              <Separator className="mt-2" />
+            </div>
+            <p className="text-sm whitespace-pre-wrap">
+              {patient.interne_notizen || (
+                <span className="text-muted-foreground">Keine Notizen vorhanden.</span>
+              )}
+            </p>
           </div>
-          <p className="text-sm whitespace-pre-wrap">
-            {patient.interne_notizen || (
-              <span className="text-muted-foreground">Keine Notizen vorhanden.</span>
-            )}
-          </p>
-        </div>
+        )}
       </div>
     )
   }
@@ -375,19 +379,21 @@ export function StammdatenTab({ patient, onRefresh }: StammdatenTabProps) {
       </div>
 
       {/* Interne Notizen */}
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-base font-semibold">Interne Notizen</h3>
-          <p className="text-xs text-muted-foreground">Nur für Therapeuten sichtbar</p>
-          <Separator className="mt-2" />
+      {!hideInterneNotizen && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Interne Notizen</h3>
+            <p className="text-xs text-muted-foreground">Nur für Therapeuten sichtbar</p>
+            <Separator className="mt-2" />
+          </div>
+          <Textarea
+            id="edit-interne-notizen"
+            rows={5}
+            placeholder="Interne Hinweise, Besonderheiten..."
+            {...register("interne_notizen")}
+          />
         </div>
-        <Textarea
-          id="edit-interne-notizen"
-          rows={5}
-          placeholder="Interne Hinweise, Besonderheiten..."
-          {...register("interne_notizen")}
-        />
-      </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2">

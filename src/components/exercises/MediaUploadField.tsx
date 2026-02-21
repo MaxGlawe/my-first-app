@@ -17,7 +17,7 @@ interface MediaUploadFieldProps {
 }
 
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024 // 5 MB
-const VIDEO_MAX_BYTES = 200 * 1024 * 1024 // 200 MB
+const VIDEO_MAX_BYTES = 50 * 1024 * 1024 // 50 MB
 
 export function MediaUploadField({
   mediaUrl,
@@ -39,7 +39,7 @@ export function MediaUploadField({
 
   const accept = activeTab === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"
   const maxBytes = activeTab === "image" ? IMAGE_MAX_BYTES : VIDEO_MAX_BYTES
-  const maxLabel = activeTab === "image" ? "5 MB" : "200 MB"
+  const maxLabel = activeTab === "image" ? "5 MB" : "50 MB"
 
   async function uploadFile(file: File) {
     setUploadError(null)
@@ -142,7 +142,7 @@ export function MediaUploadField({
             <img
               src={mediaUrl}
               alt="Medien-Vorschau"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <video

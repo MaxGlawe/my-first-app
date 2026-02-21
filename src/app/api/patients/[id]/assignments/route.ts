@@ -52,6 +52,8 @@ const createAssignmentSchema = z
     notiz: z.string().max(1000).optional().nullable(),
 
     adhoc_exercises: z.array(adhocExerciseSchema).max(50).optional().nullable(),
+
+    hauptproblem: z.string().min(2).max(200).optional().nullable(),
   })
   .refine((data) => data.start_date <= data.end_date, {
     message: "Das Startdatum muss vor oder gleich dem Enddatum sein.",
@@ -223,6 +225,7 @@ export async function GET(
       status,
       adhoc_exercises,
       notiz,
+      hauptproblem,
       created_at,
       updated_at,
       training_plans!left (
@@ -294,6 +297,7 @@ export async function GET(
       status: row.status,
       adhoc_exercises: row.adhoc_exercises ?? null,
       notiz: row.notiz ?? null,
+      hauptproblem: row.hauptproblem ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       // Joined
@@ -367,7 +371,7 @@ export async function POST(
     )
   }
 
-  const { plan_id, start_date, end_date, active_days, notiz, adhoc_exercises } =
+  const { plan_id, start_date, end_date, active_days, notiz, adhoc_exercises, hauptproblem } =
     parseResult.data
 
   // If a plan_id is provided, verify it exists and is accessible
@@ -400,9 +404,10 @@ export async function POST(
       status: "aktiv",
       adhoc_exercises: adhoc_exercises ?? null,
       notiz: notiz?.trim() || null,
+      hauptproblem: hauptproblem?.trim() || null,
     })
     .select(
-      "id, patient_id, therapist_id, plan_id, start_date, end_date, active_days, status, adhoc_exercises, notiz, created_at, updated_at"
+      "id, patient_id, therapist_id, plan_id, start_date, end_date, active_days, status, adhoc_exercises, notiz, hauptproblem, created_at, updated_at"
     )
     .single()
 

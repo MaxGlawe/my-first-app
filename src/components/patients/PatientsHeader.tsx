@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { UserPlus, Search } from "lucide-react"
+import { UserPlus, Search, Users } from "lucide-react"
 
 interface PatientsHeaderProps {
   search: string
@@ -24,11 +24,16 @@ export function PatientsHeader({
 
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Patienten</h1>
-        <p className="text-muted-foreground mt-1">
-          Patientenstammdaten verwalten und durchsuchen
-        </p>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+          <Users className="h-5 w-5 text-emerald-600" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Patienten</h1>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Stammdaten verwalten und durchsuchen
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

@@ -14,13 +14,26 @@ import { useReports } from "@/hooks/use-reports"
 import { useUserRole } from "@/hooks/use-user-role"
 import type { MedicalReport, ReportType } from "@/types/arztbericht"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   FileText,
   Plus,
   ChevronRight,
   CheckCircle,
   Clock,
   Info,
+  Trash2,
 } from "lucide-react"
+import { toast } from "sonner"
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -94,9 +107,11 @@ function StatusBadge({ status }: { status: MedicalReport["status"] }) {
 function BerichtCard({
   report,
   patientId,
+  onDelete,
 }: {
   report: MedicalReport
   patientId: string
+  onDelete: (reportId: string) => void
 }) {
   const createdDate = new Date(report.created_at).toLocaleDateString("de-DE", {
     weekday: "short",
@@ -116,38 +131,72 @@ function BerichtCard({
     year: "numeric",
   })
 
+  const isDraft = report.status === "entwurf"
+
   return (
-    <Link
-      href={`/os/patients/${patientId}/arztbericht/${report.id}`}
-      className="block"
-    >
-      <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group cursor-pointer">
-        <div className="flex items-start gap-3 min-w-0">
-          <div className="rounded-full bg-teal-100 p-2 mt-0.5 shrink-0">
-            <FileText className="h-4 w-4 text-teal-600" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium">{createdDate}</span>
-              <ReportTypeBadge reportType={report.report_type} />
-              <StatusBadge status={report.status} />
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              An: {report.recipient_name}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Zeitraum: {periodFrom} – {periodTo}
-            </p>
-            {report.generated_by_name && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Erstellt von: {report.generated_by_name}
-              </p>
-            )}
-          </div>
+    <div className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors group">
+      <Link
+        href={`/os/patients/${patientId}/arztbericht/${report.id}`}
+        className="flex items-start gap-3 min-w-0 flex-1 cursor-pointer"
+      >
+        <div className="rounded-full bg-teal-100 p-2 mt-0.5 shrink-0">
+          <FileText className="h-4 w-4 text-teal-600" />
         </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 group-hover:text-foreground transition-colors" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">{createdDate}</span>
+            <ReportTypeBadge reportType={report.report_type} />
+            <StatusBadge status={report.status} />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            An: {report.recipient_name}
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Zeitraum: {periodFrom} – {periodTo}
+          </p>
+          {report.generated_by_name && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Erstellt von: {report.generated_by_name}
+            </p>
+          )}
+        </div>
+      </Link>
+      <div className="flex items-center gap-1 shrink-0 mt-1">
+        {isDraft && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Entwurf löschen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Dieser Berichts-Entwurf wird unwiderruflich gelöscht.
+                  Finalisierte Berichte sind davon nicht betroffen.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => onDelete(report.id)}
+                >
+                  Löschen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
       </div>
-    </Link>
+    </div>
   )
 }
 
@@ -238,6 +287,24 @@ export function BerichteTab({ patientId }: BerichteTabProps) {
     ? "Arztbericht"
     : "Therapiebericht"
 
+  async function handleDeleteReport(reportId: string) {
+    try {
+      const res = await fetch(
+        `/api/patients/${patientId}/reports/${reportId}`,
+        { method: "DELETE" }
+      )
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        toast.error(json.error ?? "Entwurf konnte nicht gelöscht werden.")
+        return
+      }
+      toast.success("Entwurf gelöscht.")
+      refresh()
+    } catch {
+      toast.error("Ein Fehler ist aufgetreten.")
+    }
+  }
+
   if (isLoading || roleLoading) {
     return (
       <div className="space-y-4">
@@ -300,7 +367,7 @@ export function BerichteTab({ patientId }: BerichteTabProps) {
 
       <div className="space-y-3">
         {reports.map((report) => (
-          <BerichtCard key={report.id} report={report} patientId={patientId} />
+          <BerichtCard key={report.id} report={report} patientId={patientId} onDelete={handleDeleteReport} />
         ))}
       </div>
     </div>

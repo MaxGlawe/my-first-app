@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ScrollArea } from "@/components/ui/scroll-area"
+// ScrollArea removed — native overflow-y-auto avoids DnD interference
 import {
   Plus,
   Trash2,
@@ -286,19 +286,25 @@ function UnitSection({
             isOver ? "bg-primary/5 border-2 border-dashed border-primary/30" : ""
           }`}
         >
-          {unit.exercises.length === 0 && (
+          {unit.exercises.length === 0 ? (
             <div className="flex items-center justify-center h-16 text-sm text-muted-foreground border-2 border-dashed rounded-lg">
-              Übung hier ablegen
+              Übung hier ablegen oder per + hinzufügen
             </div>
+          ) : (
+            <>
+              {unit.exercises.map((exercise) => (
+                <PlanExerciseRow
+                  key={exercise.id}
+                  exercise={exercise}
+                  onParamsChange={(params) => onExerciseParamsChange(exercise.id, params)}
+                  onRemove={() => onExerciseRemove(exercise.id)}
+                />
+              ))}
+              <div className="flex items-center justify-center h-10 text-xs text-muted-foreground/60 border border-dashed rounded-lg hover:text-muted-foreground hover:border-primary/30 transition-colors">
+                Weitere Übungen hierher ziehen oder per + hinzufügen
+              </div>
+            </>
           )}
-          {unit.exercises.map((exercise) => (
-            <PlanExerciseRow
-              key={exercise.id}
-              exercise={exercise}
-              onParamsChange={(params) => onExerciseParamsChange(exercise.id, params)}
-              onRemove={() => onExerciseRemove(exercise.id)}
-            />
-          ))}
         </div>
       </SortableContext>
     </div>
@@ -487,7 +493,7 @@ export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescript
   }
 
   return (
-    <ScrollArea className="flex-1">
+    <div className="flex-1 overflow-y-auto min-h-0">
       <div className="p-6 space-y-4 max-w-3xl mx-auto">
         {/* BUG-6 FIX: Plan description textarea */}
         <Textarea
@@ -540,6 +546,6 @@ export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescript
           Phase hinzufügen
         </Button>
       </div>
-    </ScrollArea>
+    </div>
   )
 }

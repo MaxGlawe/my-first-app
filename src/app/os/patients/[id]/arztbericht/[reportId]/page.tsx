@@ -49,7 +49,7 @@ export default function BerichtEditorPage({ params }: BerichtEditorPageProps) {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-3xl">
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
         <Skeleton className="h-4 w-64 mb-6" />
         <Skeleton className="h-7 w-48 mb-2" />
         <Skeleton className="h-4 w-40 mb-8" />
@@ -60,7 +60,7 @@ export default function BerichtEditorPage({ params }: BerichtEditorPageProps) {
 
   if (error || !patient || !report) {
     return (
-      <div className="container mx-auto py-8 px-4 max-w-3xl">
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
         <Alert variant="destructive">
           <AlertDescription>
             {error ?? "Bericht nicht gefunden."}
@@ -80,7 +80,7 @@ export default function BerichtEditorPage({ params }: BerichtEditorPageProps) {
     report.report_type === "arztbericht" ? "Arztbericht" : "Therapiebericht"
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-3xl print:py-0 print:px-0 print:max-w-none">
+    <div className="container mx-auto py-8 px-4 max-w-4xl print:py-0 print:px-0 print:max-w-none">
       {/* Breadcrumb — wird beim Drucken ausgeblendet */}
       <div className="print:hidden">
         <Breadcrumb className="mb-6">
@@ -126,6 +126,7 @@ export default function BerichtEditorPage({ params }: BerichtEditorPageProps) {
         report={report}
         patientId={id}
         patientName={patientName}
+        patientGeburtsdatum={patient.geburtsdatum}
       />
     </div>
   )

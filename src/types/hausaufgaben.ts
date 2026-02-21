@@ -19,6 +19,7 @@ export interface PatientAssignment {
   status: AssignmentStatus
   adhoc_exercises: AdhocExercise[] | null
   notiz: string | null
+  hauptproblem: string | null
 
   // Joined fields
   plan_name?: string | null
@@ -38,6 +39,12 @@ export interface AdhocExercise {
   dauer_sekunden?: number | null
   pause_sekunden: number
   anmerkung?: string | null
+  // Enriched by API from exercises table (for patient app)
+  media_url?: string | null
+  media_type?: "image" | "video" | null
+  beschreibung?: string | null
+  ausfuehrung?: Array<{ nummer: number; beschreibung: string }> | null
+  muskelgruppen?: string[]
 }
 
 export interface AssignmentCompletion {
@@ -66,4 +73,5 @@ export interface AssignmentFormValues {
   active_days: Wochentag[]
   notiz: string
   adhoc_exercises: AdhocExercise[]
+  hauptproblem: string | null
 }

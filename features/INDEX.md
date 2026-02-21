@@ -24,12 +24,14 @@
 | PROJ-10 | Hausaufgaben-Zuweisung | Deployed | [Spec](PROJ-10-hausaufgaben-zuweisung.md) | 2026-02-17 |
 | PROJ-11 | Patienten-App: Dashboard & Trainingspläne | Deployed | [Spec](PROJ-11-patienten-app-dashboard.md) | 2026-02-17 |
 | PROJ-12 | Patienten-App: Chat (Therapeut ↔ Patient) | Deployed | [Spec](PROJ-12-chat-therapeut-patient.md) | 2026-02-17 |
-| PROJ-13 | Kurs-System (Skalierbares Gruppen-Angebot) | Planned | [Spec](PROJ-13-kurs-system.md) | 2026-02-17 |
+| PROJ-13 | Kurs-System (Skalierbares Gruppen-Angebot) | Deployed | [Spec](PROJ-13-kurs-system.md) | 2026-02-17 |
 | PROJ-14 | PWA-Setup & Push-Notifications | Deployed | [Spec](PROJ-14-pwa-push-notifications.md) | 2026-02-17 |
+| PROJ-15 | Neue Berufsbilder (Trainer, Praxismanagement) | Deployed | [Spec](PROJ-15-neue-berufsbilder.md) | 2026-02-19 |
+| PROJ-16 | Patienten-App 2.0 (Design, Schmerztagebuch, Gamification) | In Progress | [Spec](PROJ-16-patienten-app-v2.md) | 2026-02-19 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-15
+## Next Available ID: PROJ-17
 
 ## Build Order (Empfohlen)
 
@@ -57,4 +59,7 @@ Phase 4 — Patienten-App
 
 Phase 5 — Skalierung
   PROJ-13 Kurs-System                          ← Braucht PROJ-8 & 11
+
+Phase 6 — Neue Berufsbilder
+  PROJ-15 Trainer & Praxismanagement           ← Braucht PROJ-1, 6, 8
 ```

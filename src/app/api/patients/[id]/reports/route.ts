@@ -28,15 +28,14 @@ const createReportSchema = z.object({
   recipient_name: z.string().min(1, "Empfänger-Name ist erforderlich.").max(500),
   recipient_address: z.string().max(1000).default(""),
   extra_instructions: z.string().max(2000).optional().default(""),
-  // Admin-only: allows choosing between arztbericht and therapiebericht
+  // Admin-only: allows choosing between report types
   // Ignored for non-admin roles (server enforces role-based type)
-  admin_report_type: z.enum(["arztbericht", "therapiebericht"]).optional(),
+  admin_report_type: z.enum(["arztbericht", "therapiebericht", "funktionsanalyse"]).optional(),
 })
 
 // ── Normalize helper ───────────────────────────────────────────────────────────
 
-function normalizeReport(r: Record<string, unknown>) {
-  const profile = r.user_profiles as { full_name?: string } | null
+function normalizeReport(r: Record<string, unknown>, generatedByName: string | null = null) {
   return {
     id: r.id,
     patient_id: r.patient_id,
@@ -53,7 +52,7 @@ function normalizeReport(r: Record<string, unknown>) {
     status: r.status,
     created_at: r.created_at,
     updated_at: r.updated_at,
-    generated_by_name: profile?.full_name ?? null,
+    generated_by_name: generatedByName,
   }
 }
 
@@ -75,14 +74,16 @@ export async function GET(
     return NextResponse.json({ error: "Ungültige Patienten-ID." }, { status: 400 })
   }
 
-  // Hole Rolle des eingeloggten Therapeuten
-  const { data: profile } = await supabase
+  // Hole Rolle des eingeloggten Therapeuten (service client bypasses RLS)
+  const { createSupabaseServiceClient } = await import("@/lib/supabase-service")
+  const serviceClient = createSupabaseServiceClient()
+  const { data: roleProfile } = await serviceClient
     .from("user_profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
-  const role = profile?.role as string | null
+  const role = roleProfile?.role as string | null
 
   // Patientenexistenz + Zugriff prüfen (RLS greift hier zusätzlich)
   const { data: patient, error: patientError } = await supabase
@@ -105,18 +106,19 @@ export async function GET(
       id, patient_id, generated_by, generated_by_role, report_type,
       date_from, date_to, recipient_name, recipient_address,
       extra_instructions, draft_content, final_content, status,
-      created_at, updated_at,
-      user_profiles!generated_by ( full_name )
+      created_at, updated_at
     `)
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
     .limit(100)
 
-  // Admin sieht beide Typen, Rollen nur den eigenen Typ
+  // Filter by role-appropriate report type
   if (role === "heilpraktiker") {
     query = query.eq("report_type", "arztbericht")
   } else if (role === "physiotherapeut") {
     query = query.eq("report_type", "therapiebericht")
+  } else if (role === "praeventionstrainer" || role === "personal_trainer") {
+    query = query.eq("report_type", "funktionsanalyse")
   }
   // Admin: kein Filter — sieht alle
 
@@ -130,7 +132,30 @@ export async function GET(
     )
   }
 
-  return NextResponse.json({ reports: (reports ?? []).map(r => normalizeReport(r as Record<string, unknown>)) })
+  // Resolve generated_by names via separate query (no FK dependency)
+  const generatorIds = [...new Set((reports ?? []).map((r) => r.generated_by as string).filter(Boolean))]
+  let profileMap: Record<string, string> = {}
+  if (generatorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("user_profiles")
+      .select("id, first_name, last_name, role")
+      .in("id", generatorIds)
+    profileMap = Object.fromEntries(
+      (profiles ?? []).map((p) => {
+        // For admin users whose first_name is "Admin" (placeholder), use only last_name
+        const fn = p.role === "admin" && p.first_name?.toLowerCase() === "admin"
+          ? null
+          : p.first_name
+        return [p.id, [fn, p.last_name].filter(Boolean).join(" ")]
+      })
+    )
+  }
+
+  return NextResponse.json({
+    reports: (reports ?? []).map((r) =>
+      normalizeReport(r as Record<string, unknown>, r.generated_by ? (profileMap[r.generated_by as string] || null) : null)
+    ),
+  })
 }
 
 // ── POST /api/patients/[id]/reports ───────────────────────────────────────────
@@ -153,20 +178,29 @@ export async function POST(
   }
 
   // Rolle ermitteln (serverseitig — kein Client-Override möglich)
-  const { data: profile } = await supabase
+  // Use service client to bypass potential RLS restrictions on user_profiles
+  const { createSupabaseServiceClient } = await import("@/lib/supabase-service")
+  const serviceClient = createSupabaseServiceClient()
+  const { data: profile, error: profileError } = await serviceClient
     .from("user_profiles")
-    .select("role, full_name")
+    .select("role, first_name, last_name")
     .eq("id", user.id)
     .single()
 
-  const role = profile?.role as string | null
-
-  if (!role || !["heilpraktiker", "physiotherapeut", "admin"].includes(role)) {
-    return NextResponse.json({ error: "Keine Berechtigung zur Berichtsgenerierung." }, { status: 403 })
+  if (profileError) {
+    console.error("[POST /api/patients/[id]/reports] Profile query failed:", profileError, "user.id:", user.id)
   }
 
-  // generated_by_role reflects the actual DB role (admin stays "admin")
-  const generatedByRole = role as "heilpraktiker" | "physiotherapeut" | "admin"
+  const role = profile?.role as string | null
+
+  if (!role || !["heilpraktiker", "physiotherapeut", "admin", "praeventionstrainer", "personal_trainer"].includes(role)) {
+    return NextResponse.json({
+      error: "Keine Berechtigung zur Berichtsgenerierung.",
+    }, { status: 403 })
+  }
+
+  // generated_by_role reflects the actual DB role
+  const generatedByRole = role as "heilpraktiker" | "physiotherapeut" | "admin" | "praeventionstrainer" | "personal_trainer"
 
   // Rate Limiting: Max 10 Generierungen pro Therapeut pro Stunde
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
@@ -186,7 +220,7 @@ export async function POST(
   // Patientenexistenz prüfen
   const { data: patient, error: patientError } = await supabase
     .from("patients")
-    .select("id, vorname, nachname, geburtsdatum, krankenkasse, versichertennummer")
+    .select("id, vorname, nachname, geburtsdatum, geschlecht, krankenkasse, versichertennummer")
     .eq("id", patientId)
     .single()
 
@@ -217,13 +251,15 @@ export async function POST(
     parseResult.data
 
   // report_type wird serverseitig festgelegt (nach Body-Parsing, damit admin_report_type verfügbar)
-  // Admin: honors admin_report_type if provided (both types are legitimate for admin)
-  // HP: always arztbericht | PT: always therapiebericht (security: no override possible)
+  // HP: always arztbericht | PT: always therapiebericht | Trainer: always funktionsanalyse
+  // Admin: honors admin_report_type if provided (all types are legitimate for admin)
   const reportType =
     role === "heilpraktiker"
       ? "arztbericht"
       : role === "physiotherapeut"
       ? "therapiebericht"
+      : role === "praeventionstrainer" || role === "personal_trainer"
+      ? "funktionsanalyse"
       : (admin_report_type ?? "arztbericht") // Admin → defaults to arztbericht
 
   // Datum-Logik prüfen
@@ -237,11 +273,12 @@ export async function POST(
   const realName = `${patient.vorname} ${patient.nachname}`
   const pseudonym = "Patient A"
 
-  // Behandlungen laden (beide Rollen)
+  // Behandlungen laden (nur abgeschlossene — Entwürfe enthalten ungeprüfte Daten)
   const { data: treatments } = await supabase
     .from("treatment_sessions")
-    .select("session_date, measures, nrs_before, nrs_after, notes, next_steps, duration_minutes")
+    .select("session_date, measures, nrs_before, nrs_after, notes, next_steps, duration_minutes, status")
     .eq("patient_id", patientId)
+    .eq("status", "abgeschlossen")
     .gte("session_date", date_from)
     .lte("session_date", date_to)
     .order("session_date", { ascending: true })
@@ -253,10 +290,12 @@ export async function POST(
   // Heilpraktiker: Anamnese + Diagnosen laden
   if (role === "heilpraktiker" || role === "admin") {
     // anamnesis_records.data is a JSONB column (PROJ-3 schema)
+    // Only include finalized records — drafts may contain incomplete/unverified data
     const { data: anamnesisRecords } = await supabase
       .from("anamnesis_records")
       .select("data, created_at")
       .eq("patient_id", patientId)
+      .eq("status", "abgeschlossen")
       .gte("created_at", date_from)
       .lte("created_at", date_to + "T23:59:59")
       .order("created_at", { ascending: false })
@@ -270,20 +309,60 @@ export async function POST(
             schmerzdauer?: string
             schmerzcharakter?: string
             nrs?: number
+            vorerkrankungen?: string[]
             vorerkrankungenFreitext?: string
+            keineVorerkrankungen?: boolean
             medikamente?: string
             differentialdiagnosen?: string
+            bewegungsausmass?: Array<{ gelenk: string; richtung: string; grad: string }>
+            kraftgrad?: Array<{ muskelgruppe: string; grad: string }>
+            erweiterte_tests?: string
           }
           const date = new Date(a.created_at as string).toLocaleDateString("de-DE")
+
+          // Vorerkrankungen: combine array + freetext
+          let vorerkrankungenText = ""
+          if (d.keineVorerkrankungen) {
+            vorerkrankungenText = "Keine Vorerkrankungen bekannt"
+          } else {
+            const parts: string[] = []
+            if (d.vorerkrankungen && d.vorerkrankungen.length > 0) {
+              parts.push(d.vorerkrankungen.join(", "))
+            }
+            if (d.vorerkrankungenFreitext) {
+              parts.push(d.vorerkrankungenFreitext)
+            }
+            vorerkrankungenText = parts.join("; ")
+          }
+
+          // ROM-Messungen formatieren
+          let romText = ""
+          if (d.bewegungsausmass && d.bewegungsausmass.length > 0) {
+            romText = d.bewegungsausmass
+              .map((r) => `${r.gelenk} ${r.richtung}: ${r.grad}°`)
+              .join(", ")
+          }
+
+          // Kraftgrad nach Janda formatieren
+          let kraftText = ""
+          if (d.kraftgrad && d.kraftgrad.length > 0) {
+            kraftText = d.kraftgrad
+              .map((k) => `${k.muskelgruppe}: ${k.grad}/5`)
+              .join(", ")
+          }
+
           return [
             `Anamnese ${i + 1} (${date}):`,
             d.hauptbeschwerde ? `  Hauptbeschwerde: ${d.hauptbeschwerde}` : "",
             d.schmerzdauer ? `  Beschwerdedauer: ${d.schmerzdauer}` : "",
             d.schmerzcharakter ? `  Schmerzcharakter: ${d.schmerzcharakter}` : "",
             d.nrs !== undefined ? `  NRS: ${d.nrs}/10` : "",
-            d.vorerkrankungenFreitext ? `  Vorerkrankungen: ${d.vorerkrankungenFreitext}` : "",
+            vorerkrankungenText ? `  Vorerkrankungen: ${vorerkrankungenText}` : "",
             d.medikamente ? `  Medikamente: ${d.medikamente}` : "",
+            romText ? `  Bewegungsausmaß (ROM): ${romText}` : "",
+            kraftText ? `  Kraftgrad (Janda): ${kraftText}` : "",
             d.differentialdiagnosen ? `  Differentialdiagnosen: ${d.differentialdiagnosen}` : "",
+            d.erweiterte_tests ? `  Erweiterte Tests: ${d.erweiterte_tests}` : "",
           ]
             .filter(Boolean)
             .join("\n")
@@ -292,31 +371,62 @@ export async function POST(
     }
 
     // diagnoses table (PROJ-4 schema — correct table name is "diagnoses")
+    // Only include finalized diagnoses — drafts may contain unverified ICD codes
     const { data: diagnoses } = await supabase
       .from("diagnoses")
-      .select("hauptdiagnose, nebendiagnosen, klinischer_befund, therapieziel, prognose, created_at")
+      .select("hauptdiagnose, nebendiagnosen, klinischer_befund, therapieziel, prognose, therapiedauer_wochen, created_at")
       .eq("patient_id", patientId)
+      .eq("status", "abgeschlossen")
       .gte("created_at", date_from)
       .lte("created_at", date_to + "T23:59:59")
       .order("created_at", { ascending: false })
       .limit(10)
 
+    // Helper: format a single diagnosis entry
+    const formatDiagnoseEintrag = (entry: Record<string, unknown>): string => {
+      const icd = entry.icd10 as { code: string; bezeichnung: string } | null
+      const sicherheit = entry.sicherheitsgrad as string | undefined
+      const freitext = entry.freitextDiagnose as string | undefined
+      const notiz = entry.freitextNotiz as string | undefined
+
+      let text = ""
+      if (icd) {
+        text = `${icd.code} — ${icd.bezeichnung}`
+      } else if (freitext) {
+        text = freitext
+      } else {
+        return ""
+      }
+
+      if (sicherheit === "verdacht") text += " (V.a.)"
+      else if (sicherheit === "ausschluss") text += " (Ausschluss)"
+      else if (sicherheit === "gesichert") text += " (gesichert)"
+
+      if (notiz) text += ` [${notiz}]`
+      return text
+    }
+
     if (diagnoses && diagnoses.length > 0) {
       diagnosesSummary = diagnoses
         .map((d, i) => {
           const hd = d.hauptdiagnose as Record<string, unknown> | null
-          const icdCode = hd?.icd10
-            ? `${(hd.icd10 as Record<string, string>).code} — ${(hd.icd10 as Record<string, string>).bezeichnung}`
-            : (hd?.freitextDiagnose as string) ?? "Keine Hauptdiagnose"
-          const nebendiagnosen = (d.nebendiagnosen as unknown[]) ?? []
+          const hauptdiagnoseText = hd ? formatDiagnoseEintrag(hd) : "Keine Hauptdiagnose"
+          const nebendiagnosen = (d.nebendiagnosen as Record<string, unknown>[]) ?? []
           const date = new Date(d.created_at as string).toLocaleDateString("de-DE")
+
+          // Format all secondary diagnoses with full details
+          const nebenTexte = nebendiagnosen
+            .map((nd) => formatDiagnoseEintrag(nd))
+            .filter(Boolean)
+
           return [
             `Befund ${i + 1} (${date}):`,
-            `  Hauptdiagnose: ${icdCode}`,
-            nebendiagnosen.length > 0 ? `  Nebendiagnosen: ${nebendiagnosen.length}` : "",
-            d.klinischer_befund ? `  Klinischer Befund: ${String(d.klinischer_befund).slice(0, 500)}` : "",
+            `  Hauptdiagnose: ${hauptdiagnoseText}`,
+            nebenTexte.length > 0 ? `  Nebendiagnosen:\n${nebenTexte.map((t) => `    - ${t}`).join("\n")}` : "",
+            d.klinischer_befund ? `  Klinischer Befund: ${String(d.klinischer_befund).slice(0, 2000)}` : "",
             d.therapieziel ? `  Therapieziel: ${d.therapieziel}` : "",
             d.prognose ? `  Prognose: ${d.prognose}` : "",
+            d.therapiedauer_wochen ? `  Geplante Therapiedauer: ${d.therapiedauer_wochen} Wochen` : "",
           ]
             .filter(Boolean)
             .join("\n")
@@ -326,33 +436,59 @@ export async function POST(
   }
 
   // Behandlungsverlauf aufbereiten
-  const treatmentSummary = (treatments ?? [])
+  const treatmentList = treatments ?? []
+  const treatmentSummary = treatmentList
     .map((t) => {
       const date = new Date(t.session_date).toLocaleDateString("de-DE")
+      const duration = t.duration_minutes ? `${t.duration_minutes} Min.` : ""
       const measures = Array.isArray(t.measures) ? (t.measures as string[]).join(", ") : ""
       const nrs =
         t.nrs_before !== null
-          ? `NRS Beginn: ${t.nrs_before}${t.nrs_after !== null ? ` → Ende: ${t.nrs_after}` : ""}`
+          ? `NRS: ${t.nrs_before}/10${t.nrs_after !== null ? ` → ${t.nrs_after}/10` : ""}`
           : ""
-      const notes = t.notes ? `Notiz: ${String(t.notes).slice(0, 300)}` : ""
+      const notes = t.notes ? `Notiz: ${String(t.notes).slice(0, 1000)}` : ""
+      const nextSteps = t.next_steps ? `Nächste Schritte: ${String(t.next_steps).slice(0, 500)}` : ""
       return [
-        `${date}: ${measures || "Keine Maßnahmen dokumentiert"}`,
+        `${date}${duration ? ` (${duration})` : ""}: ${measures || "Keine Maßnahmen dokumentiert"}`,
         nrs,
         notes,
+        nextSteps,
       ]
         .filter(Boolean)
         .join(" | ")
     })
     .join("\n")
 
+  // NRS-Gesamtentwicklung berechnen
+  let nrsOverview = ""
+  if (treatmentList.length > 0) {
+    const firstNrs = treatmentList[0]?.nrs_before
+    const lastSession = treatmentList[treatmentList.length - 1]
+    const lastNrs = lastSession?.nrs_after ?? lastSession?.nrs_before
+    if (firstNrs !== null && firstNrs !== undefined && lastNrs !== null && lastNrs !== undefined) {
+      const diff = firstNrs - lastNrs
+      const trend = diff > 0 ? "Verbesserung" : diff < 0 ? "Verschlechterung" : "unverändert"
+      nrsOverview = `NRS-Gesamtentwicklung: ${firstNrs}/10 → ${lastNrs}/10 (${trend} um ${Math.abs(diff)} Punkte über ${treatmentList.length} Behandlungen)`
+    }
+  }
+
   // ── KI-Prompt zusammenstellen ──────────────────────────────────────────────
 
+  // Geschlecht für korrekte Anrede
+  const geschlecht = patient.geschlecht as string | null
+  const patientAnrede = geschlecht === "weiblich" ? "die Patientin" : geschlecht === "maennlich" ? "der Patient" : "der Patient/die Patientin"
+  const geburtsdatumFormatted = new Date(patient.geburtsdatum as string).toLocaleDateString("de-DE")
+
+  const dateFromFormatted = new Date(date_from).toLocaleDateString("de-DE")
+  const dateToFormatted = new Date(date_to).toLocaleDateString("de-DE")
+
   const patientInfo = [
-    `Patient: ${pseudonym}`,
-    `Geburtsdatum: ${new Date(patient.geburtsdatum as string).toLocaleDateString("de-DE")}`,
+    `Patient: ${pseudonym} (${patientAnrede})`,
+    `Geburtsdatum: ${geburtsdatumFormatted}`,
+    geschlecht ? `Geschlecht: ${geschlecht === "maennlich" ? "männlich" : geschlecht === "weiblich" ? "weiblich" : geschlecht}` : "",
     patient.krankenkasse ? `Krankenkasse: ${patient.krankenkasse}` : "",
     patient.versichertennummer ? `Versichertennummer: ${patient.versichertennummer}` : "",
-    `Berichtszeitraum: ${new Date(date_from).toLocaleDateString("de-DE")} – ${new Date(date_to).toLocaleDateString("de-DE")}`,
+    `Berichtszeitraum: ${dateFromFormatted} – ${dateToFormatted}`,
   ]
     .filter(Boolean)
     .join("\n")
@@ -360,64 +496,262 @@ export async function POST(
   let systemPrompt: string
   let userContent: string
 
+  // Shared HTML formatting instructions
+  const htmlInstructions = `
+
+FORMATIERUNG:
+- Verwende HTML-Tags für die Ausgabe (der Editor nutzt TipTap/HTML).
+- Abschnittsüberschriften als <h2>, z.B. <h2>Anamnese</h2>
+- Fließtext in <p>-Tags
+- Aufzählungen als <ul><li>…</li></ul>
+- ICD-10-Codes fett: <strong>M54.5</strong> — Kreuzschmerz
+- KEINE <h1>-Tags verwenden (Briefkopf wird extern gerendert)
+- KEINE Anrede/Empfänger-Block (wird extern gerendert)
+- Beginne direkt mit dem Betreff als <h2>
+- Ersetze den Pseudonym "${pseudonym}" NICHT durch einen echten Namen — das System übernimmt die Re-Personalisierung.`
+
   if (reportType === "arztbericht") {
-    systemPrompt = `Du bist ein erfahrener Heilpraktiker für Physiotherapie und verfasst professionelle Arztberichte für mitbehandelnde Ärzte oder Überweisungsärzte.
+    systemPrompt = `Du bist ein erfahrener Heilpraktiker für Physiotherapie und verfasst professionelle Arztberichte (Befundberichte) für mitbehandelnde Ärzte oder Überweisungsärzte.
 
-Erstelle einen vollständigen medizinischen Arztbrief auf Deutsch in folgendem Format:
-1. Anrede & Bezug (An: [Empfänger])
-2. Betreff: Arztbericht
-3. Anamnese
-4. Klinischer Befund
-5. Diagnose(n) (ICD-10 wenn vorhanden)
-6. Behandlungsverlauf (mit NRS-Entwicklung)
-7. Therapieziel und Prognose
-8. Empfehlung / Weiteres Vorgehen
-9. Grußformel
+Erstelle einen vollständigen medizinischen Arztbrief auf Deutsch mit folgenden Abschnitten:
 
-Schreibe im professionellen medizinischen Stil. Verwende Fachterminologie. Der Bericht soll 1-2 DIN-A4-Seiten umfassen.
-Ersetze den Pseudonym "${pseudonym}" NICHT durch einen echten Namen — das System übernimmt die Realpersonalisierung.`
+<h2>Betreff</h2>
+"Arztbericht über ${pseudonym}, geb. ${geburtsdatumFormatted}"
+Berichtszeitraum: ${dateFromFormatted} – ${dateToFormatted}
+
+<h2>Anamnese</h2>
+Hauptbeschwerde, Beschwerdedauer, Schmerzcharakter, Schmerzintensität (NRS), Vorerkrankungen, Medikamente. Fasse die vorliegenden Anamnesedaten in einem professionellen Fließtext zusammen.
+
+<h2>Klinischer Befund</h2>
+Klinische Untersuchungsergebnisse, ROM-Messungen (falls vorhanden), Kraftgrad nach Janda (falls vorhanden), weitere Tests. Beschreibe die Befunde präzise mit Fachterminologie.
+
+<h2>Diagnose(n)</h2>
+ICD-10-codierte Hauptdiagnose und Nebendiagnosen mit Sicherheitsgrad (gesichert/V.a./Ausschluss). Format: <strong>CODE</strong> — Bezeichnung (Sicherheitsgrad)
+
+<h2>Behandlungsverlauf</h2>
+Zusammenfassung der durchgeführten Maßnahmen, Behandlungshäufigkeit, NRS-Entwicklung (Anfangswert → Endwert). Beschreibe den Verlauf als Fließtext, nicht als Liste einzelner Sitzungen.
+
+<h2>Therapieziel und Prognose</h2>
+Aktuelle Therapieziele, Prognose, geplante Therapiedauer.
+
+<h2>Empfehlung</h2>
+Empfehlung für weitere Behandlung, Heilmittelverordnung, oder Überweisung.
+
+Schließe mit: "Mit freundlichen kollegialen Grüßen"
+
+WICHTIG — DATENGENAUIGKEIT:
+- Verwende AUSSCHLIESSLICH die unten übergebenen Daten. Erfinde NIEMALS Werte, Messergebnisse, Diagnosen, Behandlungsdaten oder DATEN.
+- Verwende NUR die oben angegebenen Daten für Geburtsdatum und Berichtszeitraum — erfinde KEINE anderen Daten oder Zeiträume.
+- Wenn ein Datenfeld fehlt oder leer ist, lasse den entsprechenden Abschnitt weg oder schreibe "nicht dokumentiert" — erfinde KEINE Ersatzwerte.
+- Gib NRS-Werte, ROM-Messungen, ICD-10-Codes und Behandlungsdaten EXAKT so wieder, wie sie in den Daten stehen.
+- Wenn keine Behandlungen dokumentiert sind, schreibe das explizit — erfinde keine Maßnahmen.
+- Verwende die Behandlungsdaten (Termine) NUR aus den übergebenen Daten — erfinde KEINE zusätzlichen Behandlungstermine.
+
+Schreibe im professionellen medizinischen Stil. Verwende Fachterminologie. Fasse Daten zusammen, statt sie einfach aufzulisten. Der Bericht soll 1-2 DIN-A4-Seiten umfassen.${htmlInstructions}`
 
     userContent = `${patientInfo}
 
-Empfänger: ${recipient_name}
-${recipient_address ? `Adresse: ${recipient_address}` : ""}
-
-ANAMNESE:
+ANAMNESE-DATEN:
 ${anamnesisSummary || "Keine Anamnesedaten im Zeitraum dokumentiert."}
 
 BEFUND & DIAGNOSEN:
 ${diagnosesSummary || "Keine Befund-/Diagnosedaten im Zeitraum dokumentiert."}
 
-BEHANDLUNGSVERLAUF (${(treatments ?? []).length} Behandlungen):
-${treatmentSummary || "Keine Behandlungen im Zeitraum dokumentiert."}
+BEHANDLUNGSVERLAUF (${treatmentList.length} Behandlungen):
+${nrsOverview ? `${nrsOverview}\n` : ""}${treatmentSummary || "Keine Behandlungen im Zeitraum dokumentiert."}
 
-${extra_instructions ? `ZUSÄTZLICHE HINWEISE:\n${extra_instructions}` : ""}`
-  } else {
+${extra_instructions ? `ZUSÄTZLICHE HINWEISE DES THERAPEUTEN:\n${extra_instructions}` : ""}`
+  } else if (reportType === "therapiebericht") {
     // Therapiebericht (Physiotherapeut)
     systemPrompt = `Du bist ein erfahrener Physiotherapeut und verfasst professionelle Therapieverlaufsberichte für Ärzte zur Unterstützung bei der Rezeptverlängerung oder Weiterverordnung.
 
-Erstelle einen Therapieverlaufsbericht auf Deutsch in folgendem Format:
-1. Anrede & Bezug (An: [Empfänger])
-2. Betreff: Therapieverlaufsbericht
-3. Behandlungsverlauf (durchgeführte Maßnahmen, NRS-Entwicklung)
-4. Reaktion des Patienten / Therapieerfolg
-5. Empfehlung zur Weiterbehandlung (Heilmittel, Einheiten)
-6. Behandlungsziel für die nächste Verordnungsphase
-7. Grußformel
+Erstelle einen Therapieverlaufsbericht auf Deutsch mit folgenden Abschnitten:
+
+<h2>Betreff</h2>
+"Therapieverlaufsbericht über ${pseudonym}, geb. ${geburtsdatumFormatted}"
+Berichtszeitraum: ${dateFromFormatted} – ${dateToFormatted}
+
+<h2>Behandlungsverlauf</h2>
+Zusammenfassung der durchgeführten physiotherapeutischen Maßnahmen (KG, MT, MLD, etc.), Behandlungshäufigkeit und -dauer, NRS-Schmerzentwicklung (Anfangswert → Endwert). Beschreibe den Verlauf als zusammenhängenden Fließtext.
+
+<h2>Therapieergebnis</h2>
+Reaktion des Patienten auf die Therapie, funktionelle Verbesserungen, verbliebene Einschränkungen. Nutze konkrete Zahlen (NRS, ROM) wenn vorhanden.
+
+<h2>Empfehlung zur Weiterbehandlung</h2>
+Konkrete Empfehlung für Heilmittelverordnung (Maßnahme, Anzahl Einheiten, Frequenz). Behandlungsziel für die nächste Verordnungsphase.
+
+Schließe mit: "Mit freundlichen kollegialen Grüßen"
 
 WICHTIG: Enthält KEINEN Diagnose-Abschnitt — Physiotherapeuten dürfen nicht eigenständig diagnostizieren.
-Schreibe im professionellen physiotherapeutischen Stil. Der Bericht soll 0,5-1 DIN-A4-Seite umfassen.
-Ersetze den Pseudonym "${pseudonym}" NICHT durch einen echten Namen.`
+
+DATENGENAUIGKEIT:
+- Verwende AUSSCHLIESSLICH die unten übergebenen Daten. Erfinde NIEMALS Werte, Messergebnisse, Behandlungsdaten oder DATEN.
+- Verwende NUR die oben angegebenen Daten für Geburtsdatum und Berichtszeitraum — erfinde KEINE anderen Daten oder Zeiträume.
+- Wenn ein Datenfeld fehlt oder leer ist, lasse den entsprechenden Abschnitt weg oder schreibe "nicht dokumentiert" — erfinde KEINE Ersatzwerte.
+- Gib NRS-Werte, Maßnahmen und Behandlungsdaten EXAKT so wieder, wie sie in den Daten stehen.
+- Verwende die Behandlungsdaten (Termine) NUR aus den übergebenen Daten — erfinde KEINE zusätzlichen Behandlungstermine.
+
+Schreibe im professionellen physiotherapeutischen Stil. Fasse Daten zusammen, statt einzelne Sitzungen aufzulisten. Der Bericht soll 0,5-1 DIN-A4-Seite umfassen.${htmlInstructions}`
 
     userContent = `${patientInfo}
 
-Empfänger: ${recipient_name}
-${recipient_address ? `Adresse: ${recipient_address}` : ""}
-
-BEHANDLUNGSVERLAUF (${(treatments ?? []).length} Behandlungen):
-${treatmentSummary || "Keine Behandlungen im Zeitraum dokumentiert."}
+BEHANDLUNGSVERLAUF (${treatmentList.length} Behandlungen):
+${nrsOverview ? `${nrsOverview}\n` : ""}${treatmentSummary || "Keine Behandlungen im Zeitraum dokumentiert."}
 
 ${extra_instructions ? `ZUSÄTZLICHE HINWEISE / GEWÜNSCHTE HEILMITTEL:\n${extra_instructions}` : ""}`
+  } else if (reportType === "funktionsanalyse") {
+    // ── Funktionsanalyse (Präventionstrainer / Personal Trainer) ──
+
+    // Load Funktionsuntersuchungen
+    const { data: funktionsRecords } = await supabase
+      .from("funktionsuntersuchungen")
+      .select("data, version, status, created_at")
+      .eq("patient_id", patientId)
+      .eq("status", "abgeschlossen")
+      .gte("created_at", date_from)
+      .lte("created_at", date_to + "T23:59:59")
+      .order("created_at", { ascending: false })
+      .limit(5)
+
+    // Load Janda test catalog for resolving test names
+    const { data: jandaCatalog } = await supabase
+      .from("janda_test_catalog")
+      .select("id, region, muskel, test_name, kategorie")
+
+    const catalogMap = new Map(
+      (jandaCatalog ?? []).map((c) => [c.id, c])
+    )
+
+    let funktionsSummary = ""
+    if (funktionsRecords && funktionsRecords.length > 0) {
+      funktionsSummary = funktionsRecords
+        .map((r, i) => {
+          const d = r.data as {
+            hauptbeschwerde?: string
+            beschwerdedauer?: string
+            sportliche_aktivitaet?: string
+            trainingsziele?: string
+            haltungsanalyse?: string
+            gangbildanalyse?: string
+            janda_tests?: Array<{ catalog_id: string; befund: string; notiz?: string }>
+            trainingsempfehlung?: string
+          }
+          const date = new Date(r.created_at as string).toLocaleDateString("de-DE")
+
+          const jandaTests = (d.janda_tests ?? []).map((t) => {
+            const entry = catalogMap.get(t.catalog_id)
+            const befundLabel = t.befund === "normal" ? "Normal" : t.befund === "leicht_auffaellig" ? "Leicht auffällig" : "Deutlich auffällig"
+            return `    - ${entry?.test_name ?? t.catalog_id} (${entry?.muskel ?? ""}): ${befundLabel}${t.notiz ? ` [${t.notiz}]` : ""}`
+          })
+
+          return [
+            `Funktionsuntersuchung V${r.version} (${date}):`,
+            d.hauptbeschwerde ? `  Hauptbeschwerde: ${d.hauptbeschwerde}` : "",
+            d.beschwerdedauer ? `  Beschwerdedauer: ${d.beschwerdedauer}` : "",
+            d.sportliche_aktivitaet ? `  Sportliche Aktivität: ${d.sportliche_aktivitaet}` : "",
+            d.trainingsziele ? `  Trainingsziele: ${d.trainingsziele}` : "",
+            d.haltungsanalyse ? `  Haltungsanalyse: ${d.haltungsanalyse}` : "",
+            d.gangbildanalyse ? `  Gangbildanalyse: ${d.gangbildanalyse}` : "",
+            jandaTests.length > 0 ? `  Muskelfunktionstests (Janda):\n${jandaTests.join("\n")}` : "",
+            d.trainingsempfehlung ? `  Trainingsempfehlung: ${d.trainingsempfehlung}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        })
+        .join("\n\n")
+    }
+
+    // Load Trainingsdokumentationen
+    const { data: trainingDocs } = await supabase
+      .from("training_documentations")
+      .select("typ, session_date, duration_minutes, data, status, created_at")
+      .eq("patient_id", patientId)
+      .eq("status", "abgeschlossen")
+      .gte("session_date", date_from)
+      .lte("session_date", date_to)
+      .order("session_date", { ascending: true })
+      .limit(50)
+
+    let trainingDokuSummary = ""
+    if (trainingDocs && trainingDocs.length > 0) {
+      trainingDokuSummary = trainingDocs
+        .map((t) => {
+          const date = new Date(t.session_date).toLocaleDateString("de-DE")
+          const duration = t.duration_minutes ? `${t.duration_minutes} Min.` : ""
+          const typ = t.typ === "training" ? "Training" : "Therapeutisch"
+
+          if (t.typ === "training") {
+            const d = t.data as { trainingsart?: string; schwerpunkt?: string; uebungen?: Array<{ name: string; saetze?: number; wiederholungen?: number; gewicht?: string }>; anmerkung?: string }
+            const exercises = (d.uebungen ?? []).map((u) => {
+              const parts = [u.name]
+              if (u.saetze) parts.push(`${u.saetze}×${u.wiederholungen ?? "?"}`)
+              if (u.gewicht) parts.push(u.gewicht)
+              return parts.join(" ")
+            }).join(", ")
+            return `${date} (${typ}${duration ? `, ${duration}` : ""}): ${d.trainingsart ?? ""} — ${d.schwerpunkt ?? ""} | Übungen: ${exercises || "keine"} ${d.anmerkung ? `| Anmerkung: ${d.anmerkung}` : ""}`
+          } else {
+            const d = t.data as { massnahmen?: string[]; nrs_before?: number | null; nrs_after?: number | null; befund?: string; notizen?: string }
+            const massnahmen = (d.massnahmen ?? []).join(", ")
+            const nrs = d.nrs_before !== null && d.nrs_before !== undefined ? `NRS: ${d.nrs_before}/10${d.nrs_after !== null && d.nrs_after !== undefined ? ` → ${d.nrs_after}/10` : ""}` : ""
+            return `${date} (${typ}${duration ? `, ${duration}` : ""}): ${massnahmen || "keine Maßnahmen"} ${nrs ? `| ${nrs}` : ""} ${d.befund ? `| Befund: ${String(d.befund).slice(0, 500)}` : ""}`
+          }
+        })
+        .join("\n")
+    }
+
+    systemPrompt = `Du bist ein erfahrener Sportwissenschaftler / Präventionstrainer und erstellst professionelle Funktionsanalyse-Berichte. Diese Berichte fassen die Ergebnisse von Funktionsuntersuchungen (insbesondere Muskelfunktionstests nach Janda) und Trainingsdokumentationen zusammen.
+
+Erstelle einen Funktionsanalyse-Bericht auf Deutsch mit folgenden Abschnitten:
+
+<h2>Betreff</h2>
+"Funktionsanalyse-Bericht über ${pseudonym}, geb. ${geburtsdatumFormatted}"
+Berichtszeitraum: ${dateFromFormatted} – ${dateToFormatted}
+
+<h2>Ausgangssituation</h2>
+Hauptbeschwerde, Beschwerdedauer, sportlicher Hintergrund und Trainingsziele des Patienten.
+
+<h2>Funktionsanalyse</h2>
+Zusammenfassung der Muskelfunktionstests (nach Janda):
+- Welche Muskeln zeigen Verkürzungs- oder Abschwächungstendenzen?
+- Welche Bewegungsmuster sind auffällig?
+- Haltungs- und Gangbildanalyse-Ergebnisse.
+Strukturiere die Befunde nach Körperregion und hebe die wichtigsten Auffälligkeiten hervor.
+
+<h2>Trainingsverlauf</h2>
+Zusammenfassung der durchgeführten Trainingseinheiten: Häufigkeit, Trainingsart, Schwerpunkte, Übungen. Bei therapeutischen Sitzungen: Maßnahmen und NRS-Verlauf.
+
+<h2>Bewertung & Fortschritt</h2>
+Interpretation der Befunde, Verbesserungen seit Trainingsbeginn, verbleibende Defizite.
+
+<h2>Trainingsempfehlung</h2>
+Konkrete Empfehlungen für das weitere Training basierend auf den Janda-Befunden: Welche Muskeln sollten gekräftigt, welche gedehnt werden? Welche Übungen/Trainingsart wird empfohlen?
+
+Schließe mit: "Mit sportlichen Grüßen"
+
+WICHTIG — KEINE MEDIZINISCHEN DIAGNOSEN:
+- Dieser Bericht enthält KEINE ICD-10-Codes oder medizinischen Diagnosen.
+- Beschreibe funktionelle Auffälligkeiten, KEINE Krankheitsbilder.
+- Verwende sportwissenschaftliche Terminologie.
+
+DATENGENAUIGKEIT:
+- Verwende AUSSCHLIESSLICH die unten übergebenen Daten.
+- Erfinde NIEMALS Testergebnisse, Übungen oder Trainingsdaten.
+- Wenn ein Datenfeld fehlt, schreibe "nicht dokumentiert" — erfinde KEINE Ersatzwerte.
+- Gib Janda-Befunde EXAKT so wieder, wie sie in den Daten stehen.
+
+Schreibe im professionellen sportwissenschaftlichen Stil. Der Bericht soll 1-2 DIN-A4-Seiten umfassen.${htmlInstructions}`
+
+    userContent = `${patientInfo}
+
+FUNKTIONSUNTERSUCHUNGEN:
+${funktionsSummary || "Keine Funktionsuntersuchungen im Zeitraum dokumentiert."}
+
+TRAININGSDOKUMENTATION (${trainingDocs?.length ?? 0} Sitzungen):
+${trainingDokuSummary || "Keine Trainingsdokumentationen im Zeitraum dokumentiert."}
+
+${extra_instructions ? `ZUSÄTZLICHE HINWEISE DES TRAINERS:\n${extra_instructions}` : ""}`
+  } else {
+    return NextResponse.json({ error: "Unbekannter Berichtstyp." }, { status: 400 })
   }
 
   // ── Claude API aufrufen ───────────────────────────────────────────────────
@@ -439,8 +773,8 @@ ${extra_instructions ? `ZUSÄTZLICHE HINWEISE / GEWÜNSCHTE HEILMITTEL:\n${extra
 
     // Enforce 60-second timeout (spec requirement: edge case — Claude API timeout)
     const claudePromise = anthropic.messages.create({
-      model: "claude-opus-4-6",
-      max_tokens: 4096,
+      model: "claude-sonnet-4-6",
+      max_tokens: 8192,
       system: systemPrompt,
       messages: [
         {
@@ -523,7 +857,12 @@ ${extra_instructions ? `ZUSÄTZLICHE HINWEISE / GEWÜNSCHTE HEILMITTEL:\n${extra
     )
   }
 
-  const report = normalizeReport({ ...(created as Record<string, unknown>), user_profiles: null })
+  // For admin users whose first_name is "Admin" (placeholder), use only last_name
+  const firstName = role === "admin" && profile?.first_name?.toLowerCase() === "admin"
+    ? null
+    : profile?.first_name
+  const generatedByName = [firstName, profile?.last_name].filter(Boolean).join(" ") || null
+  const report = normalizeReport(created as Record<string, unknown>, generatedByName)
 
   return NextResponse.json({ report }, { status: 201 })
 }

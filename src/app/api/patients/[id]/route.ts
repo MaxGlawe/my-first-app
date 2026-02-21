@@ -137,7 +137,20 @@ export async function PUT(
 
   const formData = parseResult.data
 
-  const payload = {
+  // Check role — Praxismanagement can only update Stammdaten fields (no interne_notizen)
+  const { createSupabaseServiceClient } = await import("@/lib/supabase-service")
+  const serviceClient = createSupabaseServiceClient()
+  const { data: profile } = await serviceClient
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  const role = profile?.role as string | null
+  const isPraxismanagement = role === "praxismanagement"
+
+  // Praxismanagement: Stammdaten only — no interne_notizen
+  const payload: Record<string, unknown> = {
     vorname: formData.vorname,
     nachname: formData.nachname,
     geburtsdatum: formData.geburtsdatum,
@@ -149,8 +162,11 @@ export async function PUT(
     ort: formData.ort?.trim() || null,
     krankenkasse: formData.krankenkasse?.trim() || null,
     versichertennummer: formData.versichertennummer?.trim() || null,
-    interne_notizen: formData.interne_notizen?.trim() || null,
-    // updated_at is handled automatically by the trigger in the DB
+  }
+
+  // Only non-praxismanagement roles can update interne_notizen
+  if (!isPraxismanagement) {
+    payload.interne_notizen = formData.interne_notizen?.trim() || null
   }
 
   // RLS ensures therapists can only update their own patients
