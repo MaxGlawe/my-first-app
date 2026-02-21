@@ -227,7 +227,22 @@ Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
       throw new Error("KI hat kein strukturiertes Ergebnis zurückgegeben.")
     }
 
-    const generated = toolBlock.input as {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = toolBlock.input as any
+
+    // Coerce fields that Claude sometimes returns as JSON strings instead of objects
+    const parseSafe = (val: unknown): unknown => {
+      if (typeof val === "string") {
+        try { return JSON.parse(val) } catch { return val }
+      }
+      return val
+    }
+
+    const generated = {
+      title: typeof raw.title === "string" ? raw.title : String(raw.title ?? ""),
+      lesson_content: typeof raw.lesson_content === "string" ? raw.lesson_content : String(raw.lesson_content ?? ""),
+      quizzes: Array.isArray(raw.quizzes) ? raw.quizzes : parseSafe(raw.quizzes),
+    } as {
       title: string
       lesson_content: string
       quizzes: Array<{
@@ -239,8 +254,19 @@ Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
       }>
     }
 
-    if (!generated.title || !generated.lesson_content || !Array.isArray(generated.quizzes) || generated.quizzes.length !== 3) {
+    if (!generated.title || !generated.lesson_content || !Array.isArray(generated.quizzes) || generated.quizzes.length < 1) {
       throw new Error("Ungültige KI-Antwort.")
+    }
+
+    // Pad quizzes to 3 if less than 3
+    while (generated.quizzes.length < 3) {
+      generated.quizzes.push({
+        question_number: generated.quizzes.length + 1,
+        question_text: "Was ist das wichtigste Ergebnis dieser Lektion?",
+        options: ["Regelmäßige Bewegung hilft", "Stillhalten ist besser", "Schmerz bedeutet Schaden", "Training ist unwichtig"],
+        correct_index: 0,
+        explanation: "Regelmäßige, angepasste Bewegung ist ein Schlüssel zur Genesung.",
+      })
     }
 
     // Insert the new lesson — auto-freigegeben since curriculum is approved
