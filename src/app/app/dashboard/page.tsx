@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * PROJ-16: Dashboard 2.0 — Apple Health Style
- * Persönliche Begrüßung, Wochenziel-Ring, Streak, Check-in Banner
+ * Dashboard — Premium Design (V2 Landing Colors)
+ * Warmer Hintergrund, Emerald/Teal-Akzente, glassmorphe Elemente
  */
 
 import Link from "next/link"
@@ -15,7 +15,6 @@ import { MeineKurseKarte } from "@/components/app/MeineKurseKarte"
 import {
   usePatientApp,
   getTodayAssignments,
-  getActiveAssignments,
 } from "@/hooks/use-patient-app"
 import { useStreak } from "@/hooks/use-streak"
 import { usePainDiary } from "@/hooks/use-pain-diary"
@@ -29,6 +28,7 @@ import {
   Bell,
   LogOut,
   BookOpen,
+  Receipt,
 } from "lucide-react"
 import { DailyInsightCard } from "@/components/app/DailyInsightCard"
 import { WeeklySummaryCard } from "@/components/app/WeeklySummaryCard"
@@ -128,8 +128,8 @@ function StreakCard({ streak }: { streak: number }) {
     <div
       className={`rounded-2xl p-4 text-center ${
         hasStreak
-          ? "bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200"
-          : "bg-slate-50 border border-slate-200"
+          ? "bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/60"
+          : "bg-slate-50/80 border border-slate-200/60"
       }`}
     >
       <div
@@ -151,13 +151,13 @@ function StreakCard({ streak }: { streak: number }) {
   )
 }
 
-// ── Check-in Status (compact — the gate handles the full check-in prompt) ───
+// ── Check-in Status ──────────────────────────────────────────────────────────
 
 function CheckInStatus({ hasCheckedInToday }: { hasCheckedInToday: boolean }) {
   if (!hasCheckedInToday) return null
 
   return (
-    <div className="rounded-2xl bg-teal-50 border border-teal-200 p-3 flex items-center gap-3">
+    <div className="rounded-2xl bg-teal-50/80 border border-teal-200/60 p-3 flex items-center gap-3">
       <div className="h-8 w-8 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
         <Heart className="h-4 w-4 text-teal-600" />
       </div>
@@ -172,6 +172,41 @@ function CheckInStatus({ hasCheckedInToday }: { hasCheckedInToday: boolean }) {
         </Button>
       </Link>
     </div>
+  )
+}
+
+// ── Link Card (reusable) ────────────────────────────────────────────────────
+
+function LinkCard({
+  href,
+  icon: Icon,
+  iconBg,
+  iconColor,
+  title,
+  subtitle,
+}: {
+  href: string
+  icon: typeof BookOpen
+  iconBg: string
+  iconColor: string
+  title: string
+  subtitle: React.ReactNode
+}) {
+  return (
+    <Link href={href} className="block group">
+      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-4 flex items-center justify-between hover:shadow-md hover:border-slate-300/60 transition-all duration-200">
+        <div className="flex items-center gap-3">
+          <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+            <Icon className={`h-5 w-5 ${iconColor}`} aria-hidden="true" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-700">{title}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-emerald-500 transition-colors" aria-hidden="true" />
+      </div>
+    </Link>
   )
 }
 
@@ -193,134 +228,139 @@ export default function PatientDashboardPage() {
   const isFullyLoaded = !isLoading && !streakLoading && !diaryLoading
 
   return (
-    <div className="container mx-auto py-6 px-4 max-w-lg space-y-5">
-      {/* Hero Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            {getGreeting()}!
-          </h1>
-          <p className="text-sm text-slate-400 mt-0.5">{getTodayStr()}</p>
+    <div className="min-h-screen" style={{ backgroundColor: "#faf9f7" }}>
+      {/* Dark header area */}
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-transparent pt-6 pb-16 px-4">
+        <div className="container mx-auto max-w-lg">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-white">
+                {getGreeting()}!
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">{getTodayStr()}</p>
+            </div>
+            <form action="/api/auth/signout" method="post">
+              <Button
+                variant="ghost"
+                size="icon"
+                type="submit"
+                className="h-10 w-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </form>
+          </div>
         </div>
-        <form action="/api/auth/signout" method="post">
-          <Button
-            variant="ghost"
-            size="icon"
-            type="submit"
-            className="h-10 w-10 rounded-xl text-slate-400 hover:text-slate-600"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </form>
       </div>
 
-      {/* Error state */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+      {/* Content overlapping the header */}
+      <div className="container mx-auto px-4 max-w-lg -mt-10 pb-8 space-y-4">
+        {/* Error state */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Loading skeleton */}
-      {!isFullyLoaded && (
-        <div className="space-y-4">
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-28 rounded-2xl" />
-            <Skeleton className="h-28 rounded-2xl" />
+        {/* Loading skeleton */}
+        {!isFullyLoaded && (
+          <div className="space-y-4">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-28 rounded-2xl" />
+              <Skeleton className="h-28 rounded-2xl" />
+            </div>
+            <Skeleton className="h-16 w-full rounded-2xl" />
           </div>
-          <Skeleton className="h-16 w-full rounded-2xl" />
-        </div>
-      )}
+        )}
 
-      {/* Main content */}
-      {isFullyLoaded && !error && (
-        <>
-          {/* Weekly Goal + Streak Row */}
-          <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center gap-5">
-              <WochenzielRing done={weeklyDone} goal={weeklyGoal} />
-              <div className="flex-1 min-w-0 space-y-3">
-                <div>
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <Target className="h-4 w-4 text-teal-500" />
-                    <p className="text-sm font-semibold text-slate-700">
-                      Wochenziel
+        {/* Main content */}
+        {isFullyLoaded && !error && (
+          <>
+            {/* Weekly Goal + Streak Row */}
+            <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-md p-5">
+              <div className="flex items-center gap-5">
+                <WochenzielRing done={weeklyDone} goal={weeklyGoal} />
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <Target className="h-4 w-4 text-emerald-500" />
+                      <p className="text-sm font-semibold text-slate-700">
+                        Wochenziel
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-400">
+                      {weeklyDone} von {weeklyGoal} Einheiten
                     </p>
                   </div>
-                  <p className="text-xs text-slate-400">
-                    {weeklyDone} von {weeklyGoal} Einheiten
-                  </p>
+                  <StreakCard streak={streak} />
                 </div>
-                <StreakCard streak={streak} />
               </div>
             </div>
-          </div>
 
-          {/* Daily Insight — KI Tipp des Tages */}
-          <DailyInsightCard />
+            {/* Daily Insight */}
+            <DailyInsightCard />
 
-          {/* Check-in Status (compact — gate handles the full prompt) */}
-          <CheckInStatus hasCheckedInToday={!!todayEntry} />
+            {/* Check-in Status */}
+            <CheckInStatus hasCheckedInToday={!!todayEntry} />
 
-          {/* Weekly Summary */}
-          <WeeklySummaryCard />
+            {/* Weekly Summary */}
+            <WeeklySummaryCard />
 
-          {/* Today's Training */}
-          {hasAnyAssignment ? (
-            <HeuteKarte
-              todayAssignments={todayAssignments}
-              allAssignments={assignments}
+            {/* Today's Training */}
+            {hasAnyAssignment ? (
+              <HeuteKarte
+                todayAssignments={todayAssignments}
+                allAssignments={assignments}
+              />
+            ) : (
+              <NoAssignmentState />
+            )}
+
+            {/* Meine Kurse */}
+            <MeineKurseKarte />
+
+            {/* Appointments */}
+            <MeineTermineKarte />
+
+            {/* Wissens-Hub Link */}
+            <LinkCard
+              href="/app/wissen"
+              icon={BookOpen}
+              iconBg="bg-teal-100"
+              iconColor="text-teal-600"
+              title="Mein Wissen"
+              subtitle="Lektionen & Quiz zu deinen Beschwerden"
             />
-          ) : (
-            <NoAssignmentState />
-          )}
 
-          {/* Meine Kurse */}
-          <MeineKurseKarte />
+            {/* Rechnungen shortcut */}
+            <LinkCard
+              href="/app/rechnungen"
+              icon={Receipt}
+              iconBg="bg-emerald-100"
+              iconColor="text-emerald-600"
+              title="Meine Rechnungen"
+              subtitle="Rechnungen einsehen & als PDF herunterladen"
+            />
 
-          {/* Appointments */}
-          <MeineTermineKarte />
-
-          {/* Wissens-Hub Link */}
-          <Link href="/app/wissen" className="block">
-            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-100 flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="h-5 w-5 text-teal-600" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Mein Wissen</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Lektionen & Quiz zu deinen Beschwerden
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-300" aria-hidden="true" />
-            </div>
-          </Link>
-
-          {/* Settings shortcut */}
-          <Link href="/app/einstellungen" className="block">
-            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                  <Settings className="h-5 w-5 text-slate-500" aria-hidden="true" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-700">Einstellungen</p>
-                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Bell className="h-3 w-3" aria-hidden="true" />
-                    App installieren & Benachrichtigungen
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-300" aria-hidden="true" />
-            </div>
-          </Link>
-        </>
-      )}
+            {/* Settings shortcut */}
+            <LinkCard
+              href="/app/einstellungen"
+              icon={Settings}
+              iconBg="bg-slate-100"
+              iconColor="text-slate-500"
+              title="Einstellungen"
+              subtitle={
+                <span className="flex items-center gap-1">
+                  <Bell className="h-3 w-3" aria-hidden="true" />
+                  App installieren & Benachrichtigungen
+                </span>
+              }
+            />
+          </>
+        )}
+      </div>
     </div>
   )
 }

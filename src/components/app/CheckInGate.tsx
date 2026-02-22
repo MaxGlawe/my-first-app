@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { usePainDiary } from "@/hooks/use-pain-diary"
 import { CheckInForm } from "@/components/app/CheckInForm"
+import { useAnalytics } from "@/hooks/use-analytics"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Sun, Cloud, Moon as MoonIcon } from "lucide-react"
 
@@ -23,6 +24,7 @@ function getTodayFormatted(): string {
 
 export function CheckInGate({ children }: { children: React.ReactNode }) {
   const { todayEntry, isLoading } = usePainDiary()
+  const { trackEvent } = useAnalytics()
   const [skipped, setSkipped] = useState(() => {
     if (typeof window === "undefined") return false
     return sessionStorage.getItem("checkin-skipped-today") === new Date().toISOString().split("T")[0]
@@ -55,6 +57,7 @@ export function CheckInGate({ children }: { children: React.ReactNode }) {
   }
 
   function handleComplete() {
+    trackEvent("checkin_complete")
     setCompleted(true)
   }
 

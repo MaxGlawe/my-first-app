@@ -15,7 +15,9 @@ export interface UsePwaInstallReturn {
   isInstalled: boolean
   platform: PlatformType
   isIos: boolean
+  isAndroid: boolean
   showIosGuide: boolean
+  showAndroidGuide: boolean
   triggerInstall: () => Promise<void>
   dismissInstall: () => void
 }
@@ -41,6 +43,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isInstalled, setIsInstalled] = useState(false)
   const [showIosGuide, setShowIosGuide] = useState(false)
+  const [showAndroidGuide, setShowAndroidGuide] = useState(false)
   const [platform] = useState<PlatformType>(detectPlatform)
 
   useEffect(() => {
@@ -72,6 +75,12 @@ export function usePwaInstall(): UsePwaInstallReturn {
       return
     }
 
+    // On Android, try native prompt first; show guide as fallback
+    if (platform === "android" && !deferredPrompt) {
+      setShowAndroidGuide(true)
+      return
+    }
+
     if (!deferredPrompt) return
 
     await deferredPrompt.prompt()
@@ -85,17 +94,20 @@ export function usePwaInstall(): UsePwaInstallReturn {
 
   const dismissInstall = () => {
     setShowIosGuide(false)
+    setShowAndroidGuide(false)
     setDeferredPrompt(null)
   }
 
-  const isInstallable = platform === "ios" || !!deferredPrompt
+  const isInstallable = platform === "ios" || platform === "android" || !!deferredPrompt
 
   return {
     isInstallable,
     isInstalled,
     platform,
     isIos: platform === "ios",
+    isAndroid: platform === "android",
     showIosGuide,
+    showAndroidGuide,
     triggerInstall,
     dismissInstall,
   }

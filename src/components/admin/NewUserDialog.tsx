@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Copy, CheckCircle } from "lucide-react"
 import type { UserRole } from "./UserListTable"
 
 const newUserSchema = z.object({
@@ -52,11 +53,18 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: "patient", label: "Patient" },
 ]
 
+interface CreatedCredentials {
+  email: string
+  tempPassword: string
+}
+
 export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [credentials, setCredentials] = useState<CreatedCredentials | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const {
     register,
@@ -75,6 +83,8 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
     setOpen(false)
     setServerError(null)
     setInviteLink(null)
+    setCredentials(null)
+    setCopied(false)
     reset()
   }
 
@@ -85,13 +95,11 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
     try {
       const { supabase } = await import("@/lib/supabase")
 
-      // For patients, generate invite link via edge function
+      // For patients, generate invite link
       if (data.role === "patient") {
-        // Generate a secure invite token
         const token = crypto.randomUUID()
         const inviteUrl = `${window.location.origin}/invite/${token}`
 
-        // Store invite in DB
         const { error: inviteError } = await supabase.from("invites").insert({
           token,
           email: data.email,
@@ -110,7 +118,7 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
         return
       }
 
-      // For therapists and admins, invite via server-side API (needs service role key)
+      // For therapists and admins — create user directly (no invite email)
       const res = await fetch("/api/admin/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,12 +133,15 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
       const json = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        setServerError(json.error ?? "Nutzer konnte nicht eingeladen werden.")
+        setServerError(json.error ?? "Nutzer konnte nicht angelegt werden.")
         return
       }
 
-      onUserCreated()
-      handleClose()
+      // Show temp password so admin can share it
+      setCredentials({
+        email: data.email,
+        tempPassword: json.tempPassword,
+      })
     } catch {
       setServerError("Ein unerwarteter Fehler ist aufgetreten.")
     } finally {
@@ -138,10 +149,83 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
     }
   }
 
-  const copyInviteLink = () => {
-    if (inviteLink) {
-      navigator.clipboard.writeText(inviteLink)
-    }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const copyCredentials = () => {
+    if (!credentials) return
+    const text = `Zugangsdaten für Praxis OS:\nE-Mail: ${credentials.email}\nPasswort: ${credentials.tempPassword}\nAnmelden unter: ${window.location.origin}/login`
+    copyToClipboard(text)
+  }
+
+  // Show credentials after staff user creation
+  if (credentials) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button>Nutzer anlegen</Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nutzer angelegt</DialogTitle>
+            <DialogDescription>
+              Der Nutzer kann sich sofort anmelden. Teile diese Zugangsdaten.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Alert className="border-emerald-200 bg-emerald-50">
+              <CheckCircle className="h-4 w-4 text-emerald-600" />
+              <AlertDescription className="text-emerald-800">
+                Nutzer erfolgreich angelegt! Bitte teile die Zugangsdaten direkt mit.
+              </AlertDescription>
+            </Alert>
+            <div className="space-y-3 rounded-lg border p-4 bg-slate-50">
+              <div>
+                <Label className="text-xs text-slate-500">E-Mail</Label>
+                <p className="font-mono text-sm font-medium">{credentials.email}</p>
+              </div>
+              <div>
+                <Label className="text-xs text-slate-500">Temporäres Passwort</Label>
+                <p className="font-mono text-sm font-bold text-emerald-700">{credentials.tempPassword}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full gap-2"
+              onClick={copyCredentials}
+            >
+              {copied ? (
+                <>
+                  <CheckCircle className="h-4 w-4 text-emerald-600" />
+                  Kopiert!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  Zugangsdaten kopieren
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-amber-600 font-medium">
+              Der Nutzer sollte sein Passwort nach dem ersten Login ändern.
+            </p>
+            <DialogFooter>
+              <Button
+                onClick={() => {
+                  onUserCreated()
+                  handleClose()
+                }}
+              >
+                Fertig
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
@@ -167,8 +251,8 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
             </Alert>
             <div className="flex items-center gap-2">
               <Input value={inviteLink} readOnly className="text-sm" />
-              <Button variant="outline" onClick={copyInviteLink}>
-                Kopieren
+              <Button variant="outline" onClick={() => copyToClipboard(inviteLink)}>
+                {copied ? "Kopiert!" : "Kopieren"}
               </Button>
             </div>
             <DialogFooter>
@@ -267,7 +351,7 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
               )}
               {selectedRole && selectedRole !== "patient" && (
                 <p className="text-xs text-muted-foreground">
-                  Eine Einladungs-E-Mail wird an {watch("email") || "die E-Mail-Adresse"} gesendet.
+                  Der Nutzer kann sich direkt mit den generierten Zugangsdaten anmelden.
                 </p>
               )}
             </div>
@@ -277,7 +361,7 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
                 Abbrechen
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Einladen..." : "Nutzer einladen"}
+                {isLoading ? "Erstelle..." : "Nutzer anlegen"}
               </Button>
             </DialogFooter>
           </form>

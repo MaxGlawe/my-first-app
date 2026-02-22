@@ -9,7 +9,26 @@ const config: Config = {
   ],
   theme: {
   	extend: {
+  		fontFamily: {
+  			sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+  		},
+  		fontSize: {
+  			'display-xl': ['clamp(3.5rem, 8vw, 7rem)', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
+  			'display-lg': ['clamp(2.5rem, 5vw, 4.5rem)', { lineHeight: '1.1', letterSpacing: '-0.025em' }],
+  			'display-md': ['clamp(2rem, 4vw, 3rem)', { lineHeight: '1.15', letterSpacing: '-0.02em' }],
+  			'display-sm': ['clamp(1.5rem, 3vw, 2rem)', { lineHeight: '1.2', letterSpacing: '-0.015em' }],
+  		},
   		colors: {
+  			landing: {
+  				bg: '#ffffff',
+  				'bg-warm': '#fdfcfa',
+  				fg: '#0a0a0a',
+  				'fg-muted': '#666666',
+  				'fg-subtle': '#999999',
+  				border: '#e5e5e5',
+  				accent: '#4a7c6b',
+  				'accent-light': '#eff5f2',
+  			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',
   			card: {

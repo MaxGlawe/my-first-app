@@ -40,12 +40,13 @@ export async function GET() {
     return NextResponse.json({ modules: [], curricula: [] })
   }
 
-  // Get unique hauptprobleme from patient's active assignments
+  // Get unique hauptprobleme from all patient assignments (aktiv, pausiert, abgeschlossen)
+  // Not just "aktiv" — patients should still see their education content
+  // even if the assignment is paused or completed
   const { data: assignments } = await supabase
     .from("patient_assignments")
     .select("hauptproblem")
     .eq("patient_id", patient.id)
-    .eq("status", "aktiv")
     .not("hauptproblem", "is", null)
 
   const hauptprobleme = [...new Set(

@@ -1,12 +1,14 @@
 /**
- * POST /api/admin/invite — Invite a new user (admin-only)
- * Uses the Service Role key to call supabase.auth.admin.inviteUserByEmail
+ * POST /api/admin/invite — Create a new staff user (admin-only)
+ * Creates the user directly with a temporary password so they can
+ * sign in immediately without needing an email invitation.
  */
 
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import crypto from "crypto"
 
 const inviteSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse."),
@@ -22,8 +24,17 @@ const inviteSchema = z.object({
   ]),
 })
 
+function generateTempPassword(): string {
+  // 12-char password: letters + digits, easy to type
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
+  const bytes = crypto.randomBytes(12)
+  return Array.from(bytes)
+    .map((b) => chars[b % chars.length])
+    .join("")
+}
+
 export async function POST(request: NextRequest) {
-  // 1. Auth check — only admins can invite
+  // 1. Auth check — only admins can create users
   const supabase = await createSupabaseServerClient()
   const {
     data: { user },
@@ -43,7 +54,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Nur Admins können Nutzer einladen." }, { status: 403 })
+    return NextResponse.json({ error: "Nur Admins können Nutzer anlegen." }, { status: 403 })
   }
 
   // 2. Parse body
@@ -64,31 +75,44 @@ export async function POST(request: NextRequest) {
 
   const { email, firstName, lastName, role } = parseResult.data
 
-  // 3. Invite user via service role client (has admin privileges)
-  const { data, error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, {
-    data: {
+  // 3. Create user directly with a temporary password (no invite email)
+  const tempPassword = generateTempPassword()
+
+  const { data, error: createError } = await serviceClient.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true, // Auto-confirm so they can log in immediately
+    user_metadata: {
       first_name: firstName,
       last_name: lastName,
       role,
     },
   })
 
-  if (inviteError) {
-    if (inviteError.message.includes("already registered") || inviteError.message.includes("already been registered")) {
+  if (createError) {
+    if (
+      createError.message.includes("already registered") ||
+      createError.message.includes("already been registered") ||
+      createError.message.includes("already exists")
+    ) {
       return NextResponse.json(
         { error: "Diese E-Mail-Adresse ist bereits registriert." },
         { status: 409 }
       )
     }
-    console.error("[POST /api/admin/invite] Error:", inviteError)
+    console.error("[POST /api/admin/invite] Error:", createError)
     return NextResponse.json(
-      { error: "Einladung fehlgeschlagen: " + inviteError.message },
+      { error: "Nutzer konnte nicht angelegt werden: " + createError.message },
       { status: 500 }
     )
   }
 
   return NextResponse.json(
-    { message: "Einladung gesendet.", userId: data.user?.id },
+    {
+      message: "Nutzer angelegt.",
+      userId: data.user?.id,
+      tempPassword,
+    },
     { status: 201 }
   )
 }

@@ -131,16 +131,19 @@ export async function GET() {
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 200,
-      system: `Du bist ein motivierender Physiotherapie-Assistent. Erstelle einen kurzen täglichen Tipp (1-3 Sätze) auf Deutsch.
+      system: `Du bist ein persönlicher Physiotherapie-Assistent. Erstelle einen kurzen täglichen Tipp (1-3 Sätze) auf Deutsch.
 REGELN:
-- Schreibe motivierend und freundlich (Du-Form)
-- Beziehe dich auf den Kontext des Patienten
-- Kein medizinischer Rat, nur Motivation und allgemeine Gesundheitstipps
+- Schreibe motivierend und freundlich (Du-Form), nutze den Vornamen des Patienten
+- Der Tipp MUSS sich konkret auf die Beschwerden/Hauptprobleme des Patienten beziehen (z.B. Knieschmerzen, Rückenbeschwerden, Schulterproblem)
+- Gib einen konkreten, praktischen Tipp passend zum jeweiligen Beschwerdebild (z.B. eine Dehnübung, Haltungstipp, Alltagsbewegung)
+- Berücksichtige den Trainingsfortschritt: lobe bei guter Serie, motiviere bei Pause
+- Bei hohem Schmerzlevel sei einfühlsam und ermutigend
+- KEINE generischen Tipps wie "Trinke viel Wasser" oder "Achte auf deine Atmung" — immer spezifisch zum Problem
 - Keine Emojis
 - Antworte NUR mit dem Tipp-Text, keine Anführungszeichen`,
       messages: [{
         role: "user",
-        content: `Erstelle einen täglichen Motivations-Tipp für diesen Patienten:\n${contextParts.join("\n")}`,
+        content: `Erstelle einen persönlichen Tipp für:\n${contextParts.join("\n")}`,
       }],
     })
 

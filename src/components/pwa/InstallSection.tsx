@@ -3,12 +3,21 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { iOsAnleitung as IOsAnleitung } from "./iOsAnleitung"
+import { AndroidAnleitung } from "./AndroidAnleitung"
 import { usePwaInstall } from "@/hooks/use-pwa-install"
 import { Smartphone, CheckCircle2, Download } from "lucide-react"
 
 export function InstallSection() {
-  const { isInstallable, isInstalled, isIos, showIosGuide, triggerInstall, dismissInstall } =
-    usePwaInstall()
+  const {
+    isInstallable,
+    isInstalled,
+    isIos,
+    isAndroid,
+    showIosGuide,
+    showAndroidGuide,
+    triggerInstall,
+    dismissInstall,
+  } = usePwaInstall()
 
   if (isInstalled) {
     return (
@@ -29,6 +38,10 @@ export function InstallSection() {
       </Card>
     )
   }
+
+  const buttonLabel = isIos || isAndroid
+    ? "Installationsanleitung anzeigen"
+    : "App installieren"
 
   return (
     <>
@@ -52,7 +65,7 @@ export function InstallSection() {
               aria-label="Praxis OS auf Homescreen installieren"
             >
               <Download className="h-4 w-4" />
-              {isIos ? "Installationsanleitung anzeigen" : "App installieren"}
+              {buttonLabel}
             </Button>
           ) : (
             <div className="rounded-xl bg-slate-50 border border-slate-200 p-3">
@@ -66,6 +79,7 @@ export function InstallSection() {
       </Card>
 
       <IOsAnleitung open={showIosGuide} onClose={dismissInstall} />
+      <AndroidAnleitung open={showAndroidGuide} onClose={dismissInstall} />
     </>
   )
 }

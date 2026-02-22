@@ -11,6 +11,7 @@ export const MUSKELGRUPPEN = [
   "Hüfte",
   "Knie",
   "Schulter",
+  "BWS",
   "LWS",
   "HWS",
   "Core",

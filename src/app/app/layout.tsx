@@ -3,6 +3,7 @@
 import { PatientenNavigation } from "@/components/app/PatientenNavigation"
 import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { CheckInGate } from "@/components/app/CheckInGate"
+import { AnalyticsTracker } from "@/components/app/AnalyticsTracker"
 
 export default function PatientenAppLayout({
   children,
@@ -11,6 +12,7 @@ export default function PatientenAppLayout({
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      <AnalyticsTracker />
       <OnboardingWizard>
         <CheckInGate>
           <main className="pb-20">{children}</main>
