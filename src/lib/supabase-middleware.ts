@@ -34,14 +34,12 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke']
+  const publicRoutes = ['/login', '/login/reset-password']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
   const isInviteRoute = pathname.startsWith('/invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/')
-  const isPublicApi = pathname.startsWith('/api/intake')
-  const isRootPage = pathname === '/'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isPublicApi && !isRootPage) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
