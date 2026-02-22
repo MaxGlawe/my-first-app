@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { UserCog, Users, Link2, BarChart3 } from "lucide-react"
+import { UserCog, Users, Link2, BarChart3, Receipt } from "lucide-react"
 
 export const metadata = {
   title: "Admin Dashboard | Praxis OS",
@@ -70,15 +70,30 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-slate-400" />
-              Statistiken
+              <Receipt className="h-5 w-5 text-teal-600" />
+              Abrechnung
             </CardTitle>
-            <CardDescription>Auslastung und Praxisberichte</CardDescription>
+            <CardDescription>Rechnungen erstellen, verwalten und als PDF versenden</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full" disabled>
-              Kommt bald
-            </Button>
+            <Link href="/os/admin/billing">
+              <Button className="w-full">Zur Abrechnung</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-emerald-600" />
+              Statistiken
+            </CardTitle>
+            <CardDescription>Nutzungsstatistiken und App-Aktivität</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/os/admin/analytics">
+              <Button variant="outline" className="w-full">Statistiken ansehen</Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

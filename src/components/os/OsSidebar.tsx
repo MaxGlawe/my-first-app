@@ -18,6 +18,8 @@ import {
   ClipboardCheck,
   FileText,
   Calendar,
+  Inbox,
+  Receipt,
 } from "lucide-react"
 import {
   Sidebar,
@@ -54,6 +56,11 @@ export function OsSidebar() {
 
   // Praxismanagement doesn't have Nachrichten write access, but can read
   // All other roles get Nachrichten
+  // Anfragen visible to clinical roles (not praxismanagement/trainers)
+  if (!isPraxismanagement && !isTrainer) {
+    praxisNav.push({ label: "Anfragen", href: "/os/anfragen", icon: Inbox })
+  }
+
   if (!isPraxismanagement) {
     praxisNav.push({ label: "Nachrichten", href: "/os/chat", icon: MessageCircle })
   }
@@ -77,6 +84,7 @@ export function OsSidebar() {
     ? [
         { label: "Admin-Dashboard", href: "/os/admin/dashboard", icon: Settings },
         { label: "Nutzerverwaltung", href: "/os/admin/users", icon: UserCog },
+        { label: "Abrechnung", href: "/os/admin/billing", icon: Receipt },
         { label: "Integrationen", href: "/os/admin/integrations", icon: Link2 },
       ]
     : []
