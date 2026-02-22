@@ -10,10 +10,10 @@ export default function OsLayout({
     <SidebarProvider>
       <OsSidebar />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-100 px-6">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200/60 bg-white/60 backdrop-blur-sm px-6">
           <SidebarTrigger className="-ml-1" />
         </header>
-        <main className="flex-1 bg-gradient-to-b from-slate-50/80 to-white">{children}</main>
+        <main className="flex-1" style={{ backgroundColor: "#faf9f7" }}>{children}</main>
       </SidebarInset>
     </SidebarProvider>
   )

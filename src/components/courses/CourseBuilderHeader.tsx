@@ -53,7 +53,7 @@ export function CourseBuilderHeader({
   }
 
   return (
-    <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b">
+    <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-slate-200/60">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex items-center gap-3 h-14">
           {/* Back */}
@@ -99,8 +99,8 @@ export function CourseBuilderHeader({
           <div className="flex items-center gap-1.5 text-sm shrink-0 ml-auto">
             {saveStatus === "saving" && (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                <span className="text-muted-foreground">Speichert...</span>
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+                <span className="text-slate-500">Speichert...</span>
               </>
             )}
             {saveStatus === "saved" && (

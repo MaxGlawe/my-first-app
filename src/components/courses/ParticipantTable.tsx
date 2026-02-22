@@ -37,7 +37,7 @@ export function ParticipantTable({ enrollments, isLoading, onStatusChange }: Par
     return (
       <div className="space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-12 bg-muted/50 rounded animate-pulse" />
+          <div key={i} className="h-12 bg-slate-100/50 rounded animate-pulse" />
         ))}
       </div>
     )
@@ -45,14 +45,14 @@ export function ParticipantTable({ enrollments, isLoading, onStatusChange }: Par
 
   if (enrollments.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-8">
+      <p className="text-sm text-slate-500 text-center py-8">
         Noch keine Teilnehmer eingeschrieben.
       </p>
     )
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border border-slate-200/60 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

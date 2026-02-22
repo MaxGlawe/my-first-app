@@ -614,9 +614,9 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
       {/* Drag overlay: ghost of dragged item */}
       <DragOverlay>
         {activeItem?.type === "library-exercise" && (
-          <div className="flex items-center gap-2 p-2.5 rounded-lg border bg-card shadow-xl opacity-90 w-64">
-            <div className="h-10 w-10 rounded bg-muted flex items-center justify-center shrink-0">
-              <Dumbbell className="h-5 w-5 text-muted-foreground" />
+          <div className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200/60 bg-white/90 backdrop-blur-sm shadow-xl opacity-90 w-64">
+            <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Dumbbell className="h-5 w-5 text-slate-400" />
             </div>
             <p className="text-sm font-medium truncate">{activeItem.exercise.name}</p>
           </div>

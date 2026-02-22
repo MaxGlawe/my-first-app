@@ -105,8 +105,8 @@ export default function CourseParticipantsPage() {
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">Teilnehmer</h1>
-          <p className="text-muted-foreground">{course?.name ?? "Kurs"}</p>
+          <h1 className="text-2xl font-bold text-slate-800">Teilnehmer</h1>
+          <p className="text-slate-500">{course?.name ?? "Kurs"}</p>
         </div>
         <Button onClick={() => setEnrollDialogOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />

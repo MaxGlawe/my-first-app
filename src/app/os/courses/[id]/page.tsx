@@ -213,7 +213,7 @@ export default function CourseEditorPage() {
   if (error || !course) {
     return (
       <div className="container mx-auto py-8 px-4 max-w-7xl">
-        <Card>
+        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
           <CardContent className="py-12 text-center">
             <p className="text-destructive mb-4">{error ?? "Kurs nicht gefunden."}</p>
             <Link href="/os/courses">

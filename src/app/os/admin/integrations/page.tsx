@@ -29,11 +29,11 @@ export default async function AdminIntegrationsPage() {
       {/* Page header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-blue-100 text-blue-700">
+          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-blue-100 text-blue-700">
             <Plug className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Integrationen</h1>
+            <h1 className="text-2xl font-bold text-slate-800">Integrationen</h1>
             <div className="flex items-center gap-2 mt-0.5">
               <Badge variant="secondary" className="text-xs">
                 Buchungstool
@@ -44,7 +44,7 @@ export default async function AdminIntegrationsPage() {
             </div>
           </div>
         </div>
-        <p className="text-muted-foreground mt-3 max-w-2xl">
+        <p className="text-slate-500 mt-3 max-w-2xl">
           Verbinde das Buchungstool mit Praxis OS. Patienten- und Termindaten
           werden automatisch per Webhook synchronisiert — kein manueller Import
           notwendig.
@@ -52,9 +52,9 @@ export default async function AdminIntegrationsPage() {
       </div>
 
       {/* How it works info */}
-      <div className="mb-6 rounded-lg border bg-muted/50 p-4">
-        <h2 className="text-sm font-semibold mb-2">So funktioniert die Integration</h2>
-        <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+      <div className="mb-6 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-slate-700 mb-2">So funktioniert die Integration</h2>
+        <ol className="text-sm text-slate-500 space-y-1 list-decimal list-inside">
           <li>Trage die Webhook-URL und das Secret im Buchungstool ein.</li>
           <li>
             Das Buchungstool sendet automatisch Events bei neuen Patienten und

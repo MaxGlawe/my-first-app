@@ -54,7 +54,7 @@ function DashboardSkeleton() {
         <Skeleton className="h-7 w-52" />
         <Skeleton className="h-9 w-36" />
       </div>
-      <div className="border border-slate-200 rounded-2xl bg-white shadow-sm">
+      <div className="border border-slate-200/60 rounded-2xl bg-white/80 backdrop-blur-sm shadow-sm">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3 border-b last:border-0">
             <Skeleton className="h-9 w-9 rounded-full" />
@@ -155,7 +155,7 @@ export function KomplianzDashboard() {
 
       {/* Empty state */}
       {filteredRows.length === 0 ? (
-        <Card className="border-dashed rounded-2xl">
+        <Card className="border-dashed bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
             <div className="rounded-full bg-blue-100 p-4 mb-4">
               <ClipboardList className="h-6 w-6 text-blue-600" />
@@ -165,7 +165,7 @@ export function KomplianzDashboard() {
                 ? "Keine Patienten mit aktivem Hausaufgaben-Plan"
                 : "Keine Patienten vorhanden"}
             </h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-xs">
+            <p className="text-sm text-slate-500 mt-1 max-w-xs">
               {filter === "aktiv"
                 ? "Wechsle zu \"Alle Patienten\" um alle anzuzeigen, oder weise einem Patienten einen Plan zu."
                 : "Sobald du Patienten anlegen und Hausaufgaben zuweisen, erscheinen diese hier."}
@@ -173,7 +173,7 @@ export function KomplianzDashboard() {
           </CardContent>
         </Card>
       ) : (
-        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+        <div className="border border-slate-200/60 rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -185,7 +185,7 @@ export function KomplianzDashboard() {
             </TableHeader>
             <TableBody>
               {filteredRows.map((row) => (
-                <TableRow key={row.patient_id} className="hover:bg-muted/50">
+                <TableRow key={row.patient_id} className="hover:bg-slate-50/80">
                   <TableCell>
                     <Link
                       href={`/os/patients/${row.patient_id}?tab=hausaufgaben`}
@@ -213,7 +213,7 @@ export function KomplianzDashboard() {
                         <span className="text-xs font-medium">Ja</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                      <div className="flex items-center justify-center gap-1.5 text-slate-400">
                         <XCircle className="h-4 w-4" />
                         <span className="text-xs font-medium">Nein</span>
                       </div>
@@ -231,7 +231,7 @@ export function KomplianzDashboard() {
 
       {/* Summary */}
       {filteredRows.length > 0 && (
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap gap-4 text-sm text-slate-500">
           <span>
             <strong className="text-foreground">{filteredRows.length}</strong> Patient
             {filteredRows.length !== 1 ? "en" : ""}

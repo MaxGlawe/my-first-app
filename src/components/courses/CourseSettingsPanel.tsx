@@ -33,9 +33,9 @@ export function CourseSettingsPanel({
   onCoverImageUrlChange,
 }: CourseSettingsPanelProps) {
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base">Kurs-Einstellungen</CardTitle>
+        <CardTitle className="text-base text-slate-800">Kurs-Einstellungen</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Description */}
@@ -58,7 +58,7 @@ export function CourseSettingsPanel({
             id="kategorie"
             value={kategorie}
             onChange={(e) => onKategorieChange(e.target.value as CourseKategorie)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="w-full h-10 rounded-md border border-slate-200/60 bg-white/80 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2"
           >
             {Object.entries(KATEGORIE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -93,7 +93,7 @@ export function CourseSettingsPanel({
             id="unlock_mode"
             value={unlockMode}
             onChange={(e) => onUnlockModeChange(e.target.value as CourseUnlockMode)}
-            className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            className="w-full h-10 rounded-md border border-slate-200/60 bg-white/80 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2"
           >
             {Object.entries(UNLOCK_MODE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>

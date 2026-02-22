@@ -30,7 +30,7 @@ export function TrainingsplanKarte({ plan, onDuplicate, onDelete }: Trainingspla
   }
 
   return (
-    <Card className="group hover:shadow-md transition-shadow flex flex-col">
+    <Card className="group bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -43,7 +43,7 @@ export function TrainingsplanKarte({ plan, onDuplicate, onDelete }: Trainingspla
               )}
             </div>
             {plan.beschreibung && (
-              <p className="text-sm text-muted-foreground line-clamp-2">{plan.beschreibung}</p>
+              <p className="text-sm text-slate-500 line-clamp-2">{plan.beschreibung}</p>
             )}
           </div>
 
@@ -85,7 +85,7 @@ export function TrainingsplanKarte({ plan, onDuplicate, onDelete }: Trainingspla
 
       <CardContent className="pt-0 flex-1 flex flex-col">
         {/* Stats */}
-        <div className="flex gap-4 text-sm text-muted-foreground mb-4">
+        <div className="flex gap-4 text-sm text-slate-500 mb-4">
           <span className="flex items-center gap-1.5">
             <Dumbbell className="h-3.5 w-3.5" />
             {plan.uebungen_anzahl} Übung{plan.uebungen_anzahl !== 1 ? "en" : ""}
@@ -97,7 +97,7 @@ export function TrainingsplanKarte({ plan, onDuplicate, onDelete }: Trainingspla
         </div>
 
         <div className="mt-auto">
-          <p className="text-xs text-muted-foreground mb-3">
+          <p className="text-xs text-slate-400 mb-3">
             Geändert: {formatDate(plan.updated_at)}
           </p>
           <Link href={`/os/training-plans/${plan.id}`}>

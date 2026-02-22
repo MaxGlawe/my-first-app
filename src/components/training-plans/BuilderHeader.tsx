@@ -65,7 +65,7 @@ export function BuilderHeader({
   }
 
   return (
-    <header className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center gap-3">
+    <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-slate-200/60 px-4 py-3 flex items-center gap-3">
       {/* Back */}
       <Link href="/os/training-plans">
         <Button variant="ghost" size="icon" aria-label="Zurück">
@@ -107,14 +107,14 @@ export function BuilderHeader({
       <div className="flex items-center gap-1.5 text-sm shrink-0">
         {saveStatus === "saving" && (
           <>
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            <span className="text-muted-foreground hidden sm:inline">Speichert...</span>
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+            <span className="text-slate-500 hidden sm:inline">Speichert...</span>
           </>
         )}
         {saveStatus === "saved" && (
           <>
             <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-            <span className="text-muted-foreground hidden sm:inline">Gespeichert</span>
+            <span className="text-slate-500 hidden sm:inline">Gespeichert</span>
           </>
         )}
         {saveStatus === "unsaved" && (

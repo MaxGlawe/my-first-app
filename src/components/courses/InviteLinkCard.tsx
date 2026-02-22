@@ -66,9 +66,9 @@ export function InviteLinkCard({
   }
 
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-base text-slate-800 flex items-center gap-2">
           <Link2 className="h-4 w-4" />
           Einladungslink
         </CardTitle>
@@ -86,7 +86,7 @@ export function InviteLinkCard({
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-500">
               Patienten können sich über diesen Link selbst einschreiben.
             </p>
             <Button
@@ -106,7 +106,7 @@ export function InviteLinkCard({
           </>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-slate-500">
               Erstelle einen Einladungslink, damit Patienten sich selbst einschreiben können.
             </p>
             <Button onClick={handleGenerate} disabled={isGenerating} size="sm">

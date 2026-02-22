@@ -28,7 +28,7 @@ const statusColors: Record<string, string> = {
 
 export function KursKarte({ course, onArchive, onDelete }: KursKarteProps) {
   return (
-    <Card className="group relative hover:shadow-md transition-shadow">
+    <Card className="group relative bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
       <CardContent className="p-5">
         {/* Top row: Status + Menu */}
         <div className="flex items-start justify-between mb-3">
@@ -65,7 +65,7 @@ export function KursKarte({ course, onArchive, onDelete }: KursKarteProps) {
             {course.name}
           </h3>
           {course.beschreibung && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+            <p className="text-sm text-slate-500 line-clamp-2 mb-3">
               {course.beschreibung}
             </p>
           )}
@@ -77,7 +77,7 @@ export function KursKarte({ course, onArchive, onDelete }: KursKarteProps) {
         </Badge>
 
         {/* Meta row */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-auto pt-2 border-t">
+        <div className="flex items-center gap-4 text-sm text-slate-500 mt-auto pt-2 border-t border-slate-200/60">
           <span className="flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />
             {course.lesson_count} {course.lesson_count === 1 ? "Lektion" : "Lektionen"}

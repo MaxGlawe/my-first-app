@@ -23,7 +23,7 @@ function GridSkeleton() {
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-lg overflow-hidden border bg-card">
+        <div key={i} className="rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm border border-slate-200/60">
           <Skeleton className="aspect-video w-full" />
           <div className="p-3 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -67,11 +67,11 @@ export function UebungenGrid({
   if (exercises.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-muted p-6 mb-4">
-          <Dumbbell className="h-10 w-10 text-muted-foreground" />
+        <div className="rounded-full bg-slate-100 p-6 mb-4">
+          <Dumbbell className="h-10 w-10 text-slate-400" />
         </div>
         <h3 className="text-lg font-semibold mb-1">Keine Übungen gefunden</h3>
-        <p className="text-muted-foreground text-sm max-w-sm">
+        <p className="text-slate-500 text-sm max-w-sm">
           Passe die Filter an oder erstelle eine neue Übung mit dem Button oben rechts.
         </p>
       </div>

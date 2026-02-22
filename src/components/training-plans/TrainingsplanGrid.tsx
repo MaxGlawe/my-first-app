@@ -18,7 +18,7 @@ interface TrainingsplanGridProps {
 
 function SkeletonCard() {
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
       <div className="p-6 space-y-3">
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-4 w-full" />
@@ -53,10 +53,10 @@ export function TrainingsplanGrid({
 
   if (error) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
         <CardContent className="py-12 text-center">
           <p className="text-destructive font-medium mb-2">Fehler beim Laden</p>
-          <p className="text-muted-foreground text-sm">{error}</p>
+          <p className="text-slate-500 text-sm">{error}</p>
         </CardContent>
       </Card>
     )
@@ -64,11 +64,11 @@ export function TrainingsplanGrid({
 
   if (plans.length === 0) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
         <CardContent className="py-16 text-center">
-          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <ClipboardList className="h-12 w-12 text-slate-400 mx-auto mb-4" />
           <h3 className="font-semibold text-lg mb-2">Keine Trainingspläne gefunden</h3>
-          <p className="text-muted-foreground text-sm mb-6">
+          <p className="text-slate-500 text-sm mb-6">
             Erstelle deinen ersten Trainingsplan und weise ihn Patienten zu.
           </p>
           <Button onClick={onNewPlan} className="gap-2">

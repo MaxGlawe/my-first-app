@@ -49,7 +49,7 @@ export function TrainingsplaeneHeader({
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Plan suchen..."
             value={search}
@@ -59,15 +59,15 @@ export function TrainingsplaeneHeader({
         </div>
 
         {/* Filter buttons */}
-        <div className="flex gap-1 rounded-lg border p-1 bg-muted/40">
+        <div className="flex gap-1 rounded-xl border border-slate-200/60 p-1 bg-slate-100/60">
           {(Object.keys(FILTER_LABELS) as PlanFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => onFilterChange(f)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                 filter === f
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-white shadow-sm text-slate-800"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {FILTER_LABELS[f]}

@@ -89,9 +89,9 @@ export function LessonsList({ lessons, onLessonsChange, onAddExercise }: Lessons
   }
 
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">
+        <CardTitle className="text-base text-slate-800">
           Lektionen ({lessons.length})
         </CardTitle>
         <Button size="sm" onClick={addLesson}>
@@ -101,7 +101,7 @@ export function LessonsList({ lessons, onLessonsChange, onAddExercise }: Lessons
       </CardHeader>
       <CardContent className="space-y-2">
         {lessons.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8">
+          <p className="text-sm text-slate-500 text-center py-8">
             Noch keine Lektionen. Füge die erste Lektion hinzu.
           </p>
         )}
@@ -110,12 +110,12 @@ export function LessonsList({ lessons, onLessonsChange, onAddExercise }: Lessons
           const isExpanded = expandedIndex === index
 
           return (
-            <div key={index} className="border rounded-lg">
+            <div key={index} className="border border-slate-200/60 rounded-2xl">
               {/* Lesson header row */}
               <div className="flex items-center gap-2 p-3">
-                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                <GripVertical className="h-4 w-4 text-slate-400 shrink-0" />
 
-                <span className="text-sm font-medium text-muted-foreground shrink-0 w-6">
+                <span className="text-sm font-medium text-slate-400 shrink-0 w-6">
                   {index + 1}.
                 </span>
 

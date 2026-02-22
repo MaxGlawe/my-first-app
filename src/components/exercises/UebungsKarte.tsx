@@ -89,7 +89,7 @@ export function UebungsKarte({
   return (
     <>
       <Card
-        className="group cursor-pointer hover:shadow-md transition-shadow flex flex-col h-full"
+        className="group cursor-pointer bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col h-full"
         onClick={() => onViewDetail(exercise)}
         role="button"
         aria-label={`Übung ${exercise.name} anzeigen`}
@@ -97,7 +97,7 @@ export function UebungsKarte({
         onKeyDown={(e) => e.key === "Enter" && onViewDetail(exercise)}
       >
         {/* Media Preview */}
-        <div className="relative aspect-video rounded-t-lg overflow-hidden bg-muted">
+        <div className="relative aspect-video rounded-t-2xl overflow-hidden bg-slate-100">
           {exercise.media_url && exercise.media_type === "image" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -122,7 +122,7 @@ export function UebungsKarte({
               <span className="text-xs font-medium">Video nicht verfügbar</span>
             </div>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+            <div className="w-full h-full flex items-center justify-center text-slate-400">
               <Image className="h-10 w-10 opacity-30" aria-hidden="true" />
             </div>
           )}
@@ -200,7 +200,7 @@ export function UebungsKarte({
 
         {/* Footer with actions */}
         <CardFooter className="px-3 py-2 border-t flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-slate-500">
             {exercise.standard_saetze && (
               <span>{exercise.standard_saetze} Sätze</span>
             )}

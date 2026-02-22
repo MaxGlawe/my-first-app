@@ -23,7 +23,7 @@ export default function TherapeuthChatPostfachPage() {
       </div>
 
       {/* Conversation list */}
-      <Card className="overflow-hidden p-0">
+      <Card className="overflow-hidden p-0 bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
         <ChatPosteingang />
       </Card>
     </div>

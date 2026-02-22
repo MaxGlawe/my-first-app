@@ -56,7 +56,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <p className="text-destructive font-medium">{error}</p>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="text-slate-500 text-sm mt-1">
           Bitte die Seite neu laden.
         </p>
       </div>
@@ -65,7 +65,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+      <div className="rounded-2xl border border-slate-200/60 overflow-hidden bg-white/80 backdrop-blur-sm shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -105,11 +105,11 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
   if (patients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-muted p-5 mb-4">
-          <Users className="h-8 w-8 text-muted-foreground" />
+        <div className="rounded-full bg-slate-100 p-5 mb-4">
+          <Users className="h-8 w-8 text-slate-400" />
         </div>
         <h3 className="font-semibold text-lg">Keine Patienten gefunden</h3>
-        <p className="text-muted-foreground text-sm mt-1 max-w-xs">
+        <p className="text-slate-500 text-sm mt-1 max-w-xs">
           Lege einen neuen Patienten an oder passe deine Suche an.
         </p>
       </div>
@@ -117,7 +117,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+    <div className="rounded-2xl border border-slate-200/60 overflow-hidden bg-white/80 backdrop-blur-sm shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -132,7 +132,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
           {patients.map((patient) => (
             <TableRow
               key={patient.id}
-              className="cursor-pointer hover:bg-muted/50"
+              className="cursor-pointer hover:bg-slate-50/80"
               onClick={() => router.push(`/os/patients/${patient.id}`)}
               aria-label={`Patient ${patient.vorname} ${patient.nachname} öffnen`}
             >
@@ -154,7 +154,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
                   {patient.nachname}, {patient.vorname}
                 </div>
                 {patient.email && (
-                  <div className="text-sm text-muted-foreground">{patient.email}</div>
+                  <div className="text-sm text-slate-500">{patient.email}</div>
                 )}
               </TableCell>
               <TableCell>
@@ -162,7 +162,7 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
               </TableCell>
               <TableCell>
                 <span className="text-sm">
-                  {patient.krankenkasse ?? <span className="text-muted-foreground">—</span>}
+                  {patient.krankenkasse ?? <span className="text-slate-400">—</span>}
                 </span>
               </TableCell>
               <TableCell>

@@ -172,7 +172,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
         variant="ghost"
         size="sm"
         onClick={() => router.push("/os/patients")}
-        className="mb-4 -ml-2 text-muted-foreground"
+        className="mb-4 -ml-2 text-slate-500"
       >
         <ArrowLeft className="mr-1 h-4 w-4" />
         Zurück zur Patientenliste
@@ -215,7 +215,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-2xl font-bold text-slate-800">
                 {patient.vorname} {patient.nachname}
               </h1>
               {isArchived ? (
@@ -234,7 +234,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
                 </Badge>
               )}
             </div>
-            <p className="text-muted-foreground text-sm mt-0.5">
+            <p className="text-slate-500 text-sm mt-0.5">
               {getAlter(patient.geburtsdatum)} &middot;{" "}
               {new Date(patient.geburtsdatum).toLocaleDateString("de-DE")}
               {patient.krankenkasse && ` · ${patient.krankenkasse}`}
@@ -283,7 +283,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
                   variant="outline"
                   size="sm"
                   disabled={isArchiving}
-                  className="text-muted-foreground"
+                  className="text-slate-500"
                 >
                   <Archive className="mr-2 h-4 w-4" />
                   Archivieren

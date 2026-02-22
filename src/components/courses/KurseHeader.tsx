@@ -64,7 +64,7 @@ export function KurseHeader({
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
             placeholder="Kurs suchen..."
             value={search}
@@ -77,7 +77,7 @@ export function KurseHeader({
         <select
           value={kategorie}
           onChange={(e) => onKategorieChange(e.target.value as CourseKategorie | "")}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className="h-10 rounded-md border border-slate-200/60 bg-white/80 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2"
         >
           {KATEGORIE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -87,16 +87,16 @@ export function KurseHeader({
         </select>
 
         {/* Status filter pills */}
-        <div className="flex items-center rounded-lg border bg-muted/40 p-1">
+        <div className="flex items-center rounded-xl border border-slate-200/60 bg-slate-100/60 p-1">
           {(Object.entries(FILTER_LABELS) as [CourseFilter, string][]).map(
             ([value, label]) => (
               <button
                 key={value}
                 onClick={() => onFilterChange(value)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   filter === value
-                    ? "bg-white text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 {label}

@@ -18,7 +18,7 @@ interface KursGridProps {
 
 function SkeletonCard() {
   return (
-    <Card>
+    <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
       <CardContent className="p-5 space-y-3">
         <Skeleton className="h-5 w-16" />
         <Skeleton className="h-6 w-3/4" />
@@ -53,7 +53,7 @@ export function KursGrid({
 
   if (error) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
         <CardContent className="py-12 text-center text-destructive">
           {error}
         </CardContent>
@@ -63,11 +63,11 @@ export function KursGrid({
 
   if (courses.length === 0) {
     return (
-      <Card>
+      <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm">
         <CardContent className="py-16 text-center">
-          <GraduationCap className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+          <GraduationCap className="mx-auto h-12 w-12 text-slate-300 mb-4" />
           <h3 className="font-semibold text-lg mb-1">Keine Kurse gefunden</h3>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-slate-500 mb-6">
             Erstelle deinen ersten Online-Kurs für Gruppen-Therapie.
           </p>
           <Button onClick={onNewCourse}>

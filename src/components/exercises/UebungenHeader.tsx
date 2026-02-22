@@ -94,7 +94,7 @@ export function UebungenHeader({
       <div className="flex flex-wrap gap-3 items-center">
         {/* Text search */}
         <div className="relative flex-1 min-w-56">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             type="search"
             placeholder="Übung suchen..."
@@ -186,7 +186,7 @@ export function UebungenHeader({
             variant="ghost"
             size="sm"
             onClick={clearFilters}
-            className="gap-1 text-muted-foreground"
+            className="gap-1 text-slate-500"
             aria-label="Alle Filter zurücksetzen"
           >
             <X className="h-4 w-4" />
