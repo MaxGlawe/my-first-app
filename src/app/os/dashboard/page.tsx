@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * Therapeuten-Dashboard — Apple Health Style
- * Smart dashboard with live KPIs, messages card, and quick actions.
+ * Therapeuten-Dashboard — Premium Design (V2 Landing Colors)
+ * Warmer Hintergrund, Dark Header, Emerald/Teal-Akzente, glassmorphe Elemente
  */
 
 import Link from "next/link"
@@ -52,7 +52,7 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, iconBg, iconColor }: StatCardProps) {
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
+    <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-5 hover:shadow-md transition-shadow">
       <div className={`h-10 w-10 rounded-xl ${iconBg} flex items-center justify-center mb-3`}>
         <Icon className={`h-5 w-5 ${iconColor}`} />
       </div>
@@ -134,31 +134,39 @@ export default function TherapistDashboardPage() {
   const { stats, isLoading, error } = useDashboardStats()
 
   return (
-    <div className="container mx-auto py-8 px-6 max-w-7xl space-y-6">
-      {/* Error */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+    <div className="min-h-screen" style={{ backgroundColor: "#faf9f7" }}>
+      {/* Dark header area */}
+      <div className="bg-gradient-to-b from-slate-900 via-slate-900 to-transparent pt-6 pb-20 px-6">
+        <div className="container mx-auto max-w-7xl">
+          {!isLoading && stats && (
+            <div>
+              <h1 className="text-2xl font-bold text-white">
+                {getGreeting()}
+                {stats.firstName ? `, ${stats.firstName}` : ""}!
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">{getTodayStr()}</p>
+            </div>
+          )}
+        </div>
+      </div>
 
-      {/* Loading */}
-      {isLoading && <DashboardSkeleton />}
+      {/* Content overlapping the header */}
+      <div className="container mx-auto px-6 max-w-7xl -mt-12 pb-8 space-y-6">
+        {/* Error */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {/* Main content */}
-      {!isLoading && stats && (
-        <>
-          {/* Hero Greeting */}
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">
-              {getGreeting()}
-              {stats.firstName ? `, ${stats.firstName}` : ""}!
-            </h1>
-            <p className="text-sm text-slate-400 mt-0.5">{getTodayStr()}</p>
-          </div>
+        {/* Loading */}
+        {isLoading && <DashboardSkeleton />}
 
-          {/* Stats Row */}
+        {/* Main content */}
+        {!isLoading && stats && (
+          <>
+            {/* Stats Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Patienten gesamt"
@@ -210,7 +218,7 @@ export default function TherapistDashboardPage() {
             </Link>
           ) : (
             <Link href="/os/chat" className="block">
-              <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 hover:bg-slate-50 transition-colors">
+              <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
                     <MessageCircle className="h-5 w-5 text-emerald-600" />
@@ -233,7 +241,7 @@ export default function TherapistDashboardPage() {
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               {quickActions.map((action) => (
                 <Link key={action.href} href={action.href} className="block">
-                  <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5 hover:bg-slate-50 hover:shadow-md transition-all group h-full">
+                  <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-5 hover:shadow-md hover:border-slate-300/60 transition-all group h-full">
                     <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center mb-3">
                       <action.icon className="h-5 w-5 text-emerald-600" />
                     </div>
@@ -248,6 +256,7 @@ export default function TherapistDashboardPage() {
           </div>
         </>
       )}
+      </div>
     </div>
   )
 }
