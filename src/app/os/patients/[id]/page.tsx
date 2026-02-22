@@ -93,7 +93,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
       <PatientDetailHeader patient={patient} onRefresh={refresh} />
 
       <Tabs defaultValue={searchParams.get("tab") ?? "stammdaten"} className="mt-2">
-        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-1.5">
           <TabsTrigger value="stammdaten">Stammdaten</TabsTrigger>
           <TabsTrigger value="termine">Termine</TabsTrigger>
 

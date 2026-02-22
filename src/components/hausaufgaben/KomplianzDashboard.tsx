@@ -123,33 +123,35 @@ export function KomplianzDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-            <BookOpen className="h-5 w-5 text-emerald-600" />
+      {/* Hero header */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-100/60 p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+              <BookOpen className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-800">Hausaufgaben-Compliance</h1>
+              <p className="text-sm text-slate-500 mt-0.5">{formatTodayHeader()}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Hausaufgaben-Compliance</h1>
-            <p className="text-sm text-slate-500 mt-0.5">{formatTodayHeader()}</p>
+          <div className="flex items-center gap-2">
+            <Select
+              value={filter}
+              onValueChange={(v) => setFilter(v as FilterMode)}
+            >
+              <SelectTrigger className="w-[180px] bg-white/80 border-slate-200/60">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="aktiv">Nur mit aktivem Plan</SelectItem>
+                <SelectItem value="alle">Alle Patienten</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={refresh} aria-label="Aktualisieren" className="bg-white/80 border-slate-200/60">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select
-            value={filter}
-            onValueChange={(v) => setFilter(v as FilterMode)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="aktiv">Nur mit aktivem Plan</SelectItem>
-              <SelectItem value="alle">Alle Patienten</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={refresh} aria-label="Aktualisieren">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 

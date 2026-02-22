@@ -105,8 +105,8 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
   if (patients.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-slate-100 p-5 mb-4">
-          <Users className="h-8 w-8 text-slate-400" />
+        <div className="rounded-full bg-emerald-100 p-5 mb-4">
+          <Users className="h-8 w-8 text-emerald-600" />
         </div>
         <h3 className="font-semibold text-lg">Keine Patienten gefunden</h3>
         <p className="text-slate-500 text-sm mt-1 max-w-xs">

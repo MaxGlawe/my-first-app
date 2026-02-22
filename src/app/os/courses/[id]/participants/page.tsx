@@ -97,21 +97,23 @@ export default function CourseParticipantsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Link href={`/os/courses/${id}`}>
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-4 w-4" />
+      {/* Hero header */}
+      <div className="mb-8 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-100/60 p-6 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Link href={`/os/courses/${id}`}>
+            <Button variant="ghost" size="icon" className="bg-white/80 border border-slate-200/60">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-slate-800">Teilnehmer</h1>
+            <p className="text-sm text-slate-500 mt-0.5">{course?.name ?? "Kurs"}</p>
+          </div>
+          <Button onClick={() => setEnrollDialogOpen(true)} className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-sm">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Patient einschreiben
           </Button>
-        </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800">Teilnehmer</h1>
-          <p className="text-slate-500">{course?.name ?? "Kurs"}</p>
         </div>
-        <Button onClick={() => setEnrollDialogOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Patient einschreiben
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

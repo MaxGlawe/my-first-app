@@ -178,72 +178,73 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
         Zurück zur Patientenliste
       </Button>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        {/* Avatar + Name + Info */}
-        <div className="flex items-center gap-4">
-          <div className="relative group">
-            <Avatar className="h-16 w-16">
-              {patient.avatar_url && (
-                <AvatarImage
-                  src={patient.avatar_url}
-                  alt={`${patient.vorname} ${patient.nachname}`}
-                />
-              )}
-              <AvatarFallback className="text-lg font-semibold">
-                {getInitials(patient.vorname, patient.nachname)}
-              </AvatarFallback>
-            </Avatar>
-            {/* Upload overlay */}
-            <button
-              type="button"
-              aria-label="Avatar hochladen"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploadingAvatar}
-              className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            >
-              <Camera className="h-5 w-5 text-white" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={handleAvatarUpload}
-              aria-hidden="true"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-slate-800">
-                {patient.vorname} {patient.nachname}
-              </h1>
-              {isArchived ? (
-                <Badge variant="secondary">Archiviert</Badge>
-              ) : (
-                <Badge className="bg-green-500 hover:bg-green-600">Aktiv</Badge>
-              )}
-              {patient.invite_status === "registered" && (
-                <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                  App aktiv
-                </Badge>
-              )}
-              {patient.invite_status === "invited" && (
-                <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
-                  Eingeladen
-                </Badge>
-              )}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-100/60 p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          {/* Avatar + Name + Info */}
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
+                {patient.avatar_url && (
+                  <AvatarImage
+                    src={patient.avatar_url}
+                    alt={`${patient.vorname} ${patient.nachname}`}
+                  />
+                )}
+                <AvatarFallback className="text-lg font-semibold bg-emerald-100 text-emerald-700">
+                  {getInitials(patient.vorname, patient.nachname)}
+                </AvatarFallback>
+              </Avatar>
+              {/* Upload overlay */}
+              <button
+                type="button"
+                aria-label="Avatar hochladen"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                <Camera className="h-5 w-5 text-white" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                aria-hidden="true"
+              />
             </div>
-            <p className="text-slate-500 text-sm mt-0.5">
-              {getAlter(patient.geburtsdatum)} &middot;{" "}
-              {new Date(patient.geburtsdatum).toLocaleDateString("de-DE")}
-              {patient.krankenkasse && ` · ${patient.krankenkasse}`}
-            </p>
-          </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-2xl font-bold text-slate-800">
+                  {patient.vorname} {patient.nachname}
+                </h1>
+                {isArchived ? (
+                  <Badge variant="secondary">Archiviert</Badge>
+                ) : (
+                  <Badge className="bg-green-500 hover:bg-green-600">Aktiv</Badge>
+                )}
+                {patient.invite_status === "registered" && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                    App aktiv
+                  </Badge>
+                )}
+                {patient.invite_status === "invited" && (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                    Eingeladen
+                  </Badge>
+                )}
+              </div>
+              <p className="text-slate-500 text-sm mt-0.5">
+                {getAlter(patient.geburtsdatum)} &middot;{" "}
+                {new Date(patient.geburtsdatum).toLocaleDateString("de-DE")}
+                {patient.krankenkasse && ` · ${patient.krankenkasse}`}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
           {/* Invite button */}
           {patient.email && patient.invite_status !== "registered" && (
             <Button
@@ -317,6 +318,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
             </AlertDialog>
           )}
         </div>
+      </div>
       </div>
     </div>
   )

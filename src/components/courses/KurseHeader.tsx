@@ -42,23 +42,25 @@ export function KurseHeader({
 }: KurseHeaderProps) {
   return (
     <div className="mb-8 space-y-4">
-      {/* Title row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-            <GraduationCap className="h-5 w-5 text-emerald-600" />
+      {/* Hero header */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-100/60 p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+              <GraduationCap className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-800">Kurse</h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Online-Kurse erstellen und verwalten
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Kurse</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Online-Kurse erstellen und verwalten
-            </p>
-          </div>
+          <Button onClick={onNewCourse} className="shrink-0 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Neuer Kurs
+          </Button>
         </div>
-        <Button onClick={onNewCourse} className="shrink-0">
-          <Plus className="mr-2 h-4 w-4" />
-          Neuer Kurs
-        </Button>
       </div>
 
       {/* Search & Filters */}
@@ -69,7 +71,7 @@ export function KurseHeader({
             placeholder="Kurs suchen..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-white/80 border-slate-200/60"
           />
         </div>
 

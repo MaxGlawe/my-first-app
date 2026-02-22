@@ -71,23 +71,25 @@ export function UebungenHeader({
 
   return (
     <div className="mb-6 space-y-4">
-      {/* Title row */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
-            <Dumbbell className="h-5 w-5 text-emerald-600" />
+      {/* Hero header */}
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/40 border border-emerald-100/60 p-6 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+              <Dumbbell className="h-5 w-5 text-emerald-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-800">Übungsdatenbank</h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Übungen verwalten, filtern und zur Bibliothek hinzufügen
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Übungsdatenbank</h1>
-            <p className="text-sm text-slate-500 mt-0.5">
-              Übungen verwalten, filtern und zur Bibliothek hinzufügen
-            </p>
-          </div>
+          <Button onClick={onNewExercise} className="whitespace-nowrap self-start sm:self-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Neue Übung
+          </Button>
         </div>
-        <Button onClick={onNewExercise} className="whitespace-nowrap self-start sm:self-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          Neue Übung
-        </Button>
       </div>
 
       {/* Filter row */}
@@ -100,7 +102,7 @@ export function UebungenHeader({
             placeholder="Übung suchen..."
             value={filter.search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 bg-white/80 border-slate-200/60"
             aria-label="Übung suchen"
           />
         </div>

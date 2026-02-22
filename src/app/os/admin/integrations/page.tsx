@@ -26,10 +26,10 @@ export default async function AdminIntegrationsPage() {
   if (profile?.role !== "admin") redirect("/os")
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
-      {/* Page header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-blue-100 text-blue-700">
+      {/* Hero header */}
+      <div className="mb-8 rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-teal-50/40 border border-blue-100/60 p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-blue-100 text-blue-700 shrink-0">
             <Plug className="h-5 w-5" />
           </div>
           <div>
@@ -44,7 +44,7 @@ export default async function AdminIntegrationsPage() {
             </div>
           </div>
         </div>
-        <p className="text-slate-500 mt-3 max-w-2xl">
+        <p className="text-sm text-slate-500 max-w-2xl">
           Verbinde das Buchungstool mit Praxis OS. Patienten- und Termindaten
           werden automatisch per Webhook synchronisiert — kein manueller Import
           notwendig.

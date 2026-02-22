@@ -67,8 +67,8 @@ export function UebungenGrid({
   if (exercises.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-slate-100 p-6 mb-4">
-          <Dumbbell className="h-10 w-10 text-slate-400" />
+        <div className="rounded-full bg-emerald-100 p-6 mb-4">
+          <Dumbbell className="h-10 w-10 text-emerald-600" />
         </div>
         <h3 className="text-lg font-semibold mb-1">Keine Übungen gefunden</h3>
         <p className="text-slate-500 text-sm max-w-sm">

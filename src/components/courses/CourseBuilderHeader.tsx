@@ -130,7 +130,7 @@ export function CourseBuilderHeader({
             onClick={onPublish}
             disabled={isPublishing || status === "archiviert"}
             size="sm"
-            className="shrink-0"
+            className="shrink-0 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white border-0 shadow-sm"
           >
             {isPublishing ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
