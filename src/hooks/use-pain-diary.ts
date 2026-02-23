@@ -52,6 +52,11 @@ export function usePainDiary(): UsePainDiaryResult {
       try {
         const res = await fetch("/api/me/pain-diary")
         if (cancelled) return
+        // Detect auth redirect (middleware redirects to /login)
+        if (res.redirected && res.url.includes("/login")) {
+          window.location.href = "/login"
+          return
+        }
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
           setError(body.error ?? "Einträge konnten nicht geladen werden.")
@@ -88,6 +93,14 @@ export function usePainDiary(): UsePainDiaryResult {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         })
+        // Detect auth redirect (middleware redirects to /login)
+        if (res.redirected && res.url.includes("/login")) {
+          window.location.href = "/login"
+          return false
+        }
+        // Verify response is actually JSON (not an HTML page)
+        const contentType = res.headers.get("content-type") ?? ""
+        if (!contentType.includes("application/json")) return false
         if (!res.ok) return false
         refresh()
         return true
@@ -129,6 +142,10 @@ export function usePatientPainDiary(patientId: string): UsePatientPainDiaryResul
       try {
         const res = await fetch(`/api/patients/${patientId}/pain-diary`)
         if (cancelled) return
+        if (res.redirected && res.url.includes("/login")) {
+          window.location.href = "/login"
+          return
+        }
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
           setError(body.error ?? "Einträge konnten nicht geladen werden.")
