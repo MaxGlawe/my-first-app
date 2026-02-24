@@ -40,7 +40,12 @@ export async function updateSession(request: NextRequest) {
   const isInviteApi = pathname.startsWith('/api/patients/invite/')
   const isRootPage = pathname === '/'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isRootPage) {
+  // Static assets + API routes that handle their own auth
+  const isStaticAsset = pathname === '/sw.js' || pathname.startsWith('/icons/') || pathname.startsWith('/images/')
+  const isCronApi = pathname.startsWith('/api/cron/')
+  const isPushSendApi = pathname === '/api/push/send'
+
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isRootPage && !isStaticAsset && !isCronApi && !isPushSendApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
