@@ -3,6 +3,13 @@
 import { PatientenNavigation } from "@/components/app/PatientenNavigation"
 import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { CheckInGate } from "@/components/app/CheckInGate"
+import { MilestonePopup } from "@/components/app/MilestonePopup"
+import { useStreak } from "@/hooks/use-streak"
+
+function MilestoneOverlay() {
+  const { newUnlock, dismissUnlock } = useStreak()
+  return <MilestonePopup achievement={newUnlock} onClose={dismissUnlock} />
+}
 
 export default function PatientenAppLayout({
   children,
@@ -19,6 +26,9 @@ export default function PatientenAppLayout({
 
       {/* Mobile bottom navigation */}
       <PatientenNavigation />
+
+      {/* Achievement celebration popup */}
+      <MilestoneOverlay />
     </div>
   )
 }

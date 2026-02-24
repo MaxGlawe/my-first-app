@@ -8,9 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -26,12 +24,25 @@ import {
 } from "@/components/ui/accordion"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
-import { Save, CheckCircle, ArrowLeft, Plus, Trash2, Info } from "lucide-react"
+import {
+  ClipboardList,
+  Eye,
+  Dumbbell,
+  GraduationCap,
+  Info,
+  Plus,
+  Trash2,
+} from "lucide-react"
+import { ClinicalSection, ClinicalCard, FormActions } from "@/components/clinical-ui"
+import { OrthoTestsSection } from "./sections/OrthoTestsSection"
+import { NeurologieSection } from "./sections/NeurologieSection"
 import type {
   JandaTestCatalogEntry,
   JandaTestResult,
   JandaBefund,
   FunktionsuntersuchungData,
+  OrthoTestResult,
+  NeurologischeUntersuchung,
 } from "@/types/funktionsuntersuchung"
 import {
   JANDA_REGIONEN,
@@ -44,10 +55,17 @@ import {
 
 interface FunktionsuntersuchungFormProps {
   patientId: string
-  /** If provided, form loads existing record for editing */
   existingData?: FunktionsuntersuchungData
   existingId?: string
   existingStatus?: string
+}
+
+const EMPTY_NEURO: NeurologischeUntersuchung = {
+  dermatome: [],
+  reflexe: [],
+  kennmuskeln: [],
+  koordination: "",
+  notizen: "",
 }
 
 export function FunktionsuntersuchungForm({
@@ -124,6 +142,16 @@ export function FunktionsuntersuchungForm({
     []
   )
 
+  // ── Ortho tests ──
+  const updateOrthoTests = useCallback((tests: OrthoTestResult[]) => {
+    setFormData((prev) => ({ ...prev, ortho_tests: tests }))
+  }, [])
+
+  // ── Neurologie ──
+  const updateNeuro = useCallback((neuro: NeurologischeUntersuchung) => {
+    setFormData((prev) => ({ ...prev, neurologische_untersuchung: neuro }))
+  }, [])
+
   // ── Submit ──
   async function submitForm(status: "entwurf" | "abgeschlossen") {
     setServerError(null)
@@ -191,7 +219,7 @@ export function FunktionsuntersuchungForm({
   const selectedIds = new Set(formData.janda_tests.map((t) => t.catalog_id))
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {serverError && (
         <Alert variant="destructive">
           <AlertDescription>{serverError}</AlertDescription>
@@ -206,11 +234,13 @@ export function FunktionsuntersuchungForm({
         </Alert>
       )}
 
-      {/* ── Section 1: Allgemein ── */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Allgemeine Angaben</h2>
-        <Separator className="mb-4" />
-
+      {/* ── Section 1: Allgemeine Angaben ── */}
+      <ClinicalSection
+        title="Allgemeine Angaben"
+        description="Beschwerde, Aktivitätslevel & Trainingsziele"
+        icon={ClipboardList}
+        accent="emerald"
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="hauptbeschwerde">Hauptbeschwerde *</Label>
@@ -278,13 +308,15 @@ export function FunktionsuntersuchungForm({
             />
           </div>
         </div>
-      </section>
+      </ClinicalSection>
 
       {/* ── Section 2: Bewegungsanalyse ── */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Haltungs- & Bewegungsanalyse</h2>
-        <Separator className="mb-4" />
-
+      <ClinicalSection
+        title="Haltungs- & Bewegungsanalyse"
+        description="Statische Haltung & dynamisches Gangbild"
+        icon={Eye}
+        accent="teal"
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="haltungsanalyse">Haltungsanalyse</Label>
@@ -311,13 +343,15 @@ export function FunktionsuntersuchungForm({
             />
           </div>
         </div>
-      </section>
+      </ClinicalSection>
 
-      {/* ── Section 3: Janda Tests (KERNFEATURE) ── */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Muskelfunktionstests (nach Janda)</h2>
-        <Separator className="mb-4" />
-
+      {/* ── Section 3: Janda Tests ── */}
+      <ClinicalSection
+        title="Muskelfunktionstests (nach Janda)"
+        description="Systematische Erfassung muskulärer Dysbalancen"
+        icon={Dumbbell}
+        accent="emerald"
+      >
         {/* Region tabs */}
         <div className="flex flex-wrap gap-2 mb-4">
           {JANDA_REGIONEN.map((region) => {
@@ -332,6 +366,7 @@ export function FunktionsuntersuchungForm({
                 variant={activeRegion === region ? "default" : "outline"}
                 size="sm"
                 onClick={() => setActiveRegion(region)}
+                className={activeRegion === region ? "bg-emerald-600 hover:bg-emerald-700" : ""}
               >
                 {region}
                 {count > 0 && (
@@ -362,125 +397,122 @@ export function FunktionsuntersuchungForm({
               const result = formData.janda_tests.find((t) => t.catalog_id === test.id)
 
               return (
-                <Card key={test.id} className={isAdded ? "border-primary/50 bg-primary/5" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium text-sm">{test.test_name}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {test.muskel}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            {JANDA_KATEGORIE_LABELS[test.kategorie]}
-                          </Badge>
-                        </div>
-
-                        {/* Test description accordion */}
-                        <Accordion type="single" collapsible className="mt-1">
-                          <AccordionItem value="info" className="border-0">
-                            <AccordionTrigger className="py-1 text-xs text-muted-foreground hover:no-underline">
-                              <span className="flex items-center gap-1">
-                                <Info className="h-3 w-3" />
-                                Testanleitung
-                              </span>
-                            </AccordionTrigger>
-                            <AccordionContent className="pb-2">
-                              <div className="text-xs space-y-1.5 text-muted-foreground">
-                                <p>{test.beschreibung}</p>
-                                <p>
-                                  <strong>Normalbefund:</strong> {test.normalbefund}
-                                </p>
-                                <p>
-                                  <strong>Pathologisch:</strong> {test.pathologischer_befund}
-                                </p>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
+                <ClinicalCard key={test.id} highlighted={isAdded}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{test.test_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {test.muskel}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {JANDA_KATEGORIE_LABELS[test.kategorie]}
+                        </Badge>
                       </div>
 
-                      {!isLocked && (
-                        <div className="shrink-0">
-                          {isAdded ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeJandaTest(test.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => addJandaTest(test.id)}
-                            >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Hinzufügen
-                            </Button>
-                          )}
-                        </div>
-                      )}
+                      <Accordion type="single" collapsible className="mt-1">
+                        <AccordionItem value="info" className="border-0">
+                          <AccordionTrigger className="py-1 text-xs text-muted-foreground hover:no-underline">
+                            <span className="flex items-center gap-1">
+                              <Info className="h-3 w-3" />
+                              Testanleitung
+                            </span>
+                          </AccordionTrigger>
+                          <AccordionContent className="pb-2">
+                            <div className="text-xs space-y-1.5 text-muted-foreground">
+                              <p>{test.beschreibung}</p>
+                              <p>
+                                <strong>Normalbefund:</strong> {test.normalbefund}
+                              </p>
+                              <p>
+                                <strong>Pathologisch:</strong> {test.pathologischer_befund}
+                              </p>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
                     </div>
 
-                    {/* Befund selection + notes (only if added) */}
-                    {isAdded && result && (
-                      <div className="mt-3 pt-3 border-t space-y-3">
-                        <div>
-                          <Label className="text-xs">Befund</Label>
-                          <div className="flex gap-2 mt-1">
-                            {(Object.keys(JANDA_BEFUND_LABELS) as JandaBefund[]).map((befund) => (
-                              <Button
-                                key={befund}
-                                type="button"
-                                size="sm"
-                                variant={result.befund === befund ? "default" : "outline"}
-                                disabled={isLocked}
-                                onClick={() => updateJandaTest(test.id, { befund })}
-                                className={
-                                  result.befund === befund
-                                    ? befund === "normal"
-                                      ? "bg-green-600 hover:bg-green-700"
-                                      : befund === "leicht_auffaellig"
-                                      ? "bg-yellow-600 hover:bg-yellow-700"
-                                      : "bg-red-600 hover:bg-red-700"
-                                    : ""
-                                }
-                              >
-                                {JANDA_BEFUND_LABELS[befund]}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor={`notiz-${test.id}`} className="text-xs">
-                            Notiz (optional)
-                          </Label>
-                          <Input
-                            id={`notiz-${test.id}`}
-                            placeholder="Ergänzende Beobachtung..."
-                            value={result.notiz ?? ""}
-                            onChange={(e) => updateJandaTest(test.id, { notiz: e.target.value })}
-                            disabled={isLocked}
-                            className="mt-1 h-8 text-sm"
-                          />
-                        </div>
+                    {!isLocked && (
+                      <div className="shrink-0">
+                        {isAdded ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeJandaTest(test.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addJandaTest(test.id)}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Hinzufügen
+                          </Button>
+                        )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {/* Befund selection + notes */}
+                  {isAdded && result && (
+                    <div className="mt-3 pt-3 border-t space-y-3">
+                      <div>
+                        <Label className="text-xs">Befund</Label>
+                        <div className="flex gap-2 mt-1">
+                          {(Object.keys(JANDA_BEFUND_LABELS) as JandaBefund[]).map((befund) => (
+                            <Button
+                              key={befund}
+                              type="button"
+                              size="sm"
+                              variant={result.befund === befund ? "default" : "outline"}
+                              disabled={isLocked}
+                              onClick={() => updateJandaTest(test.id, { befund })}
+                              className={
+                                result.befund === befund
+                                  ? befund === "normal"
+                                    ? "bg-green-600 hover:bg-green-700"
+                                    : befund === "leicht_auffaellig"
+                                    ? "bg-yellow-600 hover:bg-yellow-700"
+                                    : "bg-red-600 hover:bg-red-700"
+                                  : ""
+                              }
+                            >
+                              {JANDA_BEFUND_LABELS[befund]}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor={`notiz-${test.id}`} className="text-xs">
+                          Notiz (optional)
+                        </Label>
+                        <Input
+                          id={`notiz-${test.id}`}
+                          placeholder="Ergänzende Beobachtung..."
+                          value={result.notiz ?? ""}
+                          onChange={(e) => updateJandaTest(test.id, { notiz: e.target.value })}
+                          disabled={isLocked}
+                          className="mt-1 h-8 text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </ClinicalCard>
               )
             })}
           </div>
         )}
 
-        {/* Summary of selected tests across all regions */}
+        {/* Summary of selected tests */}
         {formData.janda_tests.length > 0 && (
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+          <div className="mt-4 p-3 bg-emerald-50/50 border border-emerald-200/60 rounded-lg">
             <p className="text-sm font-medium">
               {formData.janda_tests.length} Test{formData.janda_tests.length !== 1 ? "s" : ""} ausgewählt
             </p>
@@ -506,13 +538,29 @@ export function FunktionsuntersuchungForm({
             </div>
           </div>
         )}
-      </section>
+      </ClinicalSection>
 
-      {/* ── Section 4: Empfehlung ── */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Trainingsempfehlung</h2>
-        <Separator className="mb-4" />
+      {/* ── Section 4: Orthopädische Spezialtests ── */}
+      <OrthoTestsSection
+        tests={formData.ortho_tests ?? []}
+        onChange={updateOrthoTests}
+        disabled={isLocked}
+      />
 
+      {/* ── Section 5: Neurologische Untersuchung ── */}
+      <NeurologieSection
+        data={formData.neurologische_untersuchung ?? EMPTY_NEURO}
+        onChange={updateNeuro}
+        disabled={isLocked}
+      />
+
+      {/* ── Section 6: Trainingsempfehlung ── */}
+      <ClinicalSection
+        title="Trainingsempfehlung"
+        description="Empfehlung basierend auf den Befunden"
+        icon={GraduationCap}
+        accent="emerald"
+      >
         <Textarea
           id="trainingsempfehlung"
           placeholder="Empfehlung für das weitere Training basierend auf den Befunden..."
@@ -521,38 +569,16 @@ export function FunktionsuntersuchungForm({
           disabled={isLocked}
           rows={4}
         />
-      </section>
+      </ClinicalSection>
 
       {/* ── Action buttons ── */}
       {!isLocked && (
-        <div className="flex items-center justify-between pt-4 border-t">
-          <Link href={`/os/patients/${patientId}?tab=dokumentation`}>
-            <Button variant="ghost" type="button">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Zurück
-            </Button>
-          </Link>
-
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onSaveDraft}
-              disabled={isSubmitting}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {isSavingDraft ? "Speichert..." : "Als Entwurf speichern"}
-            </Button>
-            <Button
-              type="button"
-              onClick={onFinish}
-              disabled={isSubmitting}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {isFinishing ? "Wird abgeschlossen..." : "Abschließen & sperren"}
-            </Button>
-          </div>
-        </div>
+        <FormActions
+          onSaveDraft={onSaveDraft}
+          onFinalize={onFinish}
+          saving={isSubmitting}
+          backHref={`/os/patients/${patientId}?tab=dokumentation`}
+        />
       )}
     </div>
   )

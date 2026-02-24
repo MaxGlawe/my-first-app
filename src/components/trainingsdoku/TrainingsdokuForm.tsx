@@ -7,10 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
@@ -19,8 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ClinicalSection, ClinicalCard, FormActions, NrsSlider } from "@/components/clinical-ui"
 import { toast } from "sonner"
-import { Save, CheckCircle, ArrowLeft, Plus, Trash2, Dumbbell, Stethoscope } from "lucide-react"
+import { Plus, Trash2, Dumbbell, Stethoscope, Calendar, ClipboardList, Activity, MessageSquare } from "lucide-react"
 import type {
   TrainingDocTyp,
   TrainingModeData,
@@ -201,7 +199,7 @@ export function TrainingsdokuForm({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {serverError && (
         <Alert variant="destructive">
           <AlertDescription>{serverError}</AlertDescription>
@@ -218,48 +216,48 @@ export function TrainingsdokuForm({
 
       {/* ── Mode Toggle ── */}
       {!isEdit && (
-        <section>
-          <h2 className="text-lg font-semibold mb-1">Art der Dokumentation</h2>
-          <Separator className="mb-4" />
+        <ClinicalSection title="Art der Dokumentation" icon={ClipboardList} accent="emerald">
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setTyp("training")}
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors text-left ${
+              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
                 typ === "training"
-                  ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
-                  : "border-muted hover:border-muted-foreground/30"
+                  ? "border-blue-400 bg-blue-50/50 shadow-sm"
+                  : "border-slate-200/60 hover:border-slate-300"
               }`}
             >
-              <Dumbbell className={`h-6 w-6 ${typ === "training" ? "text-blue-500" : "text-muted-foreground"}`} />
+              <div className={`p-2 rounded-xl ${typ === "training" ? "bg-gradient-to-br from-blue-50 to-cyan-50" : "bg-slate-100"}`}>
+                <Dumbbell className={`h-5 w-5 ${typ === "training" ? "text-blue-600" : "text-slate-400"}`} />
+              </div>
               <div>
-                <div className="font-medium text-sm">Prävention / Training</div>
-                <div className="text-xs text-muted-foreground">Übungen, Sätze, Gewichte</div>
+                <div className="font-medium text-sm text-slate-800">Prävention / Training</div>
+                <div className="text-xs text-slate-500">Übungen, Sätze, Gewichte</div>
               </div>
             </button>
             <button
               type="button"
               onClick={() => setTyp("therapeutisch")}
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors text-left ${
+              className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left ${
                 typ === "therapeutisch"
-                  ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30"
-                  : "border-muted hover:border-muted-foreground/30"
+                  ? "border-emerald-400 bg-emerald-50/50 shadow-sm"
+                  : "border-slate-200/60 hover:border-slate-300"
               }`}
             >
-              <Stethoscope className={`h-6 w-6 ${typ === "therapeutisch" ? "text-emerald-500" : "text-muted-foreground"}`} />
+              <div className={`p-2 rounded-xl ${typ === "therapeutisch" ? "bg-gradient-to-br from-emerald-50 to-teal-50" : "bg-slate-100"}`}>
+                <Stethoscope className={`h-5 w-5 ${typ === "therapeutisch" ? "text-emerald-600" : "text-slate-400"}`} />
+              </div>
               <div>
-                <div className="font-medium text-sm">Therapeutisch (KG/KGG)</div>
-                <div className="text-xs text-muted-foreground">Maßnahmen, NRS, Befund</div>
+                <div className="font-medium text-sm text-slate-800">Therapeutisch (KG/KGG)</div>
+                <div className="text-xs text-slate-500">Maßnahmen, NRS, Befund</div>
               </div>
             </button>
           </div>
-        </section>
+        </ClinicalSection>
       )}
 
       {/* ── Metadata ── */}
-      <section>
-        <h2 className="text-lg font-semibold mb-1">Sitzungsdaten</h2>
-        <Separator className="mb-4" />
+      <ClinicalSection title="Sitzungsdaten" icon={Calendar} accent="blue">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="session_date">Datum</Label>
@@ -287,14 +285,12 @@ export function TrainingsdokuForm({
             />
           </div>
         </div>
-      </section>
+      </ClinicalSection>
 
       {/* ── Training Mode Content ── */}
       {typ === "training" && (
         <>
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Trainingsdetails</h2>
-            <Separator className="mb-4" />
+          <ClinicalSection title="Trainingsdetails" icon={Dumbbell} accent="blue">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="trainingsart">Trainingsart</Label>
@@ -327,119 +323,113 @@ export function TrainingsdokuForm({
                 />
               </div>
             </div>
-          </section>
+          </ClinicalSection>
 
           {/* Exercises */}
-          <section>
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-lg font-semibold">Übungen</h2>
+          <ClinicalSection title="Übungen" icon={ClipboardList} accent="blue">
+            <div className="flex items-center justify-end mb-3">
               {!isLocked && (
-                <Button type="button" variant="outline" size="sm" onClick={addExercise}>
+                <Button type="button" variant="outline" size="sm" onClick={addExercise} className="border-slate-200/60">
                   <Plus className="mr-1 h-4 w-4" />
                   Übung hinzufügen
                 </Button>
               )}
             </div>
-            <Separator className="mb-4" />
 
             {trainingData.uebungen.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">
+              <p className="text-sm text-slate-400 py-4 text-center">
                 Noch keine Übungen hinzugefügt.
               </p>
             ) : (
               <div className="space-y-3">
                 {trainingData.uebungen.map((exercise, idx) => (
-                  <Card key={idx}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 grid gap-3 sm:grid-cols-5">
-                          <div className="sm:col-span-2">
-                            <Label className="text-xs">Übungsname</Label>
-                            <Input
-                              placeholder="z.B. Kniebeuge"
-                              value={exercise.name}
-                              onChange={(e) => updateExercise(idx, { name: e.target.value })}
-                              disabled={isLocked}
-                              className="mt-1 h-8 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Sätze</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              placeholder="3"
-                              value={exercise.saetze ?? ""}
-                              onChange={(e) =>
-                                updateExercise(idx, {
-                                  saetze: e.target.value ? parseInt(e.target.value, 10) : undefined,
-                                })
-                              }
-                              disabled={isLocked}
-                              className="mt-1 h-8 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Wdh.</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              placeholder="12"
-                              value={exercise.wiederholungen ?? ""}
-                              onChange={(e) =>
-                                updateExercise(idx, {
-                                  wiederholungen: e.target.value
-                                    ? parseInt(e.target.value, 10)
-                                    : undefined,
-                                })
-                              }
-                              disabled={isLocked}
-                              className="mt-1 h-8 text-sm"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Gewicht</Label>
-                            <Input
-                              placeholder="z.B. 20kg"
-                              value={exercise.gewicht ?? ""}
-                              onChange={(e) => updateExercise(idx, { gewicht: e.target.value })}
-                              disabled={isLocked}
-                              className="mt-1 h-8 text-sm"
-                            />
-                          </div>
+                  <ClinicalCard key={idx}>
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 grid gap-3 sm:grid-cols-5">
+                        <div className="sm:col-span-2">
+                          <Label className="text-xs text-slate-500">Übungsname</Label>
+                          <Input
+                            placeholder="z.B. Kniebeuge"
+                            value={exercise.name}
+                            onChange={(e) => updateExercise(idx, { name: e.target.value })}
+                            disabled={isLocked}
+                            className="mt-1 h-8 text-sm"
+                          />
                         </div>
-                        {!isLocked && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeExercise(idx)}
-                            className="text-destructive hover:text-destructive mt-4"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div>
+                          <Label className="text-xs text-slate-500">Sätze</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            placeholder="3"
+                            value={exercise.saetze ?? ""}
+                            onChange={(e) =>
+                              updateExercise(idx, {
+                                saetze: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                              })
+                            }
+                            disabled={isLocked}
+                            className="mt-1 h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500">Wdh.</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            placeholder="12"
+                            value={exercise.wiederholungen ?? ""}
+                            onChange={(e) =>
+                              updateExercise(idx, {
+                                wiederholungen: e.target.value
+                                  ? parseInt(e.target.value, 10)
+                                  : undefined,
+                              })
+                            }
+                            disabled={isLocked}
+                            className="mt-1 h-8 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-slate-500">Gewicht</Label>
+                          <Input
+                            placeholder="z.B. 20kg"
+                            value={exercise.gewicht ?? ""}
+                            onChange={(e) => updateExercise(idx, { gewicht: e.target.value })}
+                            disabled={isLocked}
+                            className="mt-1 h-8 text-sm"
+                          />
+                        </div>
                       </div>
-                      <div className="mt-2">
-                        <Input
-                          placeholder="Anmerkung zur Übung (optional)"
-                          value={exercise.anmerkung ?? ""}
-                          onChange={(e) => updateExercise(idx, { anmerkung: e.target.value })}
-                          disabled={isLocked}
-                          className="h-8 text-sm"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                      {!isLocked && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeExercise(idx)}
+                          className="text-destructive hover:text-destructive mt-4"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <Input
+                        placeholder="Anmerkung zur Übung (optional)"
+                        value={exercise.anmerkung ?? ""}
+                        onChange={(e) => updateExercise(idx, { anmerkung: e.target.value })}
+                        disabled={isLocked}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </ClinicalCard>
                 ))}
               </div>
             )}
-          </section>
+          </ClinicalSection>
 
           {/* Training notes */}
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Anmerkungen & Nächstes Training</h2>
-            <Separator className="mb-4" />
+          <ClinicalSection title="Anmerkungen & Nächstes Training" icon={MessageSquare} accent="amber">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="anmerkung">Allgemeine Anmerkung</Label>
@@ -466,16 +456,14 @@ export function TrainingsdokuForm({
                 />
               </div>
             </div>
-          </section>
+          </ClinicalSection>
         </>
       )}
 
       {/* ── Therapeutisch Mode Content ── */}
       {typ === "therapeutisch" && (
         <>
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Therapeutische Maßnahmen</h2>
-            <Separator className="mb-4" />
+          <ClinicalSection title="Therapeutische Maßnahmen" icon={Stethoscope} accent="emerald">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {MASSNAHMEN_OPTIONS.map((massnahme) => (
                 <label
@@ -491,56 +479,32 @@ export function TrainingsdokuForm({
                 </label>
               ))}
             </div>
-          </section>
+          </ClinicalSection>
 
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Schmerzskala (NRS)</h2>
-            <Separator className="mb-4" />
-            <div className="grid gap-4 sm:grid-cols-2">
+          <ClinicalSection title="Schmerzskala (NRS)" icon={Activity} accent="red">
+            <div className="grid gap-6 sm:grid-cols-2">
               <div>
-                <Label htmlFor="nrs_before">NRS vor Behandlung (0-10)</Label>
-                <Input
-                  id="nrs_before"
-                  type="number"
-                  min={0}
-                  max={10}
-                  placeholder="0-10"
-                  value={therapeutischData.nrs_before ?? ""}
-                  onChange={(e) =>
-                    updateTherapeutisch(
-                      "nrs_before",
-                      e.target.value ? parseInt(e.target.value, 10) : null
-                    )
-                  }
+                <Label className="text-sm text-slate-600 mb-3 block">NRS vor Behandlung</Label>
+                <NrsSlider
+                  value={therapeutischData.nrs_before ?? 0}
+                  onChange={(v) => updateTherapeutisch("nrs_before", v)}
                   disabled={isLocked}
-                  className="mt-1"
+                  showLabels={false}
                 />
               </div>
               <div>
-                <Label htmlFor="nrs_after">NRS nach Behandlung (0-10)</Label>
-                <Input
-                  id="nrs_after"
-                  type="number"
-                  min={0}
-                  max={10}
-                  placeholder="0-10"
-                  value={therapeutischData.nrs_after ?? ""}
-                  onChange={(e) =>
-                    updateTherapeutisch(
-                      "nrs_after",
-                      e.target.value ? parseInt(e.target.value, 10) : null
-                    )
-                  }
+                <Label className="text-sm text-slate-600 mb-3 block">NRS nach Behandlung</Label>
+                <NrsSlider
+                  value={therapeutischData.nrs_after ?? 0}
+                  onChange={(v) => updateTherapeutisch("nrs_after", v)}
                   disabled={isLocked}
-                  className="mt-1"
+                  showLabels={false}
                 />
               </div>
             </div>
-          </section>
+          </ClinicalSection>
 
-          <section>
-            <h2 className="text-lg font-semibold mb-1">Befund & Notizen</h2>
-            <Separator className="mb-4" />
+          <ClinicalSection title="Befund & Notizen" icon={ClipboardList} accent="blue">
             <div className="grid gap-4">
               <div>
                 <Label htmlFor="befund">Befund</Label>
@@ -579,40 +543,19 @@ export function TrainingsdokuForm({
                 />
               </div>
             </div>
-          </section>
+          </ClinicalSection>
         </>
       )}
 
       {/* ── Action buttons ── */}
       {!isLocked && (
-        <div className="flex items-center justify-between pt-4 border-t">
-          <Link href={`/os/patients/${patientId}?tab=trainingsdoku`}>
-            <Button variant="ghost" type="button">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Zurück
-            </Button>
-          </Link>
-
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onSaveDraft}
-              disabled={isSubmitting}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {isSavingDraft ? "Speichert..." : "Als Entwurf speichern"}
-            </Button>
-            <Button
-              type="button"
-              onClick={onFinish}
-              disabled={isSubmitting}
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              {isFinishing ? "Wird abgeschlossen..." : "Abschließen"}
-            </Button>
-          </div>
-        </div>
+        <FormActions
+          backHref={`/os/patients/${patientId}?tab=trainingsdoku`}
+          saving={isSubmitting}
+          onSaveDraft={onSaveDraft}
+          onFinalize={onFinish}
+          finalizeLabel="Abschließen"
+        />
       )}
     </div>
   )

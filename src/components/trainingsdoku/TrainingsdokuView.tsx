@@ -3,15 +3,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Card, CardContent } from "@/components/ui/card"
-import { Printer, Edit, Dumbbell, Stethoscope } from "lucide-react"
+import { ClinicalSection, ClinicalCard, StatusBadge, NrsDisplay } from "@/components/clinical-ui"
+import { Printer, Edit, Dumbbell, Stethoscope, ClipboardList, MessageSquare, Activity } from "lucide-react"
 import type {
   TrainingDocumentation,
   TrainingModeData,
   TherapeutischModeData,
 } from "@/types/training-documentation"
-import { MASSNAHMEN_OPTIONS } from "@/types/training-documentation"
 
 interface TrainingsdokuViewProps {
   session: TrainingDocumentation
@@ -31,22 +29,28 @@ export function TrainingsdokuView({
   const data = session.data
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            {isTraining ? (
-              <Dumbbell className="h-5 w-5 text-blue-500" />
-            ) : (
-              <Stethoscope className="h-5 w-5 text-emerald-500" />
-            )}
-            <h1 className="text-2xl font-bold tracking-tight">
+            <div className={`rounded-xl p-2 ${
+              isTraining
+                ? "bg-gradient-to-br from-blue-50 to-cyan-50"
+                : "bg-gradient-to-br from-emerald-50 to-teal-50"
+            }`}>
+              {isTraining ? (
+                <Dumbbell className="h-5 w-5 text-blue-600" />
+              ) : (
+                <Stethoscope className="h-5 w-5 text-emerald-600" />
+              )}
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-800">
               {isTraining ? "Trainingsdokumentation" : "Therapeutische Dokumentation"}
             </h1>
           </div>
-          <p className="text-muted-foreground mt-1">
-            {patientName} —{" "}
+          <p className="text-slate-500 mt-1 text-sm">
+            {patientName} &mdash;{" "}
             {new Date(session.session_date).toLocaleDateString("de-DE", {
               day: "2-digit",
               month: "2-digit",
@@ -55,30 +59,25 @@ export function TrainingsdokuView({
             {session.duration_minutes && ` — ${session.duration_minutes} Min.`}
             {session.created_by_name && ` — von ${session.created_by_name}`}
           </p>
-          <Badge
-            className="mt-2"
-            variant={session.status === "abgeschlossen" ? "default" : "secondary"}
-          >
-            {session.status === "abgeschlossen" ? "Abgeschlossen" : "Entwurf"}
-          </Badge>
+          <div className="mt-2">
+            <StatusBadge status={session.status === "abgeschlossen" ? "abgeschlossen" : "entwurf"} />
+          </div>
         </div>
         <div className="flex gap-2 print:hidden">
           {canEdit && (
             <Link href={`/os/patients/${patientId}/trainingsdoku/${session.id}/edit`}>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-slate-200/60">
                 <Edit className="mr-2 h-4 w-4" />
                 Bearbeiten
               </Button>
             </Link>
           )}
-          <Button variant="outline" size="sm" onClick={() => window.print()}>
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="border-slate-200/60">
             <Printer className="mr-2 h-4 w-4" />
             Drucken
           </Button>
         </div>
       </div>
-
-      <Separator />
 
       {/* Training Mode View */}
       {isTraining && <TrainingView data={data as TrainingModeData} />}
@@ -92,10 +91,8 @@ export function TrainingsdokuView({
 function TrainingView({ data }: { data: TrainingModeData }) {
   return (
     <>
-      {/* Details */}
       {(data.trainingsart || data.schwerpunkt) && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Trainingsdetails</h2>
+        <ClinicalSection title="Trainingsdetails" icon={Dumbbell} accent="blue" flat>
           <div className="grid gap-4 sm:grid-cols-2">
             {data.trainingsart && (
               <ViewField label="Trainingsart" value={data.trainingsart} />
@@ -104,58 +101,55 @@ function TrainingView({ data }: { data: TrainingModeData }) {
               <ViewField label="Schwerpunkt" value={data.schwerpunkt} />
             )}
           </div>
-        </section>
+        </ClinicalSection>
       )}
 
-      {/* Exercises */}
       {data.uebungen.length > 0 && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">
-            Übungen ({data.uebungen.length})
-          </h2>
+        <ClinicalSection
+          title={`Übungen (${data.uebungen.length})`}
+          icon={ClipboardList}
+          accent="blue"
+          flat
+        >
           <div className="space-y-2">
             {data.uebungen.map((exercise, idx) => (
-              <Card key={idx}>
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-medium text-sm">{exercise.name || "Unbenannt"}</span>
-                    {exercise.saetze && (
-                      <Badge variant="outline" className="text-xs">
-                        {exercise.saetze} Sätze
-                      </Badge>
-                    )}
-                    {exercise.wiederholungen && (
-                      <Badge variant="outline" className="text-xs">
-                        {exercise.wiederholungen} Wdh.
-                      </Badge>
-                    )}
-                    {exercise.gewicht && (
-                      <Badge variant="outline" className="text-xs">
-                        {exercise.gewicht}
-                      </Badge>
-                    )}
-                  </div>
-                  {exercise.anmerkung && (
-                    <p className="text-xs text-muted-foreground mt-1">{exercise.anmerkung}</p>
+              <ClinicalCard key={idx}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="font-medium text-sm text-slate-800">{exercise.name || "Unbenannt"}</span>
+                  {exercise.saetze && (
+                    <Badge variant="outline" className="text-xs border-slate-200/60">
+                      {exercise.saetze} Sätze
+                    </Badge>
                   )}
-                </CardContent>
-              </Card>
+                  {exercise.wiederholungen && (
+                    <Badge variant="outline" className="text-xs border-slate-200/60">
+                      {exercise.wiederholungen} Wdh.
+                    </Badge>
+                  )}
+                  {exercise.gewicht && (
+                    <Badge variant="outline" className="text-xs border-slate-200/60">
+                      {exercise.gewicht}
+                    </Badge>
+                  )}
+                </div>
+                {exercise.anmerkung && (
+                  <p className="text-xs text-slate-500 mt-1">{exercise.anmerkung}</p>
+                )}
+              </ClinicalCard>
             ))}
           </div>
-        </section>
+        </ClinicalSection>
       )}
 
-      {/* Notes */}
       {(data.anmerkung || data.naechstes_training) && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Anmerkungen</h2>
+        <ClinicalSection title="Anmerkungen" icon={MessageSquare} accent="amber" flat>
           <div className="grid gap-4 sm:grid-cols-2">
             {data.anmerkung && <ViewField label="Allgemeine Anmerkung" value={data.anmerkung} />}
             {data.naechstes_training && (
               <ViewField label="Nächstes Training" value={data.naechstes_training} />
             )}
           </div>
-        </section>
+        </ClinicalSection>
       )}
     </>
   )
@@ -164,45 +158,43 @@ function TrainingView({ data }: { data: TrainingModeData }) {
 function TherapeutischView({ data }: { data: TherapeutischModeData }) {
   return (
     <>
-      {/* Maßnahmen */}
       {data.massnahmen.length > 0 && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Therapeutische Maßnahmen</h2>
+        <ClinicalSection title="Therapeutische Maßnahmen" icon={Stethoscope} accent="emerald" flat>
           <div className="flex flex-wrap gap-2">
             {data.massnahmen.map((m) => (
-              <Badge key={m} variant="secondary">
+              <Badge key={m} variant="secondary" className="bg-emerald-50 text-emerald-700 border-emerald-200">
                 {m}
               </Badge>
             ))}
           </div>
-        </section>
+        </ClinicalSection>
       )}
 
-      {/* NRS */}
       {(data.nrs_before !== null || data.nrs_after !== null) && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Schmerzskala (NRS)</h2>
+        <ClinicalSection title="Schmerzskala (NRS)" icon={Activity} accent="red" flat>
           <div className="grid gap-4 sm:grid-cols-2">
             {data.nrs_before !== null && (
               <div>
-                <dt className="text-xs font-medium text-muted-foreground">Vor Behandlung</dt>
-                <dd className="text-2xl font-bold mt-1">{data.nrs_before}/10</dd>
+                <dt className="text-xs font-medium text-slate-500">Vor Behandlung</dt>
+                <dd className="mt-1">
+                  <NrsDisplay value={data.nrs_before} />
+                </dd>
               </div>
             )}
             {data.nrs_after !== null && (
               <div>
-                <dt className="text-xs font-medium text-muted-foreground">Nach Behandlung</dt>
-                <dd className="text-2xl font-bold mt-1">{data.nrs_after}/10</dd>
+                <dt className="text-xs font-medium text-slate-500">Nach Behandlung</dt>
+                <dd className="mt-1">
+                  <NrsDisplay value={data.nrs_after} />
+                </dd>
               </div>
             )}
           </div>
-        </section>
+        </ClinicalSection>
       )}
 
-      {/* Befund & Notizen */}
       {(data.befund || data.notizen || data.naechste_schritte) && (
-        <section>
-          <h2 className="text-lg font-semibold mb-3">Befund & Notizen</h2>
+        <ClinicalSection title="Befund & Notizen" icon={ClipboardList} accent="blue" flat>
           <div className="grid gap-4">
             {data.befund && <ViewField label="Befund" value={data.befund} />}
             {data.notizen && <ViewField label="Notizen" value={data.notizen} />}
@@ -210,7 +202,7 @@ function TherapeutischView({ data }: { data: TherapeutischModeData }) {
               <ViewField label="Nächste Schritte" value={data.naechste_schritte} />
             )}
           </div>
-        </section>
+        </ClinicalSection>
       )}
     </>
   )
@@ -219,8 +211,8 @@ function TherapeutischView({ data }: { data: TherapeutischModeData }) {
 function ViewField({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="text-sm mt-0.5 whitespace-pre-wrap">{value}</dd>
+      <dt className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</dt>
+      <dd className="text-sm mt-0.5 whitespace-pre-wrap text-slate-700">{value}</dd>
     </div>
   )
 }

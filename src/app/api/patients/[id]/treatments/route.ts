@@ -14,6 +14,9 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 // UUID validation regex (reused across handlers)
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// All columns for treatment_sessions SELECT (data column is optional — added via migration)
+const SELECT_COLS = `id, patient_id, therapist_id, session_date, duration_minutes, measures, nrs_before, nrs_after, notes, next_steps, status, confirmed_at, locked_at, created_at, updated_at`
+
 // ----------------------------------------------------------------
 // Allowed measure IDs (matches MASSNAHMEN_KATALOG in frontend types)
 // ----------------------------------------------------------------
@@ -61,6 +64,9 @@ const createTreatmentSchema = z.object({
 
   notes: z.string().max(5000).optional().default(""),
   next_steps: z.string().max(2000).optional().default(""),
+
+  // Extended data stored in JSONB column
+  data: z.record(z.string(), z.unknown()).optional(),
 })
 
 // ----------------------------------------------------------------
@@ -82,6 +88,7 @@ function normalizeSession(r: {
   locked_at: string | null
   created_at: string
   updated_at: string
+  data?: unknown
 }, therapistName: string | null = null) {
   return {
     id: r.id,
@@ -99,6 +106,7 @@ function normalizeSession(r: {
     locked_at: r.locked_at,
     created_at: r.created_at,
     updated_at: r.updated_at,
+    data: (r.data as Record<string, unknown>) ?? {},
     therapist_name: therapistName,
   }
 }
@@ -151,23 +159,7 @@ export async function GET(
   // Fetch sessions — RLS (treatment_sessions_select) ensures therapist only sees own patients
   const { data: sessions, error } = await supabase
     .from("treatment_sessions")
-    .select(`
-      id,
-      patient_id,
-      therapist_id,
-      session_date,
-      duration_minutes,
-      measures,
-      nrs_before,
-      nrs_after,
-      notes,
-      next_steps,
-      status,
-      confirmed_at,
-      locked_at,
-      created_at,
-      updated_at
-    `)
+    .select(SELECT_COLS)
     .eq("patient_id", patientId)
     .order("session_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -277,6 +269,7 @@ export async function POST(
     nrs_after,
     notes,
     next_steps,
+    data: extendedData,
   } = parseResult.data
 
   // Sanitize measures: validate catalog IDs, allow free-text (max 200 chars already validated)
@@ -298,6 +291,11 @@ export async function POST(
     status,
   }
 
+  // Include extended data only if provided (column added via migration)
+  if (extendedData && Object.keys(extendedData).length > 0) {
+    insertPayload.data = extendedData
+  }
+
   // If being confirmed, record the confirmation timestamp
   if (status === "abgeschlossen") {
     insertPayload.confirmed_at = new Date().toISOString()
@@ -306,23 +304,7 @@ export async function POST(
   const { data: created, error: insertError } = await supabase
     .from("treatment_sessions")
     .insert(insertPayload)
-    .select(`
-      id,
-      patient_id,
-      therapist_id,
-      session_date,
-      duration_minutes,
-      measures,
-      nrs_before,
-      nrs_after,
-      notes,
-      next_steps,
-      status,
-      confirmed_at,
-      locked_at,
-      created_at,
-      updated_at
-    `)
+    .select(SELECT_COLS)
     .single()
 
   if (insertError) {

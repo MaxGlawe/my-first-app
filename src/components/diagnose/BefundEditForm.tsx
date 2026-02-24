@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
   Select,
@@ -18,31 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { ClinicalSection, ClinicalCard, FormActions } from "@/components/clinical-ui"
 import { Icd10Combobox } from "./Icd10Combobox"
 import { toast } from "sonner"
-import { Plus, Trash2, Save, CheckCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Plus, Trash2, Stethoscope, FileSearch, Target, Clock } from "lucide-react"
 import type { DiagnoseRecord, DiagnoseSicherheitsgrad } from "@/types/diagnose"
-
-// ── Section Header ────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string
-  description?: string
-}) {
-  return (
-    <div>
-      <h3 className="text-base font-semibold">{title}</h3>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      )}
-      <Separator className="mt-2" />
-    </div>
-  )
-}
 
 // ── Sicherheitsgrad Select ─────────────────────────────────────────────────
 
@@ -245,7 +224,7 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
   const isSubmitting = isSavingDraft || isFinishing
 
   return (
-    <form className="space-y-10" noValidate>
+    <form className="space-y-6" noValidate>
       {serverError && (
         <Alert variant="destructive">
           <AlertDescription>{serverError}</AlertDescription>
@@ -253,11 +232,12 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
       )}
 
       {/* ── Klinischer Befund ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Klinischer Befund"
-          description="Objektive Befunderhebung, Untersuchungsergebnisse und klinische Beobachtungen"
-        />
+      <ClinicalSection
+        title="Klinischer Befund"
+        description="Objektive Befunderhebung, Untersuchungsergebnisse und klinische Beobachtungen"
+        icon={Stethoscope}
+        accent="purple"
+      >
         <div className="space-y-2">
           <Label htmlFor="klinischer_befund">
             Klinischer Befund <span className="text-destructive">*</span>
@@ -275,168 +255,169 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
             </p>
           )}
         </div>
-      </div>
+      </ClinicalSection>
 
       {/* ── Hauptdiagnose ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Hauptdiagnose"
-          description="ICD-10-GM Kodierung der Hauptdiagnose"
-        />
+      <ClinicalSection
+        title="Hauptdiagnose"
+        description="ICD-10-GM Kodierung der Hauptdiagnose"
+        icon={FileSearch}
+        accent="purple"
+      >
+        <ClinicalCard>
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+              <div className="space-y-2">
+                <Label>ICD-10 Code / Diagnose</Label>
+                <Controller
+                  name="hauptdiagnose.icd10"
+                  control={control}
+                  render={({ field }) => (
+                    <Icd10Combobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                      placeholder="Hauptdiagnose suchen..."
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Sicherheitsgrad</Label>
+                <Controller
+                  name="hauptdiagnose.sicherheitsgrad"
+                  control={control}
+                  render={({ field }) => (
+                    <SicherheitsgradSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting}
+                    />
+                  )}
+                />
+              </div>
+            </div>
 
-        <div className="space-y-3 p-4 border rounded-lg bg-muted/20">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div className="space-y-2">
-              <Label>ICD-10 Code / Diagnose</Label>
-              <Controller
-                name="hauptdiagnose.icd10"
-                control={control}
-                render={({ field }) => (
-                  <Icd10Combobox
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                    placeholder="Hauptdiagnose suchen..."
-                  />
-                )}
+              <Label htmlFor="hauptdiagnose_freitext">
+                Freitext-Diagnose{" "}
+                <span className="text-slate-400 font-normal text-xs">(wenn kein ICD-Code passend)</span>
+              </Label>
+              <Input
+                id="hauptdiagnose_freitext"
+                placeholder="Diagnose in Freitext..."
+                {...register("hauptdiagnose.freitextDiagnose")}
+                disabled={isSubmitting}
               />
             </div>
+
             <div className="space-y-2">
-              <Label>Sicherheitsgrad</Label>
-              <Controller
-                name="hauptdiagnose.sicherheitsgrad"
-                control={control}
-                render={({ field }) => (
-                  <SicherheitsgradSelect
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                  />
-                )}
+              <Label htmlFor="hauptdiagnose_notiz">
+                Notiz zur Diagnose{" "}
+                <span className="text-slate-400 font-normal text-xs">(Pflicht bei Freitext)</span>
+              </Label>
+              <Textarea
+                id="hauptdiagnose_notiz"
+                rows={2}
+                placeholder="Begründung, differentialdiagnostische Überlegungen..."
+                {...register("hauptdiagnose.freitextNotiz")}
+                disabled={isSubmitting}
               />
+              {errors.hauptdiagnose?.freitextNotiz && (
+                <p className="text-sm text-destructive">
+                  {errors.hauptdiagnose.freitextNotiz.message}
+                </p>
+              )}
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="hauptdiagnose_freitext">
-              Freitext-Diagnose{" "}
-              <span className="text-muted-foreground font-normal text-xs">(wenn kein ICD-Code passend)</span>
-            </Label>
-            <Input
-              id="hauptdiagnose_freitext"
-              placeholder="Diagnose in Freitext..."
-              {...register("hauptdiagnose.freitextDiagnose")}
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="hauptdiagnose_notiz">
-              Notiz zur Diagnose{" "}
-              <span className="text-muted-foreground font-normal text-xs">(Pflicht bei Freitext)</span>
-            </Label>
-            <Textarea
-              id="hauptdiagnose_notiz"
-              rows={2}
-              placeholder="Begründung, differentialdiagnostische Überlegungen..."
-              {...register("hauptdiagnose.freitextNotiz")}
-              disabled={isSubmitting}
-            />
-            {errors.hauptdiagnose?.freitextNotiz && (
-              <p className="text-sm text-destructive">
-                {errors.hauptdiagnose.freitextNotiz.message}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        </ClinicalCard>
+      </ClinicalSection>
 
       {/* ── Nebendiagnosen ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Nebendiagnosen"
-          description="Weitere relevante Diagnosen (max. 5)"
-        />
-
+      <ClinicalSection
+        title="Nebendiagnosen"
+        description="Weitere relevante Diagnosen (max. 5)"
+        icon={FileSearch}
+        accent="blue"
+      >
         {nebendiagnoseFields.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-4 mb-4">
             {nebendiagnoseFields.map((field, index) => (
-              <div
-                key={field.id}
-                className="p-4 border rounded-lg bg-muted/10 space-y-3 relative"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Nebendiagnose {index + 1}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeNeben(index)}
-                    aria-label={`Nebendiagnose ${index + 1} entfernen`}
-                    disabled={isSubmitting}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+              <ClinicalCard key={field.id}>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-500">
+                      Nebendiagnose {index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeNeben(index)}
+                      aria-label={`Nebendiagnose ${index + 1} entfernen`}
+                      disabled={isSubmitting}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
 
-                <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                    <div className="space-y-2">
+                      <Label>ICD-10 Code / Diagnose</Label>
+                      <Controller
+                        name={`nebendiagnosen.${index}.icd10`}
+                        control={control}
+                        render={({ field: f }) => (
+                          <Icd10Combobox
+                            value={f.value}
+                            onChange={f.onChange}
+                            disabled={isSubmitting}
+                            placeholder="Nebendiagnose suchen..."
+                          />
+                        )}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Sicherheitsgrad</Label>
+                      <Controller
+                        name={`nebendiagnosen.${index}.sicherheitsgrad`}
+                        control={control}
+                        render={({ field: f }) => (
+                          <SicherheitsgradSelect
+                            value={f.value}
+                            onChange={f.onChange}
+                            disabled={isSubmitting}
+                          />
+                        )}
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label>ICD-10 Code / Diagnose</Label>
-                    <Controller
-                      name={`nebendiagnosen.${index}.icd10`}
-                      control={control}
-                      render={({ field: f }) => (
-                        <Icd10Combobox
-                          value={f.value}
-                          onChange={f.onChange}
-                          disabled={isSubmitting}
-                          placeholder="Nebendiagnose suchen..."
-                        />
-                      )}
+                    <Label>Freitext-Diagnose</Label>
+                    <Input
+                      placeholder="Diagnose in Freitext..."
+                      {...register(`nebendiagnosen.${index}.freitextDiagnose`)}
+                      disabled={isSubmitting}
                     />
                   </div>
+
                   <div className="space-y-2">
-                    <Label>Sicherheitsgrad</Label>
-                    <Controller
-                      name={`nebendiagnosen.${index}.sicherheitsgrad`}
-                      control={control}
-                      render={({ field: f }) => (
-                        <SicherheitsgradSelect
-                          value={f.value}
-                          onChange={f.onChange}
-                          disabled={isSubmitting}
-                        />
-                      )}
+                    <Label>Notiz</Label>
+                    <Textarea
+                      rows={2}
+                      placeholder="Notiz zur Nebendiagnose..."
+                      {...register(`nebendiagnosen.${index}.freitextNotiz`)}
+                      disabled={isSubmitting}
                     />
+                    {errors.nebendiagnosen?.[index]?.freitextNotiz && (
+                      <p className="text-sm text-destructive">
+                        {errors.nebendiagnosen[index]?.freitextNotiz?.message}
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Freitext-Diagnose</Label>
-                  <Input
-                    placeholder="Diagnose in Freitext..."
-                    {...register(`nebendiagnosen.${index}.freitextDiagnose`)}
-                    disabled={isSubmitting}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Notiz</Label>
-                  <Textarea
-                    rows={2}
-                    placeholder="Notiz zur Nebendiagnose..."
-                    {...register(`nebendiagnosen.${index}.freitextNotiz`)}
-                    disabled={isSubmitting}
-                  />
-                  {errors.nebendiagnosen?.[index]?.freitextNotiz && (
-                    <p className="text-sm text-destructive">
-                      {errors.nebendiagnosen[index]?.freitextNotiz?.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+              </ClinicalCard>
             ))}
           </div>
         )}
@@ -455,19 +436,21 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
               })
             }
             disabled={isSubmitting}
+            className="border-slate-200/60"
           >
             <Plus className="mr-2 h-4 w-4" />
             Nebendiagnose hinzufügen
           </Button>
         )}
-      </div>
+      </ClinicalSection>
 
       {/* ── Therapieziel ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Therapieziel"
-          description="Konkrete, messbare Ziele der Therapie"
-        />
+      <ClinicalSection
+        title="Therapieziel"
+        description="Konkrete, messbare Ziele der Therapie"
+        icon={Target}
+        accent="emerald"
+      >
         <Textarea
           id="therapieziel"
           rows={3}
@@ -475,14 +458,15 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
           {...register("therapieziel")}
           disabled={isSubmitting}
         />
-      </div>
+      </ClinicalSection>
 
       {/* ── Prognose ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Prognose"
-          description="Erwarteter Therapieverlauf und langfristige Einschätzung"
-        />
+      <ClinicalSection
+        title="Prognose"
+        description="Erwarteter Therapieverlauf und langfristige Einschätzung"
+        icon={Target}
+        accent="amber"
+      >
         <Textarea
           id="prognose"
           rows={3}
@@ -490,14 +474,15 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
           {...register("prognose")}
           disabled={isSubmitting}
         />
-      </div>
+      </ClinicalSection>
 
       {/* ── Therapiedauer ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Therapiedauer"
-          description="Geplante Gesamtdauer der Therapie in Wochen"
-        />
+      <ClinicalSection
+        title="Therapiedauer"
+        description="Geplante Gesamtdauer der Therapie in Wochen"
+        icon={Clock}
+        accent="blue"
+      >
         <div className="flex items-center gap-3">
           <div className="w-36">
             <Controller
@@ -520,37 +505,23 @@ export function BefundEditForm({ record, patientId }: BefundEditFormProps) {
               )}
             />
           </div>
-          <span className="text-sm text-muted-foreground">Wochen</span>
+          <span className="text-sm text-slate-500">Wochen</span>
         </div>
         {errors.therapiedauer_wochen && (
-          <p className="text-sm text-destructive">
+          <p className="text-sm text-destructive mt-2">
             {errors.therapiedauer_wochen.message}
           </p>
         )}
-      </div>
+      </ClinicalSection>
 
       {/* ── Actions ── */}
-      <div className="flex items-center gap-3 pt-2 border-t flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSaveDraft}
-          disabled={isSubmitting}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {isSavingDraft ? "Speichern..." : "Als Entwurf speichern"}
-        </Button>
-        <Button type="button" onClick={onFinish} disabled={isSubmitting}>
-          <CheckCircle className="mr-2 h-4 w-4" />
-          {isFinishing ? "Abschließen..." : "Abschließen & sperren"}
-        </Button>
-        <Button asChild variant="ghost" disabled={isSubmitting}>
-          <Link href={`/os/patients/${patientId}/befund/${record.id}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Abbrechen
-          </Link>
-        </Button>
-      </div>
+      <FormActions
+        backHref={`/os/patients/${patientId}/befund/${record.id}`}
+        saving={isSubmitting}
+        onSaveDraft={onSaveDraft}
+        onFinalize={onFinish}
+        finalizeLabel="Abschließen & sperren"
+      />
     </form>
   )
 }

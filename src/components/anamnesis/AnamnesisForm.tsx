@@ -10,9 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -21,12 +19,36 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { BodySchema } from "./BodySchema"
-import type { PainPoint, RangeOfMotionEntry, StrengthEntry } from "@/types/anamnesis"
+import type { PainPoint } from "@/types/anamnesis"
 import { toast } from "sonner"
-import { Plus, Trash2, Save, CheckCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import {
+  Plus,
+  Trash2,
+  ClipboardList,
+  Gauge,
+  MapPin,
+  HeartPulse,
+  Pill,
+  Ruler,
+  Dumbbell,
+  FileSearch,
+  FlaskConical,
+} from "lucide-react"
 
-// ── Vorerkrankungen Katalog ──────────────────────────────────────────────────
+// Clinical UI
+import { ClinicalSection, NrsSlider, FormActions } from "@/components/clinical-ui"
+
+// New deeper sections
+import { FamilienamneseSection } from "./sections/FamilienamneseSection"
+import { OperationenTraumataSection } from "./sections/OperationenTraumataSection"
+import { SozialamneseSection } from "./sections/SozialamneseSection"
+import { BisherigeTherapienSection } from "./sections/BisherigeTherapienSection"
+import { KontraindikationenSection } from "./sections/KontraindikationenSection"
+import { RedFlagsSection } from "./sections/RedFlagsSection"
+import { YellowFlagsSection } from "./sections/YellowFlagsSection"
+import { AllgemeinzustandSection } from "./sections/AllgemeinzustandSection"
+
+// ── Kataloge ───────────────────────────────────────────────────────────────
 
 const VORERKRANKUNGEN_KATALOG = [
   "Diabetes mellitus",
@@ -97,130 +119,83 @@ const MUSKELGRUPPEN_OPTIONS = [
   "Rotatorenmanschette",
 ]
 
-// ── Zod Schema ───────────────────────────────────────────────────────────────
-
-const rangeOfMotionEntrySchema = z.object({
-  id: z.string(),
-  gelenk: z.string().min(1, "Gelenk angeben"),
-  richtung: z.string().min(1, "Richtung angeben"),
-  grad: z.string().min(1, "Grad angeben"),
-})
-
-const strengthEntrySchema = z.object({
-  id: z.string(),
-  muskelgruppe: z.string().min(1, "Muskelgruppe angeben"),
-  grad: z.string().min(1, "Kraftgrad angeben"),
-})
+// ── Zod Schema ──────────────────────────────────────────────────────────────
 
 const anamnesisFormSchema = z.object({
-  // Hauptbeschwerde
   hauptbeschwerde: z.string().min(1, "Hauptbeschwerde ist erforderlich.").max(2000),
   schmerzdauer: z.string().max(200).optional().or(z.literal("")),
   schmerzcharakter: z.string().max(500).optional().or(z.literal("")),
-
-  // NRS
   nrs: z.number().min(0).max(10),
-
-  // Schmerzlokalisation (handled separately via state)
-
-  // Vorerkrankungen
   vorerkrankungen: z.array(z.string()),
   vorerkrankungenFreitext: z.string().max(1000).optional().or(z.literal("")),
   keineVorerkrankungen: z.boolean(),
-
-  // Medikamente
   medikamente: z.string().max(2000).optional().or(z.literal("")),
-
-  // Bewegungsausmaß
-  bewegungsausmass: z.array(rangeOfMotionEntrySchema),
-
-  // Kraftgrad
-  kraftgrad: z.array(strengthEntrySchema),
-
-  // HP-Felder
+  bewegungsausmass: z.array(
+    z.object({
+      id: z.string(),
+      gelenk: z.string().min(1, "Gelenk angeben"),
+      richtung: z.string().min(1, "Richtung angeben"),
+      grad: z.string().min(1, "Grad angeben"),
+    })
+  ),
+  kraftgrad: z.array(
+    z.object({
+      id: z.string(),
+      muskelgruppe: z.string().min(1, "Muskelgruppe angeben"),
+      grad: z.string().min(1, "Kraftgrad angeben"),
+    })
+  ),
   differentialdiagnosen: z.string().max(3000).optional().or(z.literal("")),
   erweiterte_tests: z.string().max(3000).optional().or(z.literal("")),
+
+  // New collapsible section fields (loosely validated, stored in JSONB)
+  familienanamnese_keine: z.boolean().optional(),
+  familienanamnese_erkrankungen: z.array(z.string()).optional(),
+  familienanamnese_freitext: z.string().max(1000).optional().or(z.literal("")),
+  operationen_traumata: z
+    .array(z.object({ id: z.string(), art: z.string(), beschreibung: z.string(), datum: z.string(), region: z.string() }))
+    .optional(),
+  sozial_beruf: z.string().max(200).optional().or(z.literal("")),
+  sozial_arbeitsbelastung: z.string().optional().or(z.literal("")),
+  sozial_arbeitsfaehig: z.boolean().nullable().optional(),
+  sozial_au_seit: z.string().max(100).optional().or(z.literal("")),
+  sozial_lebenssituation: z.string().optional().or(z.literal("")),
+  sozial_freizeitaktivitaeten: z.string().max(500).optional().or(z.literal("")),
+  bisherige_therapien: z
+    .array(z.object({ id: z.string(), art: z.string(), zeitraum: z.string(), ergebnis: z.string(), details: z.string() }))
+    .optional(),
+  kontra_vorhanden: z.boolean().optional(),
+  kontra_items: z.array(z.string()).optional(),
+  kontra_freitext: z.string().max(1000).optional().or(z.literal("")),
+  // HP-only flags
+  red_flags_screened: z.boolean().optional(),
+  red_flags_states: z.record(z.string(), z.boolean()).optional(),
+  red_flags_notes: z.record(z.string(), z.string()).optional(),
+  yellow_flags_screened: z.boolean().optional(),
+  yellow_flags_items: z.array(z.string()).optional(),
+  yellow_flags_notizen: z.string().max(2000).optional().or(z.literal("")),
+  az_eindruck: z.string().optional().or(z.literal("")),
+  az_blutdruck: z.string().max(20).optional().or(z.literal("")),
+  az_puls: z.string().max(10).optional().or(z.literal("")),
+  az_temperatur: z.string().max(10).optional().or(z.literal("")),
+  az_gewicht: z.string().max(10).optional().or(z.literal("")),
+  az_groesse: z.string().max(10).optional().or(z.literal("")),
+  az_sonstiges: z.string().max(2000).optional().or(z.literal("")),
 })
 
 type AnamnesisFormValues = z.infer<typeof anamnesisFormSchema>
 
-// ── Section Header ────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string
-  description?: string
-}) {
-  return (
-    <div>
-      <h3 className="text-base font-semibold">{title}</h3>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      )}
-      <Separator className="mt-2" />
-    </div>
-  )
+function generateId() {
+  return Math.random().toString(36).slice(2, 10)
 }
 
-// ── NRS Slider ────────────────────────────────────────────────────────────────
-
-function NrsSlider({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange: (v: number) => void
-}) {
-  const color =
-    value <= 3
-      ? "text-green-600"
-      : value <= 6
-      ? "text-amber-600"
-      : "text-red-600"
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground w-8">0</span>
-        <input
-          type="range"
-          min={0}
-          max={10}
-          step={1}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="flex-1 h-2 cursor-pointer accent-primary"
-          aria-label="Schmerzintensität NRS 0 bis 10"
-        />
-        <span className="text-sm text-muted-foreground w-8 text-right">10</span>
-      </div>
-      <div className="flex justify-center">
-        <Badge
-          variant="outline"
-          className={`text-lg font-bold px-4 py-1 ${color}`}
-        >
-          {value} / 10
-        </Badge>
-      </div>
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>Kein Schmerz</span>
-        <span>Stärkster vorstellbarer Schmerz</span>
-      </div>
-    </div>
-  )
-}
-
-// ── Main Form ─────────────────────────────────────────────────────────────────
+// ── Main Form ───────────────────────────────────────────────────────────────
 
 interface AnamnesisFormProps {
   patientId: string
   isHeilpraktiker: boolean
-}
-
-function generateId() {
-  return Math.random().toString(36).slice(2, 10)
 }
 
 export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps) {
@@ -230,14 +205,7 @@ export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps
   const [isFinishing, setIsFinishing] = useState(false)
   const [painPoints, setPainPoints] = useState<PainPoint[]>([])
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<AnamnesisFormValues>({
+  const form = useForm<AnamnesisFormValues>({
     resolver: zodResolver(anamnesisFormSchema),
     defaultValues: {
       hauptbeschwerde: "",
@@ -252,42 +220,65 @@ export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps
       kraftgrad: [],
       differentialdiagnosen: "",
       erweiterte_tests: "",
+      familienanamnese_keine: false,
+      familienanamnese_erkrankungen: [],
+      familienanamnese_freitext: "",
+      operationen_traumata: [],
+      sozial_beruf: "",
+      sozial_arbeitsbelastung: "",
+      sozial_arbeitsfaehig: null,
+      sozial_au_seit: "",
+      sozial_lebenssituation: "",
+      sozial_freizeitaktivitaeten: "",
+      bisherige_therapien: [],
+      kontra_vorhanden: false,
+      kontra_items: [],
+      kontra_freitext: "",
+      red_flags_screened: false,
+      red_flags_states: {},
+      red_flags_notes: {},
+      yellow_flags_screened: false,
+      yellow_flags_items: [],
+      yellow_flags_notizen: "",
+      az_eindruck: "",
+      az_blutdruck: "",
+      az_puls: "",
+      az_temperatur: "",
+      az_gewicht: "",
+      az_groesse: "",
+      az_sonstiges: "",
     },
   })
 
-  const { fields: romFields, append: appendRom, remove: removeRom } = useFieldArray({
+  const {
+    register,
+    handleSubmit,
     control,
-    name: "bewegungsausmass",
-  })
+    watch,
+    setValue,
+    formState: { errors },
+  } = form
 
-  const { fields: kraftFields, append: appendKraft, remove: removeKraft } = useFieldArray({
-    control,
-    name: "kraftgrad",
-  })
+  const { fields: romFields, append: appendRom, remove: removeRom } = useFieldArray({ control, name: "bewegungsausmass" })
+  const { fields: kraftFields, append: appendKraft, remove: removeKraft } = useFieldArray({ control, name: "kraftgrad" })
 
   const watchedVorerkrankungen = watch("vorerkrankungen")
   const watchedKeineVorerkrankungen = watch("keineVorerkrankungen")
-  const watchedNrs = watch("nrs")
 
   const toggleVorerkrankung = (krankheit: string, checked: boolean) => {
     const current = watchedVorerkrankungen ?? []
-    if (checked) {
-      setValue("vorerkrankungen", [...current, krankheit])
-    } else {
-      setValue("vorerkrankungen", current.filter((k) => k !== krankheit))
-    }
+    setValue("vorerkrankungen", checked ? [...current, krankheit] : current.filter((k) => k !== krankheit))
   }
 
   const handleKeineVorerkrankungen = (checked: boolean) => {
     setValue("keineVorerkrankungen", checked)
-    if (checked) {
-      setValue("vorerkrankungen", [])
-      setValue("vorerkrankungenFreitext", "")
-    }
+    if (checked) { setValue("vorerkrankungen", []); setValue("vorerkrankungenFreitext", "") }
   }
 
   async function submitForm(data: AnamnesisFormValues, status: "entwurf" | "abgeschlossen") {
     setServerError(null)
+    const w = parseFloat(data.az_gewicht ?? ""), h = parseFloat(data.az_groesse ?? "")
+    const bmi = w && h && h > 0 ? parseFloat((w / ((h / 100) ** 2)).toFixed(1)) : null
 
     const payload = {
       status,
@@ -305,6 +296,49 @@ export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps
         kraftgrad: data.kraftgrad,
         differentialdiagnosen: isHeilpraktiker ? (data.differentialdiagnosen?.trim() ?? "") : "",
         erweiterte_tests: isHeilpraktiker ? (data.erweiterte_tests?.trim() ?? "") : "",
+        familienanamnese: {
+          relevante_erkrankungen: data.familienanamnese_erkrankungen ?? [],
+          freitext: data.familienanamnese_freitext?.trim() ?? "",
+          keine_relevanten: data.familienanamnese_keine ?? false,
+        },
+        operationen_traumata: data.operationen_traumata ?? [],
+        sozialanamnese: {
+          beruf: data.sozial_beruf?.trim() ?? "",
+          arbeitsbelastung: data.sozial_arbeitsbelastung ?? "",
+          arbeitsfaehig: data.sozial_arbeitsfaehig ?? null,
+          arbeitsunfaehig_seit: data.sozial_au_seit?.trim() ?? "",
+          lebenssituation: data.sozial_lebenssituation ?? "",
+          freizeitaktivitaeten: data.sozial_freizeitaktivitaeten?.trim() ?? "",
+        },
+        bisherige_therapien: data.bisherige_therapien ?? [],
+        kontraindikationen: {
+          vorhanden: data.kontra_vorhanden ?? false,
+          items: data.kontra_items ?? [],
+          freitext: data.kontra_freitext?.trim() ?? "",
+        },
+        ...(isHeilpraktiker ? {
+          red_flags: {
+            checked: data.red_flags_screened ?? false,
+            items: Object.entries(data.red_flags_states ?? {}).filter(([, v]) => v).map(([flag]) => ({
+              flag, present: true, notiz: (data.red_flags_notes ?? {})[flag] ?? "",
+            })),
+          },
+          yellow_flags: {
+            screened: data.yellow_flags_screened ?? false,
+            flags: data.yellow_flags_items ?? [],
+            notizen: data.yellow_flags_notizen?.trim() ?? "",
+          },
+          allgemeinzustand: {
+            az_eindruck: data.az_eindruck ?? "",
+            blutdruck: data.az_blutdruck?.trim() ?? "",
+            puls: data.az_puls?.trim() ?? "",
+            temperatur: data.az_temperatur?.trim() ?? "",
+            gewicht: data.az_gewicht?.trim() ?? "",
+            groesse: data.az_groesse?.trim() ?? "",
+            bmi_berechnet: bmi,
+            sonstiges: data.az_sonstiges?.trim() ?? "",
+          },
+        } : {}),
       },
     }
 
@@ -314,14 +348,8 @@ export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-
       const json = await res.json().catch(() => ({}))
-
-      if (!res.ok) {
-        setServerError(json.error ?? "Speichern fehlgeschlagen. Bitte versuche es erneut.")
-        return false
-      }
-
+      if (!res.ok) { setServerError(json.error ?? "Speichern fehlgeschlagen."); return false }
       return json.record?.id as string | undefined
     } catch {
       setServerError("Ein unerwarteter Fehler ist aufgetreten.")
@@ -333,418 +361,179 @@ export function AnamnesisForm({ patientId, isHeilpraktiker }: AnamnesisFormProps
     setIsSavingDraft(true)
     try {
       const result = await submitForm(data, "entwurf")
-      if (result) {
-        toast.success("Entwurf gespeichert.")
-        router.push(`/os/patients/${patientId}/anamnesis/${result}`)
-      }
-    } finally {
-      setIsSavingDraft(false)
-    }
+      if (result) { toast.success("Entwurf gespeichert."); router.push(`/os/patients/${patientId}/anamnesis/${result}`) }
+    } finally { setIsSavingDraft(false) }
   })
 
   const onFinish = handleSubmit(async (data) => {
     setIsFinishing(true)
     try {
       const result = await submitForm(data, "abgeschlossen")
-      if (result) {
-        toast.success("Anamnesebogen abgeschlossen und gesperrt.")
-        router.push(`/os/patients/${patientId}/anamnesis/${result}`)
-      }
-    } finally {
-      setIsFinishing(false)
-    }
+      if (result) { toast.success("Anamnesebogen abgeschlossen."); router.push(`/os/patients/${patientId}/anamnesis/${result}`) }
+    } finally { setIsFinishing(false) }
   })
 
   const isSubmitting = isSavingDraft || isFinishing
 
   return (
-    <form className="space-y-10" noValidate>
-      {serverError && (
-        <Alert variant="destructive">
-          <AlertDescription>{serverError}</AlertDescription>
-        </Alert>
-      )}
+    <form className="space-y-6" noValidate>
+      {serverError && (<Alert variant="destructive"><AlertDescription>{serverError}</AlertDescription></Alert>)}
 
       {/* ── Hauptbeschwerde ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Hauptbeschwerde"
-          description="Was führt den Patienten heute in die Praxis?"
-        />
-        <div className="space-y-2">
-          <Label htmlFor="hauptbeschwerde">
-            Hauptbeschwerde <span className="text-destructive">*</span>
-          </Label>
-          <Textarea
-            id="hauptbeschwerde"
-            rows={3}
-            placeholder="z.B. Schmerzen in der rechten Schulter seit 3 Wochen, verstärkt bei Abduktion..."
-            {...register("hauptbeschwerde")}
-          />
-          {errors.hauptbeschwerde && (
-            <p className="text-sm text-destructive">{errors.hauptbeschwerde.message}</p>
-          )}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <ClinicalSection title="Hauptbeschwerde" description="Was führt den Patienten heute in die Praxis?" icon={ClipboardList}>
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="schmerzdauer">Schmerzdauer</Label>
-            <Input
-              id="schmerzdauer"
-              placeholder="z.B. seit 3 Wochen, seit 2 Jahren..."
-              {...register("schmerzdauer")}
-            />
+            <Label htmlFor="hauptbeschwerde">Hauptbeschwerde <span className="text-red-500">*</span></Label>
+            <Textarea id="hauptbeschwerde" rows={3} placeholder="z.B. Schmerzen in der rechten Schulter seit 3 Wochen, verstärkt bei Abduktion..." {...register("hauptbeschwerde")} />
+            {errors.hauptbeschwerde && (<p className="text-sm text-red-500">{errors.hauptbeschwerde.message}</p>)}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="schmerzcharakter">Schmerzcharakter</Label>
-            <Input
-              id="schmerzcharakter"
-              placeholder="z.B. brennend, stechend, dumpf, ziehend..."
-              {...register("schmerzcharakter")}
-            />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="schmerzdauer">Schmerzdauer</Label>
+              <Input id="schmerzdauer" placeholder="z.B. seit 3 Wochen" {...register("schmerzdauer")} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="schmerzcharakter">Schmerzcharakter</Label>
+              <Input id="schmerzcharakter" placeholder="z.B. brennend, stechend, dumpf" {...register("schmerzcharakter")} />
+            </div>
           </div>
         </div>
-      </div>
+      </ClinicalSection>
 
-      {/* ── Schmerzintensität NRS ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Schmerzintensität (NRS)"
-          description="Numeric Rating Scale: 0 = kein Schmerz, 10 = stärkster vorstellbarer Schmerz"
-        />
-        <Controller
-          name="nrs"
-          control={control}
-          render={({ field }) => (
-            <NrsSlider value={field.value} onChange={field.onChange} />
-          )}
-        />
-      </div>
+      {/* ── NRS ── */}
+      <ClinicalSection title="Schmerzintensität (NRS)" description="0 = kein Schmerz, 10 = stärkster vorstellbarer Schmerz" icon={Gauge}>
+        <Controller name="nrs" control={control} render={({ field }) => <NrsSlider value={field.value} onChange={field.onChange} />} />
+      </ClinicalSection>
 
       {/* ── Schmerzlokalisation ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Schmerzlokalisation"
-          description="Klicke auf das Körperbild, um Schmerzpunkte zu markieren."
-        />
+      <ClinicalSection title="Schmerzlokalisation" description="Klicke auf das Körperbild, um Schmerzpunkte zu markieren." icon={MapPin} accent="red">
         <BodySchema value={painPoints} onChange={setPainPoints} />
-      </div>
+      </ClinicalSection>
 
       {/* ── Vorerkrankungen ── */}
-      <div className="space-y-4">
-        <SectionHeader title="Vorerkrankungen" />
-
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="keine-vorerkrankungen"
-            checked={watchedKeineVorerkrankungen}
-            onCheckedChange={(checked) => handleKeineVorerkrankungen(checked === true)}
-          />
-          <Label htmlFor="keine-vorerkrankungen" className="cursor-pointer font-medium">
-            Keine bekannten Vorerkrankungen
-          </Label>
+      <ClinicalSection title="Vorerkrankungen" description="Relevante Vorerkrankungen des Patienten" icon={HeartPulse}>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Checkbox id="keine-vorerkrankungen" checked={watchedKeineVorerkrankungen} onCheckedChange={(c) => handleKeineVorerkrankungen(c === true)} />
+            <Label htmlFor="keine-vorerkrankungen" className="cursor-pointer font-medium">Keine bekannten Vorerkrankungen</Label>
+          </div>
+          {!watchedKeineVorerkrankungen && (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {VORERKRANKUNGEN_KATALOG.map((krankheit) => (
+                  <div key={krankheit} className="flex items-center gap-2">
+                    <Checkbox id={`vk-${krankheit}`} checked={(watchedVorerkrankungen ?? []).includes(krankheit)} onCheckedChange={(c) => toggleVorerkrankung(krankheit, c === true)} />
+                    <Label htmlFor={`vk-${krankheit}`} className="cursor-pointer text-sm font-normal">{krankheit}</Label>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vorerkrankungen-freitext">Weitere (Freitext)</Label>
+                <Textarea id="vorerkrankungen-freitext" rows={2} placeholder="Weitere nicht aufgeführte Vorerkrankungen..." {...register("vorerkrankungenFreitext")} />
+              </div>
+            </>
+          )}
         </div>
+      </ClinicalSection>
 
-        {!watchedKeineVorerkrankungen && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {VORERKRANKUNGEN_KATALOG.map((krankheit) => (
-                <div key={krankheit} className="flex items-center gap-2">
-                  <Checkbox
-                    id={`vk-${krankheit}`}
-                    checked={(watchedVorerkrankungen ?? []).includes(krankheit)}
-                    onCheckedChange={(checked) =>
-                      toggleVorerkrankung(krankheit, checked === true)
-                    }
-                  />
-                  <Label htmlFor={`vk-${krankheit}`} className="cursor-pointer text-sm font-normal">
-                    {krankheit}
-                  </Label>
+      {/* ── NEW: Familienanamnese ── */}
+      <FamilienamneseSection form={form} />
+
+      {/* ── NEW: Operationen & Traumata ── */}
+      <OperationenTraumataSection form={form} />
+
+      {/* ── Medikamente ── */}
+      <ClinicalSection title="Aktuelle Medikamente" description="Alle aktuell eingenommenen Medikamente inkl. Dosierung" icon={Pill}>
+        <Textarea id="medikamente" rows={3} placeholder="z.B. Ibuprofen 400mg bei Bedarf, Metformin 500mg 2x täglich..." {...register("medikamente")} />
+      </ClinicalSection>
+
+      {/* ── NEW: Sozial- & Berufsanamnese ── */}
+      <SozialamneseSection form={form} />
+
+      {/* ── NEW: Bisherige Therapien ── */}
+      <BisherigeTherapienSection form={form} />
+
+      {/* ── NEW: Kontraindikationen ── */}
+      <KontraindikationenSection form={form} />
+
+      {/* ── Bewegungsausmaß ── */}
+      <ClinicalSection title="Bewegungsausmaß" description="Gemessene Bewegungsumfänge nach der Neutral-Null-Methode" icon={Ruler}>
+        <div className="space-y-4">
+          {romFields.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs font-medium text-slate-500 px-1">
+                <span>Gelenk</span><span>Bewegungsrichtung</span><span>Grad (°)</span><span />
+              </div>
+              {romFields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
+                  <Controller name={`bewegungsausmass.${index}.gelenk`} control={control} render={({ field: f }) => (
+                    <Select onValueChange={f.onChange} value={f.value}><SelectTrigger><SelectValue placeholder="Gelenk..." /></SelectTrigger>
+                    <SelectContent>{GELENK_OPTIONS.map((g) => (<SelectItem key={g} value={g}>{g}</SelectItem>))}</SelectContent></Select>
+                  )} />
+                  <Controller name={`bewegungsausmass.${index}.richtung`} control={control} render={({ field: f }) => (
+                    <Select onValueChange={f.onChange} value={f.value}><SelectTrigger><SelectValue placeholder="Richtung..." /></SelectTrigger>
+                    <SelectContent>{RICHTUNG_OPTIONS.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}</SelectContent></Select>
+                  )} />
+                  <Input placeholder="z.B. 120" {...register(`bewegungsausmass.${index}.grad`)} />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeRom(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                 </div>
               ))}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="vorerkrankungen-freitext">
-                Weitere Vorerkrankungen (Freitext)
-              </Label>
-              <Textarea
-                id="vorerkrankungen-freitext"
-                rows={2}
-                placeholder="Weitere nicht aufgeführte Vorerkrankungen..."
-                {...register("vorerkrankungenFreitext")}
-              />
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* ── Medikamente ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Aktuelle Medikamente"
-          description="Alle aktuell eingenommenen Medikamente inkl. Dosierung"
-        />
-        <Textarea
-          id="medikamente"
-          rows={3}
-          placeholder="z.B. Ibuprofen 400mg bei Bedarf, Metformin 500mg 2x täglich..."
-          {...register("medikamente")}
-        />
-      </div>
-
-      {/* ── Bewegungsausmaß ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Bewegungsausmaß"
-          description="Gemessene Bewegungsumfänge nach der Neutral-Null-Methode"
-        />
-
-        {romFields.length > 0 && (
-          <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs font-medium text-muted-foreground px-1">
-              <span>Gelenk</span>
-              <span>Bewegungsrichtung</span>
-              <span>Grad (°)</span>
-              <span />
-            </div>
-            {romFields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
-                <div>
-                  <Controller
-                    name={`bewegungsausmass.${index}.gelenk`}
-                    control={control}
-                    render={({ field: f }) => (
-                      <Select onValueChange={f.onChange} value={f.value}>
-                        <SelectTrigger aria-label="Gelenk">
-                          <SelectValue placeholder="Gelenk..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {GELENK_OPTIONS.map((g) => (
-                            <SelectItem key={g} value={g}>
-                              {g}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.bewegungsausmass?.[index]?.gelenk && (
-                    <p className="text-xs text-destructive mt-1">
-                      {errors.bewegungsausmass[index].gelenk?.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Controller
-                    name={`bewegungsausmass.${index}.richtung`}
-                    control={control}
-                    render={({ field: f }) => (
-                      <Select onValueChange={f.onChange} value={f.value}>
-                        <SelectTrigger aria-label="Bewegungsrichtung">
-                          <SelectValue placeholder="Richtung..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RICHTUNG_OPTIONS.map((r) => (
-                            <SelectItem key={r} value={r}>
-                              {r}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.bewegungsausmass?.[index]?.richtung && (
-                    <p className="text-xs text-destructive mt-1">
-                      {errors.bewegungsausmass[index].richtung?.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Input
-                    placeholder="z.B. 120"
-                    {...register(`bewegungsausmass.${index}.grad`)}
-                    aria-label="Grad in Grad"
-                  />
-                  {errors.bewegungsausmass?.[index]?.grad && (
-                    <p className="text-xs text-destructive mt-1">
-                      {errors.bewegungsausmass[index].grad?.message}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeRom(index)}
-                  aria-label="Zeile entfernen"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            appendRom({ id: generateId(), gelenk: "", richtung: "", grad: "" })
-          }
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Messung hinzufügen
-        </Button>
-      </div>
+          )}
+          <Button type="button" variant="outline" size="sm" onClick={() => appendRom({ id: generateId(), gelenk: "", richtung: "", grad: "" })} className="border-slate-200/60">
+            <Plus className="mr-2 h-4 w-4" />Messung hinzufügen
+          </Button>
+        </div>
+      </ClinicalSection>
 
       {/* ── Kraftgrad nach Janda ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Kraftgrad nach Janda"
-          description="Manuelle Muskelfunktionsdiagnostik: Grad 0 = keine Aktivität, Grad 5 = normal"
-        />
-
-        {kraftFields.length > 0 && (
-          <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-muted-foreground px-1">
-              <span>Muskelgruppe</span>
-              <span>Kraftgrad (0–5)</span>
-              <span />
-            </div>
-            {kraftFields.map((field, index) => (
-              <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
-                <div>
-                  <Controller
-                    name={`kraftgrad.${index}.muskelgruppe`}
-                    control={control}
-                    render={({ field: f }) => (
-                      <Select onValueChange={f.onChange} value={f.value}>
-                        <SelectTrigger aria-label="Muskelgruppe">
-                          <SelectValue placeholder="Muskelgruppe..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MUSKELGRUPPEN_OPTIONS.map((m) => (
-                            <SelectItem key={m} value={m}>
-                              {m}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.kraftgrad?.[index]?.muskelgruppe && (
-                    <p className="text-xs text-destructive mt-1">
-                      {errors.kraftgrad[index].muskelgruppe?.message}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Controller
-                    name={`kraftgrad.${index}.grad`}
-                    control={control}
-                    render={({ field: f }) => (
-                      <Select onValueChange={f.onChange} value={f.value}>
-                        <SelectTrigger aria-label="Kraftgrad">
-                          <SelectValue placeholder="Grad..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {["0", "1", "2", "3", "4", "5"].map((g) => (
-                            <SelectItem key={g} value={g}>
-                              Grad {g}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.kraftgrad?.[index]?.grad && (
-                    <p className="text-xs text-destructive mt-1">
-                      {errors.kraftgrad[index].grad?.message}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeKraft(index)}
-                  aria-label="Zeile entfernen"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+      <ClinicalSection title="Kraftgrad nach Janda" description="Manuelle Muskelfunktionsdiagnostik: Grad 0–5" icon={Dumbbell}>
+        <div className="space-y-4">
+          {kraftFields.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-slate-500 px-1">
+                <span>Muskelgruppe</span><span>Kraftgrad (0–5)</span><span />
               </div>
-            ))}
-          </div>
-        )}
+              {kraftFields.map((field, index) => (
+                <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-start">
+                  <Controller name={`kraftgrad.${index}.muskelgruppe`} control={control} render={({ field: f }) => (
+                    <Select onValueChange={f.onChange} value={f.value}><SelectTrigger><SelectValue placeholder="Muskelgruppe..." /></SelectTrigger>
+                    <SelectContent>{MUSKELGRUPPEN_OPTIONS.map((m) => (<SelectItem key={m} value={m}>{m}</SelectItem>))}</SelectContent></Select>
+                  )} />
+                  <Controller name={`kraftgrad.${index}.grad`} control={control} render={({ field: f }) => (
+                    <Select onValueChange={f.onChange} value={f.value}><SelectTrigger><SelectValue placeholder="Grad..." /></SelectTrigger>
+                    <SelectContent>{["0","1","2","3","4","5"].map((g) => (<SelectItem key={g} value={g}>Grad {g}</SelectItem>))}</SelectContent></Select>
+                  )} />
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeKraft(index)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button type="button" variant="outline" size="sm" onClick={() => appendKraft({ id: generateId(), muskelgruppe: "", grad: "" })} className="border-slate-200/60">
+            <Plus className="mr-2 h-4 w-4" />Muskelgruppe hinzufügen
+          </Button>
+        </div>
+      </ClinicalSection>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => appendKraft({ id: generateId(), muskelgruppe: "", grad: "" })}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Muskelgruppe hinzufügen
-        </Button>
-      </div>
-
-      {/* ── Heilpraktiker-Felder ── */}
+      {/* ── Heilpraktiker-only ── */}
       {isHeilpraktiker && (
         <>
-          <div className="space-y-4">
-            <SectionHeader
-              title="Differentialdiagnosen"
-              description="Nur sichtbar für Heilpraktiker"
-            />
-            <Textarea
-              id="differentialdiagnosen"
-              rows={4}
-              placeholder="Mögliche Differentialdiagnosen und klinische Überlegungen..."
-              {...register("differentialdiagnosen")}
-            />
-          </div>
+          <RedFlagsSection form={form} />
+          <YellowFlagsSection form={form} />
+          <AllgemeinzustandSection form={form} />
 
-          <div className="space-y-4">
-            <SectionHeader
-              title="Erweiterte orthopädische Tests"
-              description="Nur sichtbar für Heilpraktiker"
-            />
-            <Textarea
-              id="erweiterte-tests"
-              rows={4}
-              placeholder="Durchgeführte Tests, Ergebnisse, Interpretation..."
-              {...register("erweiterte_tests")}
-            />
-          </div>
+          <ClinicalSection title="Differentialdiagnosen" description="Nur sichtbar für Heilpraktiker" icon={FileSearch} accent="purple">
+            <Textarea id="differentialdiagnosen" rows={4} placeholder="Mögliche Differentialdiagnosen..." {...register("differentialdiagnosen")} />
+          </ClinicalSection>
+
+          <ClinicalSection title="Erweiterte orthopädische Tests" description="Nur sichtbar für Heilpraktiker" icon={FlaskConical} accent="purple">
+            <Textarea id="erweiterte-tests" rows={4} placeholder="Durchgeführte Tests, Ergebnisse, Interpretation..." {...register("erweiterte_tests")} />
+          </ClinicalSection>
         </>
       )}
 
       {/* ── Actions ── */}
-      <div className="flex items-center gap-3 pt-2 border-t flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSaveDraft}
-          disabled={isSubmitting}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {isSavingDraft ? "Speichern..." : "Als Entwurf speichern"}
-        </Button>
-        <Button
-          type="button"
-          onClick={onFinish}
-          disabled={isSubmitting}
-        >
-          <CheckCircle className="mr-2 h-4 w-4" />
-          {isFinishing ? "Abschließen..." : "Abschließen & sperren"}
-        </Button>
-        <Button asChild variant="ghost" disabled={isSubmitting}>
-          <Link href={`/os/patients/${patientId}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Abbrechen
-          </Link>
-        </Button>
-      </div>
+      <FormActions backHref={`/os/patients/${patientId}`} saving={isSubmitting} onSaveDraft={onSaveDraft} onFinalize={onFinish} />
     </form>
   )
 }

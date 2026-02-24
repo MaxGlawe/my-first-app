@@ -20,12 +20,42 @@ interface Achievement {
   current: number
 }
 
-function computeAchievements(
-  totalCompletions: number,
-  currentStreak: number,
+function computeAchievements(ctx: {
+  totalCompletions: number
+  currentStreak: number
   painEntries: { pain_level: number; entry_date: string }[]
-): Achievement[] {
+  completedCourses: number
+  consecutiveCompliantWeeks: number
+}): Achievement[] {
+  const { totalCompletions, currentStreak, painEntries, completedCourses, consecutiveCompliantWeeks } = ctx
+
+  // Check if patient ever reached NRS 0
+  const reachedPainFree = painEntries.some((e) => e.pain_level === 0)
+
+  // Check-in streak: consecutive days with pain diary entries
+  let checkInStreak = 0
+  if (painEntries.length > 0) {
+    const sortedDates = painEntries
+      .map((e) => e.entry_date)
+      .sort()
+      .reverse()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const cursor = new Date(today)
+
+    for (let i = 0; i < 30; i++) {
+      const dateStr = cursor.toISOString().split("T")[0]
+      if (sortedDates.includes(dateStr)) {
+        checkInStreak++
+      } else if (i > 0) {
+        break
+      }
+      cursor.setDate(cursor.getDate() - 1)
+    }
+  }
+
   const achievements: Achievement[] = [
+    // ── Original Achievements ──
     {
       id: "first_step",
       name: "Erster Schritt",
@@ -75,42 +105,70 @@ function computeAchievements(
       name: "Regelmäßig dabei",
       description: "7 Tage in Folge Check-in gemacht",
       icon: "📊",
-      unlocked: false,
+      unlocked: checkInStreak >= 7,
       unlockedAt: null,
-      progress: 0,
+      progress: Math.min(100, (checkInStreak / 7) * 100),
       target: 7,
-      current: 0,
+      current: Math.min(7, checkInStreak),
+    },
+
+    // ── New Achievements ──
+    {
+      id: "pain_free",
+      name: "Schmerzfrei",
+      description: "NRS 0 erreicht — keine Schmerzen!",
+      icon: "🌟",
+      unlocked: reachedPainFree,
+      unlockedAt: null,
+      progress: reachedPainFree ? 100 : 0,
+      target: 1,
+      current: reachedPainFree ? 1 : 0,
+    },
+    {
+      id: "exercise_king",
+      name: "Übungskönig",
+      description: "50 Trainingseinheiten abgeschlossen",
+      icon: "👑",
+      unlocked: totalCompletions >= 50,
+      unlockedAt: null,
+      progress: Math.min(100, (totalCompletions / 50) * 100),
+      target: 50,
+      current: Math.min(50, totalCompletions),
+    },
+    {
+      id: "endurance_30",
+      name: "Durchhalter",
+      description: "30-Tage-Streak erreicht",
+      icon: "🔥",
+      unlocked: currentStreak >= 30,
+      unlockedAt: null,
+      progress: Math.min(100, (currentStreak / 30) * 100),
+      target: 30,
+      current: Math.min(30, currentStreak),
+    },
+    {
+      id: "consistent",
+      name: "Fleißig",
+      description: "4 Wochen in Folge mindestens 80% Compliance",
+      icon: "📈",
+      unlocked: consecutiveCompliantWeeks >= 4,
+      unlockedAt: null,
+      progress: Math.min(100, (consecutiveCompliantWeeks / 4) * 100),
+      target: 4,
+      current: Math.min(4, consecutiveCompliantWeeks),
+    },
+    {
+      id: "knowledge",
+      name: "Wissensdurst",
+      description: "Einen kompletten Kurs abgeschlossen",
+      icon: "🎓",
+      unlocked: completedCourses >= 1,
+      unlockedAt: null,
+      progress: completedCourses >= 1 ? 100 : 0,
+      target: 1,
+      current: Math.min(1, completedCourses),
     },
   ]
-
-  // Check-in streak: consecutive days with pain diary entries
-  if (painEntries.length > 0) {
-    const sortedDates = painEntries
-      .map((e) => e.entry_date)
-      .sort()
-      .reverse()
-    let checkInStreak = 0
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const cursor = new Date(today)
-
-    for (let i = 0; i < 30; i++) {
-      const dateStr = cursor.toISOString().split("T")[0]
-      if (sortedDates.includes(dateStr)) {
-        checkInStreak++
-      } else if (i > 0) {
-        break // streak broken
-      }
-      cursor.setDate(cursor.getDate() - 1)
-    }
-
-    const checkInAch = achievements.find((a) => a.id === "check_in_streak")
-    if (checkInAch) {
-      checkInAch.current = Math.min(7, checkInStreak)
-      checkInAch.progress = Math.min(100, (checkInStreak / 7) * 100)
-      checkInAch.unlocked = checkInStreak >= 7
-    }
-  }
 
   return achievements
 }
@@ -220,19 +278,72 @@ export async function GET() {
   // Total completions for achievements
   const totalCompletions = uniqueDates.length
 
-  // Pain diary entries for check-in achievement
+  // Pain diary entries for check-in achievement + pain-free check
   const { data: painEntries } = await supabase
     .from("pain_diary_entries")
     .select("pain_level, entry_date")
     .eq("patient_id", patient.id)
     .order("entry_date", { ascending: false })
-    .limit(30)
+    .limit(90)
 
-  const achievements = computeAchievements(
+  // Completed courses for Wissensdurst achievement
+  const { count: completedCourses } = await supabase
+    .from("course_enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("patient_id", patient.id)
+    .eq("status", "abgeschlossen")
+
+  // Calculate consecutive compliant weeks (for "Fleißig" achievement)
+  // Look back 8 weeks and count consecutive weeks with ≥80% compliance
+  let consecutiveCompliantWeeks = 0
+  if (assignments && assignments.length > 0) {
+    const eightWeeksAgo = new Date(mondayOfWeek)
+    eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 7 * 7) // go back 7 more weeks
+
+    for (let w = 0; w < 8; w++) {
+      const weekStart = new Date(mondayOfWeek)
+      weekStart.setDate(weekStart.getDate() - w * 7)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekStart.getDate() + 6)
+
+      let planned = 0
+      let done = 0
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(weekStart)
+        day.setDate(weekStart.getDate() + d)
+        const dateStr = day.toISOString().split("T")[0]
+        const dowCode = DOW_MAP[day.getDay()]
+
+        let isPlanned = false
+        for (const a of assignments) {
+          if (dateStr < a.start_date || dateStr > a.end_date) continue
+          if ((a.active_days as string[]).includes(dowCode)) {
+            isPlanned = true
+            break
+          }
+        }
+        if (isPlanned) {
+          planned++
+          if (uniqueDates.includes(dateStr)) done++
+        }
+      }
+
+      const compliance = planned > 0 ? done / planned : 0
+      if (compliance >= 0.8 && planned > 0) {
+        consecutiveCompliantWeeks++
+      } else {
+        break // streak of compliant weeks broken
+      }
+    }
+  }
+
+  const achievements = computeAchievements({
     totalCompletions,
-    streak,
-    (painEntries ?? []) as { pain_level: number; entry_date: string }[]
-  )
+    currentStreak: streak,
+    painEntries: (painEntries ?? []) as { pain_level: number; entry_date: string }[],
+    completedCourses: completedCourses ?? 0,
+    consecutiveCompliantWeeks,
+  })
 
   return NextResponse.json({
     streak,

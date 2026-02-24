@@ -41,3 +41,58 @@ export interface NrsDataPoint {
   nrs_before: number
   nrs_after: number | null
 }
+
+// ── Extended Treatment Data (stored in JSONB `data` column) ──────────────
+
+export type MassnahmeIntensitaet = "leicht" | "mittel" | "intensiv"
+
+export interface MassnahmeDetail {
+  massnahme_id: string
+  dauer_minuten?: number
+  region?: string
+  intensitaet?: MassnahmeIntensitaet
+  notiz?: string
+}
+
+export interface SoapVerlauf {
+  subjektiv: string
+  objektiv: string
+  assessment: string
+  plan: string
+}
+
+export interface PostRomEintrag {
+  gelenk: string
+  richtung: string
+  grad_vorher?: number
+  grad_nachher?: number
+}
+
+export interface BehandlungExtendedData {
+  massnahmen_detail?: MassnahmeDetail[]
+  soap?: SoapVerlauf
+  post_rom?: PostRomEintrag[]
+  schmerzreaktion?: string
+  vertraeglichkeit?: string
+}
+
+export const INTENSITAET_OPTIONS: { value: MassnahmeIntensitaet; label: string }[] = [
+  { value: "leicht", label: "Leicht" },
+  { value: "mittel", label: "Mittel" },
+  { value: "intensiv", label: "Intensiv" },
+]
+
+export const GELENK_OPTIONS = [
+  "HWS", "BWS", "LWS",
+  "Schulter", "Ellenbogen", "Handgelenk",
+  "Hüfte", "Knie", "Sprunggelenk",
+] as const
+
+export const RICHTUNG_OPTIONS = [
+  "Flexion", "Extension", "Abduktion", "Adduktion",
+  "Innenrotation", "Außenrotation", "Lateralflexion",
+] as const
+
+export function createEmptySoap(): SoapVerlauf {
+  return { subjektiv: "", objektiv: "", assessment: "", plan: "" }
+}

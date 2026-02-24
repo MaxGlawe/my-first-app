@@ -16,6 +16,9 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// All columns for treatment_sessions SELECT (data column is optional — added via migration)
+const SELECT_COLS = `id, patient_id, therapist_id, session_date, duration_minutes, measures, nrs_before, nrs_after, notes, next_steps, status, confirmed_at, locked_at, created_at, updated_at`
+
 // ----------------------------------------------------------------
 // Zod schema for PATCH body — all fields optional
 // ----------------------------------------------------------------
@@ -47,6 +50,8 @@ const patchTreatmentSchema = z.object({
 
   notes: z.string().max(5000).optional(),
   next_steps: z.string().max(2000).optional(),
+
+  data: z.record(z.string(), z.unknown()).optional(),
 })
 
 // ----------------------------------------------------------------
@@ -68,6 +73,7 @@ function normalizeSession(r: {
   locked_at: string | null
   created_at: string
   updated_at: string
+  data?: unknown
 }, therapistName: string | null = null) {
   return {
     id: r.id,
@@ -85,6 +91,7 @@ function normalizeSession(r: {
     locked_at: r.locked_at,
     created_at: r.created_at,
     updated_at: r.updated_at,
+    data: (r.data as Record<string, unknown>) ?? {},
     therapist_name: therapistName,
   }
 }
@@ -99,23 +106,7 @@ async function loadSession(
 ) {
   const { data: session, error } = await supabase
     .from("treatment_sessions")
-    .select(`
-      id,
-      patient_id,
-      therapist_id,
-      session_date,
-      duration_minutes,
-      measures,
-      nrs_before,
-      nrs_after,
-      notes,
-      next_steps,
-      status,
-      confirmed_at,
-      locked_at,
-      created_at,
-      updated_at
-    `)
+    .select(SELECT_COLS)
     .eq("id", sessionId)
     .eq("patient_id", patientId)
     .single()
@@ -342,6 +333,8 @@ export async function PATCH(
   if ("nrs_after" in updates) patchPayload.nrs_after = updates.nrs_after ?? null
   if (updates.notes !== undefined) patchPayload.notes = updates.notes.trim()
   if (updates.next_steps !== undefined) patchPayload.next_steps = updates.next_steps.trim()
+  // Include data only if provided (column added via migration, may not exist yet)
+  if (updates.data !== undefined) patchPayload.data = updates.data
 
   // RLS UPDATE policy also enforces the 24h window at DB level
   const { data: updated, error: updateError } = await supabase
@@ -349,23 +342,7 @@ export async function PATCH(
     .update(patchPayload)
     .eq("id", sessionId)
     .eq("patient_id", patientId)
-    .select(`
-      id,
-      patient_id,
-      therapist_id,
-      session_date,
-      duration_minutes,
-      measures,
-      nrs_before,
-      nrs_after,
-      notes,
-      next_steps,
-      status,
-      confirmed_at,
-      locked_at,
-      created_at,
-      updated_at
-    `)
+    .select(SELECT_COLS)
     .single()
 
   if (updateError) {

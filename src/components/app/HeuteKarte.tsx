@@ -1,14 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Dumbbell, Calendar, Clock, ChevronRight } from "lucide-react"
+import { CheckCircle2, Dumbbell, Calendar, Clock, ArrowRight } from "lucide-react"
 import type { PatientAppAssignment } from "@/hooks/use-patient-app"
 
 interface HeuteKarteProps {
   todayAssignments: PatientAppAssignment[]
-  // BUG-3 FIX: full list needed to find next_training_day when no training today
   allAssignments?: PatientAppAssignment[]
 }
 
@@ -35,7 +33,6 @@ function countExercises(assignment: PatientAppAssignment): number {
 }
 
 function estimateDurationMinutes(assignment: PatientAppAssignment): number {
-  // Rough estimate: each exercise ~3 min (sets × reps time + pause)
   if (!assignment.plan) {
     const exercises = assignment.adhoc_exercises ?? []
     return exercises.reduce((total, ex) => {
@@ -65,16 +62,15 @@ export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarte
     month: "long",
   })
 
-  // No training today
+  // No training today — rest day card
   if (todayAssignments.length === 0) {
-    // BUG-3 FIX: find the soonest next training day across all active assignments
     const nextDay = allAssignments
       .map((a) => a.next_training_day)
       .filter((d): d is string => !!d)
       .sort()[0] ?? null
 
     return (
-      <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6">
+      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
             <Calendar className="h-5 w-5 text-slate-400" />
@@ -97,11 +93,11 @@ export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarte
     )
   }
 
-  // All done for today
+  // All done for today — success card
   const allDone = todayAssignments.every((a) => a.completed_today)
   if (allDone) {
     return (
-      <div className="rounded-2xl bg-emerald-50 border border-emerald-200 shadow-sm p-6">
+      <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/60 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-3">
           <div className="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
@@ -118,6 +114,7 @@ export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarte
     )
   }
 
+  // Active training cards
   return (
     <div className="space-y-3">
       {todayAssignments.map((assignment) => {
@@ -128,82 +125,86 @@ export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarte
         return (
           <div
             key={assignment.id}
-            className={`rounded-2xl border shadow-sm p-5 ${
+            className={`rounded-2xl border overflow-hidden ${
               isDone
-                ? "bg-emerald-50 border-emerald-200"
-                : "bg-gradient-to-br from-emerald-500 to-teal-600 border-transparent text-white"
+                ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200/60 shadow-sm"
+                : "bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 border-transparent text-white shadow-lg shadow-emerald-500/20"
             }`}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                    isDone ? "bg-emerald-100" : "bg-white/20"
-                  }`}
-                >
-                  {isDone ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  ) : (
-                    <Dumbbell className="h-5 w-5 text-white" />
-                  )}
-                </div>
-                <div>
-                  <p
-                    className={`text-xs font-medium uppercase tracking-wide ${
-                      isDone ? "text-emerald-500" : "text-white/70"
+            <div className="p-5">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      isDone ? "bg-emerald-100" : "bg-white/20 backdrop-blur-sm"
                     }`}
                   >
-                    Heute trainieren
-                  </p>
-                  <p
-                    className={`text-base font-bold leading-tight ${
-                      isDone ? "text-emerald-700" : "text-white"
-                    }`}
-                  >
-                    {assignment.plan_name ?? "Training"}
-                  </p>
+                    {isDone ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                    ) : (
+                      <Dumbbell className="h-5 w-5 text-white" />
+                    )}
+                  </div>
+                  <div>
+                    <p
+                      className={`text-xs font-medium uppercase tracking-wide ${
+                        isDone ? "text-emerald-500" : "text-white/70"
+                      }`}
+                    >
+                      Heute trainieren
+                    </p>
+                    <p
+                      className={`text-base font-bold leading-tight ${
+                        isDone ? "text-emerald-700" : "text-white"
+                      }`}
+                    >
+                      {assignment.plan_name ?? "Training"}
+                    </p>
+                  </div>
                 </div>
+                {isDone && (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-0 shrink-0">
+                    Erledigt
+                  </Badge>
+                )}
               </div>
-              {isDone && (
-                <Badge className="bg-emerald-100 text-emerald-700 border-0 shrink-0">
-                  Erledigt
-                </Badge>
-              )}
-            </div>
 
-            {/* Stats */}
-            <div
-              className={`flex items-center gap-4 mb-4 text-sm ${
-                isDone ? "text-emerald-600" : "text-white/80"
-              }`}
-            >
-              <span className="flex items-center gap-1.5">
-                <Dumbbell className="h-4 w-4" />
-                {exerciseCount} Übung{exerciseCount !== 1 ? "en" : ""}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="h-4 w-4" />
-                ca. {duration} Min.
-              </span>
+              {/* Stats */}
+              <div
+                className={`flex items-center gap-4 text-sm ${
+                  isDone ? "text-emerald-600" : "text-white/80"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <Dumbbell className="h-4 w-4" />
+                  {exerciseCount} Übung{exerciseCount !== 1 ? "en" : ""}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  ca. {duration} Min.
+                </span>
+              </div>
             </div>
 
             {/* CTA */}
             {!isDone && (
-              <Link href="/app/training">
-                <Button
-                  className="w-full bg-white text-emerald-700 hover:bg-white/90 font-semibold h-12 text-base rounded-xl"
-                >
-                  Training starten
-                  <ChevronRight className="h-5 w-5 ml-1" />
-                </Button>
+              <Link href="/app/training" className="block">
+                <div className="px-5 pb-5">
+                  <div className="flex items-center justify-center gap-2 bg-white text-emerald-700 hover:bg-white/90 font-semibold h-12 text-base rounded-xl transition-all duration-200 hover:shadow-lg cursor-pointer active:scale-[0.98]">
+                    Training starten
+                    <ArrowRight className="h-5 w-5" />
+                  </div>
+                </div>
               </Link>
             )}
 
             {isDone && (
-              <p className="text-sm text-emerald-600 font-medium text-center">
-                Super! Komm morgen wieder.
-              </p>
+              <div className="px-5 pb-4">
+                <p className="text-sm text-emerald-600 font-medium text-center">
+                  Super! Komm morgen wieder.
+                </p>
+              </div>
             )}
           </div>
         )
@@ -216,7 +217,7 @@ export function HeuteKarte({ todayAssignments, allAssignments = [] }: HeuteKarte
 
 export function NoAssignmentState() {
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-8 text-center">
+    <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-8 text-center">
       <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
         <Dumbbell className="h-7 w-7 text-slate-300" />
       </div>

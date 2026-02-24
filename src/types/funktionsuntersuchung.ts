@@ -24,6 +24,92 @@ export interface JandaTestResult {
   notiz?: string
 }
 
+// ── Orthopädische Spezialtests ──────────────────────────────────────────────
+
+export type OrthoBefund = "positiv" | "negativ" | "fraglich"
+
+export interface OrthoTestCatalogEntry {
+  id: string
+  region: string
+  kategorie: string
+  test_name: string
+  beschreibung: string
+  positiver_befund: string
+  klinische_relevanz: string
+  sort_order: number
+}
+
+export interface OrthoTestResult {
+  catalog_id: string
+  befund: OrthoBefund
+  seite?: "rechts" | "links" | "beidseits"
+  notiz?: string
+}
+
+export const ORTHO_BEFUND_LABELS: Record<OrthoBefund, string> = {
+  positiv: "Positiv",
+  negativ: "Negativ",
+  fraglich: "Fraglich",
+}
+
+export const ORTHO_REGIONEN = [
+  "Schulter",
+  "Knie",
+  "Hüfte",
+  "HWS",
+  "LWS",
+  "Sprunggelenk",
+] as const
+
+// ── Neurologische Untersuchung ─────────────────────────────────────────────
+
+export type DermatomBefund = "normal" | "hyperaesthesie" | "hypaesthesie" | "anaesthesie"
+export type ReflexBefund = "normal" | "abgeschwacht" | "gesteigert" | "fehlend" | "pathologisch"
+
+export interface DermatomEintrag {
+  segment: string
+  seite: "rechts" | "links" | "beidseits"
+  befund: DermatomBefund
+}
+
+export interface ReflexEintrag {
+  reflex: string
+  seite: "rechts" | "links"
+  befund: ReflexBefund
+}
+
+export interface KennmuskelEintrag {
+  segment: string
+  muskel: string
+  kraftgrad: string
+  seite: "rechts" | "links"
+}
+
+export interface NeurologischeUntersuchung {
+  dermatome: DermatomEintrag[]
+  reflexe: ReflexEintrag[]
+  kennmuskeln: KennmuskelEintrag[]
+  koordination: string
+  notizen: string
+}
+
+export const DERMATOM_SEGMENTE = ["C5", "C6", "C7", "C8", "T1", "L2", "L3", "L4", "L5", "S1"] as const
+export const REFLEXE = ["BSR", "TSR", "RPR", "PSR", "ASR", "Babinski"] as const
+export const KENNMUSKELN: { segment: string; muskel: string }[] = [
+  { segment: "C5", muskel: "M. deltoideus / M. biceps" },
+  { segment: "C6", muskel: "M. brachioradialis / Handgelenk-Ext." },
+  { segment: "C7", muskel: "M. triceps / Handgelenk-Flex." },
+  { segment: "C8", muskel: "Fingerflexoren" },
+  { segment: "T1", muskel: "Mm. interossei" },
+  { segment: "L2", muskel: "M. iliopsoas" },
+  { segment: "L3", muskel: "M. quadriceps" },
+  { segment: "L4", muskel: "M. tibialis anterior" },
+  { segment: "L5", muskel: "M. extensor hallucis longus" },
+  { segment: "S1", muskel: "M. gastrocnemius / M. peroneus" },
+]
+
+// ── Main Data Interface ────────────────────────────────────────────────────
+
 export interface FunktionsuntersuchungData {
   hauptbeschwerde: string
   beschwerdedauer: string
@@ -33,6 +119,9 @@ export interface FunktionsuntersuchungData {
   gangbildanalyse: string
   janda_tests: JandaTestResult[]
   trainingsempfehlung: string
+  // New extended test sections (optional for backward compat)
+  ortho_tests?: OrthoTestResult[]
+  neurologische_untersuchung?: NeurologischeUntersuchung
 }
 
 export interface FunktionsuntersuchungRecord {

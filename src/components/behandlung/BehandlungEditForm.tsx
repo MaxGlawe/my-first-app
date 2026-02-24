@@ -1,91 +1,31 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
-import { Save, CheckCircle, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Calendar, Stethoscope, Activity, MessageSquare, ArrowRight } from "lucide-react"
+import { ClinicalSection, NrsSlider, FormActions } from "@/components/clinical-ui"
+import { SoapVerlaufSection } from "./sections/SoapVerlaufSection"
+import { MassnahmenDetailSection } from "./sections/MassnahmenDetailSection"
+import { PostRomSection } from "./sections/PostRomSection"
 import { MASSNAHMEN_KATALOG } from "@/types/behandlung"
-import type { TreatmentSession } from "@/types/behandlung"
-
-// ── Section Header ────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string
-  description?: string
-}) {
-  return (
-    <div>
-      <h3 className="text-base font-semibold">{title}</h3>
-      {description && (
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      )}
-      <Separator className="mt-2" />
-    </div>
-  )
-}
-
-// ── NRS Slider ────────────────────────────────────────────────────────────────
-
-function NrsSlider({
-  value,
-  onChange,
-  disabled,
-  id,
-}: {
-  value: number
-  onChange: (v: number) => void
-  disabled?: boolean
-  id?: string
-}) {
-  const colorClass =
-    value <= 3
-      ? "text-green-600"
-      : value <= 6
-      ? "text-amber-600"
-      : "text-red-600"
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-4">
-        <input
-          id={id}
-          type="range"
-          min={0}
-          max={10}
-          step={1}
-          value={value}
-          onChange={(e) => onChange(parseInt(e.target.value, 10))}
-          disabled={disabled}
-          className="flex-1 accent-primary cursor-pointer disabled:cursor-not-allowed"
-          aria-label="NRS Schmerzwert"
-        />
-        <span className={`text-2xl font-bold tabular-nums w-8 text-center ${colorClass}`}>
-          {value}
-        </span>
-      </div>
-      <div className="flex justify-between text-xs text-muted-foreground px-0.5">
-        <span>0 — Kein Schmerz</span>
-        <span>5 — Mäßig</span>
-        <span>10 — Stärkster Schmerz</span>
-      </div>
-    </div>
-  )
-}
+import type {
+  TreatmentSession,
+  BehandlungExtendedData,
+  SoapVerlauf,
+  MassnahmeDetail,
+  PostRomEintrag,
+} from "@/types/behandlung"
+import { createEmptySoap } from "@/types/behandlung"
 
 // ── Zod Schema ────────────────────────────────────────────────────────────────
 
@@ -124,6 +64,11 @@ export function BehandlungEditForm({
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [isFinishing, setIsFinishing] = useState(false)
 
+  // Load existing extended data from session
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const existingExtended = ((session as any).data ?? {}) as BehandlungExtendedData
+  const [extendedData, setExtendedData] = useState<BehandlungExtendedData>(existingExtended)
+
   // Separate standard measures from freitext
   const standardMeasures = session.measures.filter((m) =>
     MASSNAHMEN_KATALOG.some((k) => k.id === m)
@@ -154,6 +99,20 @@ export function BehandlungEditForm({
 
   const selectedMeasures = watch("measures")
 
+  // ── Extended data updaters ──
+
+  const updateSoap = useCallback((soap: SoapVerlauf) => {
+    setExtendedData((prev) => ({ ...prev, soap }))
+  }, [])
+
+  const updateMassnahmenDetail = useCallback((details: MassnahmeDetail[]) => {
+    setExtendedData((prev) => ({ ...prev, massnahmen_detail: details }))
+  }, [])
+
+  const updatePostRom = useCallback((entries: PostRomEintrag[]) => {
+    setExtendedData((prev) => ({ ...prev, post_rom: entries }))
+  }, [])
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function buildMeasures(selected: string[], freitext?: string): string[] {
@@ -179,6 +138,7 @@ export function BehandlungEditForm({
       nrs_after: data.nrs_after ?? null,
       notes: data.notes?.trim() ?? "",
       next_steps: data.next_steps?.trim() ?? "",
+      data: extendedData,
     }
 
     try {
@@ -199,9 +159,7 @@ export function BehandlungEditForm({
             "Bearbeitung nicht möglich: Bearbeitungsfrist abgelaufen oder keine Berechtigung."
           )
         } else {
-          setServerError(
-            json.error ?? "Speichern fehlgeschlagen. Bitte versuche es erneut."
-          )
+          setServerError(json.error ?? "Speichern fehlgeschlagen. Bitte versuche es erneut.")
         }
         return false
       }
@@ -242,35 +200,22 @@ export function BehandlungEditForm({
   const isSubmitting = isSavingDraft || isFinishing
 
   return (
-    <form className="space-y-10" noValidate>
+    <form className="space-y-6" noValidate>
       {serverError && (
         <Alert variant="destructive">
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}
 
-      {/* ── Datum & Dauer ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Basisdaten"
-          description="Datum und Dauer der Behandlung"
-        />
+      {/* ── Basisdaten ── */}
+      <ClinicalSection title="Basisdaten" description="Datum und Dauer" icon={Calendar} accent="emerald">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="session_date">
               Behandlungsdatum <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="session_date"
-              type="date"
-              {...register("session_date")}
-              disabled={isSubmitting}
-            />
-            {errors.session_date && (
-              <p className="text-sm text-destructive">
-                {errors.session_date.message}
-              </p>
-            )}
+            <Input id="session_date" type="date" {...register("session_date")} disabled={isSubmitting} />
+            {errors.session_date && <p className="text-sm text-destructive">{errors.session_date.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="duration_minutes">Behandlungsdauer (Minuten)</Label>
@@ -286,10 +231,7 @@ export function BehandlungEditForm({
                     max={480}
                     placeholder="z.B. 45"
                     value={field.value ?? ""}
-                    onChange={(e) => {
-                      const v = e.target.value
-                      field.onChange(v === "" ? null : parseInt(v, 10))
-                    }}
+                    onChange={(e) => field.onChange(e.target.value === "" ? null : parseInt(e.target.value, 10))}
                     disabled={isSubmitting}
                     className="w-28"
                   />
@@ -297,41 +239,21 @@ export function BehandlungEditForm({
               />
               <span className="text-sm text-muted-foreground">min</span>
             </div>
-            {errors.duration_minutes && (
-              <p className="text-sm text-destructive">
-                {errors.duration_minutes.message}
-              </p>
-            )}
           </div>
         </div>
-      </div>
+      </ClinicalSection>
 
       {/* ── NRS Beginn ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Schmerzwert zu Beginn (NRS)"
-          description="Numerische Rating-Skala: 0 = kein Schmerz, 10 = stärkster vorstellbarer Schmerz"
-        />
+      <ClinicalSection title="Schmerzwert zu Beginn (NRS)" icon={Activity} accent="amber">
         <Controller
           name="nrs_before"
           control={control}
-          render={({ field }) => (
-            <NrsSlider
-              id="nrs_before"
-              value={field.value}
-              onChange={field.onChange}
-              disabled={isSubmitting}
-            />
-          )}
+          render={({ field }) => <NrsSlider value={field.value} onChange={field.onChange} disabled={isSubmitting} />}
         />
-      </div>
+      </ClinicalSection>
 
       {/* ── Maßnahmen ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Durchgeführte Maßnahmen"
-          description="Mehrfachauswahl aus dem Maßnahmen-Katalog"
-        />
+      <ClinicalSection title="Durchgeführte Maßnahmen" icon={Stethoscope} accent="emerald">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {MASSNAHMEN_KATALOG.map((massnahme) => (
             <div key={massnahme.id} className="flex items-center space-x-2">
@@ -343,152 +265,99 @@ export function BehandlungEditForm({
                     id={`massnahme-${massnahme.id}`}
                     checked={field.value.includes(massnahme.id)}
                     onCheckedChange={(checked) => {
-                      const current = field.value
-                      if (checked) {
-                        field.onChange([...current, massnahme.id])
-                      } else {
-                        field.onChange(
-                          current.filter((v) => v !== massnahme.id)
-                        )
-                      }
+                      if (checked) field.onChange([...field.value, massnahme.id])
+                      else field.onChange(field.value.filter((v) => v !== massnahme.id))
                     }}
                     disabled={isSubmitting}
                   />
                 )}
               />
-              <Label
-                htmlFor={`massnahme-${massnahme.id}`}
-                className="text-sm font-normal cursor-pointer"
-              >
+              <Label htmlFor={`massnahme-${massnahme.id}`} className="text-sm font-normal cursor-pointer">
                 {massnahme.label}
               </Label>
             </div>
           ))}
         </div>
-
         {selectedMeasures.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedMeasures.map((m) => (
-              <Badge key={m} variant="secondary" className="text-xs">
-                {m}
-              </Badge>
-            ))}
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {selectedMeasures.map((m) => <Badge key={m} variant="secondary" className="text-xs">{m}</Badge>)}
           </div>
         )}
-
-        <div className="space-y-2">
+        <div className="space-y-2 mt-3">
           <Label htmlFor="measures_freitext">Weitere Maßnahmen (Freitext)</Label>
-          <Input
-            id="measures_freitext"
-            placeholder="z.B. PNF, Gangschule..."
-            {...register("measures_freitext")}
-            disabled={isSubmitting}
-          />
+          <Input id="measures_freitext" placeholder="z.B. PNF, Gangschule..." {...register("measures_freitext")} disabled={isSubmitting} />
         </div>
-      </div>
+      </ClinicalSection>
 
-      {/* ── Notizen ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Patientenreaktion & Besonderheiten"
-          description="Beobachtungen, Reaktion des Patienten, besondere Vorkommnisse"
-        />
-        <Textarea
-          id="notes"
-          rows={4}
-          placeholder="z.B. Patient berichtet über deutliche Schmerzreduktion nach MT..."
-          {...register("notes")}
-          disabled={isSubmitting}
-          maxLength={5000}
-        />
-        {errors.notes && (
-          <p className="text-sm text-destructive">{errors.notes.message}</p>
-        )}
-      </div>
+      {/* ── Maßnahmen-Details ── */}
+      <MassnahmenDetailSection
+        selectedMeasures={selectedMeasures}
+        details={extendedData.massnahmen_detail ?? []}
+        onChange={updateMassnahmenDetail}
+        disabled={isSubmitting}
+      />
+
+      {/* ── SOAP ── */}
+      <SoapVerlaufSection
+        soap={extendedData.soap ?? createEmptySoap()}
+        onChange={updateSoap}
+        disabled={isSubmitting}
+      />
+
+      {/* ── Patientenreaktion ── */}
+      <ClinicalSection title="Patientenreaktion & Besonderheiten" icon={MessageSquare} accent="teal">
+        <div className="space-y-4">
+          <Textarea id="notes" rows={3} placeholder="Beobachtungen..." {...register("notes")} disabled={isSubmitting} maxLength={5000} />
+          {errors.notes && <p className="text-sm text-destructive">{errors.notes.message}</p>}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label className="text-sm">Schmerzreaktion</Label>
+              <Textarea rows={2} placeholder="Wie reagierte der Patient?" value={extendedData.schmerzreaktion ?? ""} onChange={(e) => setExtendedData((prev) => ({ ...prev, schmerzreaktion: e.target.value }))} disabled={isSubmitting} />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Verträglichkeit</Label>
+              <Textarea rows={2} placeholder="Verträglichkeit der Maßnahmen?" value={extendedData.vertraeglichkeit ?? ""} onChange={(e) => setExtendedData((prev) => ({ ...prev, vertraeglichkeit: e.target.value }))} disabled={isSubmitting} />
+            </div>
+          </div>
+        </div>
+      </ClinicalSection>
 
       {/* ── NRS Ende ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Schmerzwert am Ende (NRS)"
-          description="Schmerzwert nach der Behandlung — optional"
-        />
+      <ClinicalSection title="Schmerzwert am Ende (NRS)" icon={Activity} accent="emerald">
         <Controller
           name="nrs_after"
           control={control}
           render={({ field }) => (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <Checkbox
-                  id="nrs_after_enabled"
-                  checked={field.value !== null && field.value !== undefined}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked ? 5 : null)
-                  }}
-                  disabled={isSubmitting}
-                />
-                <Label
-                  htmlFor="nrs_after_enabled"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Endschmerz erfassen
-                </Label>
+                <Checkbox id="nrs_after_enabled" checked={field.value !== null && field.value !== undefined} onCheckedChange={(checked) => field.onChange(checked ? 5 : null)} disabled={isSubmitting} />
+                <Label htmlFor="nrs_after_enabled" className="text-sm font-normal cursor-pointer">Endschmerz erfassen</Label>
               </div>
               {field.value !== null && field.value !== undefined && (
-                <NrsSlider
-                  id="nrs_after"
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={isSubmitting}
-                />
+                <NrsSlider value={field.value} onChange={field.onChange} disabled={isSubmitting} />
               )}
             </div>
           )}
         />
-      </div>
+      </ClinicalSection>
+
+      {/* ── Post-ROM ── */}
+      <PostRomSection entries={extendedData.post_rom ?? []} onChange={updatePostRom} disabled={isSubmitting} />
 
       {/* ── Nächste Schritte ── */}
-      <div className="space-y-4">
-        <SectionHeader
-          title="Nächste Schritte / Therapieziel"
-          description="Planung für die nächste Behandlungseinheit"
-        />
-        <Textarea
-          id="next_steps"
-          rows={3}
-          placeholder="z.B. Fortsetzung MT LWS + Kräftigung core-Muskulatur..."
-          {...register("next_steps")}
-          disabled={isSubmitting}
-          maxLength={2000}
-        />
-        {errors.next_steps && (
-          <p className="text-sm text-destructive">
-            {errors.next_steps.message}
-          </p>
-        )}
-      </div>
+      <ClinicalSection title="Nächste Schritte / Therapieziel" icon={ArrowRight} accent="emerald">
+        <Textarea id="next_steps" rows={3} placeholder="z.B. Fortsetzung MT LWS..." {...register("next_steps")} disabled={isSubmitting} maxLength={2000} />
+        {errors.next_steps && <p className="text-sm text-destructive">{errors.next_steps.message}</p>}
+      </ClinicalSection>
 
       {/* ── Actions ── */}
-      <div className="flex items-center gap-3 pt-2 border-t flex-wrap">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSaveDraft}
-          disabled={isSubmitting}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {isSavingDraft ? "Speichern…" : "Als Entwurf speichern"}
-        </Button>
-        <Button type="button" onClick={onFinish} disabled={isSubmitting}>
-          <CheckCircle className="mr-2 h-4 w-4" />
-          {isFinishing ? "Abschließen…" : "Abschließen & bestätigen"}
-        </Button>
-        <Button asChild variant="ghost" disabled={isSubmitting}>
-          <Link href={`/os/patients/${patientId}/behandlung/${session.id}`}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Abbrechen
-          </Link>
-        </Button>
-      </div>
+      <FormActions
+        backHref={`/os/patients/${patientId}/behandlung/${session.id}`}
+        saving={isSubmitting}
+        onSaveDraft={onSaveDraft}
+        onFinalize={onFinish}
+        finalizeLabel="Abschließen & bestätigen"
+      />
     </form>
   )
 }

@@ -35,6 +35,8 @@ import {
   ImageOff,
   PartyPopper,
   BookOpen,
+  Star,
+  AlertCircle,
 } from "lucide-react"
 import { LessonScreen } from "@/components/education/LessonScreen"
 import { QuizScreen } from "@/components/education/QuizScreen"
@@ -60,6 +62,11 @@ interface FlatExercise {
   }
 }
 
+interface ExerciseFeedback {
+  difficulty?: number // 1-5
+  pain_during?: number // 0-10
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const SESSION_KEY_PREFIX = "praxis_session_"
@@ -72,8 +79,9 @@ interface SessionState {
   exerciseIndex: number
   completedSets: number[] // number of completed sets per exercise
   skipped: number[] // exercise indices that were skipped
-  // BUG-5 FIX: store the optional skip reason per exercise index
   skipReasons: Record<number, string>
+  exerciseFeedback: Record<number, ExerciseFeedback> // per-exercise feedback
+  startedAt: string // ISO timestamp
 }
 
 function loadSession(assignmentId: string): SessionState | null {
@@ -81,8 +89,9 @@ function loadSession(assignmentId: string): SessionState | null {
     const raw = localStorage.getItem(getSessionKey(assignmentId))
     if (!raw) return null
     const parsed = JSON.parse(raw) as SessionState
-    // BUG-5 FIX: handle sessions saved before skipReasons was added
     if (!parsed.skipReasons) parsed.skipReasons = {}
+    if (!parsed.exerciseFeedback) parsed.exerciseFeedback = {}
+    if (!parsed.startedAt) parsed.startedAt = new Date().toISOString()
     return parsed
   } catch {
     return null
@@ -131,7 +140,6 @@ function flattenExercises(assignment: PatientAppAssignment): FlatExercise[] {
       }
     }
   } else {
-    // Ad-hoc exercises (enriched with media data from API)
     for (const ae of assignment.adhoc_exercises ?? []) {
       result.push({
         id: ae.exercise_id,
@@ -168,16 +176,10 @@ function PauseTimer({
   const [remaining, setRemaining] = useState(seconds)
   const [running, setRunning] = useState(true)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  // BUG-4 FIX: keep onDone in a ref so the interval effect doesn't need it as a dependency.
-  // Without this, changing onDone would restart the interval on every render.
   const onDoneRef = useRef(onDone)
   useEffect(() => { onDoneRef.current = onDone }, [onDone])
 
   useEffect(() => {
-    // BUG-4 FIX: only depend on `running`, NOT on `remaining`.
-    // Previously `remaining` was in the dep array, which restarted the interval every second
-    // and could cause double-speed counting after pause/resume.
-    // The functional setRemaining(r => ...) gives us the latest value without a dependency.
     if (!running) return
     intervalRef.current = setInterval(() => {
       setRemaining((r) => {
@@ -244,7 +246,6 @@ function MediaAnzeige({
   url: string | null
   type: "image" | "video" | null
   name: string
-  // BUG-6 FIX: show text description as fallback when media is unavailable
   beschreibung: string | null
 }) {
   const [imgError, setImgError] = useState(false)
@@ -362,39 +363,240 @@ function SatzTracker({
   )
 }
 
-// ── AbschlussScreen ───────────────────────────────────────────────────────────
+// ── ExerciseFeedbackDialog ────────────────────────────────────────────────────
+
+function ExerciseFeedbackDialog({
+  open,
+  exerciseName,
+  onSubmit,
+}: {
+  open: boolean
+  exerciseName: string
+  onSubmit: (feedback: ExerciseFeedback) => void
+}) {
+  const [difficulty, setDifficulty] = useState<number>(0)
+  const [painDuring, setPainDuring] = useState<number | null>(null)
+
+  const handleSubmit = () => {
+    onSubmit({
+      difficulty: difficulty > 0 ? difficulty : undefined,
+      pain_during: painDuring ?? undefined,
+    })
+    setDifficulty(0)
+    setPainDuring(null)
+  }
+
+  const handleSkip = () => {
+    onSubmit({})
+    setDifficulty(0)
+    setPainDuring(null)
+  }
+
+  return (
+    <Dialog open={open}>
+      <DialogContent className="max-w-sm mx-4 rounded-2xl" onPointerDownOutside={(e) => e.preventDefault()}>
+        <DialogHeader>
+          <DialogTitle className="text-lg">Wie war&apos;s?</DialogTitle>
+          <DialogDescription>
+            Kurzes Feedback zu <strong>{exerciseName}</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* Difficulty rating (1-5 stars) */}
+          <div>
+            <p className="text-sm font-medium text-slate-700 mb-2">Schwierigkeit</p>
+            <div className="flex gap-2 justify-center">
+              {[1, 2, 3, 4, 5].map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setDifficulty(level)}
+                  className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                    level <= difficulty
+                      ? "bg-amber-400 text-white shadow-sm scale-110"
+                      : "bg-slate-100 text-slate-300 hover:bg-slate-200"
+                  }`}
+                >
+                  <Star className="h-5 w-5" fill={level <= difficulty ? "currentColor" : "none"} />
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-1">
+              <span>Leicht</span>
+              <span>Sehr schwer</span>
+            </div>
+          </div>
+
+          {/* Pain during exercise (0-10) */}
+          <div>
+            <p className="text-sm font-medium text-slate-700 mb-2">Schmerzen während der Übung</p>
+            <div className="flex gap-1.5 justify-center flex-wrap">
+              {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => {
+                const isSelected = painDuring === level
+                const color = level === 0
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                  : level <= 3
+                  ? "bg-green-100 text-green-700 border-green-200"
+                  : level <= 6
+                  ? "bg-amber-100 text-amber-700 border-amber-200"
+                  : "bg-red-100 text-red-700 border-red-200"
+                return (
+                  <button
+                    key={level}
+                    onClick={() => setPainDuring(level)}
+                    className={`h-8 w-8 rounded-lg text-xs font-semibold border transition-all ${
+                      isSelected
+                        ? `${color} scale-110 shadow-sm`
+                        : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {level}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-1">
+              <span>Kein Schmerz</span>
+              <span>Unerträglich</span>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button variant="ghost" onClick={handleSkip} className="text-slate-400 text-sm">
+            Überspringen
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+          >
+            Weiter
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── AbschlussScreen (Enhanced) ────────────────────────────────────────────────
 
 function AbschlussScreen({
   planName,
-  assignmentId,
   onSubmit,
   isSubmitting,
+  overallDifficulty,
+  overallPain,
+  notes,
+  onDifficultyChange,
+  onPainChange,
+  onNotesChange,
 }: {
   planName: string
-  assignmentId: string
   onSubmit: () => void
   isSubmitting: boolean
+  overallDifficulty: number
+  overallPain: number | null
+  notes: string
+  onDifficultyChange: (v: number) => void
+  onPainChange: (v: number | null) => void
+  onNotesChange: (v: string) => void
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center space-y-6">
-      <div className="h-20 w-20 rounded-full bg-emerald-100 flex items-center justify-center">
-        <PartyPopper className="h-10 w-10 text-emerald-600" />
-      </div>
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Training abgeschlossen!</h2>
+    <div className="container mx-auto max-w-lg px-4 py-8 space-y-6">
+      {/* Success header */}
+      <div className="text-center space-y-3">
+        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+          <PartyPopper className="h-10 w-10 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-slate-800">Training abgeschlossen!</h2>
         <p className="text-slate-500">
           Großartig! Du hast <strong>{planName}</strong> erfolgreich beendet.
         </p>
       </div>
+
+      {/* Overall Feedback Card */}
+      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 shadow-sm p-5 space-y-5">
+        <p className="text-sm font-semibold text-slate-700">Wie war das Training insgesamt?</p>
+
+        {/* Overall Difficulty */}
+        <div>
+          <p className="text-xs text-slate-500 mb-2">Schwierigkeit</p>
+          <div className="flex gap-2 justify-center">
+            {[1, 2, 3, 4, 5].map((level) => (
+              <button
+                key={level}
+                onClick={() => onDifficultyChange(level)}
+                className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                  level <= overallDifficulty
+                    ? "bg-amber-400 text-white shadow-sm scale-110"
+                    : "bg-slate-100 text-slate-300 hover:bg-slate-200"
+                }`}
+              >
+                <Star className="h-5 w-5" fill={level <= overallDifficulty ? "currentColor" : "none"} />
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-[10px] text-slate-400 mt-1 px-1">
+            <span>Leicht</span>
+            <span>Sehr schwer</span>
+          </div>
+        </div>
+
+        {/* Overall Pain */}
+        <div>
+          <p className="text-xs text-slate-500 mb-2">Schmerz-Level insgesamt</p>
+          <div className="flex gap-1.5 justify-center flex-wrap">
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => {
+              const isSelected = overallPain === level
+              const color = level === 0
+                ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                : level <= 3
+                ? "bg-green-100 text-green-700 border-green-200"
+                : level <= 6
+                ? "bg-amber-100 text-amber-700 border-amber-200"
+                : "bg-red-100 text-red-700 border-red-200"
+              return (
+                <button
+                  key={level}
+                  onClick={() => onPainChange(level)}
+                  className={`h-8 w-8 rounded-lg text-xs font-semibold border transition-all ${
+                    isSelected
+                      ? `${color} scale-110 shadow-sm`
+                      : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"
+                  }`}
+                >
+                  {level}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <p className="text-xs text-slate-500 mb-2">Notizen (optional)</p>
+          <Textarea
+            placeholder="Wie hast du dich gefühlt? Gab es Probleme?"
+            value={notes}
+            onChange={(e) => onNotesChange(e.target.value)}
+            rows={2}
+            className="resize-none rounded-xl text-sm"
+            maxLength={2000}
+          />
+        </div>
+      </div>
+
+      {/* Submit */}
       <Button
-        className="w-full max-w-xs h-14 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold rounded-2xl"
+        className="w-full h-14 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-base font-semibold rounded-2xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
         onClick={onSubmit}
         disabled={isSubmitting}
       >
         {isSubmitting ? "Wird gespeichert…" : "Einheit abschließen"}
         <CheckCircle2 className="h-5 w-5 ml-2" />
       </Button>
-      <Link href="/app/dashboard">
+
+      <Link href="/app/dashboard" className="block text-center">
         <Button variant="ghost" className="text-slate-400">
           Zurück zum Dashboard
         </Button>
@@ -413,16 +615,15 @@ export default function TrainingSessionPage() {
   const { assignments, isLoading } = usePatientApp()
   const assignment = assignments.find((a) => a.id === assignmentId) ?? null
 
-  // Derived flat exercise list
   const exercises: FlatExercise[] = assignment ? flattenExercises(assignment) : []
 
-  // PROJ-17: Education flow state (multi-lesson curriculum)
+  // PROJ-17: Education flow state
   const [educationPhase, setEducationPhase] = useState<"loading" | "lesson" | "quiz" | "training">("loading")
   const [educationModule, setEducationModule] = useState<EducationModule | null>(null)
   const [lessonProgress, setLessonProgress] = useState<{ current: number; total: number; completed: number } | null>(null)
   const [quizScore, setQuizScore] = useState<{ score: number; total: number } | null>(null)
 
-  // Session state (persisted to localStorage)
+  // Session state
   const [session, setSession] = useState<SessionState | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -430,6 +631,15 @@ export default function TrainingSessionPage() {
   const [skipReason, setSkipReason] = useState("")
   const [showSteps, setShowSteps] = useState(false)
   const [done, setDone] = useState(false)
+
+  // Exercise feedback dialog state
+  const [showFeedbackDialog, setShowFeedbackDialog] = useState(false)
+  const [pendingNextAction, setPendingNextAction] = useState<"next" | "finish" | null>(null)
+
+  // Finish screen state
+  const [overallDifficulty, setOverallDifficulty] = useState(0)
+  const [overallPain, setOverallPain] = useState<number | null>(null)
+  const [finishNotes, setFinishNotes] = useState("")
 
   // Load or init session
   useEffect(() => {
@@ -443,6 +653,8 @@ export default function TrainingSessionPage() {
         completedSets: new Array(exercises.length).fill(0),
         skipped: [],
         skipReasons: {},
+        exerciseFeedback: {},
+        startedAt: new Date().toISOString(),
       }
       setSession(initial)
       saveSession(assignmentId, initial)
@@ -450,7 +662,7 @@ export default function TrainingSessionPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assignment?.id, exercises.length])
 
-  // PROJ-17: Fetch next lesson from the multi-lesson curriculum
+  // PROJ-17: Fetch next lesson
   useEffect(() => {
     if (!assignment) return
     if (!assignment.hauptproblem) {
@@ -470,7 +682,6 @@ export default function TrainingSessionPage() {
         }
         const data = await res.json()
         if (!data.lesson) {
-          // No lesson available (all completed, no curriculum, etc.)
           if (data.reason === "all_completed") {
             setLessonProgress({ current: data.total, total: data.total, completed: data.completed })
           }
@@ -519,16 +730,38 @@ export default function TrainingSessionPage() {
     [updateSession]
   )
 
-  const goNext = useCallback(() => {
-    updateSession((s) => {
-      const next = s.exerciseIndex + 1
-      return { ...s, exerciseIndex: next }
-    })
-    setShowSteps(false)
-  }, [updateSession])
+  // When sets are all done, show feedback dialog before advancing
+  const handleAdvance = useCallback((action: "next" | "finish") => {
+    setPendingNextAction(action)
+    setShowFeedbackDialog(true)
+  }, [])
+
+  const handleFeedbackSubmit = useCallback(
+    (feedback: ExerciseFeedback) => {
+      setShowFeedbackDialog(false)
+
+      // Save feedback for current exercise
+      updateSession((s) => {
+        const newFeedback = { ...s.exerciseFeedback, [s.exerciseIndex]: feedback }
+        return { ...s, exerciseFeedback: newFeedback }
+      })
+
+      // Execute pending action
+      if (pendingNextAction === "finish") {
+        setDone(true)
+      } else {
+        updateSession((s) => ({
+          ...s,
+          exerciseIndex: s.exerciseIndex + 1,
+        }))
+        setShowSteps(false)
+      }
+      setPendingNextAction(null)
+    },
+    [pendingNextAction, updateSession]
+  )
 
   const handleSkip = useCallback(() => {
-    // BUG-5 FIX: store the skip reason in session state (previously discarded)
     const reason = skipReason.trim()
     setShowSkipDialog(false)
     setSkipReason("")
@@ -547,10 +780,52 @@ export default function TrainingSessionPage() {
   }, [updateSession, skipReason])
 
   const handleFinish = useCallback(async () => {
-    if (!assignment) return
+    if (!assignment || !session) return
     setIsSubmitting(true)
     setSubmitError(null)
+
     try {
+      // Build exercise logs for the training-log API
+      const exerciseLogs = exercises.map((ex, i) => {
+        const feedback = session.exerciseFeedback[i]
+        const isSkipped = session.skipped.includes(i)
+        return {
+          exercise_id: ex.exerciseId,
+          sets_done: isSkipped ? 0 : (session.completedSets[i] ?? 0),
+          reps_done: ex.params.wiederholungen ?? undefined,
+          duration_seconds: ex.params.dauer_sekunden ?? undefined,
+          difficulty: feedback?.difficulty,
+          pain_during: feedback?.pain_during,
+          skipped: isSkipped,
+          skip_reason: session.skipReasons[i] ?? undefined,
+        }
+      })
+
+      const startedAt = session.startedAt
+      const completedAt = new Date().toISOString()
+      const durationSec = Math.round(
+        (new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000
+      )
+
+      // Submit training log (fire-and-forget — don't block on failure)
+      fetch("/api/me/training-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assignment_id: assignmentId,
+          started_at: startedAt,
+          completed_at: completedAt,
+          duration_seconds: durationSec,
+          overall_difficulty: overallDifficulty > 0 ? overallDifficulty : undefined,
+          overall_pain: overallPain ?? undefined,
+          notes: finishNotes.trim() || undefined,
+          exercise_logs: exerciseLogs,
+        }),
+      }).catch(() => {
+        // Silently fail — completion is more important
+      })
+
+      // Submit completion (main API)
       const res = await fetch(`/api/assignments/${assignmentId}/completions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -559,7 +834,6 @@ export default function TrainingSessionPage() {
         }),
       })
       if (!res.ok && res.status !== 409) {
-        // 409 = already done today — treat as success
         const body = await res.json().catch(() => ({}))
         setSubmitError(body.error ?? "Einheit konnte nicht gespeichert werden.")
         return
@@ -571,7 +845,7 @@ export default function TrainingSessionPage() {
     } finally {
       setIsSubmitting(false)
     }
-  }, [assignment, assignmentId, router])
+  }, [assignment, session, exercises, assignmentId, router, overallDifficulty, overallPain, finishNotes])
 
   // PROJ-17: Education flow screens
   if (educationPhase === "lesson" && educationModule) {
@@ -624,19 +898,27 @@ export default function TrainingSessionPage() {
   // Completed all exercises — show finish screen
   if (done || currentIndex >= exercises.length) {
     return (
-      <div className="container mx-auto max-w-lg">
+      <>
         {submitError && (
-          <div className="p-4">
-            <p className="text-sm text-red-500 text-center">{submitError}</p>
+          <div className="container mx-auto max-w-lg p-4">
+            <div className="flex items-center gap-2 text-sm text-red-500 bg-red-50 border border-red-200 rounded-xl p-3">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {submitError}
+            </div>
           </div>
         )}
         <AbschlussScreen
           planName={assignment.plan_name ?? "Training"}
-          assignmentId={assignmentId}
           onSubmit={handleFinish}
           isSubmitting={isSubmitting}
+          overallDifficulty={overallDifficulty}
+          overallPain={overallPain}
+          notes={finishNotes}
+          onDifficultyChange={setOverallDifficulty}
+          onPainChange={setOverallPain}
+          onNotesChange={setFinishNotes}
         />
-      </div>
+      </>
     )
   }
 
@@ -778,13 +1060,7 @@ export default function TrainingSessionPage() {
               : "flex-[2] opacity-40 cursor-not-allowed bg-slate-200 text-slate-500"
           }`}
           disabled={!allSetsDone}
-          onClick={() => {
-            if (isLast) {
-              setDone(true)
-            } else {
-              goNext()
-            }
-          }}
+          onClick={() => handleAdvance(isLast ? "finish" : "next")}
         >
           {isLast ? "Einheit abschließen" : "Weiter"}
           <ChevronRight className="h-5 w-5" />
@@ -821,6 +1097,15 @@ export default function TrainingSessionPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Exercise Feedback Dialog */}
+      {currentExercise && (
+        <ExerciseFeedbackDialog
+          open={showFeedbackDialog}
+          exerciseName={currentExercise.name}
+          onSubmit={handleFeedbackSubmit}
+        />
+      )}
     </div>
   )
 }
