@@ -9,6 +9,18 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,
+    runtimeCaching: [
+      {
+        // API routes: always fetch from network (no stale cache)
+        urlPattern: /^\/api\/.*/i,
+        handler: "NetworkOnly",
+      },
+      {
+        // Supabase: always fresh
+        urlPattern: /supabase\.co/i,
+        handler: "NetworkOnly",
+      },
+    ],
   },
 })
 
