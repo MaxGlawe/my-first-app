@@ -231,7 +231,7 @@ export function ZuweisungsDialog({
 
   function updateAdhocExercise(
     index: number,
-    field: "saetze" | "wiederholungen",
+    field: "saetze" | "wiederholungen" | "dauer_sekunden" | "pause_sekunden",
     value: number | null
   ) {
     setAdhocExercises((prev) =>
@@ -490,56 +490,99 @@ export function ZuweisungsDialog({
                   {adhocExercises.map((ex, i) => (
                     <div
                       key={ex.exercise_id}
-                      className="flex items-center gap-2 border rounded-md px-3 py-2 bg-muted/30"
+                      className="flex flex-col gap-2 border rounded-md px-3 py-2 bg-muted/30"
                     >
-                      <span className="flex-1 text-sm font-medium truncate min-w-0">
-                        {ex.exercise_name ?? ex.exercise_id}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                          Sätze
-                        </Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={99}
-                          value={ex.saetze}
-                          onChange={(e) =>
-                            updateAdhocExercise(i, "saetze", parseInt(e.target.value) || 1)
-                          }
-                          className="w-14 h-7 text-sm text-center"
-                        />
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 text-sm font-medium truncate min-w-0">
+                          {ex.exercise_name ?? ex.exercise_id}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0"
+                          onClick={() => removeAdhocExercise(i)}
+                          aria-label={`Übung "${ex.exercise_name}" entfernen`}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap">
-                          Wdh
-                        </Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={999}
-                          value={ex.wiederholungen ?? ""}
-                          placeholder="—"
-                          onChange={(e) =>
-                            updateAdhocExercise(
-                              i,
-                              "wiederholungen",
-                              e.target.value ? parseInt(e.target.value) : null
-                            )
-                          }
-                          className="w-14 h-7 text-sm text-center"
-                        />
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                            Sätze
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={99}
+                            value={ex.saetze}
+                            onChange={(e) =>
+                              updateAdhocExercise(i, "saetze", parseInt(e.target.value) || 1)
+                            }
+                            className="w-14 h-7 text-sm text-center"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                            Wdh
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={999}
+                            value={ex.wiederholungen ?? ""}
+                            placeholder="—"
+                            onChange={(e) =>
+                              updateAdhocExercise(
+                                i,
+                                "wiederholungen",
+                                e.target.value ? parseInt(e.target.value) : null
+                              )
+                            }
+                            className="w-14 h-7 text-sm text-center"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                            Sek.
+                          </Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={7200}
+                            value={ex.dauer_sekunden ?? ""}
+                            placeholder="—"
+                            onChange={(e) =>
+                              updateAdhocExercise(
+                                i,
+                                "dauer_sekunden",
+                                e.target.value ? parseInt(e.target.value) : null
+                              )
+                            }
+                            className="w-14 h-7 text-sm text-center"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Label className="text-xs text-muted-foreground whitespace-nowrap">
+                            Pause&nbsp;s
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={3600}
+                            value={ex.pause_sekunden}
+                            onChange={(e) =>
+                              updateAdhocExercise(
+                                i,
+                                "pause_sekunden",
+                                parseInt(e.target.value) || 0
+                              )
+                            }
+                            className="w-14 h-7 text-sm text-center"
+                          />
+                        </div>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        onClick={() => removeAdhocExercise(i)}
-                        aria-label={`Übung "${ex.exercise_name}" entfernen`}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
                     </div>
                   ))}
                 </div>

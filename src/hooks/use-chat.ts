@@ -160,7 +160,14 @@ export function useChatMessages({
           const err = await res.json().catch(() => ({}))
           throw new Error(err.error ?? "Nachricht konnte nicht gesendet werden.")
         }
-        // Realtime will add the message; no manual push needed
+        // Optimistic update: add message to local state immediately
+        const json = await res.json()
+        if (json.message) {
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === json.message.id)) return prev
+            return [...prev, json.message]
+          })
+        }
       } catch (err) {
         throw err
       } finally {
