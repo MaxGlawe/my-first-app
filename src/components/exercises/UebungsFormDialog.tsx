@@ -55,6 +55,7 @@ const DEFAULT_FORM: ExerciseFormValues = {
   media_type: undefined,
   standard_saetze: undefined,
   standard_wiederholungen: undefined,
+  standard_dauer_sekunden: undefined,
   standard_pause_sekunden: undefined,
   is_public: false,
 }
@@ -73,6 +74,7 @@ function exerciseToForm(exercise: Exercise): ExerciseFormValues {
     media_type: exercise.media_type ?? undefined,
     standard_saetze: exercise.standard_saetze ?? undefined,
     standard_wiederholungen: exercise.standard_wiederholungen ?? undefined,
+    standard_dauer_sekunden: exercise.standard_dauer_sekunden ?? undefined,
     standard_pause_sekunden: exercise.standard_pause_sekunden ?? undefined,
     is_public: exercise.is_public,
   }
@@ -347,7 +349,7 @@ export function UebungsFormDialog({
             {/* Standard-Parameter */}
             <div className="space-y-3">
               <Label>Standard-Parameter (Vorlage für Trainingspläne)</Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="ex-saetze" className="text-xs text-muted-foreground">
                     Sätze
@@ -384,6 +386,25 @@ export function UebungsFormDialog({
                       )
                     }
                     placeholder="z.B. 12"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ex-dauer" className="text-xs text-muted-foreground">
+                    Sekunden (Halten)
+                  </Label>
+                  <Input
+                    id="ex-dauer"
+                    type="number"
+                    min={1}
+                    max={7200}
+                    value={form.standard_dauer_sekunden ?? ""}
+                    onChange={(e) =>
+                      setField(
+                        "standard_dauer_sekunden",
+                        e.target.value ? parseInt(e.target.value) : undefined
+                      )
+                    }
+                    placeholder="z.B. 30"
                   />
                 </div>
                 <div className="space-y-1.5">

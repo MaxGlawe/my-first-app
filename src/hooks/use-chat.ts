@@ -271,6 +271,46 @@ export function useChatInbox(): UseChatInboxResult {
   return { inbox, isLoading, error, totalUnread, refresh }
 }
 
+// ── usePatientChatUnread ─────────────────────────────────────────────────────────
+// Lightweight unread-count hook for the patient bottom navigation badge.
+
+export function usePatientChatUnread(): number {
+  const [unread, setUnread] = useState(0)
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/me/chat/unread")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (!cancelled && json) setUnread(json.unread ?? 0)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [refreshKey])
+
+  // Realtime: refresh count when any message arrives for this patient
+  useEffect(() => {
+    const channel = supabase
+      .channel("chat:patient:unread")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages" },
+        () => setRefreshKey((k) => k + 1)
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
+        () => setRefreshKey((k) => k + 1)
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  return unread
+}
+
 // ── useChatImageUpload ──────────────────────────────────────────────────────────
 // Handles uploading an image to Supabase Storage chat/ folder.
 

@@ -195,12 +195,13 @@ export function UebungsDetailSheet({
             {/* Standard-Parameter */}
             {(exercise.standard_saetze ||
               exercise.standard_wiederholungen ||
+              exercise.standard_dauer_sekunden ||
               exercise.standard_pause_sekunden) && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Standard-Parameter</h3>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {exercise.standard_saetze && (
                       <div className="flex flex-col items-center p-3 rounded-lg bg-muted text-center">
                         <Layers className="h-5 w-5 text-primary mb-1" />
@@ -215,6 +216,15 @@ export function UebungsDetailSheet({
                           {exercise.standard_wiederholungen}
                         </span>
                         <span className="text-xs text-muted-foreground">Wiederh.</span>
+                      </div>
+                    )}
+                    {exercise.standard_dauer_sekunden && (
+                      <div className="flex flex-col items-center p-3 rounded-lg bg-muted text-center">
+                        <Clock className="h-5 w-5 text-primary mb-1" />
+                        <span className="text-lg font-bold">
+                          {exercise.standard_dauer_sekunden}s
+                        </span>
+                        <span className="text-xs text-muted-foreground">Halten</span>
                       </div>
                     )}
                     {exercise.standard_pause_sekunden && (

@@ -204,11 +204,14 @@ export function UebungsKarte({
             {exercise.standard_saetze && (
               <span>{exercise.standard_saetze} Sätze</span>
             )}
-            {exercise.standard_saetze && exercise.standard_wiederholungen && (
+            {exercise.standard_saetze && (exercise.standard_wiederholungen || exercise.standard_dauer_sekunden) && (
               <span>×</span>
             )}
             {exercise.standard_wiederholungen && (
               <span>{exercise.standard_wiederholungen} Wdh.</span>
+            )}
+            {exercise.standard_dauer_sekunden && (
+              <span>{exercise.standard_dauer_sekunden}s</span>
             )}
           </div>
 

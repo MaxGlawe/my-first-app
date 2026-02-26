@@ -41,6 +41,7 @@ const updateExerciseSchema = z.object({
   media_type: z.enum(["image", "video"]).optional().nullable(),
   standard_saetze: z.number().int().min(1).max(99).optional().nullable(),
   standard_wiederholungen: z.number().int().min(1).max(999).optional().nullable(),
+  standard_dauer_sekunden: z.number().int().min(1).max(7200).optional().nullable(),
   standard_pause_sekunden: z.number().int().min(0).max(3600).optional().nullable(),
   is_public: z.boolean().optional(),
 })
@@ -199,6 +200,7 @@ export async function PUT(
     media_type: values.media_type || null,
     standard_saetze: values.standard_saetze ?? null,
     standard_wiederholungen: values.standard_wiederholungen ?? null,
+    standard_dauer_sekunden: values.standard_dauer_sekunden ?? null,
     standard_pause_sekunden: values.standard_pause_sekunden ?? null,
     is_public: isPublic,
   }

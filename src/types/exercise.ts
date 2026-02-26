@@ -54,6 +54,7 @@ export interface Exercise {
   // Standard-Parameter (Vorlage für Trainingsplan)
   standard_saetze?: number | null
   standard_wiederholungen?: number | null
+  standard_dauer_sekunden?: number | null
   standard_pause_sekunden?: number | null
 
   // System
@@ -75,6 +76,7 @@ export interface ExerciseFormValues {
   media_type?: MediaType
   standard_saetze?: number
   standard_wiederholungen?: number
+  standard_dauer_sekunden?: number
   standard_pause_sekunden?: number
   is_public?: boolean
 }

@@ -34,6 +34,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { useUserRole } from "@/hooks/use-user-role"
+import { ChatUnreadBadge } from "@/components/chat/ChatPosteingang"
 import type { LucideIcon } from "lucide-react"
 
 interface NavItem {
@@ -128,6 +129,7 @@ export function OsSidebar() {
                     <Link href={item.href}>
                       <item.icon />
                       <span>{item.label}</span>
+                      {item.href === "/os/chat" && <ChatUnreadBadge />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
