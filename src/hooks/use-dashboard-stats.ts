@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 
 export interface DashboardStats {
@@ -19,57 +19,70 @@ interface UseDashboardStatsResult {
   refresh: () => void
 }
 
+const POLL_INTERVAL = 30_000 // 30 seconds
+
 export function useDashboardStats(): UseDashboardStatsResult {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const initialLoadDone = useRef(false)
 
-  const refresh = useCallback(() => setRefreshKey((k) => k + 1), [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
+  // Silent fetch — only shows loading spinner on first load
+  const fetchStats = useCallback(async () => {
+    if (!initialLoadDone.current) {
       setIsLoading(true)
       setError(null)
-
-      try {
-        const res = await fetch("/api/os/dashboard-stats")
-        if (cancelled) return
-
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          setError(body.error ?? "Dashboard-Daten konnten nicht geladen werden.")
-          return
-        }
-
-        const json = await res.json()
-        setStats(json)
-      } catch {
-        if (!cancelled) setError("Ein unerwarteter Fehler ist aufgetreten.")
-      } finally {
-        if (!cancelled) setIsLoading(false)
-      }
     }
 
-    load()
-    return () => { cancelled = true }
-  }, [refreshKey])
+    try {
+      const res = await fetch("/api/os/dashboard-stats")
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (!initialLoadDone.current) {
+          setError(body.error ?? "Dashboard-Daten konnten nicht geladen werden.")
+        }
+        return
+      }
+      const json = await res.json()
+      setStats(json)
+    } catch {
+      if (!initialLoadDone.current) {
+        setError("Ein unerwarteter Fehler ist aufgetreten.")
+      }
+    } finally {
+      if (!initialLoadDone.current) {
+        setIsLoading(false)
+        initialLoadDone.current = true
+      }
+    }
+  }, [])
 
-  // Realtime: refresh stats when new chat messages arrive
+  // Initial load
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
+
+  // Polling: refresh every 30 seconds (reliable fallback)
+  useEffect(() => {
+    const interval = setInterval(fetchStats, POLL_INTERVAL)
+    return () => clearInterval(interval)
+  }, [fetchStats])
+
+  // Realtime: instant refresh when new chat messages arrive
   useEffect(() => {
     const channel = supabase
       .channel("dashboard:chat-updates")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages" },
-        () => refresh()
+        () => fetchStats()
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [refresh])
+  }, [fetchStats])
+
+  const refresh = useCallback(() => { fetchStats() }, [fetchStats])
 
   return { stats, isLoading, error, refresh }
 }
