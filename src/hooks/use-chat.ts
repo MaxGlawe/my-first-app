@@ -215,58 +215,76 @@ export function useChatInbox(): UseChatInboxResult {
   const [inbox, setInbox] = useState<ChatInboxEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [refreshKey, setRefreshKey] = useState(0)
+  const initialLoadDone = useRef(false)
 
-  const refresh = useCallback(() => setRefreshKey((k) => k + 1), [])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function load() {
+  // Silent fetch — only shows loading on first load
+  const fetchInbox = useCallback(async () => {
+    if (!initialLoadDone.current) {
       setIsLoading(true)
       setError(null)
-      try {
-        const res = await fetch("/api/chat/inbox")
-        if (cancelled) return
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
+    }
+    try {
+      const res = await fetch("/api/chat/inbox")
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        if (!initialLoadDone.current) {
           setError(body.error ?? "Posteingang konnte nicht geladen werden.")
-          return
         }
-        const json = await res.json()
-        setInbox(json.conversations ?? [])
-      } catch {
-        if (!cancelled) setError("Ein unerwarteter Fehler ist aufgetreten.")
-      } finally {
-        if (!cancelled) setIsLoading(false)
+        return
+      }
+      const json = await res.json()
+      setInbox(json.conversations ?? [])
+    } catch {
+      if (!initialLoadDone.current) {
+        setError("Ein unerwarteter Fehler ist aufgetreten.")
+      }
+    } finally {
+      if (!initialLoadDone.current) {
+        setIsLoading(false)
+        initialLoadDone.current = true
       }
     }
+  }, [])
 
-    load()
-    return () => {
-      cancelled = true
-    }
-  }, [refreshKey])
+  // Initial load
+  useEffect(() => { fetchInbox() }, [fetchInbox])
 
-  // Realtime: re-fetch inbox when any chat_messages INSERT occurs
+  // Polling: refresh every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(fetchInbox, 15_000)
+    return () => clearInterval(interval)
+  }, [fetchInbox])
+
+  // Realtime: re-fetch on INSERT (new message) and UPDATE (read_at changed)
   useEffect(() => {
     const channel = supabase
       .channel("chat:inbox:therapeut")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages" },
-        () => {
-          refresh()
-        }
+        () => fetchInbox()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
+        () => fetchInbox()
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
+    return () => { supabase.removeChannel(channel) }
+  }, [fetchInbox])
+
+  // Refresh when tab becomes visible
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") fetchInbox()
     }
-  }, [refresh])
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [fetchInbox])
 
   const totalUnread = inbox.reduce((sum, c) => sum + c.unread_count, 0)
+  const refresh = useCallback(() => { fetchInbox() }, [fetchInbox])
 
   return { inbox, isLoading, error, totalUnread, refresh }
 }
