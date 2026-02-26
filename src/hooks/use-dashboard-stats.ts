@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { supabase } from "@/lib/supabase"
 
 export interface DashboardStats {
   patientCount: number
@@ -55,6 +56,20 @@ export function useDashboardStats(): UseDashboardStatsResult {
     load()
     return () => { cancelled = true }
   }, [refreshKey])
+
+  // Realtime: refresh stats when new chat messages arrive
+  useEffect(() => {
+    const channel = supabase
+      .channel("dashboard:chat-updates")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages" },
+        () => refresh()
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [refresh])
 
   return { stats, isLoading, error, refresh }
 }
