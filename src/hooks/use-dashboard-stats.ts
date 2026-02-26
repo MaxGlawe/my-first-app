@@ -19,7 +19,7 @@ interface UseDashboardStatsResult {
   refresh: () => void
 }
 
-const POLL_INTERVAL = 30_000 // 30 seconds
+const POLL_INTERVAL = 15_000 // 15 seconds
 
 export function useDashboardStats(): UseDashboardStatsResult {
   const [stats, setStats] = useState<DashboardStats | null>(null)
@@ -68,7 +68,7 @@ export function useDashboardStats(): UseDashboardStatsResult {
     return () => clearInterval(interval)
   }, [fetchStats])
 
-  // Realtime: instant refresh when new chat messages arrive
+  // Realtime: instant refresh on new messages AND when messages are read
   useEffect(() => {
     const channel = supabase
       .channel("dashboard:chat-updates")
@@ -77,9 +77,23 @@ export function useDashboardStats(): UseDashboardStatsResult {
         { event: "INSERT", schema: "public", table: "chat_messages" },
         () => fetchStats()
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "chat_messages" },
+        () => fetchStats()
+      )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
+  }, [fetchStats])
+
+  // Refresh when tab becomes visible (e.g. returning from chat page)
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") fetchStats()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
   }, [fetchStats])
 
   const refresh = useCallback(() => { fetchStats() }, [fetchStats])
