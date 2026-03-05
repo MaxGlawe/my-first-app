@@ -162,15 +162,38 @@ function normalizePatientPayload(raw: z.infer<typeof patientCreatedRawSchema>) {
   }
 }
 
-const appointmentSchema = z.object({
-  booking_appointment_id: z.string().min(1),
-  booking_patient_id: z.string().min(1),
+// Accept both English (from booking tool) and internal field names
+const appointmentRawSchema = z.object({
+  // Appointment ID: booking tool sends "id", we also accept "booking_appointment_id"
+  id: z.string().min(1).optional(),
+  booking_appointment_id: z.string().min(1).optional(),
+  // Patient ID: booking tool sends "patient_id", we also accept "booking_patient_id"
+  patient_id: z.string().min(1).optional(),
+  booking_patient_id: z.string().min(1).optional(),
   scheduled_at: z.string().datetime({ offset: true }),
   duration_minutes: z.number().int().positive(),
   therapist_name: z.string().max(200).optional().nullable(),
   service_name: z.string().max(200).optional().nullable(),
   status: z.enum(["scheduled", "cancelled", "completed"]).default("scheduled"),
-})
+}).refine(
+  (d) => d.id || d.booking_appointment_id,
+  { message: "Either 'id' or 'booking_appointment_id' is required", path: ["booking_appointment_id"] }
+).refine(
+  (d) => d.patient_id || d.booking_patient_id,
+  { message: "Either 'patient_id' or 'booking_patient_id' is required", path: ["booking_patient_id"] }
+)
+
+function normalizeAppointmentPayload(raw: z.infer<typeof appointmentRawSchema>) {
+  return {
+    booking_appointment_id: raw.booking_appointment_id ?? raw.id!,
+    booking_patient_id: raw.booking_patient_id ?? raw.patient_id!,
+    scheduled_at: raw.scheduled_at,
+    duration_minutes: raw.duration_minutes,
+    therapist_name: raw.therapist_name,
+    service_name: raw.service_name,
+    status: raw.status,
+  }
+}
 
 const webhookBodySchema = z.object({
   event_type: z.string().min(1).max(100),
@@ -319,7 +342,7 @@ async function handleAppointmentEvent(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
   rawPayload: Record<string, unknown>
 ): Promise<{ status: "success" | "error" | "duplicate"; errorMessage?: string }> {
-  const parsed = appointmentSchema.safeParse(rawPayload)
+  const parsed = appointmentRawSchema.safeParse(rawPayload)
   if (!parsed.success) {
     return {
       status: "error",
@@ -327,7 +350,7 @@ async function handleAppointmentEvent(
     }
   }
 
-  const data = parsed.data
+  const data = normalizeAppointmentPayload(parsed.data)
 
   // Find patient by booking_system_id
   const { data: patient, error: lookupError } = await supabase
