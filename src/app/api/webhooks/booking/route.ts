@@ -123,22 +123,44 @@ async function verifySignature(
 // Zod schemas for incoming webhook payloads
 // ----------------------------------------------------------------
 
-const patientCreatedSchema = z.object({
-  booking_patient_id: z.string().min(1),
+// Accept both English (from booking tool) and German field names
+const patientCreatedRawSchema = z.object({
+  // Patient ID: booking tool sends "id", we also accept "booking_patient_id"
+  id: z.string().min(1).optional(),
+  booking_patient_id: z.string().min(1).optional(),
   email: z.string().email(),
+  // Name fields: accept both English and German
+  first_name: z.string().min(1).max(100).optional(),
   vorname: z.string().min(1).max(100).optional(),
+  last_name: z.string().min(1).max(100).optional(),
   nachname: z.string().min(1).max(100).optional(),
+  // Phone: accept both
+  phone: z.string().max(30).optional().nullable(),
   telefon: z.string().max(30).optional().nullable(),
-  geburtsdatum: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .nullable(),
+  // Date of birth: accept both
+  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  geburtsdatum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   geschlecht: z
     .enum(["maennlich", "weiblich", "divers", "unbekannt"])
     .optional()
     .default("unbekannt"),
-})
+}).refine(
+  (d) => d.id || d.booking_patient_id,
+  { message: "Either 'id' or 'booking_patient_id' is required", path: ["booking_patient_id"] }
+)
+
+// Normalize to internal German field names
+function normalizePatientPayload(raw: z.infer<typeof patientCreatedRawSchema>) {
+  return {
+    booking_patient_id: raw.booking_patient_id ?? raw.id!,
+    email: raw.email,
+    vorname: raw.vorname ?? raw.first_name,
+    nachname: raw.nachname ?? raw.last_name,
+    telefon: raw.telefon ?? raw.phone,
+    geburtsdatum: raw.geburtsdatum ?? raw.date_of_birth,
+    geschlecht: raw.geschlecht,
+  }
+}
 
 const appointmentSchema = z.object({
   booking_appointment_id: z.string().min(1),
@@ -186,7 +208,7 @@ async function handlePatientCreated(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
   rawPayload: Record<string, unknown>
 ): Promise<{ status: "success" | "error" | "duplicate"; errorMessage?: string }> {
-  const parsed = patientCreatedSchema.safeParse(rawPayload)
+  const parsed = patientCreatedRawSchema.safeParse(rawPayload)
   if (!parsed.success) {
     return {
       status: "error",
@@ -194,7 +216,7 @@ async function handlePatientCreated(
     }
   }
 
-  const data = parsed.data
+  const data = normalizePatientPayload(parsed.data)
 
   // 1. Check for existing patient by email (duplicate detection)
   //    Two separate .eq() queries — avoids raw string interpolation in .or()
