@@ -1,11 +1,13 @@
 /**
  * PROJ-7 BUG-4: GET /api/me/appointments
  * Returns the logged-in patient's upcoming and past appointments.
- * Matches the patient record by auth email. RLS enforces access.
+ * Auth verified via session, then service client used for queries
+ * (the appointments RLS policy can't access auth.users from patient context).
  */
 
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -15,8 +17,11 @@ export async function GET() {
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
   }
 
+  // Use service client to bypass RLS — access is scoped by verified auth email
+  const serviceClient = createSupabaseServiceClient()
+
   // Find patient record by matching auth email
-  const { data: patient } = await supabase
+  const { data: patient } = await serviceClient
     .from("patients")
     .select("id, booking_system_id")
     .eq("email", user.email!)
@@ -27,7 +32,7 @@ export async function GET() {
     return NextResponse.json({ appointments: [], linked: false })
   }
 
-  const { data: appointments, error } = await supabase
+  const { data: appointments, error } = await serviceClient
     .from("appointments")
     .select("id, scheduled_at, duration_minutes, therapist_name, service_name, status, synced_at")
     .eq("patient_id", patient.id)
@@ -35,6 +40,7 @@ export async function GET() {
     .limit(50)
 
   if (error) {
+    console.error("[GET /api/me/appointments] Error:", error)
     return NextResponse.json(
       { error: "Termine konnten nicht geladen werden." },
       { status: 500 }
