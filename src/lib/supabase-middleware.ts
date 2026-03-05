@@ -38,14 +38,19 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
   const isInviteRoute = pathname.startsWith('/invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/')
+  const isContractSigningPage = pathname.startsWith('/vertrag/')
+  const isContractPublicApi = pathname.startsWith('/api/contracts/')
+  const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
+  const isAnalyticsTrackApi = pathname === '/api/analytics/track'
   const isRootPage = pathname === '/'
 
   // Static assets + API routes that handle their own auth
   const isStaticAsset = pathname === '/sw.js' || pathname.startsWith('/icons/') || pathname.startsWith('/images/')
   const isCronApi = pathname.startsWith('/api/cron/')
   const isPushSendApi = pathname === '/api/push/send'
+  const isWebhookApi = pathname.startsWith('/api/webhooks/')
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isRootPage && !isStaticAsset && !isCronApi && !isPushSendApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isRootPage && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
