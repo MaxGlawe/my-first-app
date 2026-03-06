@@ -507,7 +507,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
       return
     }
 
-    // Case 2: Sorting plan exercises within a unit
+    // Case 2: Sorting plan exercises within a unit or cross-unit
     if (activeData?.type === "plan-exercise" && overData?.type === "plan-exercise") {
       const activeExercise: PlanExercise = activeData.exercise
       const overExercise: PlanExercise = overData.exercise
@@ -551,6 +551,31 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
           }))
         )
       }
+      return
+    }
+
+    // Case 3: Plan exercise dropped onto a unit dropzone (move between sections/units)
+    if (activeData?.type === "plan-exercise" && overData?.type === "unit-dropzone") {
+      const activeExercise: PlanExercise = activeData.exercise
+      const targetUnitId: string = overData.unitId
+
+      if (activeExercise.unit_id === targetUnitId) return // same unit, nothing to do
+
+      const movedExercise: PlanExercise = { ...activeExercise, unit_id: targetUnitId }
+      changePhasesWithUndo(
+        phases.map((phase) => ({
+          ...phase,
+          units: phase.units.map((unit) => {
+            if (unit.id === activeExercise.unit_id) {
+              return { ...unit, exercises: unit.exercises.filter((e) => e.id !== activeExercise.id) }
+            }
+            if (unit.id === targetUnitId) {
+              return { ...unit, exercises: [...unit.exercises, movedExercise] }
+            }
+            return unit
+          }),
+        }))
+      )
     }
   }
 
@@ -696,6 +721,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
         planName={planName}
         beschreibung={beschreibung}
         phases={phases}
+        planMode={planMode}
       />
     </DndContext>
   )

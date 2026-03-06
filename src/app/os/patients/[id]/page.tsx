@@ -181,7 +181,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
             <TabsContent value="trainingsplaene">
               <PlaceholderTab
                 title="Trainingspläne"
-                description="Trainingspläne des Patienten — über den Hausaufgaben-Tab zuweisen."
+                description="Zugewiesene Trainingspläne des Patienten."
                 projId="PROJ-9"
               />
             </TabsContent>

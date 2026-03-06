@@ -18,7 +18,8 @@ import {
   Repeat,
   ListOrdered,
 } from "lucide-react"
-import type { PlanPhase, PlanUnit, PlanExercise } from "@/types/training-plan"
+import type { PlanPhase, PlanUnit, PlanExercise, PlanMode, SectionColor } from "@/types/training-plan"
+import { SECTION_DEFS } from "@/types/training-plan"
 
 interface PatientenAnsichtSheetProps {
   open: boolean
@@ -26,6 +27,7 @@ interface PatientenAnsichtSheetProps {
   planName: string
   beschreibung?: string | null
   phases: PlanPhase[]
+  planMode?: PlanMode
 }
 
 // ---- Exercise Card (Apple Health style) ----
@@ -214,6 +216,46 @@ function PhasePreview({ phase, phaseIndex }: { phase: PlanPhase; phaseIndex: num
   )
 }
 
+// ---- Section Preview (sections mode) ----
+const SECTION_PREVIEW_STYLES: Record<SectionColor, { gradient: string; border: string; bg: string; pill: string }> = {
+  orange: { gradient: "from-orange-500 to-amber-600", border: "border-orange-200", bg: "bg-orange-50", pill: "bg-orange-100 text-orange-700" },
+  teal:   { gradient: "from-teal-500 to-emerald-600", border: "border-teal-200",   bg: "bg-teal-50",   pill: "bg-teal-100 text-teal-700" },
+  blue:   { gradient: "from-blue-500 to-indigo-600",  border: "border-blue-200",   bg: "bg-blue-50",   pill: "bg-blue-100 text-blue-700" },
+}
+
+function SectionPreview({ phase, sectionIndex }: { phase: PlanPhase; sectionIndex: number }) {
+  const def = SECTION_DEFS[sectionIndex] ?? SECTION_DEFS[1]
+  const styles = SECTION_PREVIEW_STYLES[def.color]
+  const unit = phase.units[0]
+  if (!unit || unit.exercises.length === 0) return null
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`h-10 w-10 rounded-2xl bg-gradient-to-br ${styles.gradient} flex items-center justify-center shadow-md`}>
+          {def.color === "orange" && <Flame className="h-5 w-5 text-white" />}
+          {def.color === "teal" && <Dumbbell className="h-5 w-5 text-white" />}
+          {def.color === "blue" && <Clock className="h-5 w-5 text-white" />}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-base">{def.name}</h3>
+          <p className="text-xs text-muted-foreground">
+            {unit.exercises.length} Übung{unit.exercises.length !== 1 ? "en" : ""}
+          </p>
+        </div>
+      </div>
+
+      <div className={`rounded-2xl ${styles.bg} ${styles.border} border overflow-hidden`}>
+        <div className="px-4 pb-4 pt-3 space-y-4">
+          {unit.exercises.map((exercise, i) => (
+            <ExerciseCard key={exercise.id} exercise={exercise} index={i} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ---- Stat Ring (Apple Health style) ----
 function StatRing({
   value,
@@ -246,6 +288,7 @@ export function PatientenAnsichtSheet({
   planName,
   beschreibung,
   phases,
+  planMode = "phases",
 }: PatientenAnsichtSheetProps) {
   const totalExercises = phases.reduce(
     (sum, phase) => sum + phase.units.reduce((uSum, unit) => uSum + unit.exercises.length, 0),
@@ -280,18 +323,29 @@ export function PatientenAnsichtSheet({
                 color="bg-gradient-to-br from-teal-500 to-emerald-600"
                 icon={Dumbbell}
               />
-              <StatRing
-                value={totalUnits}
-                label={totalUnits !== 1 ? "Tage" : "Tag"}
-                color="bg-gradient-to-br from-blue-500 to-indigo-600"
-                icon={CalendarDays}
-              />
-              <StatRing
-                value={totalWeeks}
-                label={totalWeeks !== 1 ? "Wochen" : "Woche"}
-                color="bg-gradient-to-br from-purple-500 to-violet-600"
-                icon={Clock}
-              />
+              {planMode === "sections" ? (
+                <StatRing
+                  value={phases.filter((p) => p.units.some((u) => u.exercises.length > 0)).length}
+                  label="Bereiche"
+                  color="bg-gradient-to-br from-blue-500 to-indigo-600"
+                  icon={CalendarDays}
+                />
+              ) : (
+                <>
+                  <StatRing
+                    value={totalUnits}
+                    label={totalUnits !== 1 ? "Tage" : "Tag"}
+                    color="bg-gradient-to-br from-blue-500 to-indigo-600"
+                    icon={CalendarDays}
+                  />
+                  <StatRing
+                    value={totalWeeks}
+                    label={totalWeeks !== 1 ? "Wochen" : "Woche"}
+                    color="bg-gradient-to-br from-purple-500 to-violet-600"
+                    icon={Clock}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -308,6 +362,10 @@ export function PatientenAnsichtSheet({
                   Der Plan enthält noch keine Übungen.
                 </p>
               </div>
+            ) : planMode === "sections" ? (
+              phases.map((phase, i) => (
+                <SectionPreview key={phase.id} phase={phase} sectionIndex={i} />
+              ))
             ) : (
               phases.map((phase, i) => (
                 <PhasePreview key={phase.id} phase={phase} phaseIndex={i} />
