@@ -442,16 +442,21 @@ function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseR
   const unit = phase.units[0]
   if (!unit) return null
 
+  // Droppable covers the ENTIRE section card (header + content), so drops work even when collapsed
   const { setNodeRef, isOver } = useDroppable({
     id: `unit-dropzone-${unit.id}`,
     data: { type: "unit-dropzone", unitId: unit.id },
-    disabled: !open,
   })
 
   const sortableItems = unit.exercises.map((e) => e.id)
 
   return (
-    <div className={`rounded-xl border ${styles.border} ${styles.bg}`}>
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border ${styles.border} ${styles.bg} transition-colors ${
+        isOver ? "ring-2 ring-primary/30 ring-offset-1" : ""
+      }`}
+    >
       {/* Section header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit">
         <button
@@ -478,12 +483,7 @@ function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseR
       {/* Exercises */}
       {open && (
         <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
-          <div
-            ref={setNodeRef}
-            className={`p-4 space-y-2 min-h-[80px] transition-colors rounded-b-xl ${
-              isOver ? "bg-primary/5 border-2 border-dashed border-primary/30" : ""
-            }`}
-          >
+          <div className="p-4 space-y-2 min-h-[80px]">
             {unit.exercises.length === 0 ? (
               <div className={`flex items-center justify-center h-16 text-sm text-muted-foreground border-2 border-dashed ${styles.dropHint} rounded-lg`}>
                 Übung hier ablegen oder per + hinzufügen
