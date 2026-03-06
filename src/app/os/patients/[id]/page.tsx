@@ -6,7 +6,6 @@ import { usePatient } from "@/hooks/use-patients"
 import { useUserRole } from "@/hooks/use-user-role"
 import { PatientDetailHeader } from "@/components/patients/PatientDetailHeader"
 import { StammdatenTab } from "@/components/patients/StammdatenTab"
-import { PlaceholderTab } from "@/components/patients/PlaceholderTab"
 import { TermineTab } from "@/components/patients/TermineTab"
 import { AnamnesisTab } from "@/components/anamnesis/AnamnesisTab"
 import { BefundTab } from "@/components/diagnose/BefundTab"
@@ -120,10 +119,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
 
           {/* Therapy tools tabs — hidden for praxismanagement (no access) */}
           {!isPraxismanagement && (
-            <>
-              <TabsTrigger value="trainingsplaene">Trainingspläne</TabsTrigger>
-              <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
-            </>
+            <TabsTrigger value="hausaufgaben">Hausaufgaben</TabsTrigger>
           )}
 
           <TabsTrigger value="chat">Chat</TabsTrigger>
@@ -177,18 +173,9 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         </TabsContent>
 
         {!isPraxismanagement && (
-          <>
-            <TabsContent value="trainingsplaene">
-              <PlaceholderTab
-                title="Trainingspläne"
-                description="Zugewiesene Trainingspläne des Patienten."
-                projId="PROJ-9"
-              />
-            </TabsContent>
-            <TabsContent value="hausaufgaben">
-              <HausaufgabenTab patientId={patient.id} />
-            </TabsContent>
-          </>
+          <TabsContent value="hausaufgaben">
+            <HausaufgabenTab patientId={patient.id} />
+          </TabsContent>
         )}
 
         <TabsContent value="chat">
