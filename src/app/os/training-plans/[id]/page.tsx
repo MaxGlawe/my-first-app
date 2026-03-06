@@ -7,12 +7,14 @@ import {
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  pointerWithin,
   closestCenter,
   useSensor,
   useSensors,
   type DragStartEvent,
   type DragEndEvent,
   type DragOverEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core"
 import { arrayMove } from "@dnd-kit/sortable"
 import { BuilderHeader } from "@/components/training-plans/BuilderHeader"
@@ -222,6 +224,13 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
   )
+
+  // Custom collision: prefer pointerWithin (where cursor actually is), fall back to closestCenter
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const pointerCollisions = pointerWithin(args)
+    if (pointerCollisions.length > 0) return pointerCollisions
+    return closestCenter(args)
+  }, [])
 
   // ---- Click-to-add from library ----
   function handleAddExercise(exercise: Exercise) {
@@ -613,7 +622,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
