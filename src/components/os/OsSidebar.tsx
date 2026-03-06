@@ -18,6 +18,10 @@ import {
   ClipboardCheck,
   FileText,
   Calendar,
+  ScrollText,
+  Receipt,
+  BarChart3,
+  Inbox,
 } from "lucide-react"
 import {
   Sidebar,
@@ -35,6 +39,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useUserRole } from "@/hooks/use-user-role"
 import { ChatUnreadBadge } from "@/components/chat/ChatPosteingang"
+import { AmpelSidebarBadge } from "@/components/ampel/AmpelSidebarBadge"
 import type { LucideIcon } from "lucide-react"
 
 interface NavItem {
@@ -50,6 +55,7 @@ export function OsSidebar() {
   // ── Praxis section (visible to all OS roles) ──
   const praxisNav: NavItem[] = [
     { label: "Dashboard", href: "/os/dashboard", icon: LayoutDashboard },
+    { label: "Patienten-Ampel", href: "/os/ampel", icon: Activity },
     { label: "Patienten", href: "/os/patients", icon: Users },
   ]
 
@@ -58,6 +64,7 @@ export function OsSidebar() {
   if (!isPraxismanagement) {
     praxisNav.push({ label: "Nachrichten", href: "/os/chat", icon: MessageCircle })
   }
+  praxisNav.push({ label: "Anfragen", href: "/os/anfragen", icon: Inbox })
 
   // ── Therapie-Tools section ──
   // Only shown for clinical roles + trainer roles (NOT praxismanagement)
@@ -79,6 +86,9 @@ export function OsSidebar() {
         { label: "Admin-Dashboard", href: "/os/admin/dashboard", icon: Settings },
         { label: "Nutzerverwaltung", href: "/os/admin/users", icon: UserCog },
         { label: "Integrationen", href: "/os/admin/integrations", icon: Link2 },
+        { label: "Vertr\u00E4ge", href: "/os/admin/vertraege", icon: ScrollText },
+        { label: "Rechnungen", href: "/os/admin/billing", icon: Receipt },
+        { label: "Analytics", href: "/os/admin/analytics", icon: BarChart3 },
       ]
     : []
 
@@ -130,6 +140,7 @@ export function OsSidebar() {
                       <item.icon />
                       <span>{item.label}</span>
                       {item.href === "/os/chat" && <ChatUnreadBadge />}
+                      {item.href === "/os/ampel" && <AmpelSidebarBadge />}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

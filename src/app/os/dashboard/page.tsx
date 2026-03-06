@@ -9,7 +9,7 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
-import { AmpelDashboard } from "@/components/ampel/AmpelDashboard"
+import { AmpelBanner } from "@/components/ampel/AmpelBanner"
 import type { LucideIcon } from "lucide-react"
 import {
   Users,
@@ -161,10 +161,8 @@ export default function TherapistDashboardPage() {
           </Alert>
         )}
 
-        {/* Ampel Dashboard — solid container so dark header gradient doesn't bleed through */}
-        <div className="rounded-2xl bg-[#faf9f7] p-5 shadow-sm border border-slate-200/40">
-          <AmpelDashboard />
-        </div>
+        {/* Ampel Banner — compact link to /os/ampel */}
+        <AmpelBanner />
 
         {/* Loading */}
         {isLoading && <DashboardSkeleton />}
