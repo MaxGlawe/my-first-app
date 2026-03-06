@@ -462,6 +462,17 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     printWindow.onload = () => { printWindow.print() }
   }
 
+  // Track last pointer position for DOM-based section detection
+  const lastPointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  useEffect(() => {
+    function trackPointer(e: PointerEvent) {
+      lastPointerPos.current = { x: e.clientX, y: e.clientY }
+    }
+    window.addEventListener("pointermove", trackPointer)
+    return () => window.removeEventListener("pointermove", trackPointer)
+  }, [])
+
   function handleDragStart(event: DragStartEvent) {
     const { data } = event.active
     if (data.current?.type === "library-exercise") {
@@ -473,51 +484,55 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     // handled in handleDragEnd for simplicity — over events are tracked by droppables
   }
 
+  // Find the section unit under the pointer using DOM
+  function findSectionUnitAtPointer(): string | null {
+    const { x, y } = lastPointerPos.current
+    const elements = document.elementsFromPoint(x, y)
+    for (const el of elements) {
+      const sectionEl = (el as HTMLElement).closest("[data-section-unit-id]")
+      if (sectionEl) {
+        return (sectionEl as HTMLElement).dataset.sectionUnitId ?? null
+      }
+    }
+    return null
+  }
+
+  function createLibraryExercise(exercise: Exercise, unitId: string): PlanExercise {
+    return {
+      id: nanoid(),
+      unit_id: unitId,
+      exercise_id: exercise.id,
+      order: 0,
+      is_archived_exercise: false,
+      exercise_name: exercise.name,
+      exercise_beschreibung: exercise.beschreibung ?? null,
+      exercise_ausfuehrung: exercise.ausfuehrung ?? null,
+      exercise_media_url: exercise.media_url,
+      exercise_media_type: exercise.media_type ?? undefined,
+      exercise_muskelgruppen: exercise.muskelgruppen,
+      params: {
+        saetze: exercise.standard_saetze ?? 3,
+        wiederholungen: exercise.standard_wiederholungen ?? 10,
+        dauer_sekunden: null,
+        pause_sekunden: exercise.standard_pause_sekunden ?? 60,
+        intensitaet_prozent: null,
+        anmerkung: null,
+      },
+    }
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     setActiveItem(null)
     const { active, over } = event
-
-    // DEBUG: log what DnD detected
-    if (over) {
-      const sectionNames = phases.map((p, i) => `${i}:${p.name}(unit=${p.units[0]?.id?.slice(0,6)})`).join(", ")
-      console.log(`[DnD] over.id=${over.id}, over.data.type=${over.data.current?.type}, unitId=${over.data.current?.unitId ?? over.data.current?.exercise?.unit_id ?? "?"}, sections=[${sectionNames}]`)
-    } else {
-      console.log("[DnD] over=null (no drop target)")
-    }
-
-    if (!over) return
-
     const activeData = active.data.current
-    const overData = over.data.current
 
-    // Case 1a: Library exercise dropped onto an existing plan exercise — add to same unit
-    if (activeData?.type === "library-exercise" && overData?.type === "plan-exercise") {
+    // Library exercise in sections mode: use DOM-based detection (bypass broken DnD Kit collision)
+    if (activeData?.type === "library-exercise" && planMode === "sections") {
       const exercise: Exercise = activeData.exercise
-      const targetExercise: PlanExercise = overData.exercise
-      const unitId = targetExercise.unit_id
+      const unitId = findSectionUnitAtPointer()
+      if (!unitId) return
 
-      const newExercise: PlanExercise = {
-        id: nanoid(),
-        unit_id: unitId,
-        exercise_id: exercise.id,
-        order: 0,
-        is_archived_exercise: false,
-        exercise_name: exercise.name,
-        exercise_beschreibung: exercise.beschreibung ?? null,
-        exercise_ausfuehrung: exercise.ausfuehrung ?? null,
-        exercise_media_url: exercise.media_url,
-        exercise_media_type: exercise.media_type ?? undefined,
-        exercise_muskelgruppen: exercise.muskelgruppen,
-        params: {
-          saetze: exercise.standard_saetze ?? 3,
-          wiederholungen: exercise.standard_wiederholungen ?? 10,
-          dauer_sekunden: null,
-          pause_sekunden: exercise.standard_pause_sekunden ?? 60,
-          intensitaet_prozent: null,
-          anmerkung: null,
-        },
-      }
-
+      const newExercise = createLibraryExercise(exercise, unitId)
       changePhasesWithUndo(
         phases.map((phase) => ({
           ...phase,
@@ -531,32 +546,14 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
       return
     }
 
-    // Case 1b: Library exercise dropped into a unit drop zone
-    if (activeData?.type === "library-exercise" && overData?.type === "unit-dropzone") {
-      const exercise: Exercise = activeData.exercise
-      const unitId: string = overData.unitId
+    if (!over) return
+    const overData = over.data.current
 
-      const newExercise: PlanExercise = {
-        id: nanoid(),
-        unit_id: unitId,
-        exercise_id: exercise.id,
-        order: 0, // will be set by order in array
-        is_archived_exercise: false,
-        exercise_name: exercise.name,
-        exercise_beschreibung: exercise.beschreibung ?? null,
-        exercise_ausfuehrung: exercise.ausfuehrung ?? null,
-        exercise_media_url: exercise.media_url,
-        exercise_media_type: exercise.media_type ?? undefined,
-        exercise_muskelgruppen: exercise.muskelgruppen,
-        params: {
-          saetze: exercise.standard_saetze ?? 3,
-          wiederholungen: exercise.standard_wiederholungen ?? 10,
-          dauer_sekunden: null,
-          pause_sekunden: exercise.standard_pause_sekunden ?? 60,
-          intensitaet_prozent: null,
-          anmerkung: null,
-        },
-      }
+    // Case 1: Library exercise dropped into a unit drop zone (phases mode)
+    if (activeData?.type === "library-exercise" && (overData?.type === "unit-dropzone" || overData?.type === "plan-exercise")) {
+      const exercise: Exercise = activeData.exercise
+      const unitId: string = overData.type === "unit-dropzone" ? overData.unitId : overData.exercise.unit_id
+      const newExercise = createLibraryExercise(exercise, unitId)
 
       changePhasesWithUndo(
         phases.map((phase) => ({

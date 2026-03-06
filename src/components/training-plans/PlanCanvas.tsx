@@ -453,6 +453,7 @@ function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseR
   return (
     <div
       ref={setNodeRef}
+      data-section-unit-id={unit.id}
       className={`rounded-xl border ${styles.border} ${styles.bg} transition-colors ${
         isOver ? "ring-2 ring-primary/30 ring-offset-1" : ""
       }`}
