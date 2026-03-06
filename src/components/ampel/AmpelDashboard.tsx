@@ -78,7 +78,7 @@ interface SummaryStatsProps {
 function SummaryStats({ rotCount, gelbCount, gruenCount, totalMonitored, isLoading, onRefresh }: SummaryStatsProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 p-4">
+      <div className="rounded-2xl bg-white border border-slate-200/60 p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center">
             <Users className="h-4 w-4 text-slate-500" />
@@ -95,7 +95,7 @@ function SummaryStats({ rotCount, gelbCount, gruenCount, totalMonitored, isLoadi
         <p className="text-[10px] text-slate-400 font-medium mt-0.5">Ueberwacht</p>
       </div>
 
-      <div className={`rounded-2xl border p-4 ${rotCount > 0 ? "bg-red-50/80 border-red-200/60" : "bg-white/80 border-slate-200/60"}`}>
+      <div className={`rounded-2xl border p-4 ${rotCount > 0 ? "bg-red-50 border-red-200/60" : "bg-white border-slate-200/60"}`}>
         <div className="h-8 w-8 rounded-lg bg-red-100 flex items-center justify-center mb-2">
           <AlertCircle className="h-4 w-4 text-red-500" />
         </div>
@@ -103,7 +103,7 @@ function SummaryStats({ rotCount, gelbCount, gruenCount, totalMonitored, isLoadi
         <p className="text-[10px] text-red-500/70 font-medium mt-0.5">Kritisch</p>
       </div>
 
-      <div className={`rounded-2xl border p-4 ${gelbCount > 0 ? "bg-amber-50/80 border-amber-200/60" : "bg-white/80 border-slate-200/60"}`}>
+      <div className={`rounded-2xl border p-4 ${gelbCount > 0 ? "bg-amber-50 border-amber-200/60" : "bg-white border-slate-200/60"}`}>
         <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center mb-2">
           <AlertTriangle className="h-4 w-4 text-amber-500" />
         </div>
@@ -111,7 +111,7 @@ function SummaryStats({ rotCount, gelbCount, gruenCount, totalMonitored, isLoadi
         <p className="text-[10px] text-amber-500/70 font-medium mt-0.5">Beobachten</p>
       </div>
 
-      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/60 p-4">
+      <div className="rounded-2xl bg-white border border-slate-200/60 p-4">
         <div className="h-8 w-8 rounded-lg bg-emerald-100 flex items-center justify-center mb-2">
           <CheckCircle2 className="h-4 w-4 text-emerald-500" />
         </div>
@@ -298,7 +298,7 @@ function AmpelPatientenKarte({ alert, onDismiss, isDismissed }: AmpelPatientenKa
   const primaryGrund = alert.gruende[0]
 
   return (
-    <div className="rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-sm hover:shadow-md transition-all overflow-hidden">
+    <div className="rounded-2xl bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all overflow-hidden">
       {/* Main card content */}
       <div className="p-4 sm:p-5">
         {/* Top row: Avatar + Name + Status + Meta */}

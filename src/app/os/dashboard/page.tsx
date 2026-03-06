@@ -161,8 +161,10 @@ export default function TherapistDashboardPage() {
           </Alert>
         )}
 
-        {/* Ampel Dashboard — loads independently of stats */}
-        <AmpelDashboard />
+        {/* Ampel Dashboard — solid container so dark header gradient doesn't bleed through */}
+        <div className="rounded-2xl bg-[#faf9f7] p-5 shadow-sm border border-slate-200/40">
+          <AmpelDashboard />
+        </div>
 
         {/* Loading */}
         {isLoading && <DashboardSkeleton />}
