@@ -28,10 +28,11 @@
 | PROJ-14 | PWA-Setup & Push-Notifications | Deployed | [Spec](PROJ-14-pwa-push-notifications.md) | 2026-02-17 |
 | PROJ-15 | Neue Berufsbilder (Trainer, Praxismanagement) | Deployed | [Spec](PROJ-15-neue-berufsbilder.md) | 2026-02-19 |
 | PROJ-16 | Patienten-App 2.0 (Design, Schmerztagebuch, Gamification) | In Progress | [Spec](PROJ-16-patienten-app-v2.md) | 2026-02-19 |
+| PROJ-17 | Patienten-Ampelsystem (Traffic Light Alert System) | In Progress | [Spec](PROJ-17-patienten-ampelsystem.md) | 2026-03-06 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-17
+## Next Available ID: PROJ-18
 
 ## Build Order (Empfohlen)
 
