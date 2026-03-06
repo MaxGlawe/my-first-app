@@ -430,9 +430,10 @@ interface SectionPanelProps {
   sectionIndex: number
   onExerciseParamsChange: (exerciseId: string, params: Partial<PlanExerciseParams>) => void
   onExerciseRemove: (exerciseId: string) => void
+  onFocus?: () => void
 }
 
-function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseRemove }: SectionPanelProps) {
+function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseRemove, onFocus }: SectionPanelProps) {
   const [open, setOpen] = useState(true)
   const def = SECTION_DEFS[sectionIndex] ?? SECTION_DEFS[1]
   const styles = SECTION_STYLES[def.color]
@@ -454,7 +455,11 @@ function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseR
       {/* Section header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit">
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            const next = !open
+            setOpen(next)
+            if (next && onFocus) onFocus()
+          }}
           className="text-muted-foreground hover:text-foreground"
         >
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -512,9 +517,10 @@ export interface PlanCanvasProps {
   planDescription: string
   onDescriptionChange: (desc: string) => void
   planMode: PlanMode
+  onSectionFocus?: (sectionIndex: number) => void
 }
 
-export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescriptionChange, planMode }: PlanCanvasProps) {
+export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescriptionChange, planMode, onSectionFocus }: PlanCanvasProps) {
   function addPhase() {
     const newPhase: PlanPhase = {
       id: nanoid(),
@@ -629,6 +635,7 @@ export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescript
               onExerciseRemove={(exerciseId) =>
                 removeSectionExercise(phase.id, exerciseId)
               }
+              onFocus={() => onSectionFocus?.(idx)}
             />
           ))}
         </div>

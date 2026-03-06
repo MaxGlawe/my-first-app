@@ -78,6 +78,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
   const [beschreibung, setBeschreibung] = useState("")
   const [isTemplate, setIsTemplate] = useState(false)
   const [planMode, setPlanMode] = useState<PlanMode>("sections")
+  const [activeSectionIndex, setActiveSectionIndex] = useState(1) // default: Hauptteil
   const [phases, setPhases] = useState<PlanPhase[]>([])
 
   // Undo stack
@@ -234,10 +235,15 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
 
   // ---- Click-to-add from library ----
   function handleAddExercise(exercise: Exercise) {
-    // In sections mode, add to the Hauptteil section (index 1)
+    // In sections mode, add to the last focused section
     let targetUnitId: string | null = null
-    if (planMode === "sections" && phases.length >= 2 && phases[1].units.length > 0) {
-      targetUnitId = phases[1].units[0].id
+    if (planMode === "sections" && phases[activeSectionIndex]?.units[0]) {
+      targetUnitId = phases[activeSectionIndex].units[0].id
+    } else if (planMode === "sections") {
+      // Fallback: Hauptteil
+      if (phases.length >= 2 && phases[1].units.length > 0) {
+        targetUnitId = phases[1].units[0].id
+      }
     } else {
       // Find the first available unit across all phases
       for (const phase of phases) {
@@ -476,7 +482,48 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     const activeData = active.data.current
     const overData = over.data.current
 
-    // Case 1: Library exercise dropped into a unit drop zone
+    // Case 1a: Library exercise dropped onto an existing plan exercise — add to same unit
+    if (activeData?.type === "library-exercise" && overData?.type === "plan-exercise") {
+      const exercise: Exercise = activeData.exercise
+      const targetExercise: PlanExercise = overData.exercise
+      const unitId = targetExercise.unit_id
+
+      const newExercise: PlanExercise = {
+        id: nanoid(),
+        unit_id: unitId,
+        exercise_id: exercise.id,
+        order: 0,
+        is_archived_exercise: false,
+        exercise_name: exercise.name,
+        exercise_beschreibung: exercise.beschreibung ?? null,
+        exercise_ausfuehrung: exercise.ausfuehrung ?? null,
+        exercise_media_url: exercise.media_url,
+        exercise_media_type: exercise.media_type ?? undefined,
+        exercise_muskelgruppen: exercise.muskelgruppen,
+        params: {
+          saetze: exercise.standard_saetze ?? 3,
+          wiederholungen: exercise.standard_wiederholungen ?? 10,
+          dauer_sekunden: null,
+          pause_sekunden: exercise.standard_pause_sekunden ?? 60,
+          intensitaet_prozent: null,
+          anmerkung: null,
+        },
+      }
+
+      changePhasesWithUndo(
+        phases.map((phase) => ({
+          ...phase,
+          units: phase.units.map((unit) =>
+            unit.id === unitId
+              ? { ...unit, exercises: [...unit.exercises, newExercise] }
+              : unit
+          ),
+        }))
+      )
+      return
+    }
+
+    // Case 1b: Library exercise dropped into a unit drop zone
     if (activeData?.type === "library-exercise" && overData?.type === "unit-dropzone") {
       const exercise: Exercise = activeData.exercise
       const unitId: string = overData.unitId
@@ -679,6 +726,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
             planDescription={beschreibung}
             onDescriptionChange={(desc) => { setBeschreibung(desc); setSaveStatus("unsaved") }}
             planMode={planMode}
+            onSectionFocus={setActiveSectionIndex}
           />
         </div>
 
@@ -702,6 +750,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
                 planDescription={beschreibung}
                 onDescriptionChange={(desc) => { setBeschreibung(desc); setSaveStatus("unsaved") }}
                 planMode={planMode}
+                onSectionFocus={setActiveSectionIndex}
               />
             </TabsContent>
             <TabsContent value="library" className="flex-1 overflow-hidden m-0">
