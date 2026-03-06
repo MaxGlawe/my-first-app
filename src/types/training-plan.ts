@@ -43,6 +43,8 @@ export interface PlanPhase {
   units: PlanUnit[]
 }
 
+export type PlanMode = "sections" | "phases"
+
 export interface TrainingPlan {
   id: string
   created_at: string
@@ -52,11 +54,21 @@ export interface TrainingPlan {
   created_by: string
   is_template: boolean
   is_archived: boolean
+  plan_mode: PlanMode
   phases: PlanPhase[]
   // Summary fields (for list view):
   uebungen_anzahl?: number
   phasen_anzahl?: number
 }
+
+// Section definitions for sections mode
+export const SECTION_DEFS = [
+  { name: "Aufwärmen", color: "orange" },
+  { name: "Hauptteil", color: "teal" },
+  { name: "Cool-Down", color: "blue" },
+] as const
+
+export type SectionColor = typeof SECTION_DEFS[number]["color"]
 
 export type PlanFilter = "alle" | "meine" | "templates"
 
@@ -69,6 +81,7 @@ export interface TrainingPlanListItem {
   created_by: string
   is_template: boolean
   is_archived: boolean
+  plan_mode: PlanMode
   uebungen_anzahl: number
   phasen_anzahl: number
 }
@@ -79,4 +92,5 @@ export interface UndoEntry {
   name: string
   beschreibung: string
   isTemplate: boolean
+  planMode: PlanMode
 }

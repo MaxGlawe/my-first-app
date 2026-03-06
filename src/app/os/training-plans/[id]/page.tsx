@@ -26,11 +26,34 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { nanoid } from "@/components/training-plans/plan-utils"
-import type { PlanPhase, PlanUnit, PlanExercise, TrainingPlan, UndoEntry } from "@/types/training-plan"
+import type { PlanPhase, PlanUnit, PlanExercise, TrainingPlan, UndoEntry, PlanMode } from "@/types/training-plan"
+import { SECTION_DEFS } from "@/types/training-plan"
 import type { Exercise } from "@/types/exercise"
 import { Dumbbell, Layers } from "lucide-react"
 
 const MAX_UNDO = 10
+
+function createDefaultSections(planId: string): PlanPhase[] {
+  return SECTION_DEFS.map((def, idx) => {
+    const phaseId = nanoid()
+    const unitId = nanoid()
+    return {
+      id: phaseId,
+      plan_id: planId,
+      name: def.name,
+      dauer_wochen: 1,
+      order: idx,
+      units: [{
+        id: unitId,
+        plan_id: planId,
+        phase_id: phaseId,
+        name: def.name,
+        order: 0,
+        exercises: [],
+      }],
+    }
+  })
+}
 
 type SaveStatus = "saved" | "saving" | "unsaved"
 
@@ -52,6 +75,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
   const [planName, setPlanName] = useState("")
   const [beschreibung, setBeschreibung] = useState("")
   const [isTemplate, setIsTemplate] = useState(false)
+  const [planMode, setPlanMode] = useState<PlanMode>("sections")
   const [phases, setPhases] = useState<PlanPhase[]>([])
 
   // Undo stack
@@ -63,9 +87,11 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
   const planNameRef = useRef("")
   const beschreibungRef = useRef("")
   const isTemplateRef = useRef(false)
+  const planModeRef = useRef<PlanMode>("sections")
   useEffect(() => { planNameRef.current = planName }, [planName])
   useEffect(() => { beschreibungRef.current = beschreibung }, [beschreibung])
   useEffect(() => { isTemplateRef.current = isTemplate }, [isTemplate])
+  useEffect(() => { planModeRef.current = planMode }, [planMode])
 
   // Save status
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved")
@@ -82,8 +108,16 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     setPlanName(plan.name)
     setBeschreibung(plan.beschreibung ?? "")
     setIsTemplate(plan.is_template)
-    setPhases(plan.phases ?? [])
-    setSaveStatus("saved")
+    const mode = plan.plan_mode ?? "phases"
+    setPlanMode(mode)
+    // Auto-init sections for new plans in sections mode
+    if (mode === "sections" && (plan.phases ?? []).length === 0) {
+      setPhases(createDefaultSections(plan.id))
+      setSaveStatus("unsaved")
+    } else {
+      setPhases(plan.phases ?? [])
+      setSaveStatus("saved")
+    }
     undoStack.current = []
   }, [plan])
 
@@ -109,6 +143,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
         name: planNameRef.current,
         beschreibung: beschreibungRef.current,
         isTemplate: isTemplateRef.current,
+        planMode: planModeRef.current,
       },
       ...undoStack.current.slice(0, MAX_UNDO - 1),
     ]
@@ -119,10 +154,10 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     if (!entry) return
     undoStack.current = undoStack.current.slice(1)
     setPhases(entry.phases)
-    // BUG-14 FIX: restore name/beschreibung/isTemplate too
     setPlanName(entry.name)
     setBeschreibung(entry.beschreibung)
     setIsTemplate(entry.isTemplate)
+    setPlanMode(entry.planMode)
     setSaveStatus("unsaved")
   }
 
@@ -140,6 +175,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
   const debouncedBeschreibung = useDebounce(beschreibung, 2000)
   const debouncedPhases = useDebounce(phases, 2000)
   const debouncedIsTemplate = useDebounce(isTemplate, 2000)
+  const debouncedPlanMode = useDebounce(planMode, 2000)
 
   const isMounted = useRef(false)
   useEffect(() => {
@@ -150,7 +186,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     if (!plan) return
     savePlan()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedPlanName, debouncedBeschreibung, debouncedPhases, debouncedIsTemplate])
+  }, [debouncedPlanName, debouncedBeschreibung, debouncedPhases, debouncedIsTemplate, debouncedPlanMode])
 
   async function savePlan() {
     setSaveStatus("saving")
@@ -162,6 +198,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
           name: planName,
           beschreibung,
           is_template: isTemplate,
+          plan_mode: planMode,
           phases,
         }),
       })
@@ -188,12 +225,17 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
 
   // ---- Click-to-add from library ----
   function handleAddExercise(exercise: Exercise) {
-    // Find the first available unit across all phases
+    // In sections mode, add to the Hauptteil section (index 1)
     let targetUnitId: string | null = null
-    for (const phase of phases) {
-      if (phase.units.length > 0) {
-        targetUnitId = phase.units[0].id
-        break
+    if (planMode === "sections" && phases.length >= 2 && phases[1].units.length > 0) {
+      targetUnitId = phases[1].units[0].id
+    } else {
+      // Find the first available unit across all phases
+      for (const phase of phases) {
+        if (phase.units.length > 0) {
+          targetUnitId = phase.units[0].id
+          break
+        }
       }
     }
 
@@ -564,6 +606,28 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
             setIsTemplate(val)
             setSaveStatus("unsaved")
           }}
+          planMode={planMode}
+          onModeToggle={(mode) => {
+            pushUndo(phases)
+            if (mode === "sections") {
+              // Switch to sections: create 3 default sections, move exercises to Hauptteil
+              const allExercises = phases.flatMap((p) =>
+                p.units.flatMap((u) => u.exercises)
+              )
+              const sections = createDefaultSections(id)
+              // Put existing exercises into Hauptteil (index 1)
+              if (allExercises.length > 0 && sections[1]?.units[0]) {
+                sections[1].units[0].exercises = allExercises.map((ex, i) => ({
+                  ...ex,
+                  unit_id: sections[1].units[0].id,
+                  order: i,
+                }))
+              }
+              setPhases(sections)
+            }
+            setPlanMode(mode)
+            setSaveStatus("unsaved")
+          }}
           saveStatus={saveStatus}
           canUndo={undoStack.current.length > 0}
           onUndo={handleUndo}
@@ -580,6 +644,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
             onPhasesChange={changePhasesWithUndo}
             planDescription={beschreibung}
             onDescriptionChange={(desc) => { setBeschreibung(desc); setSaveStatus("unsaved") }}
+            planMode={planMode}
           />
         </div>
 
@@ -602,6 +667,7 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
                 onPhasesChange={changePhasesWithUndo}
                 planDescription={beschreibung}
                 onDescriptionChange={(desc) => { setBeschreibung(desc); setSaveStatus("unsaved") }}
+                planMode={planMode}
               />
             </TabsContent>
             <TabsContent value="library" className="flex-1 overflow-hidden m-0">

@@ -46,6 +46,7 @@ const putPlanSchema = z.object({
   name: z.string().min(1).max(200).trim(),
   beschreibung: z.string().max(2000).nullable().optional(),
   is_template: z.boolean().optional(),
+  plan_mode: z.enum(["sections", "phases"]).optional(),
   phases: z.array(planPhaseSchema),
 })
 
@@ -69,7 +70,7 @@ export async function GET(
   // Load plan
   const { data: plan, error: planError } = await supabase
     .from("training_plans")
-    .select("id, created_at, updated_at, name, beschreibung, created_by, is_template, is_archived")
+    .select("id, created_at, updated_at, name, beschreibung, created_by, is_template, is_archived, plan_mode")
     .eq("id", id)
     .eq("is_archived", false)
     .single()
@@ -224,7 +225,15 @@ export async function PUT(
     )
   }
 
-  const { name, beschreibung, is_template, phases } = parseResult.data
+  const { name, beschreibung, is_template, plan_mode, phases } = parseResult.data
+
+  // Update plan_mode if provided
+  if (plan_mode) {
+    await supabase
+      .from("training_plans")
+      .update({ plan_mode })
+      .eq("id", id)
+  }
 
   // BUG-3 FIX: Use atomic RPC function that wraps everything in a single DB transaction.
   // If any insert fails, the entire save rolls back — no partial state or data loss.

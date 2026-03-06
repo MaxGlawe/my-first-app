@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       created_by,
       is_template,
       is_archived,
+      plan_mode,
       plan_phases!left(id, plan_units!left(id, plan_exercises!left(id)))
       `,
       { count: "exact" }
@@ -86,6 +87,7 @@ export async function GET(request: NextRequest) {
       created_by: row.created_by,
       is_template: row.is_template,
       is_archived: row.is_archived,
+      plan_mode: row.plan_mode ?? "phases",
       uebungen_anzahl,
       phasen_anzahl: phases.length,
     }
@@ -134,8 +136,9 @@ export async function POST(request: NextRequest) {
       created_by: user.id,
       is_template: false,
       is_archived: false,
+      plan_mode: "sections",
     })
-    .select("id, name, beschreibung, created_by, is_template, is_archived, created_at, updated_at")
+    .select("id, name, beschreibung, created_by, is_template, is_archived, plan_mode, created_at, updated_at")
     .single()
 
   if (insertError) {

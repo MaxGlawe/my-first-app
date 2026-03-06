@@ -32,9 +32,25 @@ import {
   ChevronRight,
   Dumbbell,
   AlertTriangle,
+  Flame,
+  Snowflake,
 } from "lucide-react"
-import type { PlanPhase, PlanUnit, PlanExercise, PlanExerciseParams } from "@/types/training-plan"
+import type { PlanPhase, PlanUnit, PlanExercise, PlanExerciseParams, PlanMode, SectionColor } from "@/types/training-plan"
+import { SECTION_DEFS } from "@/types/training-plan"
 import { nanoid } from "./plan-utils"
+
+// ---- Section styling ----
+const SECTION_STYLES: Record<SectionColor, { bg: string; border: string; text: string; iconBg: string; dropHint: string }> = {
+  orange: { bg: "bg-orange-50/60", border: "border-orange-200/60", text: "text-orange-700", iconBg: "bg-orange-100 text-orange-600", dropHint: "border-orange-300/50" },
+  teal:   { bg: "bg-teal-50/60",   border: "border-teal-200/60",   text: "text-teal-700",   iconBg: "bg-teal-100 text-teal-600",   dropHint: "border-teal-300/50" },
+  blue:   { bg: "bg-blue-50/60",   border: "border-blue-200/60",   text: "text-blue-700",   iconBg: "bg-blue-100 text-blue-600",   dropHint: "border-blue-300/50" },
+}
+
+function SectionIcon({ color }: { color: SectionColor }) {
+  if (color === "orange") return <Flame className="h-4 w-4" />
+  if (color === "blue") return <Snowflake className="h-4 w-4" />
+  return <Dumbbell className="h-4 w-4" />
+}
 
 // ---- Helpers ----
 
@@ -408,16 +424,96 @@ function PhaseSection({
   )
 }
 
+// ---- SectionPanel (sections mode) ----
+interface SectionPanelProps {
+  phase: PlanPhase
+  sectionIndex: number
+  onExerciseParamsChange: (exerciseId: string, params: Partial<PlanExerciseParams>) => void
+  onExerciseRemove: (exerciseId: string) => void
+}
+
+function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseRemove }: SectionPanelProps) {
+  const [open, setOpen] = useState(true)
+  const def = SECTION_DEFS[sectionIndex] ?? SECTION_DEFS[1]
+  const styles = SECTION_STYLES[def.color]
+
+  // In sections mode, each section has exactly one unit (auto-created)
+  const unit = phase.units[0]
+  if (!unit) return null
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: `unit-dropzone-${unit.id}`,
+    data: { type: "unit-dropzone", unitId: unit.id },
+  })
+
+  const sortableItems = unit.exercises.map((e) => e.id)
+
+  return (
+    <div className={`rounded-xl border ${styles.border} ${styles.bg}`}>
+      {/* Section header */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-inherit">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </button>
+        <div className={`h-8 w-8 rounded-lg ${styles.iconBg} flex items-center justify-center`}>
+          <SectionIcon color={def.color} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className={`font-semibold ${styles.text}`}>{def.name}</span>
+          <span className="text-xs text-muted-foreground ml-2">
+            {unit.exercises.length} {unit.exercises.length === 1 ? "Übung" : "Übungen"}
+          </span>
+        </div>
+      </div>
+
+      {/* Exercises */}
+      {open && (
+        <SortableContext items={sortableItems} strategy={verticalListSortingStrategy}>
+          <div
+            ref={setNodeRef}
+            className={`p-4 space-y-2 min-h-[80px] transition-colors rounded-b-xl ${
+              isOver ? "bg-primary/5 border-2 border-dashed border-primary/30" : ""
+            }`}
+          >
+            {unit.exercises.length === 0 ? (
+              <div className={`flex items-center justify-center h-16 text-sm text-muted-foreground border-2 border-dashed ${styles.dropHint} rounded-lg`}>
+                Übung hier ablegen oder per + hinzufügen
+              </div>
+            ) : (
+              <>
+                {unit.exercises.map((exercise) => (
+                  <PlanExerciseRow
+                    key={exercise.id}
+                    exercise={exercise}
+                    onParamsChange={(params) => onExerciseParamsChange(exercise.id, params)}
+                    onRemove={() => onExerciseRemove(exercise.id)}
+                  />
+                ))}
+                <div className={`flex items-center justify-center h-10 text-xs text-muted-foreground/60 border border-dashed ${styles.dropHint} rounded-lg`}>
+                  Weitere Übungen hierher ziehen
+                </div>
+              </>
+            )}
+          </div>
+        </SortableContext>
+      )}
+    </div>
+  )
+}
+
 // ---- PlanCanvas ----
 export interface PlanCanvasProps {
   phases: PlanPhase[]
   onPhasesChange: (phases: PlanPhase[]) => void
-  // BUG-6 FIX: plan description field was missing from the UI
   planDescription: string
   onDescriptionChange: (desc: string) => void
+  planMode: PlanMode
 }
 
-export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescriptionChange }: PlanCanvasProps) {
+export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescriptionChange, planMode }: PlanCanvasProps) {
   function addPhase() {
     const newPhase: PlanPhase = {
       id: nanoid(),
@@ -492,10 +588,57 @@ export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescript
     })
   }
 
+  // ---- Sections mode helpers ----
+  function updateSectionExerciseParams(phaseId: string, exerciseId: string, params: Partial<PlanExerciseParams>) {
+    const phase = phases.find((p) => p.id === phaseId)
+    if (!phase || !phase.units[0]) return
+    const unitId = phase.units[0].id
+    updateExerciseParams(phaseId, unitId, exerciseId, params)
+  }
+
+  function removeSectionExercise(phaseId: string, exerciseId: string) {
+    const phase = phases.find((p) => p.id === phaseId)
+    if (!phase || !phase.units[0]) return
+    removeExercise(phaseId, phase.units[0].id, exerciseId)
+  }
+
+  // ---- Sections mode rendering ----
+  if (planMode === "sections") {
+    return (
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="p-6 space-y-4 max-w-3xl mx-auto">
+          <Textarea
+            value={planDescription}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Plan-Beschreibung hinzufügen (optional)..."
+            className="resize-none text-sm text-muted-foreground bg-muted/30 border-muted"
+            rows={2}
+            maxLength={2000}
+            aria-label="Plan-Beschreibung"
+          />
+
+          {phases.map((phase, idx) => (
+            <SectionPanel
+              key={phase.id}
+              phase={phase}
+              sectionIndex={idx}
+              onExerciseParamsChange={(exerciseId, params) =>
+                updateSectionExerciseParams(phase.id, exerciseId, params)
+              }
+              onExerciseRemove={(exerciseId) =>
+                removeSectionExercise(phase.id, exerciseId)
+              }
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // ---- Phases mode rendering (existing) ----
   return (
     <div className="flex-1 overflow-y-auto min-h-0">
       <div className="p-6 space-y-4 max-w-3xl mx-auto">
-        {/* BUG-6 FIX: Plan description textarea */}
         <Textarea
           value={planDescription}
           onChange={(e) => onDescriptionChange(e.target.value)}
@@ -514,28 +657,24 @@ export function PlanCanvas({ phases, onPhasesChange, planDescription, onDescript
           </div>
         )}
 
-        {phases.map((phase) => {
-          // Find this phase's parent phase index
-          const phaseIndex = phases.indexOf(phase)
-          return (
-            <PhaseSection
-              key={phase.id}
-              phase={phase}
-              onPhaseNameChange={(name) => updatePhase(phase.id, { name })}
-              onPhaseDurationChange={(dauer_wochen) => updatePhase(phase.id, { dauer_wochen })}
-              onPhaseRemove={() => removePhase(phase.id)}
-              onAddUnit={() => addUnit(phase.id)}
-              onUnitNameChange={(unitId, name) => updateUnit(phase.id, unitId, { name })}
-              onUnitRemove={(unitId) => removeUnit(phase.id, unitId)}
-              onExerciseParamsChange={(unitId, exerciseId, params) =>
-                updateExerciseParams(phase.id, unitId, exerciseId, params)
-              }
-              onExerciseRemove={(unitId, exerciseId) =>
-                removeExercise(phase.id, unitId, exerciseId)
-              }
-            />
-          )
-        })}
+        {phases.map((phase) => (
+          <PhaseSection
+            key={phase.id}
+            phase={phase}
+            onPhaseNameChange={(name) => updatePhase(phase.id, { name })}
+            onPhaseDurationChange={(dauer_wochen) => updatePhase(phase.id, { dauer_wochen })}
+            onPhaseRemove={() => removePhase(phase.id)}
+            onAddUnit={() => addUnit(phase.id)}
+            onUnitNameChange={(unitId, name) => updateUnit(phase.id, unitId, { name })}
+            onUnitRemove={(unitId) => removeUnit(phase.id, unitId)}
+            onExerciseParamsChange={(unitId, exerciseId, params) =>
+              updateExerciseParams(phase.id, unitId, exerciseId, params)
+            }
+            onExerciseRemove={(unitId, exerciseId) =>
+              removeExercise(phase.id, unitId, exerciseId)
+            }
+          />
+        ))}
 
         <Button
           variant="outline"

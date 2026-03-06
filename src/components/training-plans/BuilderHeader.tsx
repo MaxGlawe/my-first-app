@@ -10,8 +10,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ArrowLeft, Undo2, Eye, Printer, CheckCircle2, Loader2 } from "lucide-react"
+import { ArrowLeft, Undo2, Eye, Printer, CheckCircle2, Loader2, Layers, CalendarRange } from "lucide-react"
 import Link from "next/link"
+import type { PlanMode } from "@/types/training-plan"
 
 type SaveStatus = "saved" | "saving" | "unsaved"
 
@@ -20,6 +21,8 @@ interface BuilderHeaderProps {
   onNameChange: (name: string) => void
   isTemplate: boolean
   onTemplateToggle: (value: boolean) => void
+  planMode: PlanMode
+  onModeToggle: (mode: PlanMode) => void
   saveStatus: SaveStatus
   canUndo: boolean
   onUndo: () => void
@@ -32,6 +35,8 @@ export function BuilderHeader({
   onNameChange,
   isTemplate,
   onTemplateToggle,
+  planMode,
+  onModeToggle,
   saveStatus,
   canUndo,
   onUndo,
@@ -120,6 +125,48 @@ export function BuilderHeader({
         {saveStatus === "unsaved" && (
           <span className="text-amber-600 hidden sm:inline">Nicht gespeichert</span>
         )}
+      </div>
+
+      {/* Mode toggle */}
+      <div className="flex items-center border rounded-lg overflow-hidden shrink-0">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onModeToggle("sections")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  planMode === "sections"
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted text-muted-foreground"
+                }`}
+                aria-label="Sektionen-Modus"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Sektionen</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Aufwärmen / Hauptteil / Cool-Down</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onModeToggle("phases")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  planMode === "phases"
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-muted text-muted-foreground"
+                }`}
+                aria-label="Phasen-Modus"
+              >
+                <CalendarRange className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Phasen</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Mehrwöchige Phasen</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Undo */}
