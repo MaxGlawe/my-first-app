@@ -203,7 +203,6 @@ function AlertRow({ alert, onDismiss, isDismissed }: AlertRowProps) {
   const [pushStatus, setPushStatus] = useState<"idle" | "sending" | "sent" | "no_sub" | "error">("idle")
 
   const handlePush = useCallback(async () => {
-    if (!alert.userId) return
     setPushStatus("sending")
     try {
       const res = await fetch("/api/os/push-reminder", {
@@ -212,11 +211,8 @@ function AlertRow({ alert, onDismiss, isDismissed }: AlertRowProps) {
         body: JSON.stringify({ patientId: alert.patientId }),
       })
       const data = await res.json()
-      if (data.ok === false && data.reason === "no_subscription") {
-        setPushStatus("no_sub")
-        setTimeout(() => setPushStatus("idle"), 4000)
-      } else if (data.ok) {
-        setPushStatus("sent")
+      if (data.ok) {
+        setPushStatus(data.pushSent ? "sent" : "no_sub")
         setTimeout(() => setPushStatus("idle"), 3000)
       } else {
         setPushStatus("error")
@@ -342,12 +338,12 @@ function AlertRow({ alert, onDismiss, isDismissed }: AlertRowProps) {
             }`}
             title={
               !alert.userId ? "Kein App-Konto"
-              : pushStatus === "sent" ? "Gesendet!"
-              : pushStatus === "no_sub" ? "Push nicht aktiviert"
+              : pushStatus === "sent" ? "Push + Chat gesendet!"
+              : pushStatus === "no_sub" ? "Chat gesendet (Push nicht aktiviert)"
               : pushStatus === "error" ? "Fehler beim Senden"
-              : "Push-Erinnerung senden"
+              : "Erinnerung senden (Push + Chat)"
             }
-            disabled={!alert.userId || pushStatus === "sending"}
+            disabled={pushStatus === "sending"}
             onClick={handlePush}
           >
             {pushStatus === "sent" ? <CheckCircle2 className="h-3.5 w-3.5" />

@@ -2,9 +2,10 @@
  * POST /api/os/push-reminder
  * PROJ-17: Therapist-initiated push reminder to a patient.
  *
- * Unlike /api/push/send (which requires CRON_SECRET and is server-to-server),
- * this endpoint is authenticated via Supabase session (therapist must be logged in)
- * and verifies the therapist has access to the patient via RLS.
+ * 1. Sends a Web Push notification (if subscription exists)
+ * 2. Also sends a persistent chat message so it stays visible in-app
+ *
+ * Authenticated via Supabase session + RLS check.
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -12,11 +13,16 @@ import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { sendPushToPatient } from "@/lib/push"
 
+const REMINDER_MESSAGE =
+  "Hallo! Ich moechte dich an dein Training erinnern. " +
+  "Regelmaessiges Training ist der Schluessel zu deiner Genesung " +
+  "und hilft dir, deine Ziele zu erreichen. " +
+  "Selbst eine kurze Einheit macht einen Unterschied - dein Koerper wird es dir danken! " +
+  "Melde dich gerne, falls du Fragen hast oder Hilfe brauchst."
+
 const BodySchema = z.object({
   patientId: z.string().uuid(),
-  title: z.string().min(1).max(100).optional().default("Erinnerung von deinem Therapeuten"),
-  body: z.string().min(1).max(300).optional().default("Dein Therapeut moechte dich an dein Training erinnern."),
-  url: z.string().optional().default("/app/dashboard"),
+  message: z.string().min(1).max(1000).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -41,7 +47,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { patientId, title, body, url } = parsed.data
+  const { patientId, message } = parsed.data
+  const chatText = message || REMINDER_MESSAGE
 
   // Verify therapist has access to this patient (RLS check)
   const { data: patient, error: patientError } = await supabase
@@ -54,30 +61,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Patient nicht gefunden." }, { status: 404 })
   }
 
-  // Send push
+  // 1. Send persistent chat message (always works, even without push)
+  const { error: chatError } = await supabase
+    .from("chat_messages")
+    .insert({
+      patient_id: patientId,
+      sender_id: user.id,
+      sender_role: "therapeut",
+      content: chatText,
+    })
+
+  if (chatError) {
+    console.error("[push-reminder] Chat insert error:", chatError)
+  }
+
+  // 2. Send push notification (best-effort)
+  let pushResult = { sent: 0, failed: 0, cleaned: 0 }
   try {
-    const result = await sendPushToPatient(patientId, {
-      title,
-      body,
-      url,
+    pushResult = await sendPushToPatient(patientId, {
+      title: "Nachricht von deinem Therapeuten",
+      body: chatText.length > 100 ? chatText.slice(0, 97) + "..." : chatText,
+      url: "/app/chat",
       tag: "therapeut-erinnerung",
     })
-
-    if (result.sent === 0) {
-      return NextResponse.json({
-        ok: false,
-        reason: "no_subscription",
-        message: "Patient hat keine aktive Push-Subscription. Die App muss auf dem Geraet installiert und Push aktiviert sein.",
-      })
-    }
-
-    return NextResponse.json({
-      ok: true,
-      sent: result.sent,
-      failed: result.failed,
-    })
   } catch (err) {
-    console.error("[push-reminder] Error:", err)
-    return NextResponse.json({ error: "Push konnte nicht gesendet werden." }, { status: 500 })
+    console.error("[push-reminder] Push error:", err)
   }
+
+  return NextResponse.json({
+    ok: true,
+    chatSent: !chatError,
+    pushSent: pushResult.sent > 0,
+    pushSubscriptions: pushResult.sent,
+    message: pushResult.sent > 0
+      ? "Push + Chat-Nachricht gesendet."
+      : "Chat-Nachricht gesendet. Push nicht moeglich (App nicht installiert oder Push deaktiviert).",
+  })
 }

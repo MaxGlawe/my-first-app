@@ -24,6 +24,7 @@ import {
 } from "@/hooks/use-patient-app"
 import { useStreak } from "@/hooks/use-streak"
 import { usePainDiary } from "@/hooks/use-pain-diary"
+import { TherapistReminderBanner } from "@/components/app/TherapistReminderBanner"
 import {
   AlertTriangle,
   Flame,
@@ -115,6 +116,9 @@ export default function PatientDashboardPage() {
 
       {/* ── Content (overlaps header) ────────────────────────────── */}
       <div className="container mx-auto px-4 max-w-lg -mt-14 pb-24 space-y-4 relative z-10">
+        {/* Therapist reminder banner */}
+        <TherapistReminderBanner />
+
         {/* Error state */}
         {error && (
           <Alert variant="destructive">

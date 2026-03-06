@@ -16,7 +16,7 @@
  *   GELB | No check-in for 3-6 days
  *   GRUEN| No trigger
  *
- * Data sources: pain_diary, assignment_completions, patient_assignments, patients
+ * Data sources: pain_diary_entries, assignment_completions, patient_assignments, patients
  * No new tables required.
  */
 
@@ -94,7 +94,7 @@ function expectedInWindow(
  * Also returns the from/to values for context.
  */
 function maxPainIncrease(
-  entries: Array<{ recorded_date: string; pain_level: number }>,
+  entries: Array<{ entry_date: string; pain_level: number }>,
 ): { increase: number; from: number; to: number } {
   if (entries.length < 2) return { increase: 0, from: 0, to: 0 }
   let max = 0
@@ -103,8 +103,8 @@ function maxPainIncrease(
   for (let i = 0; i < entries.length; i++) {
     for (let j = i + 1; j < entries.length; j++) {
       const daysDiff =
-        (new Date(entries[j].recorded_date).getTime() -
-          new Date(entries[i].recorded_date).getTime()) /
+        (new Date(entries[j].entry_date).getTime() -
+          new Date(entries[i].entry_date).getTime()) /
         86_400_000
       if (daysDiff <= 3) {
         const diff = entries[j].pain_level - entries[i].pain_level
@@ -180,12 +180,12 @@ export async function GET(_request: NextRequest) {
 
     // Pain diary last 7 days (for pain level + trend)
     serviceClient
-      .from("pain_diary")
-      .select("patient_id, pain_level, recorded_date")
+      .from("pain_diary_entries")
+      .select("patient_id, pain_level, entry_date")
       .in("patient_id", patientIds)
-      .gte("recorded_date", sevenDaysAgoStr)
-      .lte("recorded_date", todayStr)
-      .order("recorded_date", { ascending: true })
+      .gte("entry_date", sevenDaysAgoStr)
+      .lte("entry_date", todayStr)
+      .order("entry_date", { ascending: true })
       .limit(5000),
 
     // Last chat message per patient (for context)
@@ -226,13 +226,13 @@ export async function GET(_request: NextRequest) {
   // -- 4. Group data by patient -----------------------------------------------
 
   // Pain entries grouped by patient
-  const painByPatient = new Map<string, Array<{ recorded_date: string; pain_level: number }>>()
+  const painByPatient = new Map<string, Array<{ entry_date: string; pain_level: number }>>()
   for (const entry of painEntries) {
     if (!painByPatient.has(entry.patient_id)) {
       painByPatient.set(entry.patient_id, [])
     }
     painByPatient.get(entry.patient_id)!.push({
-      recorded_date: entry.recorded_date,
+      entry_date: entry.entry_date,
       pain_level: entry.pain_level,
     })
   }
@@ -268,7 +268,7 @@ export async function GET(_request: NextRequest) {
 
     // Build pain history for mini-chart
     const painHistory: PainEntry[] = patientPain.map((e) => ({
-      date: e.recorded_date,
+      date: e.entry_date,
       level: e.pain_level,
     }))
 
@@ -279,7 +279,7 @@ export async function GET(_request: NextRequest) {
       const threeDaysAgo = new Date(today)
       threeDaysAgo.setDate(today.getDate() - 2)
       const recentPain = patientPain.filter(
-        (e) => new Date(e.recorded_date) >= threeDaysAgo,
+        (e) => new Date(e.entry_date) >= threeDaysAgo,
       )
 
       const maxPain = Math.max(...recentPain.map((e) => e.pain_level), 0)
@@ -344,8 +344,8 @@ export async function GET(_request: NextRequest) {
 
     // Also count pain diary entries as a form of check-in (patient engagement)
     for (const entry of patientPain) {
-      if (!lastCheckIn || entry.recorded_date > lastCheckIn) {
-        lastCheckIn = entry.recorded_date
+      if (!lastCheckIn || entry.entry_date > lastCheckIn) {
+        lastCheckIn = entry.entry_date
       }
     }
 
