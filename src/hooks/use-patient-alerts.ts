@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from "react"
 import type { PatientAlert } from "@/app/api/os/patient-alerts/route"
 
 export type { PatientAlert }
-export type { AmpelStatus } from "@/app/api/os/patient-alerts/route"
+export type { AmpelStatus, PainEntry, ComplianceDetails } from "@/app/api/os/patient-alerts/route"
 
 interface UsePatientAlertsResult {
   alerts: PatientAlert[]
