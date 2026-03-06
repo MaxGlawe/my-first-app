@@ -106,10 +106,10 @@ export async function GET() {
 
   // Get recent pain data
   const { data: painEntries } = await supabase
-    .from("pain_diary")
-    .select("pain_level, created_at")
+    .from("pain_diary_entries")
+    .select("pain_level, entry_date")
     .eq("patient_id", patient.id)
-    .order("created_at", { ascending: false })
+    .order("entry_date", { ascending: false })
     .limit(7)
 
   const painLevels = (painEntries ?? []).map((p) => p.pain_level)
