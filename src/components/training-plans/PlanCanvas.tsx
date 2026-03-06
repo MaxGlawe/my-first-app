@@ -444,6 +444,7 @@ function SectionPanel({ phase, sectionIndex, onExerciseParamsChange, onExerciseR
   const { setNodeRef, isOver } = useDroppable({
     id: `unit-dropzone-${unit.id}`,
     data: { type: "unit-dropzone", unitId: unit.id },
+    disabled: !open,
   })
 
   const sortableItems = unit.exercises.map((e) => e.id)
