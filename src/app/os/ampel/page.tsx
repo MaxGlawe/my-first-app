@@ -194,30 +194,38 @@ function AlertRow({ alert, onDismiss, isDismissed }: AlertRowProps) {
   const router = useRouter()
   const [expanded, setExpanded] = useState(false)
   const [showMessage, setShowMessage] = useState(false)
-  const [pushSending, setPushSending] = useState(false)
 
   const primaryGrund = alert.gruende[0]
   const lastPain = alert.painHistory.length > 0 ? alert.painHistory[alert.painHistory.length - 1] : null
   const firstPain = alert.painHistory.length > 0 ? alert.painHistory[0] : null
   const painTrend = lastPain && firstPain ? lastPain.level - firstPain.level : 0
 
+  const [pushStatus, setPushStatus] = useState<"idle" | "sending" | "sent" | "no_sub" | "error">("idle")
+
   const handlePush = useCallback(async () => {
     if (!alert.userId) return
-    setPushSending(true)
+    setPushStatus("sending")
     try {
-      await fetch("/api/push/send", {
+      const res = await fetch("/api/os/push-reminder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          patientId: alert.patientId,
-          title: "Erinnerung von deinem Therapeuten",
-          body: "Dein Therapeut moechte dich daran erinnern, dein Training zu erledigen.",
-          tag: "therapeut-erinnerung",
-          url: "/app/dashboard",
-        }),
+        body: JSON.stringify({ patientId: alert.patientId }),
       })
-      setTimeout(() => setPushSending(false), 2000)
-    } catch { setPushSending(false) }
+      const data = await res.json()
+      if (data.ok === false && data.reason === "no_subscription") {
+        setPushStatus("no_sub")
+        setTimeout(() => setPushStatus("idle"), 4000)
+      } else if (data.ok) {
+        setPushStatus("sent")
+        setTimeout(() => setPushStatus("idle"), 3000)
+      } else {
+        setPushStatus("error")
+        setTimeout(() => setPushStatus("idle"), 3000)
+      }
+    } catch {
+      setPushStatus("error")
+      setTimeout(() => setPushStatus("idle"), 3000)
+    }
   }, [alert])
 
   if (isDismissed) {
@@ -326,12 +334,25 @@ function AlertRow({ alert, onDismiss, isDismissed }: AlertRowProps) {
             <ClipboardList className="h-3.5 w-3.5" />
           </button>
           <button
-            className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors disabled:opacity-30"
-            title={!alert.userId ? "Kein App-Konto" : pushSending ? "Gesendet!" : "Push-Erinnerung"}
-            disabled={!alert.userId || pushSending}
+            className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors disabled:opacity-30 ${
+              pushStatus === "sent" ? "bg-emerald-50 text-emerald-500"
+              : pushStatus === "no_sub" ? "bg-red-50 text-red-400"
+              : pushStatus === "error" ? "bg-red-50 text-red-400"
+              : "hover:bg-amber-50 text-slate-400 hover:text-amber-600"
+            }`}
+            title={
+              !alert.userId ? "Kein App-Konto"
+              : pushStatus === "sent" ? "Gesendet!"
+              : pushStatus === "no_sub" ? "Push nicht aktiviert"
+              : pushStatus === "error" ? "Fehler beim Senden"
+              : "Push-Erinnerung senden"
+            }
+            disabled={!alert.userId || pushStatus === "sending"}
             onClick={handlePush}
           >
-            <Bell className={`h-3.5 w-3.5 ${pushSending ? "text-emerald-500" : ""}`} />
+            {pushStatus === "sent" ? <CheckCircle2 className="h-3.5 w-3.5" />
+            : pushStatus === "no_sub" ? <AlertCircle className="h-3.5 w-3.5" />
+            : <Bell className={`h-3.5 w-3.5 ${pushStatus === "sending" ? "animate-pulse" : ""}`} />}
           </button>
           <button
             className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-emerald-50 text-slate-400 hover:text-emerald-600 transition-colors"
