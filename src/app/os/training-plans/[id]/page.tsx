@@ -477,6 +477,14 @@ export default function TrainingsplanBuilderPage({ params }: BuilderPageProps) {
     setActiveItem(null)
     const { active, over } = event
 
+    // DEBUG: log what DnD detected
+    if (over) {
+      const sectionNames = phases.map((p, i) => `${i}:${p.name}(unit=${p.units[0]?.id?.slice(0,6)})`).join(", ")
+      console.log(`[DnD] over.id=${over.id}, over.data.type=${over.data.current?.type}, unitId=${over.data.current?.unitId ?? over.data.current?.exercise?.unit_id ?? "?"}, sections=[${sectionNames}]`)
+    } else {
+      console.log("[DnD] over=null (no drop target)")
+    }
+
     if (!over) return
 
     const activeData = active.data.current
