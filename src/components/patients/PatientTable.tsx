@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Users } from "lucide-react"
 import type { Patient } from "@/types/patient"
+import { AmpelDot } from "@/components/ampel/AmpelDashboard"
+import { usePatientAmpelStatus } from "@/hooks/use-patient-alerts"
 
 interface PatientTableProps {
   patients: Patient[]
@@ -51,6 +53,7 @@ function formatGeschlecht(g: Patient["geschlecht"]): string {
 
 export function PatientTable({ patients, isLoading, error }: PatientTableProps) {
   const router = useRouter()
+  const { statusMap } = usePatientAmpelStatus()
 
   if (error) {
     return (
@@ -150,12 +153,19 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
                 </Avatar>
               </TableCell>
               <TableCell>
-                <div className="font-medium">
-                  {patient.nachname}, {patient.vorname}
+                <div className="flex items-center gap-2">
+                  {statusMap.has(patient.id) && (
+                    <AmpelDot status={statusMap.get(patient.id)!} size="sm" />
+                  )}
+                  <div>
+                    <div className="font-medium">
+                      {patient.nachname}, {patient.vorname}
+                    </div>
+                    {patient.email && (
+                      <div className="text-sm text-slate-500">{patient.email}</div>
+                    )}
+                  </div>
                 </div>
-                {patient.email && (
-                  <div className="text-sm text-slate-500">{patient.email}</div>
-                )}
               </TableCell>
               <TableCell>
                 {getAlter(patient.geburtsdatum)} / {formatGeschlecht(patient.geschlecht)}

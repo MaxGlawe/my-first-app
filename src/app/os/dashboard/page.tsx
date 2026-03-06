@@ -9,6 +9,7 @@ import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
+import { AmpelDashboard } from "@/components/ampel/AmpelDashboard"
 import type { LucideIcon } from "lucide-react"
 import {
   Users,
@@ -159,6 +160,9 @@ export default function TherapistDashboardPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        {/* Ampel Dashboard — loads independently of stats */}
+        <AmpelDashboard />
 
         {/* Loading */}
         {isLoading && <DashboardSkeleton />}
