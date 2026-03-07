@@ -233,12 +233,20 @@ function getInitials(vorname: string, nachname: string): string {
 
 function formatTimeAgo(dateStr: string | null): string {
   if (!dateStr) return "Nie"
-  const date = new Date(dateStr)
+  const parsed = new Date(dateStr)
   const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const toLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  const entryLocal = dateStr.length === 10 ? dateStr : toLocal(parsed)
+  const todayStr = toLocal(now)
+  if (entryLocal === todayStr) return "Heute"
+  const yd = new Date(now)
+  yd.setDate(yd.getDate() - 1)
+  if (entryLocal === toLocal(yd)) return "Gestern"
+  const [y, m, d] = entryLocal.split("-").map(Number)
+  const entryDate = new Date(y, m - 1, d)
   now.setHours(0, 0, 0, 0)
-  const days = Math.floor((now.getTime() - date.getTime()) / 86_400_000)
-  if (days <= 0) return "Heute"
-  if (days === 1) return "Gestern"
+  const days = Math.round((now.getTime() - entryDate.getTime()) / 86_400_000)
   return `Vor ${days}d`
 }
 
