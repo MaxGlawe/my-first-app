@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react"
 import { usePatientAlerts } from "@/hooks/use-patient-alerts"
+import { useAmpelDismissed } from "@/hooks/use-ampel-dismissed"
 import type { PatientAlert, AmpelStatus } from "@/hooks/use-patient-alerts"
 
 // -- Quick message templates -------------------------------------------------
@@ -536,40 +537,12 @@ function AmpelPageSkeleton() {
 type FilterTab = "alle" | "rot" | "gelb"
 type SortKey = "status" | "pain" | "compliance" | "checkin"
 
-// -- localStorage-backed daily dismissals ------------------------------------
-
-const DISMISS_KEY = "ampel-dismissed"
-
-function loadDismissed(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DISMISS_KEY)
-    if (!raw) return new Set()
-    const { date, ids } = JSON.parse(raw)
-    const today = new Date().toLocaleDateString("sv-SE") // YYYY-MM-DD
-    if (date !== today) return new Set() // expired — new day
-    return new Set(ids as string[])
-  } catch { return new Set() }
-}
-
-function saveDismissed(ids: Set<string>) {
-  const today = new Date().toLocaleDateString("sv-SE")
-  localStorage.setItem(DISMISS_KEY, JSON.stringify({ date: today, ids: [...ids] }))
-}
-
 export default function AmpelPage() {
   const { alerts, isLoading, error, refresh } = usePatientAlerts()
+  const { dismissed, dismiss: handleDismiss, clearAll: clearDismissed } = useAmpelDismissed()
   const [filter, setFilter] = useState<FilterTab>("alle")
   const [sortKey, setSortKey] = useState<SortKey>("status")
   const [sortAsc, setSortAsc] = useState(true)
-  const [dismissed, setDismissed] = useState<Set<string>>(() => loadDismissed())
-
-  const handleDismiss = useCallback((id: string) => {
-    setDismissed((prev) => {
-      const next = new Set(prev).add(id)
-      saveDismissed(next)
-      return next
-    })
-  }, [])
 
   const handleSort = useCallback((key: SortKey) => {
     if (sortKey === key) setSortAsc(!sortAsc)
@@ -639,7 +612,7 @@ export default function AmpelPage() {
                   size="sm"
                   variant="ghost"
                   className="h-8 text-xs text-slate-400 hover:text-slate-600"
-                  onClick={() => { setDismissed(new Set()); saveDismissed(new Set()) }}
+                  onClick={clearDismissed}
                 >
                   {dismissed.size} erledigt — Alle anzeigen
                 </Button>

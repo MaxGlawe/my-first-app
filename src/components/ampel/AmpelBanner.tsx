@@ -9,14 +9,19 @@
 import Link from "next/link"
 import { AlertCircle, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react"
 import { usePatientAlerts } from "@/hooks/use-patient-alerts"
+import { useAmpelDismissed } from "@/hooks/use-ampel-dismissed"
 
 export function AmpelBanner() {
   const { alerts, isLoading } = usePatientAlerts()
+  const { dismissed } = useAmpelDismissed()
 
   if (isLoading) return null
 
-  const rotCount = alerts.filter((a) => a.status === "ROT").length
-  const gelbCount = alerts.filter((a) => a.status === "GELB").length
+  const active = alerts.filter(
+    (a) => (a.status === "ROT" || a.status === "GELB") && !dismissed.has(a.patientId),
+  )
+  const rotCount = active.filter((a) => a.status === "ROT").length
+  const gelbCount = active.filter((a) => a.status === "GELB").length
   const total = rotCount + gelbCount
 
   if (total === 0) return null
