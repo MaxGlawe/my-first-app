@@ -536,15 +536,39 @@ function AmpelPageSkeleton() {
 type FilterTab = "alle" | "rot" | "gelb"
 type SortKey = "status" | "pain" | "compliance" | "checkin"
 
+// -- localStorage-backed daily dismissals ------------------------------------
+
+const DISMISS_KEY = "ampel-dismissed"
+
+function loadDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISS_KEY)
+    if (!raw) return new Set()
+    const { date, ids } = JSON.parse(raw)
+    const today = new Date().toLocaleDateString("sv-SE") // YYYY-MM-DD
+    if (date !== today) return new Set() // expired — new day
+    return new Set(ids as string[])
+  } catch { return new Set() }
+}
+
+function saveDismissed(ids: Set<string>) {
+  const today = new Date().toLocaleDateString("sv-SE")
+  localStorage.setItem(DISMISS_KEY, JSON.stringify({ date: today, ids: [...ids] }))
+}
+
 export default function AmpelPage() {
   const { alerts, isLoading, error, refresh } = usePatientAlerts()
   const [filter, setFilter] = useState<FilterTab>("alle")
   const [sortKey, setSortKey] = useState<SortKey>("status")
   const [sortAsc, setSortAsc] = useState(true)
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
+  const [dismissed, setDismissed] = useState<Set<string>>(() => loadDismissed())
 
   const handleDismiss = useCallback((id: string) => {
-    setDismissed((prev) => new Set(prev).add(id))
+    setDismissed((prev) => {
+      const next = new Set(prev).add(id)
+      saveDismissed(next)
+      return next
+    })
   }, [])
 
   const handleSort = useCallback((key: SortKey) => {
@@ -552,19 +576,14 @@ export default function AmpelPage() {
     else { setSortKey(key); setSortAsc(true) }
   }, [sortKey, sortAsc])
 
-  // Only ROT + GELB — never show GRUEN
+  // Only ROT + GELB, hide dismissed
   const actionableAlerts = useMemo(() => {
-    let list = alerts.filter((a) => a.status !== "GRUEN")
+    let list = alerts.filter((a) => a.status !== "GRUEN" && !dismissed.has(a.patientId))
     if (filter === "rot") list = list.filter((a) => a.status === "ROT")
     if (filter === "gelb") list = list.filter((a) => a.status === "GELB")
 
     // Sort
     list = [...list].sort((a, b) => {
-      // Dismissed always at the end
-      const ad = dismissed.has(a.patientId) ? 1 : 0
-      const bd = dismissed.has(b.patientId) ? 1 : 0
-      if (ad !== bd) return ad - bd
-
       let cmp = 0
       switch (sortKey) {
         case "status": {
@@ -614,16 +633,28 @@ export default function AmpelPage() {
                   : "Alle Patienten im gruenen Bereich"}
               </p>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs gap-1.5"
-              onClick={() => { setDismissed(new Set()); refresh() }}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-              Aktualisieren
-            </Button>
+            <div className="flex items-center gap-2">
+              {dismissed.size > 0 && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs text-slate-400 hover:text-slate-600"
+                  onClick={() => { setDismissed(new Set()); saveDismissed(new Set()) }}
+                >
+                  {dismissed.size} erledigt — Alle anzeigen
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs gap-1.5"
+                onClick={refresh}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
+                Aktualisieren
+              </Button>
+            </div>
           </div>
 
           {/* Summary + Filters */}
@@ -716,7 +747,7 @@ export default function AmpelPage() {
               key={alert.patientId}
               alert={alert}
               onDismiss={handleDismiss}
-              isDismissed={dismissed.has(alert.patientId)}
+              isDismissed={false}
             />
           ))}
         </div>
