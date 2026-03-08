@@ -1,10 +1,30 @@
 import { Metadata } from "next"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 export const metadata: Metadata = {
   title: "Datenschutzerklärung | Praxis OS",
 }
 
-export default function DatenschutzPage() {
+async function getPraxisInfo() {
+  const supabase = createSupabaseServiceClient()
+  const { data } = await supabase
+    .from("praxis_settings")
+    .select("praxis_name, inhaber_name, strasse, plz, ort, email")
+    .limit(1)
+    .single()
+  return data
+}
+
+export default async function DatenschutzPage() {
+  const praxis = await getPraxisInfo()
+
+  const name = praxis?.praxis_name ?? "Physiotherapie Glawe"
+  const inhaber = praxis?.inhaber_name ?? "Max Glawe"
+  const adresse = praxis?.strasse && praxis?.plz && praxis?.ort
+    ? `${praxis.strasse}, ${praxis.plz} ${praxis.ort}`
+    : null
+  const email = praxis?.email ?? null
+
   return (
     <div className="container mx-auto px-4 py-16 max-w-3xl">
       <h1 className="text-3xl font-bold mb-8">Datenschutzerklärung</h1>
@@ -21,11 +41,11 @@ export default function DatenschutzPage() {
         <section>
           <h2 className="text-xl font-semibold mb-3">2. Verantwortliche Stelle</h2>
           <p>
-            Physiotherapie Glawe<br />
-            Max Glawe<br />
+            {name}<br />
+            {inhaber}<br />
             Heilpraktiker für Physiotherapie<br />
-            <span className="text-slate-500">[Adresse bitte ergänzen]</span><br />
-            <span className="text-slate-500">[E-Mail bitte ergänzen]</span>
+            {adresse && <>{adresse}<br /></>}
+            {email && <>E-Mail: {email}</>}
           </p>
         </section>
 
@@ -98,7 +118,7 @@ export default function DatenschutzPage() {
         </section>
 
         <section className="text-slate-400 text-xs pt-4 border-t">
-          <p>Stand: Februar 2026</p>
+          <p>Stand: März 2026</p>
         </section>
       </div>
     </div>
