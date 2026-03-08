@@ -12,6 +12,7 @@ import {
   GraduationCap,
   MessageCircle,
   Settings,
+  Building2,
   Link2,
   LogOut,
   Activity,
@@ -85,6 +86,7 @@ export function OsSidebar() {
     ? [
         { label: "Admin-Dashboard", href: "/os/admin/dashboard", icon: Settings },
         { label: "Nutzerverwaltung", href: "/os/admin/users", icon: UserCog },
+        { label: "Praxis-Einstellungen", href: "/os/admin/praxis", icon: Building2 },
         { label: "Integrationen", href: "/os/admin/integrations", icon: Link2 },
         { label: "Vertr\u00E4ge", href: "/os/admin/vertraege", icon: ScrollText },
         { label: "Rechnungen", href: "/os/admin/billing", icon: Receipt },
