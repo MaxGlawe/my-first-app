@@ -2,6 +2,7 @@ import { Metadata } from "next"
 
 export const metadata: Metadata = {
   title: "AGB | Praxis OS",
+  description: "Allgemeine Geschäftsbedingungen der Physiotherapie Glawe für Online-Physiotherapie und Heilpraktiker-Behandlungen per Video.",
 }
 
 export default function AgbPage() {

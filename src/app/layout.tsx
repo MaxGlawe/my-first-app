@@ -9,8 +9,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Praxis OS",
-  description: "Praxismanagementsystem für Physiotherapie-Praxen",
+  metadataBase: new URL("https://wwwpraxis-os.com"),
+  title: {
+    default: "Online Physiotherapie | Praxis OS — Physiotherapie Glawe",
+    template: "%s | Praxis OS",
+  },
+  description:
+    "Professionelle Physiotherapie online. Heilpraktiker-Behandlung per Video, individuelle Trainingspläne und persönliche Betreuung per App — deutschlandweit.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -19,6 +24,17 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    siteName: "Praxis OS — Physiotherapie Glawe",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
+  alternates: {
+    canonical: "/",
   },
 }
 
