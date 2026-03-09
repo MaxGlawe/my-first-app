@@ -65,7 +65,7 @@ export async function POST(
       nachname: intake.nachname,
       email: intake.email,
       telefon: intake.telefon,
-      hauptproblem: intake.beschwerde_freitext.slice(0, 200),
+      interne_notizen: `Anfrage: ${intake.beschwerde_bereich} — ${intake.beschwerde_freitext.slice(0, 300)}`,
       therapeut_id: user.id,
     })
     .select("id, vorname, nachname")
