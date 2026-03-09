@@ -109,7 +109,7 @@ export async function createSubscription(opts: {
     customer: opts.customerId,
     items: [{ price: opts.priceId }],
     trial_period_days: opts.trialDays,
-    ...(opts.couponId ? { coupon: opts.couponId } : {}),
+    ...(opts.couponId ? { discounts: [{ coupon: opts.couponId }] } : {}),
     payment_behavior: "default_incomplete",
     payment_settings: {
       save_default_payment_method: "on_subscription",

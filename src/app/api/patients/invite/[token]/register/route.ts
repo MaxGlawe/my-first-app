@@ -120,6 +120,7 @@ export async function POST(
     .upsert(
       {
         id: authData.user.id,
+        email,
         role: "patient",
         status: "aktiv",
         first_name: firstName,
