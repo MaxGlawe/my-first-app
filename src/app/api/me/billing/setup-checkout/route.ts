@@ -43,12 +43,13 @@ export async function POST() {
     const stripe = getStripe()
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
 
+    // Don't specify payment_method_types — Stripe auto-shows all
+    // enabled methods (card, SEPA, etc.) based on account config.
     const session = await stripe.checkout.sessions.create({
       mode: "setup",
       customer: subscription.stripe_customer_id,
-      payment_method_types: ["sepa_debit", "card"],
       success_url: `${siteUrl}/app/dashboard?payment_setup=success`,
-      cancel_url: `${siteUrl}/app/zahlungsmethode?cancelled=true`,
+      cancel_url: `${siteUrl}/app/dashboard?payment_setup=cancelled`,
       metadata: {
         patient_id: patient.id,
         patient_name: `${patient.vorname} ${patient.nachname}`,
