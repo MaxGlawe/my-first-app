@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   Receipt,
   ChevronRight,
+  ExternalLink,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -73,6 +75,24 @@ export default function PatientAboPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([])
   const [loading, setLoading] = useState(true)
+  const [portalLoading, setPortalLoading] = useState(false)
+
+  async function openBillingPortal() {
+    setPortalLoading(true)
+    try {
+      const res = await fetch("/api/me/billing/portal", { method: "POST" })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error ?? "Fehler beim Öffnen des Zahlungsportals.")
+        setPortalLoading(false)
+      }
+    } catch {
+      alert("Verbindungsfehler. Bitte erneut versuchen.")
+      setPortalLoading(false)
+    }
+  }
 
   useEffect(() => {
     fetch("/api/me/subscription")
@@ -157,13 +177,49 @@ export default function PatientAboPage() {
 
               {subscription.status === "trial" && (
                 <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-800">
-                  Dein erster Monat ist <span className="font-semibold">kostenfrei</span>.
-                  {subscription.extra_free_months > 0 && (
-                    <> Plus {subscription.extra_free_months} Bonus-{subscription.extra_free_months === 1 ? "Monat" : "Monate"} durch deinen Promo-Code.</>
-                  )}
-                  {" "}Danach wird die Betreuungspauschale automatisch eingezogen.
+                  <p>
+                    Dein erster Monat ist <span className="font-semibold">kostenfrei</span>.
+                    {subscription.extra_free_months > 0 && (
+                      <> Plus {subscription.extra_free_months} Bonus-{subscription.extra_free_months === 1 ? "Monat" : "Monate"} durch deinen Promo-Code.</>
+                    )}
+                    {" "}Danach wird die Betreuungspauschale automatisch eingezogen.
+                  </p>
+                  <p className="mt-2 font-medium">
+                    Hinterlege jetzt deine Zahlungsmethode, damit es nach der Testphase nahtlos weitergeht.
+                  </p>
                 </div>
               )}
+
+              {subscription.status === "past_due" && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                  <p className="font-medium">Zahlung ausstehend</p>
+                  <p className="mt-1">
+                    Bitte hinterlege eine gültige Zahlungsmethode, um deinen Zugang aufrechtzuerhalten.
+                  </p>
+                </div>
+              )}
+
+              {/* Payment method / Billing portal button */}
+              <Button
+                onClick={openBillingPortal}
+                disabled={portalLoading}
+                variant={subscription.status === "trial" || subscription.status === "past_due" ? "default" : "outline"}
+                className={
+                  subscription.status === "trial" || subscription.status === "past_due"
+                    ? "w-full bg-emerald-600 hover:bg-emerald-700"
+                    : "w-full"
+                }
+              >
+                {portalLoading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CreditCard className="mr-2 h-4 w-4" />
+                )}
+                {subscription.status === "trial" || subscription.status === "past_due"
+                  ? "Zahlungsmethode hinterlegen"
+                  : "Zahlungsmethode verwalten"}
+                <ExternalLink className="ml-2 h-3.5 w-3.5" />
+              </Button>
 
               <div className="text-xs text-muted-foreground">
                 Die Betreuungspauschale wird als Heilpraktiker-Leistung (GebüH Ziff. 3) abgerechnet und
