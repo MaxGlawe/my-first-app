@@ -37,6 +37,7 @@ import {
   Receipt,
   MessageCircle,
   TrendingUp,
+  CreditCard,
 } from "lucide-react"
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -333,6 +334,13 @@ export default function PatientDashboardPage() {
 
             {/* ── Bottom Links ───────────────────────────────────── */}
             <div className="space-y-3 animate-fade-in-up animation-delay-600">
+              <LinkCard
+                href="/app/abo"
+                icon={<CreditCard className="h-5 w-5 text-teal-600" />}
+                iconBg="bg-teal-100"
+                title="Meine Mitgliedschaft"
+                subtitle="Abo, Zahlungsmethode & Promo-Code"
+              />
               <LinkCard
                 href="/app/rechnungen"
                 icon={<Receipt className="h-5 w-5 text-emerald-600" />}
