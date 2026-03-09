@@ -6,6 +6,15 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { isRateLimited } from "@/lib/rate-limit"
+import { z } from "zod"
+
+const registerSchema = z.object({
+  email: z.string().email().max(255),
+  password: z.string().min(8).max(128),
+  firstName: z.string().min(1).max(100).trim(),
+  lastName: z.string().min(1).max(100).trim(),
+})
 
 export async function POST(
   request: NextRequest,
@@ -13,23 +22,26 @@ export async function POST(
 ) {
   const { token } = await params
 
-  if (!token || token.length < 10) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+  if (isRateLimited(`register:${ip}`, 5, 3600000)) {
+    return NextResponse.json({ error: "Zu viele Versuche. Bitte später erneut versuchen." }, { status: 429 })
+  }
+
+  if (!token || !/^[a-zA-Z0-9_-]{16,}$/.test(token)) {
     return NextResponse.json({ error: "Ungültiger Token." }, { status: 400 })
   }
 
-  const body = await request.json()
-  const { email, password, firstName, lastName } = body
-
-  if (!email || !password || !firstName || !lastName) {
-    return NextResponse.json({ error: "Alle Felder sind erforderlich." }, { status: 400 })
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Ungültiges JSON." }, { status: 400 })
   }
-
-  if (password.length < 8) {
-    return NextResponse.json(
-      { error: "Das Passwort muss mindestens 8 Zeichen lang sein." },
-      { status: 400 }
-    )
+  const parseResult = registerSchema.safeParse(body)
+  if (!parseResult.success) {
+    return NextResponse.json({ error: "Validierungsfehler.", details: parseResult.error.flatten().fieldErrors }, { status: 422 })
   }
+  const { email, password, firstName, lastName } = parseResult.data
 
   const serviceClient = createSupabaseServiceClient()
 
@@ -52,6 +64,10 @@ export async function POST(
       { error: "Diese Einladung wurde bereits verwendet." },
       { status: 410 }
     )
+  }
+
+  if (email.toLowerCase() !== patient.email?.toLowerCase()) {
+    return NextResponse.json({ error: "E-Mail-Adresse stimmt nicht mit der Einladung überein." }, { status: 400 })
   }
 
   // Delete any previously invited auth user (from inviteUserByEmail)
@@ -96,6 +112,27 @@ export async function POST(
       { error: "Konto konnte nicht erstellt werden." },
       { status: 500 }
     )
+  }
+
+  // Create user_profiles entry (required for middleware role checks)
+  const { error: profileError } = await serviceClient
+    .from("user_profiles")
+    .upsert(
+      {
+        id: authData.user.id,
+        role: "patient",
+        status: "aktiv",
+        first_name: firstName,
+        last_name: lastName,
+      },
+      { onConflict: "id" }
+    )
+
+  if (profileError) {
+    console.error("[register] Profile creation failed:", profileError)
+    // Rollback: delete the auth user
+    try { await serviceClient.auth.admin.deleteUser(authData.user.id) } catch {}
+    return NextResponse.json({ error: "Profil konnte nicht erstellt werden." }, { status: 500 })
   }
 
   // Link user to patient and mark as registered

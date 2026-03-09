@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { useCourse } from "@/hooks/use-course"
@@ -8,10 +8,71 @@ import { useCourseEnrollments } from "@/hooks/use-course-enrollments"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowLeft, UserPlus } from "lucide-react"
+import { ArrowLeft, UserPlus, Search, Loader2 } from "lucide-react"
 import { ParticipantTable } from "@/components/courses/ParticipantTable"
-import { EnrollPatientDialog } from "@/components/courses/EnrollPatientDialog"
 import { InviteLinkCard } from "@/components/courses/InviteLinkCard"
+
+// ── Inline patient list (replaces EnrollPatientDialog for reliability) ───────
+function InlinePatientList({ onEnroll, isEnrolling, onClose }: {
+  onEnroll: (patientId: string) => void
+  isEnrolling: boolean
+  onClose: () => void
+}) {
+  const [search, setSearch] = useState("")
+  const [patients, setPatients] = useState<{ id: string; first_name: string; last_name: string; email: string | null }[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    const params = new URLSearchParams({ pageSize: "50" })
+    if (search.trim()) params.set("search", search.trim())
+
+    fetch(`/api/patients?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : Promise.reject()))
+      .then((json) => { if (!cancelled) setPatients(json.patients ?? []) })
+      .catch(() => { if (!cancelled) setPatients([]) })
+      .finally(() => { if (!cancelled) setIsLoading(false) })
+
+    return () => { cancelled = true }
+  }, [search])
+
+  return (
+    <>
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+        <input
+          placeholder="Patient suchen..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          autoFocus
+        />
+      </div>
+      <div className="max-h-[50vh] overflow-y-auto space-y-1">
+        {isLoading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>}
+        {!isLoading && patients.length === 0 && (
+          <p className="text-sm text-slate-500 text-center py-8">Keine Patienten gefunden.</p>
+        )}
+        {!isLoading && patients.map((p) => (
+          <div key={p.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50">
+            <div>
+              <p className="text-sm font-medium">{p.first_name} {p.last_name}</p>
+              {p.email && <p className="text-xs text-slate-500">{p.email}</p>}
+            </div>
+            <Button size="sm" variant="outline" onClick={() => onEnroll(p.id)} disabled={isEnrolling}>
+              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+              Einschreiben
+            </Button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button variant="ghost" size="sm" onClick={onClose}>Schließen</Button>
+      </div>
+    </>
+  )
+}
 
 export default function CourseParticipantsPage() {
   const { id } = useParams<{ id: string }>()
@@ -29,10 +90,13 @@ export default function CourseParticipantsPage() {
   const effectiveInviteToken = inviteToken ?? course?.invite_token ?? null
   const effectiveInviteEnabled = inviteToken !== null ? inviteEnabled : (course?.invite_enabled ?? false)
 
+  const [enrollError, setEnrollError] = useState<string | null>(null)
+
   const handleEnroll = useCallback(async (patientId: string) => {
     if (!id) return
 
     setIsEnrolling(true)
+    setEnrollError(null)
     try {
       const res = await fetch(`/api/courses/${id}/enrollments`, {
         method: "POST",
@@ -40,24 +104,24 @@ export default function CourseParticipantsPage() {
         body: JSON.stringify({ patient_id: patientId }),
       })
 
+      const body = await res.json().catch(() => ({}))
+
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? "Einschreibung fehlgeschlagen.")
+        const msg = body.error ?? `Einschreibung fehlgeschlagen (Status ${res.status}).`
+        setEnrollError(msg)
+        return
       }
 
-      toast({ title: "Patient eingeschrieben" })
+      alert("Patient erfolgreich eingeschrieben!")
       setEnrollDialogOpen(false)
       refresh()
     } catch (err) {
-      toast({
-        title: "Fehler",
-        description: err instanceof Error ? err.message : "Einschreibung fehlgeschlagen.",
-        variant: "destructive",
-      })
+      const msg = err instanceof Error ? err.message : "Netzwerkfehler bei Einschreibung."
+      setEnrollError(msg)
     } finally {
       setIsEnrolling(false)
     }
-  }, [id, toast, refresh])
+  }, [id, refresh])
 
   const handleStatusChange = useCallback(async (
     enrollmentId: string,
@@ -140,12 +204,21 @@ export default function CourseParticipantsPage() {
         </div>
       </div>
 
-      <EnrollPatientDialog
-        open={enrollDialogOpen}
-        onOpenChange={setEnrollDialogOpen}
-        onEnroll={handleEnroll}
-        isEnrolling={isEnrolling}
-      />
+      {/* DEBUG: Inline patient enrollment instead of dialog */}
+      {enrollDialogOpen && (
+        <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" onClick={() => setEnrollDialogOpen(false)}>
+          <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold mb-2">Patient einschreiben</h2>
+            <p className="text-sm text-muted-foreground mb-4">Wähle einen Patienten aus.</p>
+            {enrollError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                <strong>Fehler:</strong> {enrollError}
+              </div>
+            )}
+            <InlinePatientList onEnroll={handleEnroll} isEnrolling={isEnrolling} onClose={() => setEnrollDialogOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

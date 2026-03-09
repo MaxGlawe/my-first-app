@@ -14,7 +14,7 @@ export async function POST(
 ) {
   const { token } = await params
 
-  if (!token || token.length < 10) {
+  if (!token || !/^[a-zA-Z0-9_-]{16,}$/.test(token)) {
     return NextResponse.json({ error: "Ungültiger Token." }, { status: 400 })
   }
 

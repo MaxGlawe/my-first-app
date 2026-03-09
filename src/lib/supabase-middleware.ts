@@ -34,23 +34,27 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke']
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie']
+  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/')
   const isContractSigningPage = pathname.startsWith('/vertrag/')
   const isContractPublicApi = pathname.startsWith('/api/contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
   const isAnalyticsTrackApi = pathname === '/api/analytics/track'
+  const isLandingAnalyticsApi = pathname === '/api/analytics/pageview' || pathname === '/api/analytics/conversion' || pathname === '/api/analytics/duration'
   const isRootPage = pathname === '/'
+
+  // SEO-critical routes — must be accessible to crawlers
+  const isSeoRoute = pathname === '/sitemap.xml' || pathname === '/robots.txt' || pathname === '/opengraph-image'
 
   // Static assets + API routes that handle their own auth
   const isStaticAsset = pathname === '/sw.js' || pathname.startsWith('/icons/') || pathname.startsWith('/images/')
   const isCronApi = pathname.startsWith('/api/cron/')
   const isPushSendApi = pathname === '/api/push/send'
-  const isWebhookApi = pathname.startsWith('/api/webhooks/')
+  const isWebhookApi = pathname.startsWith('/api/webhooks/') // includes /api/webhooks/stripe
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isRootPage && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
@@ -83,6 +87,42 @@ export async function updateSession(request: NextRequest) {
     if (role === 'patient' && pathname.startsWith('/os')) {
       url.pathname = '/app/dashboard'
       return NextResponse.redirect(url)
+    }
+
+    // ── Paywall: Patients with expired/cancelled subscriptions ──
+    // Only block if a subscription exists but is NOT active.
+    // No subscription record = billing not set up yet → allow access.
+    if (role === 'patient' && pathname.startsWith('/app')) {
+      const isPaywallExempt =
+        pathname === '/app/abo' ||
+        pathname === '/app/onboarding' ||
+        pathname.startsWith('/api/auth/') ||
+        pathname.startsWith('/api/me/subscription') ||
+        pathname.startsWith('/api/me/billing') ||
+        pathname.startsWith('/api/webhooks/')
+
+      if (!isPaywallExempt) {
+        const { data: patientRecord } = await adminClient
+          .from('patients')
+          .select('id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (patientRecord) {
+          const { data: subscription } = await adminClient
+            .from('patient_subscriptions')
+            .select('status')
+            .eq('patient_id', patientRecord.id)
+            .single()
+
+          // Only block if subscription exists but is expired/cancelled
+          if (subscription && !['trial', 'active'].includes(subscription.status)) {
+            url.pathname = '/app/abo'
+            url.searchParams.set('reason', 'subscription_expired')
+            return NextResponse.redirect(url)
+          }
+        }
+      }
     }
 
     // Helper: clinical routes that only Physio/HP/Admin may access

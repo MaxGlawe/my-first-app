@@ -175,6 +175,8 @@ export interface PatientCourseLesson {
   order: number
   is_completed: boolean
   is_unlocked: boolean
+  /** ISO date when this lesson will unlock (null if already unlocked or not time-gated) */
+  unlocks_at: string | null
   completed_at: string | null
 }
 

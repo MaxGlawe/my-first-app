@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -32,8 +33,10 @@ export async function GET(
     return NextResponse.json({ error: "Ungültige Kurs-ID." }, { status: 400 })
   }
 
-  // Check course exists
-  const { data: course } = await supabase
+  const serviceClient = createSupabaseServiceClient()
+
+  // Check course exists (use service client to avoid RLS issues)
+  const { data: course } = await serviceClient
     .from("courses")
     .select("id, version")
     .eq("id", courseId)
@@ -43,10 +46,10 @@ export async function GET(
     return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
   }
 
-  // Get enrollments with patient name
-  const { data: enrollments, error: enrollError } = await supabase
+  // Get enrollments with patient name (use service client to bypass RLS)
+  const { data: enrollments, error: enrollError } = await serviceClient
     .from("course_enrollments")
-    .select("*, patients(first_name, last_name)")
+    .select("*, patients(vorname, nachname)")
     .eq("course_id", courseId)
     .order("enrolled_at", { ascending: false })
 
@@ -73,7 +76,7 @@ export async function GET(
 
   // Get total lesson count (snapshots for enrolled version)
   const enriched = (enrollments ?? []).map((e) => {
-    const patient = e.patients as { first_name: string; last_name: string } | null
+    const patient = e.patients as { vorname: string; nachname: string } | null
     return {
       id: e.id,
       course_id: e.course_id,
@@ -84,7 +87,7 @@ export async function GET(
       enrolled_at: e.enrolled_at,
       completed_at: e.completed_at,
       cancelled_at: e.cancelled_at,
-      patient_name: patient ? `${patient.first_name} ${patient.last_name}`.trim() : null,
+      patient_name: patient ? `${patient.vorname} ${patient.nachname}`.trim() : null,
       completed_lessons: completionCounts[e.id] || 0,
     }
   })

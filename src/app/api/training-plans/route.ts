@@ -60,7 +60,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (search) {
-    query = query.ilike("name", `%${search}%`)
+    const term = search.trim()
+      .replace(/[,().]/g, "")
+      .replace(/%/g, "\\%")
+      .replace(/_/g, "\\_")
+    if (term) {
+      query = query.ilike("name", `%${term}%`)
+    }
   }
 
   const { data, error } = await query

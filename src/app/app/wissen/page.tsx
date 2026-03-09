@@ -13,6 +13,7 @@ import {
   Loader2,
   Lock,
 } from "lucide-react"
+import { sanitizeHtml } from "@/lib/sanitize-html"
 import type { CurriculumProgress, PatientEducationModule } from "@/types/education"
 
 export default function WissensHubPage() {
@@ -245,7 +246,7 @@ function FlatModuleCard({ module }: { module: PatientEducationModule }) {
               prose-p:text-xs prose-p:leading-relaxed prose-p:text-slate-600
               prose-ul:text-xs prose-li:text-slate-600
               prose-strong:text-slate-800"
-            dangerouslySetInnerHTML={{ __html: module.lesson_content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(module.lesson_content) }}
           />
           {module.quiz_completed ? (
             <div className="mt-4 rounded-xl bg-green-50 border border-green-200 p-3 text-center">

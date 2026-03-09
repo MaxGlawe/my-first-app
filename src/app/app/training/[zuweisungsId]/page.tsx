@@ -38,6 +38,8 @@ import {
   Star,
   AlertCircle,
 } from "lucide-react"
+import { ExerciseVorlesen } from "@/components/app/ExerciseVorlesen"
+import { GuidedModeController } from "@/components/app/GuidedModeController"
 import { LessonScreen } from "@/components/education/LessonScreen"
 import { QuizScreen } from "@/components/education/QuizScreen"
 import type { EducationModule } from "@/types/education"
@@ -952,6 +954,29 @@ export default function TrainingSessionPage() {
       {/* Progress bar */}
       <Progress value={progressPct} className="h-2" />
 
+      {/* Session Mode Banner (PROJ-18) */}
+      <Link href={`/app/training/${assignmentId}/session`}>
+        <div className="rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all active:scale-[0.98]">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Play className="h-5 w-5 text-white" fill="white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm">Premium-Training starten</p>
+              <p className="text-xs text-white/70">Immersiver Vollbild-Modus mit Timer & Atmung</p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-white/60" />
+          </div>
+        </div>
+      </Link>
+
+      {/* Guided Mode */}
+      <GuidedModeController
+        exercises={exercises}
+        currentIndex={currentIndex}
+        isSessionActive={!!session}
+      />
+
       {/* Exercise card */}
       {currentExercise && (
         <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
@@ -1029,6 +1054,16 @@ export default function TrainingSessionPage() {
                   </ol>
                 </CollapsibleContent>
               </Collapsible>
+            )}
+
+            {/* Vorlesen (TTS) */}
+            {currentExercise.ausfuehrung && currentExercise.ausfuehrung.length > 0 && (
+              <ExerciseVorlesen
+                exerciseId={currentExercise.exerciseId}
+                exerciseName={currentExercise.name}
+                ausfuehrung={currentExercise.ausfuehrung}
+                params={currentExercise.params}
+              />
             )}
 
             {/* Set tracker */}

@@ -47,7 +47,8 @@ export async function GET(req: NextRequest) {
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[GET /api/me/chat] Error:", error)
+    return NextResponse.json({ error: "Ein Fehler ist aufgetreten." }, { status: 500 })
   }
 
   const messages = (data ?? []).slice(0, PAGE_SIZE).reverse()
@@ -126,7 +127,8 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 })
+    console.error("[POST /api/me/chat] Error:", insertError)
+    return NextResponse.json({ error: "Ein Fehler ist aufgetreten." }, { status: 500 })
   }
 
   return NextResponse.json({ message }, { status: 201 })

@@ -85,22 +85,32 @@ export async function POST(
     return NextResponse.json({ error: "Lektion nicht in diesem Kurs gefunden." }, { status: 404 })
   }
 
-  // Check sequential unlock
+  // Check sequential unlock with 7-day cooldown
   if (courseData?.unlock_mode === "sequentiell") {
     const lessonOrder = lessonSnapshot.order
     if (lessonOrder > 0) {
-      // Find previous lesson
       const prevLesson = (snapshots ?? []).find((s) => s.order === lessonOrder - 1)
       if (prevLesson) {
         const { data: prevCompletion } = await supabase
           .from("lesson_completions")
-          .select("id")
+          .select("id, completed_at")
           .eq("enrollment_id", enrollmentId)
           .eq("lesson_id", prevLesson.lesson_id)
           .single()
 
         if (!prevCompletion) {
           return NextResponse.json({ error: "Vorherige Lektion muss zuerst abgeschlossen werden." }, { status: 422 })
+        }
+
+        // 7-day cooldown check
+        const UNLOCK_DELAY_MS = 7 * 24 * 60 * 60 * 1000
+        const unlockDate = new Date(new Date(prevCompletion.completed_at).getTime() + UNLOCK_DELAY_MS)
+        if (new Date() < unlockDate) {
+          const days = Math.ceil((unlockDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000))
+          return NextResponse.json(
+            { error: `Diese Lektion wird in ${days} Tag${days === 1 ? "" : "en"} freigeschaltet.` },
+            { status: 422 }
+          )
         }
       }
     }

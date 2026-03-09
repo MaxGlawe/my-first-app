@@ -17,6 +17,7 @@ import { FunktionsuntersuchungTab } from "@/components/funktionsuntersuchung/Fun
 import { TrainingsdokuTab } from "@/components/trainingsdoku/TrainingsdokuTab"
 import { BefindlichkeitTab } from "@/components/befindlichkeit/BefindlichkeitTab"
 import { EdukationTab } from "@/components/education/EdukationTab"
+import { BillingTab } from "@/components/billing/BillingTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -125,6 +126,11 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
           <TabsTrigger value="chat">Chat</TabsTrigger>
           <TabsTrigger value="befindlichkeit">Befindlichkeit</TabsTrigger>
           <TabsTrigger value="edukation">Edukation</TabsTrigger>
+
+          {/* Billing — visible to clinical roles + admin */}
+          {(isClinicalRole || isAdmin) && (
+            <TabsTrigger value="abrechnung">Abrechnung</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="stammdaten">
@@ -189,6 +195,12 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
         <TabsContent value="edukation">
           <EdukationTab patientId={patient.id} />
         </TabsContent>
+
+        {(isClinicalRole || isAdmin) && (
+          <TabsContent value="abrechnung">
+            <BillingTab patientId={patient.id} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )

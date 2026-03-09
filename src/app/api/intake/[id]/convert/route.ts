@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,6 +37,10 @@ export async function POST(
   }
 
   const { id } = await params
+
+  if (!UUID_REGEX.test(id)) {
+    return NextResponse.json({ error: "Ungültige ID." }, { status: 400 })
+  }
 
   // Get the intake request
   const { data: intake, error: fetchErr } = await supabase

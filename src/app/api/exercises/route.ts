@@ -169,12 +169,10 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("[GET /api/exercises] Supabase error:", error.message, error.details, error.hint)
     return NextResponse.json(
-      { error: `Übungen konnten nicht geladen werden: ${error.message}` },
+      { error: "Ein Fehler ist aufgetreten." },
       { status: 500 }
     )
   }
-
-  console.log(`[GET /api/exercises] Found ${data?.length ?? 0} exercises (total: ${count})`)
 
   // Add is_favorite computed field from the pre-fetched favorites set
   const exercises = (data ?? []).map((row) => ({

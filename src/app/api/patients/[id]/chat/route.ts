@@ -56,7 +56,8 @@ export async function GET(
   const { data, error } = await query
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[GET /api/patients/[id]/chat] Error:", error)
+    return NextResponse.json({ error: "Ein Fehler ist aufgetreten." }, { status: 500 })
   }
 
   const messages = (data ?? []).slice(0, PAGE_SIZE).reverse()
@@ -139,7 +140,8 @@ export async function POST(
     .single()
 
   if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 })
+    console.error("[POST /api/patients/[id]/chat] Error:", insertError)
+    return NextResponse.json({ error: "Ein Fehler ist aufgetreten." }, { status: 500 })
   }
 
   // PROJ-14: Fire-and-forget push notification to the patient.

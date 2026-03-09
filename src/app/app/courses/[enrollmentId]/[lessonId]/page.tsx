@@ -7,7 +7,19 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowLeft, CheckCircle2, Dumbbell, Video, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { TraumreisePlayer } from "@/components/app/TraumreisePlayer"
+import { sanitizeHtml } from "@/lib/sanitize-html"
 import type { PatientCourseEnrollment, PatientCourseLesson, LessonExercise } from "@/types/course"
+import type { AmbientTheme } from "@/types/tts"
+
+/** Derive ambient theme from course name */
+function detectAmbientTheme(courseName: string): AmbientTheme | undefined {
+  const lower = courseName.toLowerCase()
+  if (lower.includes("wald") || lower.includes("forest")) return "forest"
+  if (lower.includes("meer") || lower.includes("sea") || lower.includes("ozean")) return "sea"
+  if (lower.includes("berg") || lower.includes("mountain") || lower.includes("alp")) return "mountains"
+  return undefined
+}
 
 export default function LessonPlayerPage() {
   const { enrollmentId, lessonId } = useParams<{ enrollmentId: string; lessonId: string }>()
@@ -144,12 +156,22 @@ export default function LessonPlayerPage() {
         </div>
       )}
 
+      {/* Traumreise Player (shown for lessons with substantial text) */}
+      {lesson.beschreibung && lesson.beschreibung.length > 200 && (
+        <TraumreisePlayer
+          lessonBeschreibung={lesson.beschreibung}
+          lessonTitle={lesson.title}
+          lessonId={lesson.lesson_id}
+          ambientTheme={enrollment?.course_name ? detectAmbientTheme(enrollment.course_name) : undefined}
+        />
+      )}
+
       {/* Description */}
       {lesson.beschreibung && (
         <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-5">
           <div
             className="prose prose-sm max-w-none text-slate-600"
-            dangerouslySetInnerHTML={{ __html: lesson.beschreibung }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.beschreibung) }}
           />
         </div>
       )}

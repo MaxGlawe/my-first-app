@@ -87,6 +87,7 @@ export function usePainDiary(): UsePainDiaryResult {
       notes?: string | null
     }): Promise<boolean> => {
       setIsSaving(true)
+      setError(null)
       try {
         const res = await fetch("/api/me/pain-diary", {
           method: "POST",
@@ -100,8 +101,17 @@ export function usePainDiary(): UsePainDiaryResult {
         }
         // Verify response is actually JSON (not an HTML page)
         const contentType = res.headers.get("content-type") ?? ""
-        if (!contentType.includes("application/json")) return false
-        if (!res.ok) return false
+        if (!contentType.includes("application/json")) {
+          console.error("[CheckIn] Non-JSON response:", res.status, contentType)
+          setError("Unerwartete Antwort vom Server.")
+          return false
+        }
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}))
+          console.error("[CheckIn] Save failed:", res.status, body)
+          setError(body.error ?? "Speichern fehlgeschlagen.")
+          return false
+        }
         refresh()
         return true
       } catch {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
+import Image from "next/image"
 import { ScrollReveal } from "./ScrollReveal"
 
 const SIGNATURE_PATH = [
@@ -91,6 +92,29 @@ function SignatureSVG() {
   )
 }
 
+function FounderImage() {
+  const [imgError, setImgError] = useState(false)
+
+  return (
+    <div className="h-60 w-48 sm:h-80 sm:w-64 md:h-[22rem] md:w-72 lg:h-96 lg:w-80 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/10 ring-1 ring-slate-100 relative">
+      {imgError ? (
+        <div className="h-full w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+          <span className="text-5xl font-bold text-slate-300 select-none">MG</span>
+        </div>
+      ) : (
+        <Image
+          src="/images/maxglawe.webp"
+          alt="Max Glawe — Heilpraktiker für Physiotherapie und Gründer von Praxis OS"
+          fill
+          className="object-cover object-top"
+          sizes="(max-width: 640px) 192px, (max-width: 768px) 256px, (max-width: 1024px) 288px, 320px"
+          onError={() => setImgError(true)}
+        />
+      )}
+    </div>
+  )
+}
+
 export function QuoteSection() {
   return (
     <section className="py-24 sm:py-32 bg-[#faf9f7] relative overflow-hidden">
@@ -106,30 +130,7 @@ export function QuoteSection() {
             {/* Portrait */}
             <div className="flex-shrink-0">
               <div className="relative">
-                <div className="h-48 w-48 sm:h-64 sm:w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/10 ring-1 ring-slate-100">
-                  <img
-                    src="/images/max-glawe.jpg"
-                    alt="Max Glawe — Gründer Praxis OS"
-                    className="h-full w-full object-cover"
-                    onError={(e) => {
-                      const target = e.currentTarget
-                      target.style.display = "none"
-                      target.parentElement!.classList.add(
-                        "bg-gradient-to-br",
-                        "from-slate-100",
-                        "to-slate-200",
-                        "flex",
-                        "items-center",
-                        "justify-center"
-                      )
-                      const initials = document.createElement("span")
-                      initials.textContent = "MG"
-                      initials.className =
-                        "text-5xl font-bold text-slate-300 select-none"
-                      target.parentElement!.appendChild(initials)
-                    }}
-                  />
-                </div>
+                <FounderImage />
                 {/* Decorative accent */}
                 <div className="absolute -bottom-3 -right-3 h-24 w-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 -z-10" />
               </div>

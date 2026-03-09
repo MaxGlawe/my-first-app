@@ -84,6 +84,20 @@ export function PatientRegistrationForm({ token, prefill }: PatientRegistrationF
         return
       }
 
+      // Auto-login after registration
+      const { supabase } = await import("@/lib/supabase")
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      })
+
+      if (!loginError) {
+        // Redirect directly to patient app
+        window.location.href = "/app/dashboard"
+        return
+      }
+
+      // Fallback: show success with login link
       setSuccess(true)
     } catch {
       setServerError("Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.")

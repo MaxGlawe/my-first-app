@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { ArrowRight, Menu, X } from "lucide-react"
@@ -26,10 +27,12 @@ export function LandingHeader() {
       >
         <div className="container mx-auto flex h-16 items-center justify-between px-4 max-w-6xl">
           <Link href="/" className="flex items-center gap-2.5">
-            <img
+            <Image
               src="/images/Physio Logo_ausgeschnitten.png"
-              alt="Physiotherapie Glawe"
-              className="h-9 w-9 rounded-xl object-contain"
+              alt="Physiotherapie Glawe — Logo"
+              width={36}
+              height={36}
+              className="rounded-xl object-contain"
             />
             <div className="flex flex-col">
               <span className={`font-semibold text-[15px] leading-tight transition-colors duration-500 ${scrolled ? "text-slate-800" : "text-white"}`}>
@@ -46,6 +49,8 @@ export function LandingHeader() {
               { label: "Features", href: "#features" },
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
+              { label: "Preise", href: "#preise" },
+              { label: "FAQ", href: "#faq" },
             ].map((link) => (
               <a
                 key={link.label}
@@ -101,6 +106,8 @@ export function LandingHeader() {
               { label: "Features", href: "#features" },
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
+              { label: "Preise", href: "#preise" },
+              { label: "FAQ", href: "#faq" },
             ].map((link) => (
               <a
                 key={link.label}

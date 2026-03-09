@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import NextImage from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Heart,
@@ -14,7 +15,7 @@ const STORAGE_KEY = "praxis-os-onboarding-done"
 
 const STEPS = [
   {
-    icon: <img src="/images/Physio Logo_ausgeschnitten.png" alt="Physiotherapie Glawe" className="h-16 w-16 object-contain" />,
+    icon: <NextImage src="/images/Physio Logo_ausgeschnitten.png" alt="Physiotherapie Glawe — Logo" width={64} height={64} className="object-contain" />,
     bg: "from-teal-500 to-emerald-500",
     title: "Willkommen bei Praxis OS!",
     description:

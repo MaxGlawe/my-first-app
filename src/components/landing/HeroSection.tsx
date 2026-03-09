@@ -58,7 +58,7 @@ export function HeroSection() {
                 size="lg"
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-base px-8 h-13 rounded-full shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 animate-glow-pulse"
               >
-                Kostenlos anfragen
+                Jetzt starten
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>

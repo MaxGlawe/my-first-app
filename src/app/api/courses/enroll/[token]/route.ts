@@ -18,7 +18,7 @@ export async function POST(
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
   }
 
-  if (!token || token.length < 10) {
+  if (!token || !/^[a-zA-Z0-9_-]{16,}$/.test(token)) {
     return NextResponse.json({ error: "Ungültiger Einladungstoken." }, { status: 400 })
   }
 
@@ -141,7 +141,7 @@ export async function GET(
     return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
   }
 
-  if (!token || token.length < 10) {
+  if (!token || !/^[a-zA-Z0-9_-]{16,}$/.test(token)) {
     return NextResponse.json({ error: "Ungültiger Einladungstoken." }, { status: 400 })
   }
 

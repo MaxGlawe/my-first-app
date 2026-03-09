@@ -1,5 +1,7 @@
+import { Suspense } from "react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/landing/StructuredData"
+import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { HeroSection } from "@/components/landing/HeroSection"
 import { DeviceShowcase } from "@/components/landing/DeviceShowcase"
@@ -42,6 +44,7 @@ export const metadata: Metadata = {
       "Professionelle Physiotherapie per Video. Heilpraktiker-Behandlung, individuelle Trainingspläne und persönliche Betreuung per App — deutschlandweit.",
     type: "website",
     locale: "de_DE",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Praxis OS — Online Physiotherapie" }],
   },
   alternates: {
     canonical: "https://wwwpraxis-os.com",
@@ -52,6 +55,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <StructuredData />
+      <Suspense fallback={null}>
+        <LandingAnalytics />
+      </Suspense>
       <LandingHeader />
       <main className="flex-1">
         <HeroSection />

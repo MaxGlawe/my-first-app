@@ -5,7 +5,7 @@ import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ArrowLeft, Lock, CheckCircle2, PlayCircle } from "lucide-react"
+import { ArrowLeft, Lock, CheckCircle2, PlayCircle, Clock } from "lucide-react"
 import { KATEGORIE_LABELS } from "@/types/course"
 import type { PatientCourseEnrollment, PatientCourseLesson } from "@/types/course"
 
@@ -126,6 +126,17 @@ export default function PatientCourseDetailPage() {
   )
 }
 
+function formatUnlockDate(isoDate: string): string {
+  const unlock = new Date(isoDate)
+  const now = new Date()
+  const diffMs = unlock.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (24 * 60 * 60 * 1000))
+
+  if (diffDays <= 0) return "Bald verfügbar"
+  if (diffDays === 1) return "Morgen verfügbar"
+  return `Verfügbar am ${unlock.toLocaleDateString("de-DE", { day: "numeric", month: "long" })}`
+}
+
 function LessonItem({
   lesson,
   index,
@@ -135,6 +146,8 @@ function LessonItem({
   index: number
   enrollmentId: string
 }) {
+  const isTimeLocked = !lesson.is_unlocked && !!lesson.unlocks_at
+
   const content = (
     <div
       className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
@@ -142,6 +155,8 @@ function LessonItem({
           ? "bg-emerald-50 border-emerald-200"
           : lesson.is_unlocked
           ? "bg-white border-slate-200 hover:bg-slate-50"
+          : isTimeLocked
+          ? "bg-amber-50/50 border-amber-200/60"
           : "bg-slate-50 border-slate-100 opacity-60"
       }`}
     >
@@ -151,6 +166,8 @@ function LessonItem({
           <CheckCircle2 className="h-6 w-6 text-emerald-500" />
         ) : lesson.is_unlocked ? (
           <PlayCircle className="h-6 w-6 text-emerald-600" />
+        ) : isTimeLocked ? (
+          <Clock className="h-6 w-6 text-amber-500" />
         ) : (
           <Lock className="h-6 w-6 text-slate-300" />
         )}
@@ -159,13 +176,20 @@ function LessonItem({
       {/* Lesson info */}
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium truncate ${
-          lesson.is_completed ? "text-emerald-700" : "text-slate-700"
+          lesson.is_completed ? "text-emerald-700"
+          : lesson.is_unlocked ? "text-slate-700"
+          : "text-slate-500"
         }`}>
           {index + 1}. {lesson.title}
         </p>
         {lesson.is_completed && lesson.completed_at && (
           <p className="text-xs text-emerald-500 mt-0.5">
             Abgeschlossen am {new Date(lesson.completed_at).toLocaleDateString("de-DE")}
+          </p>
+        )}
+        {isTimeLocked && lesson.unlocks_at && (
+          <p className="text-xs text-amber-600 mt-0.5">
+            {formatUnlockDate(lesson.unlocks_at)}
           </p>
         )}
       </div>

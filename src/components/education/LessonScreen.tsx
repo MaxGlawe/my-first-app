@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { sanitizeHtml } from "@/lib/sanitize-html"
 import type { EducationModule } from "@/types/education"
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ export function LessonScreen({ module, lessonProgress, onComplete }: LessonScree
                       prose-p:text-sm prose-p:leading-relaxed prose-p:text-slate-600 dark:prose-p:text-slate-300
                       prose-ul:text-sm prose-li:text-slate-600 dark:prose-li:text-slate-300
                       prose-strong:text-slate-800 dark:prose-strong:text-slate-100"
-                    dangerouslySetInnerHTML={{ __html: section.html }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.html) }}
                   />
                 </div>
               )
@@ -234,7 +235,7 @@ export function LessonScreen({ module, lessonProgress, onComplete }: LessonScree
                         prose-ul:text-[13px] prose-ul:my-2 prose-ul:pl-0
                         prose-li:text-slate-700 dark:prose-li:text-slate-300 prose-li:mb-1.5 prose-li:pl-0
                         prose-strong:text-slate-900 dark:prose-strong:text-white prose-strong:font-semibold"
-                      dangerouslySetInnerHTML={{ __html: section.html }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(section.html) }}
                     />
                   </div>
                 )}

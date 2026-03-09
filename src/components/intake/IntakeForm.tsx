@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -74,10 +75,13 @@ const initialData: FormData = {
 
 export function IntakeForm() {
   const router = useRouter()
+  const { trackConversion } = useConversionTracker()
   const [step, setStep] = useState(1)
   const [data, setData] = useState<FormData>(initialData)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => { trackConversion("anfrage_opened") }, [trackConversion])
 
   function update(fields: Partial<FormData>) {
     setData((prev) => ({ ...prev, ...fields }))
@@ -144,6 +148,7 @@ export function IntakeForm() {
         return
       }
 
+      trackConversion("anfrage_submitted", { bereich: data.beschwerde_bereich })
       router.push("/danke")
     } catch {
       setError("Netzwerkfehler. Bitte versuchen Sie es erneut.")

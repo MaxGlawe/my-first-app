@@ -29,9 +29,18 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     siteName: "Praxis OS — Physiotherapie Glawe",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Praxis OS — Online Physiotherapie",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/opengraph-image"],
   },
   alternates: {
     canonical: "/",
@@ -54,6 +63,8 @@ export default function RootLayout({
   return (
     <html lang="de" className={inter.variable}>
       <head>
+        <link rel="preconnect" href="https://duacypqeyfymdqostguw.supabase.co" />
+        <link rel="dns-prefetch" href="https://duacypqeyfymdqostguw.supabase.co" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />

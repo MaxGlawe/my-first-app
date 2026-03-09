@@ -104,12 +104,11 @@ export async function GET(_request: NextRequest) {
   const activeAssignments = assignmentsResult.data?.length ?? 0
 
   // Calculate compliance + trained-today from assignments
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split("T")[0]
+  const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" })
+  const today = new Date(todayStr + "T00:00:00")
   const sevenDaysAgo = new Date(today)
   sevenDaysAgo.setDate(today.getDate() - 6)
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0]
+  const sevenDaysAgoStr = sevenDaysAgo.toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" })
 
   let trainedTodayCount = 0
   let totalExpected = 0

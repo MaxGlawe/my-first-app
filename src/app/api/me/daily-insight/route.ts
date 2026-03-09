@@ -10,7 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import Anthropic from "@anthropic-ai/sdk"
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0]
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" })
 }
 
 export async function GET() {

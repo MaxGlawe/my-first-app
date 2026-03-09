@@ -28,9 +28,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { KrankenkasseCombobox } from "./KrankenkasseCombobox"
-import { AlertTriangle, Mail } from "lucide-react"
+import { AlertTriangle, Mail, Gift, BadgeCheck, XCircle, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 const patientSchema = z.object({
@@ -66,6 +67,11 @@ export function NewPatientForm() {
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null)
   const [pendingData, setPendingData] = useState<PatientFormValues | null>(null)
   const [sendInvite, setSendInvite] = useState(false)
+  const [activateSubscription, setActivateSubscription] = useState(true)
+  const [planType, setPlanType] = useState<"monthly" | "yearly">("monthly")
+  const [promoCode, setPromoCode] = useState("")
+  const [promoValid, setPromoValid] = useState<{ valid: boolean; type?: string; value?: number; error?: string } | null>(null)
+  const [promoChecking, setPromoChecking] = useState(false)
 
   const {
     register,
@@ -98,6 +104,25 @@ export function NewPatientForm() {
     }
   }
 
+  async function validatePromo(code: string) {
+    if (!code.trim()) { setPromoValid(null); return }
+    setPromoChecking(true)
+    try {
+      const res = await fetch(`/api/admin/promo-codes/validate?code=${encodeURIComponent(code)}`)
+      setPromoValid(await res.json())
+    } catch {
+      setPromoValid({ valid: false, error: "Prüfung fehlgeschlagen." })
+    } finally {
+      setPromoChecking(false)
+    }
+  }
+
+  function formatPromoValue(type: string, value: number): string {
+    if (type === "free_months") return `+${value} Gratis-Monat${value > 1 ? "e" : ""}`
+    if (type === "percent_off") return `${value}% Rabatt`
+    return `${value.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} Rabatt`
+  }
+
   const savePatient = async (data: PatientFormValues) => {
     setIsLoading(true)
     setServerError(null)
@@ -117,7 +142,6 @@ export function NewPatientForm() {
         krankenkasse: data.krankenkasse?.trim() || null,
         versichertennummer: data.versichertennummer?.trim() || null,
         interne_notizen: data.interne_notizen?.trim() || null,
-        send_invite: sendInvite && !!email,
       }
 
       const res = await fetch("/api/patients", {
@@ -133,10 +157,35 @@ export function NewPatientForm() {
         return
       }
 
-      if (json.invite_sent) {
-        toast.success("Patient angelegt und Einladung per E-Mail gesendet.")
-      } else if (json.invite_error) {
-        toast.warning(`Patient angelegt. Einladung fehlgeschlagen: ${json.invite_error}`)
+      // Step 2: Send invite + optional subscription activation
+      if (sendInvite && email) {
+        try {
+          const inviteBody: Record<string, unknown> = {}
+          if (activateSubscription) {
+            inviteBody.plan_type = planType
+            if (promoCode && promoValid?.valid) inviteBody.promo_code = promoCode
+          }
+
+          const inviteRes = await fetch(`/api/patients/${json.patient.id}/invite`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(inviteBody),
+          })
+
+          const inviteJson = await inviteRes.json().catch(() => ({}))
+
+          if (inviteRes.ok) {
+            toast.success(
+              activateSubscription
+                ? "Patient angelegt, Einladung gesendet & App-Zugang freigeschaltet."
+                : "Patient angelegt und Einladung per E-Mail gesendet."
+            )
+          } else {
+            toast.warning(`Patient angelegt. Einladung fehlgeschlagen: ${inviteJson.error}`)
+          }
+        } catch {
+          toast.warning("Patient angelegt. Einladung konnte nicht gesendet werden.")
+        }
       }
 
       router.push(`/os/patients/${json.patient.id}`)
@@ -344,22 +393,113 @@ export function NewPatientForm() {
 
             {/* App invite checkbox — only visible when email is filled */}
             {watchedEmail && watchedEmail.includes("@") && (
-              <div className="flex items-start gap-3 sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
-                <Checkbox
-                  id="send_invite"
-                  checked={sendInvite}
-                  onCheckedChange={(checked) => setSendInvite(checked === true)}
-                  className="mt-0.5"
-                />
-                <div className="grid gap-0.5">
-                  <Label htmlFor="send_invite" className="cursor-pointer flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    Einladung zur Patienten-App per E-Mail senden
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Der Patient erhält eine E-Mail mit einem Link zur Registrierung.
-                  </p>
+              <div className="sm:col-span-2 space-y-3 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="send_invite"
+                    checked={sendInvite}
+                    onCheckedChange={(checked) => setSendInvite(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="grid gap-0.5">
+                    <Label htmlFor="send_invite" className="cursor-pointer flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      Einladung zur Patienten-App per E-Mail senden
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Der Patient erhält eine E-Mail mit einem Link zur Registrierung.
+                    </p>
+                  </div>
                 </div>
+
+                {/* Subscription activation — only when invite is checked */}
+                {sendInvite && (
+                  <div className="space-y-3 border-t border-slate-200 pt-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="activate_subscription" className="flex items-center gap-2 cursor-pointer text-sm">
+                        <Gift className="h-4 w-4 text-emerald-600" />
+                        Betreuungspauschale aktivieren
+                      </Label>
+                      <Switch
+                        id="activate_subscription"
+                        checked={activateSubscription}
+                        onCheckedChange={setActivateSubscription}
+                      />
+                    </div>
+
+                    {activateSubscription && (
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Abo-Modell</Label>
+                          <Select value={planType} onValueChange={(v) => setPlanType(v as "monthly" | "yearly")}>
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="monthly">Monatlich — 14,99 €/Monat</SelectItem>
+                              <SelectItem value="yearly">Jährlich — 149,99 €/Jahr</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Promo-Code (optional)</Label>
+                          <div className="flex gap-2">
+                            <div className="relative flex-1">
+                              <Input
+                                value={promoCode}
+                                onChange={(e) => {
+                                  setPromoCode(e.target.value.toUpperCase())
+                                  setPromoValid(null)
+                                }}
+                                placeholder="z.B. WILLKOMMEN"
+                                className={`h-9 ${promoValid?.valid === true ? "border-emerald-500" : promoValid?.valid === false ? "border-red-500" : ""}`}
+                              />
+                              {promoValid?.valid === true && (
+                                <BadgeCheck className="absolute right-2.5 top-2.5 h-4 w-4 text-emerald-500" />
+                              )}
+                              {promoValid?.valid === false && (
+                                <XCircle className="absolute right-2.5 top-2.5 h-4 w-4 text-red-500" />
+                              )}
+                            </div>
+                            {promoCode && promoValid !== null && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9"
+                                onClick={() => { setPromoCode(""); setPromoValid(null) }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9"
+                              disabled={!promoCode || promoChecking}
+                              onClick={() => validatePromo(promoCode)}
+                            >
+                              {promoChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Prüfen"}
+                            </Button>
+                          </div>
+                          {promoValid?.valid === true && promoValid.type && promoValid.value && (
+                            <p className="text-xs text-emerald-600 flex items-center gap-1">
+                              <BadgeCheck className="h-3 w-3" />
+                              Code gültig — {formatPromoValue(promoValid.type, promoValid.value)}
+                            </p>
+                          )}
+                          {promoValid?.valid === false && (
+                            <p className="text-xs text-red-500">
+                              {promoValid.error || "Ungültiger oder abgelaufener Promo-Code."}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -453,7 +593,14 @@ export function NewPatientForm() {
         {/* Actions */}
         <div className="flex items-center gap-3 pt-2">
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Speichern..." : "Patient anlegen"}
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading
+              ? "Speichern..."
+              : sendInvite && activateSubscription
+                ? "Anlegen, Einladen & Freischalten"
+                : sendInvite
+                  ? "Anlegen & Einladen"
+                  : "Patient anlegen"}
           </Button>
           <Button
             type="button"

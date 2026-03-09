@@ -1,5 +1,6 @@
 "use client"
 
+import { usePathname } from "next/navigation"
 import { PatientenNavigation } from "@/components/app/PatientenNavigation"
 import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { CheckInGate } from "@/components/app/CheckInGate"
@@ -16,6 +17,18 @@ export default function PatientenAppLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  const isSessionMode = pathname?.includes("/session")
+
+  // Session mode: fullscreen without navigation or wrappers
+  if (isSessionMode) {
+    return (
+      <div className="min-h-screen">
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <OnboardingWizard>

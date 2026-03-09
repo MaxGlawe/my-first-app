@@ -23,6 +23,7 @@ import {
   Receipt,
   BarChart3,
   Inbox,
+  Gift,
 } from "lucide-react"
 import {
   Sidebar,
@@ -91,6 +92,7 @@ export function OsSidebar() {
         { label: "Vertr\u00E4ge", href: "/os/admin/vertraege", icon: ScrollText },
         { label: "Rechnungen", href: "/os/admin/billing", icon: Receipt },
         { label: "Analytics", href: "/os/admin/analytics", icon: BarChart3 },
+        { label: "Promo-Codes", href: "/os/admin/promo-codes", icon: Gift },
       ]
     : []
 

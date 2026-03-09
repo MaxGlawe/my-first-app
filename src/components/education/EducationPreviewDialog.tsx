@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Loader2, CheckCircle, RefreshCw, BookOpen, HelpCircle, ListOrdered } from "lucide-react"
 import { toast } from "sonner"
+import { sanitizeHtml } from "@/lib/sanitize-html"
 import type { EducationModule } from "@/types/education"
 
 interface EducationPreviewDialogProps {
@@ -185,7 +186,7 @@ export function EducationPreviewDialog({
         {activeTab === "lesson" && (
           <div
             className="prose prose-sm dark:prose-invert max-w-none border rounded-lg p-4 bg-muted/20"
-            dangerouslySetInnerHTML={{ __html: module.lesson_content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(module.lesson_content) }}
           />
         )}
 

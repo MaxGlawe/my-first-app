@@ -74,18 +74,34 @@ export async function GET(
     (completions ?? []).map((c) => [c.lesson_id, c.completed_at])
   )
 
-  // Build lesson list with unlock logic
+  // Build lesson list with unlock logic (7-day cooldown between lessons)
+  const UNLOCK_DELAY_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
   const lessons = (snapshots ?? []).map((s, index) => {
     const isCompleted = completionMap.has(s.lesson_id)
     let isUnlocked = true
+    let unlocks_at: string | null = null
 
     if (course?.unlock_mode === "sequentiell") {
       if (index === 0) {
         isUnlocked = true
       } else {
-        // Previous lesson must be completed
         const prevLesson = snapshots![index - 1]
-        isUnlocked = completionMap.has(prevLesson.lesson_id)
+        const prevCompletedAt = completionMap.get(prevLesson.lesson_id)
+
+        if (!prevCompletedAt) {
+          // Previous lesson not completed at all
+          isUnlocked = false
+        } else {
+          // Previous lesson completed — check 7-day cooldown
+          const unlockDate = new Date(new Date(prevCompletedAt).getTime() + UNLOCK_DELAY_MS)
+          if (new Date() >= unlockDate) {
+            isUnlocked = true
+          } else {
+            isUnlocked = false
+            unlocks_at = unlockDate.toISOString()
+          }
+        }
       }
     }
 
@@ -99,6 +115,7 @@ export async function GET(
       order: s.order,
       is_completed: isCompleted,
       is_unlocked: isUnlocked,
+      unlocks_at,
       completed_at: completionMap.get(s.lesson_id) ?? null,
     }
   })

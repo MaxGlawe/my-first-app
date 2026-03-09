@@ -147,9 +147,9 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) {
-    console.error("[POST /api/me/pain-diary] Error:", error)
+    console.error("[POST /api/me/pain-diary] Error:", error.message, error.code, error.details)
     return NextResponse.json(
-      { error: "Eintrag konnte nicht gespeichert werden." },
+      { error: `Eintrag konnte nicht gespeichert werden: ${error.message}` },
       { status: 500 }
     )
   }

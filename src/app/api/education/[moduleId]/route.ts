@@ -14,12 +14,19 @@ const updateSchema = z.object({
   status: z.enum(["entwurf", "freigegeben", "archiviert"]).optional(),
 })
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 interface RouteContext {
   params: Promise<{ moduleId: string }>
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   const { moduleId } = await context.params
+
+  if (!UUID_REGEX.test(moduleId)) {
+    return NextResponse.json({ error: "Ungültige ID." }, { status: 400 })
+  }
+
   const supabase = await createSupabaseServerClient()
 
   const {
@@ -59,6 +66,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
 export async function PUT(request: NextRequest, context: RouteContext) {
   const { moduleId } = await context.params
+
+  if (!UUID_REGEX.test(moduleId)) {
+    return NextResponse.json({ error: "Ungültige ID." }, { status: 400 })
+  }
+
   const supabase = await createSupabaseServerClient()
 
   const {

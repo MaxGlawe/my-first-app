@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
       try {
         const claudePromise = anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
-          max_tokens: 4096,
+          max_tokens: 16384,
           system: SYSTEM_PROMPT,
           tools: [curriculumTool],
           tool_choice: { type: "tool", name: "save_curriculum" },

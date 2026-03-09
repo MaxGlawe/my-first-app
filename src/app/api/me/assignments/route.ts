@@ -26,7 +26,7 @@ function todayCode(): string {
 }
 
 function todayStr(): string {
-  return new Date().toISOString().split("T")[0]
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Berlin" })
 }
 
 function computeCompliance7Days(

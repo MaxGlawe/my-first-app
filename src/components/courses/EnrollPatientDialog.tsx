@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -65,6 +66,7 @@ export function EnrollPatientDialog({
       <DialogContent className="max-w-lg max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Patient einschreiben</DialogTitle>
+          <DialogDescription>Wähle einen Patienten aus, um ihn in den Kurs einzuschreiben.</DialogDescription>
         </DialogHeader>
 
         <div className="relative">
