@@ -8,6 +8,8 @@ import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
+import { sendEmail } from "@/lib/email"
+import { escapeHtml } from "@/lib/html-escape"
 
 const intakeSchema = z.object({
   vorname: z.string().min(1, "Vorname ist erforderlich.").max(100),
@@ -80,6 +82,47 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+
+  // Send notification email to practice (fire-and-forget)
+  const notifyEmail = process.env.SMTP_USER || "physiotherapieglawe@gmx.de"
+  sendEmail({
+    to: notifyEmail,
+    subject: `Neue Anfrage: ${body.vorname} ${body.nachname}`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 16px;">
+          Neue Patientenanfrage
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; color: #475569;">
+          <tr><td style="padding: 8px 0; font-weight: 600; width: 140px;">Name:</td><td>${escapeHtml(body.vorname)} ${escapeHtml(body.nachname)}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: 600;">E-Mail:</td><td>${escapeHtml(body.email)}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: 600;">Telefon:</td><td>${escapeHtml(body.telefon)}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: 600;">Bereich:</td><td>${escapeHtml(body.beschwerde_bereich)}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: 600;">Dauer:</td><td>${escapeHtml(body.symptom_dauer)}</td></tr>
+          <tr><td style="padding: 8px 0; font-weight: 600;">Vorherige Behandlung:</td><td>${body.vorherige_behandlung.map(escapeHtml).join(", ")}</td></tr>
+        </table>
+        <div style="margin-top: 16px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
+          <p style="font-weight: 600; margin: 0 0 4px; font-size: 14px; color: #1e293b;">Beschwerden:</p>
+          <p style="margin: 0; font-size: 14px; color: #475569; white-space: pre-wrap;">${escapeHtml(body.beschwerde_freitext)}</p>
+        </div>
+        ${body.vorherige_behandlung_details ? `
+        <div style="margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
+          <p style="font-weight: 600; margin: 0 0 4px; font-size: 14px; color: #1e293b;">Details vorherige Behandlung:</p>
+          <p style="margin: 0; font-size: 14px; color: #475569; white-space: pre-wrap;">${escapeHtml(body.vorherige_behandlung_details)}</p>
+        </div>` : ""}
+        <div style="margin-top: 20px;">
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"}/os/intake"
+             style="display: inline-block; background: #059669; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">
+            In Praxis OS öffnen
+          </a>
+        </div>
+        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+        <p style="color: #94a3b8; font-size: 12px;">
+          Praxis OS — Automatische Benachrichtigung
+        </p>
+      </div>
+    `,
+  }).catch((err) => console.error("[POST /api/intake] Notification email failed:", err))
 
   return NextResponse.json({ success: true, id: data.id })
 }
