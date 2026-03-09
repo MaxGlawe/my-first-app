@@ -58,6 +58,7 @@ export async function POST(
   }
 
   // Create patient record via service client (bypasses RLS)
+  // geburtsdatum & geschlecht are NOT NULL in DB but unknown from intake form
   const { data: patient, error: patientErr } = await serviceClient
     .from("patients")
     .insert({
@@ -65,7 +66,9 @@ export async function POST(
       nachname: intake.nachname,
       email: intake.email,
       telefon: intake.telefon,
-      interne_notizen: `Anfrage: ${intake.beschwerde_bereich} — ${intake.beschwerde_freitext.slice(0, 300)}`,
+      geburtsdatum: "1900-01-01",
+      geschlecht: "unbekannt",
+      interne_notizen: `[Aus Anfrage erstellt — Geburtsdatum & Geschlecht bitte nachtragen]\n\nBeschwerde: ${intake.beschwerde_bereich} — ${intake.beschwerde_freitext.slice(0, 300)}`,
       therapeut_id: user.id,
     })
     .select("id, vorname, nachname")
