@@ -52,12 +52,18 @@ export function useTTS(): UseTTSReturn {
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))
+          console.error("[TTS] API error:", res.status, body)
           throw new Error(
-            body.error ?? "TTS-Generierung fehlgeschlagen."
+            body.error ?? `TTS-Generierung fehlgeschlagen (${res.status}).`
           )
         }
 
         const json = await res.json()
+        console.log("[TTS] Success:", {
+          cached: json.cached,
+          chunks: json.total_chunks,
+          urls: json.audio_urls?.map((u: string) => u.substring(0, 80)),
+        })
         return {
           audioUrls: json.audio_urls,
           cached: json.cached,

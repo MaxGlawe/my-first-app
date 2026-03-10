@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useCallback, useEffect } from "react"
+import { useMemo, useCallback, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePatientApp } from "@/hooks/use-patient-app"
@@ -16,6 +16,7 @@ import { SessionTransition } from "@/components/app/session/SessionTransition"
 import { SessionFeedbackSheet } from "@/components/app/session/SessionFeedbackSheet"
 import { SessionCompletionScreen } from "@/components/app/session/SessionCompletionScreen"
 import { SessionTTSController } from "@/components/app/session/SessionTTSController"
+import type { SessionTTSControllerHandle } from "@/components/app/session/SessionTTSController"
 
 const SESSION_KEY_PREFIX = "praxis_session_v2_"
 
@@ -50,6 +51,9 @@ export default function SessionPage() {
     getPauseForExercise,
     storageKey: `${SESSION_KEY_PREFIX}${params.zuweisungsId}`,
   })
+
+  // Ref to TTS controller for warming up audio on user gesture
+  const ttsControllerRef = useRef<SessionTTSControllerHandle>(null)
 
   // Keep screen awake during active session
   useWakeLock(session.phase !== "start" && session.phase !== "complete")
@@ -159,15 +163,34 @@ export default function SessionPage() {
 
   if (session.phase === "start") {
     return (
-      <SessionStartScreen
-        planName={planName}
-        exercises={exercises}
-        estimatedMinutes={duration}
-        ttsEnabled={session.ttsEnabled}
-        onToggleTts={session.setTtsEnabled}
-        onStart={() => session.startSession(session.ttsEnabled)}
-        onBack={handleExit}
-      />
+      <>
+        <SessionStartScreen
+          planName={planName}
+          exercises={exercises}
+          estimatedMinutes={duration}
+          ttsEnabled={session.ttsEnabled}
+          onToggleTts={session.setTtsEnabled}
+          onStart={() => {
+            // Warm up the TTS controller's audio element during user gesture (required for mobile autoplay)
+            if (session.ttsEnabled) {
+              ttsControllerRef.current?.warmUp()
+            }
+            session.startSession(session.ttsEnabled)
+          }}
+          onBack={handleExit}
+        />
+        {/* Mount TTS controller early so ref is available for warmUp during start gesture */}
+        <SessionTTSController
+          ref={ttsControllerRef}
+          exercises={exercises}
+          currentIndex={session.exerciseIndex}
+          phase={session.phase}
+          ttsEnabled={session.ttsEnabled}
+          onSetComplete={session.advanceSetTTS}
+          onExerciseComplete={session.finishExerciseTTS}
+          onTTSError={() => session.setTtsEnabled(false)}
+        />
+      </>
     )
   }
 
@@ -246,6 +269,7 @@ export default function SessionPage() {
 
       {/* TTS Controller (floating mini player) */}
       <SessionTTSController
+        ref={ttsControllerRef}
         exercises={exercises}
         currentIndex={session.exerciseIndex}
         phase={session.phase}

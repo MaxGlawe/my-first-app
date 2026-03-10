@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -19,6 +19,11 @@ import {
 import type { FlatExercise } from "@/lib/training-helpers"
 import type { SessionPhase } from "@/hooks/use-session-mode"
 import { BreathingCircle } from "./BreathingCircle"
+
+export interface SessionTTSControllerHandle {
+  /** Call from a user gesture (tap/click) to unlock mobile audio playback */
+  warmUp: () => void
+}
 
 interface SessionTTSControllerProps {
   exercises: FlatExercise[]
@@ -68,7 +73,7 @@ function formatPauseTime(seconds: number): string {
     : `0:${secs.toString().padStart(2, "0")}`
 }
 
-export function SessionTTSController({
+export const SessionTTSController = forwardRef<SessionTTSControllerHandle, SessionTTSControllerProps>(function SessionTTSController({
   exercises,
   currentIndex,
   phase,
@@ -76,7 +81,7 @@ export function SessionTTSController({
   onSetComplete,
   onExerciseComplete,
   onTTSError,
-}: SessionTTSControllerProps) {
+}, ref) {
   const [isPreparing, setIsPreparing] = useState(false)
   const [prepProgress, setPrepProgress] = useState(0)
   const [readyExercises, setReadyExercises] = useState<Set<number>>(new Set())
@@ -86,6 +91,11 @@ export function SessionTTSController({
   const [activePlayIndex, setActivePlayIndex] = useState<number | null>(null)
 
   const player = useAudioPlayer()
+
+  // Expose warmUp to parent so it can be called during user gesture
+  useImperativeHandle(ref, () => ({
+    warmUp: player.warmUp,
+  }), [player.warmUp])
 
   // Stable references to player functions (avoid re-running effects on every render)
   const playerPlayRef = useRef(player.play)
@@ -525,4 +535,4 @@ export function SessionTTSController({
       </div>
     </>
   )
-}
+})

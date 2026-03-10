@@ -25,6 +25,8 @@ interface UseAudioPlayerReturn {
   pause: () => void
   resume: () => void
   stop: () => void
+  /** Call synchronously in a click/tap handler BEFORE any async work to unlock mobile audio */
+  warmUp: () => void
   progress: number
   currentChunk: number
   totalChunks: number
@@ -131,8 +133,9 @@ export function useAudioPlayer(
         // Stop any playing audio
         if (voiceRef.current) {
           voiceRef.current.pause()
-          voiceRef.current.removeAttribute("src")
-          voiceRef.current = null
+          voiceRef.current.onended = null
+          voiceRef.current.onerror = null
+          // Don't removeAttribute("src") — it breaks the element state
         }
 
         pauseStateRef.current = {
@@ -172,24 +175,39 @@ export function useAudioPlayer(
       // ── Regular audio URL ─────────────────────────────────────────────
       clearPauseTimer()
 
+      // Stop current playback (don't removeAttribute — it breaks the element state)
       if (voiceRef.current) {
         voiceRef.current.pause()
-        voiceRef.current.removeAttribute("src")
+        voiceRef.current.onended = null
+        voiceRef.current.onerror = null
       }
 
-      const audio = new Audio(item)
+      // Reuse existing audio element if warm (keeps mobile audio context alive)
+      const audio = voiceRef.current ?? new Audio()
+      audio.src = item
       audio.volume = optionsRef.current.voiceVolume ?? 1.0
+      audio.preload = "auto"
       voiceRef.current = audio
 
-      audio.addEventListener("ended", () => {
+      audio.onended = () => {
         playChunk(index + 1)
-      })
+      }
 
-      audio.addEventListener("error", () => {
-        setError("Audio konnte nicht abgespielt werden.")
+      audio.onerror = (e) => {
+        const mediaErr = audio.error
+        console.error("[AudioPlayer] audio.onerror", {
+          code: mediaErr?.code,
+          message: mediaErr?.message,
+          src: audio.src?.substring(0, 120),
+          event: e,
+        })
+        setError(`Audio-Fehler: ${mediaErr?.message ?? "unbekannt"}`)
         setStatus("error")
         stopProgressTracking()
-      })
+      }
+
+      // Explicitly load the new source before playing
+      audio.load()
 
       audio
         .play()
@@ -197,8 +215,14 @@ export function useAudioPlayer(
           setStatus("playing")
           startProgressTracking()
         })
-        .catch(() => {
-          setError("Wiedergabe fehlgeschlagen. Bitte tippe erneut.")
+        .catch((err) => {
+          console.error("[AudioPlayer] play() rejected:", err?.name, err?.message, "src:", item?.substring(0, 120))
+          // If autoplay was blocked, try again on next user interaction
+          if (err?.name === "NotAllowedError") {
+            setError("Bitte tippe erneut zum Abspielen.")
+          } else {
+            setError(`Wiedergabe fehlgeschlagen: ${err?.message ?? "unbekannt"}`)
+          }
           setStatus("error")
         })
     },
@@ -218,6 +242,19 @@ export function useAudioPlayer(
     ambient.play().catch(() => {
       console.warn("[AudioPlayer] Ambient playback failed")
     })
+  }, [])
+
+  // ── Warm up audio context (must be called synchronously from user gesture) ──
+
+  const warmUp = useCallback(() => {
+    // Create a silent audio element and play it to unlock the audio context
+    // This must happen synchronously inside the user tap/click handler
+    if (!voiceRef.current) {
+      const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=")
+      silent.volume = 0
+      silent.play().catch(() => {})
+      voiceRef.current = silent
+    }
   }, [])
 
   // ── Public API ───────────────────────────────────────────────────────────
@@ -305,12 +342,17 @@ export function useAudioPlayer(
   }, [startProgressTracking, stopProgressTracking, playChunk])
 
   const stop = useCallback(() => {
-    voiceRef.current?.pause()
+    if (voiceRef.current) {
+      voiceRef.current.pause()
+      voiceRef.current.onended = null
+      voiceRef.current.onerror = null
+      // Keep voiceRef.current alive — don't null it!
+      // The element was unlocked via user gesture and we need it for future play() calls.
+    }
     ambientRef.current?.pause()
+    ambientRef.current = null
     stopProgressTracking()
     clearPauseTimer()
-    voiceRef.current = null
-    ambientRef.current = null
     urlsRef.current = []
     chunkIndexRef.current = 0
     setStatus("idle")
@@ -358,6 +400,7 @@ export function useAudioPlayer(
     pause,
     resume,
     stop,
+    warmUp,
     progress,
     currentChunk,
     totalChunks,
