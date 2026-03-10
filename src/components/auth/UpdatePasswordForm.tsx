@@ -47,10 +47,25 @@ export function UpdatePasswordForm() {
       const { supabase } = await import("@/lib/supabase")
       const { error } = await supabase.auth.updateUser({
         password: data.password,
+        data: { must_change_password: false },
       })
 
       if (error) {
         setServerError("Passwort konnte nicht aktualisiert werden. Bitte versuche es erneut.")
+        return
+      }
+
+      // Check if this was a forced first-login change → redirect to dashboard
+      const { data: { user } } = await supabase.auth.getUser()
+      const role = user?.user_metadata?.role
+      if (role === 'admin') {
+        window.location.href = '/os/admin/dashboard'
+        return
+      } else if (role === 'patient') {
+        window.location.href = '/app/dashboard'
+        return
+      } else if (role) {
+        window.location.href = '/os/dashboard'
         return
       }
 
@@ -86,9 +101,9 @@ export function UpdatePasswordForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">Neues Passwort festlegen</CardTitle>
+        <CardTitle className="text-2xl font-bold">Passwort festlegen</CardTitle>
         <CardDescription>
-          Gib dein neues Passwort ein. Es muss mindestens 8 Zeichen lang sein.
+          Bitte lege dein persönliches Passwort fest. Es muss mindestens 8 Zeichen lang sein, einen Großbuchstaben und eine Zahl enthalten.
         </CardDescription>
       </CardHeader>
 

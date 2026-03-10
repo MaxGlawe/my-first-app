@@ -174,6 +174,16 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
+    // Force password change on first login (staff created with temp password)
+    const mustChangePassword = user.user_metadata?.must_change_password === true
+    const isUpdatePasswordPage = pathname === '/login/update-password'
+    const isSignOutApi = pathname === '/api/auth/signout'
+
+    if (mustChangePassword && !isUpdatePasswordPage && !isSignOutApi && !isPublicRoute) {
+      url.pathname = '/login/update-password'
+      return NextResponse.redirect(url)
+    }
+
     // Redirect authenticated users away from login page
     if (isPublicRoute && pathname === '/login') {
       if (role === 'admin') url.pathname = '/os/admin/dashboard'
