@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search") ?? ""
   const showArchived = searchParams.get("archived") === "true"
+  const scope = searchParams.get("scope") ?? "mine" // "mine" | "all"
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const pageSize = Math.min(
     PAGE_SIZE,
@@ -79,6 +80,11 @@ export async function GET(request: NextRequest) {
     .order("nachname", { ascending: true })
     .order("vorname", { ascending: true })
     .range(from, to)
+
+  // Scope filter: "mine" = only my patients, "all" = all praxis patients
+  if (scope === "mine") {
+    query = query.eq("therapeut_id", user.id)
+  }
 
   // Archivierungsfilter
   if (showArchived) {

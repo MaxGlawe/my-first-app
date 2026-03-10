@@ -5,13 +5,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { UserPlus, Search, Users } from "lucide-react"
+import { UserPlus, Search, Users, Building2 } from "lucide-react"
 
 interface PatientsHeaderProps {
   search: string
   onSearchChange: (value: string) => void
   showArchived: boolean
   onShowArchivedChange: (value: boolean) => void
+  scope: "mine" | "all"
+  onScopeChange: (scope: "mine" | "all") => void
 }
 
 export function PatientsHeader({
@@ -19,6 +21,8 @@ export function PatientsHeader({
   onSearchChange,
   showArchived,
   onShowArchivedChange,
+  scope,
+  onScopeChange,
 }: PatientsHeaderProps) {
   const router = useRouter()
 
@@ -38,6 +42,32 @@ export function PatientsHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Scope toggle: Meine / Alle */}
+          <div className="inline-flex rounded-lg border border-slate-200/80 bg-white/60 p-0.5">
+            <button
+              onClick={() => onScopeChange("mine")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                scope === "mine"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Meine
+            </button>
+            <button
+              onClick={() => onScopeChange("all")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                scope === "all"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+              }`}
+            >
+              <Building2 className="h-3.5 w-3.5" />
+              Alle
+            </button>
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

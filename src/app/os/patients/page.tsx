@@ -19,6 +19,7 @@ const PAGE_SIZE = 20
 export default function PatientsPage() {
   const [search, setSearch] = useState("")
   const [showArchived, setShowArchived] = useState(false)
+  const [scope, setScope] = useState<"mine" | "all">("mine")
   const [page, setPage] = useState(1)
 
   const debouncedSearch = useDebounce(search, 300)
@@ -26,6 +27,7 @@ export default function PatientsPage() {
   const { patients, totalCount, isLoading, error } = usePatients({
     search: debouncedSearch,
     showArchived,
+    scope,
     page,
   })
 
@@ -41,6 +43,11 @@ export default function PatientsPage() {
     setPage(1)
   }, [])
 
+  const handleScopeChange = useCallback((value: "mine" | "all") => {
+    setScope(value)
+    setPage(1)
+  }, [])
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <PatientsHeader
@@ -48,6 +55,8 @@ export default function PatientsPage() {
         onSearchChange={handleSearchChange}
         showArchived={showArchived}
         onShowArchivedChange={handleArchivedChange}
+        scope={scope}
+        onScopeChange={handleScopeChange}
       />
 
       <PatientTable patients={patients} isLoading={isLoading} error={error} />

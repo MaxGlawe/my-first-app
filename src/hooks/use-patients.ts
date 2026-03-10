@@ -8,6 +8,7 @@ const PAGE_SIZE = 20
 interface UsePatientsOptions {
   search?: string
   showArchived?: boolean
+  scope?: "mine" | "all"
   page?: number
 }
 
@@ -20,7 +21,7 @@ interface UsePatientsResult {
 }
 
 export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult {
-  const { search = "", showArchived = false, page = 1 } = options
+  const { search = "", showArchived = false, scope = "mine", page = 1 } = options
 
   const [patients, setPatients] = useState<Patient[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -42,6 +43,7 @@ export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult
           page: String(page),
           pageSize: String(PAGE_SIZE),
           archived: String(showArchived),
+          scope,
         })
         if (search.trim()) {
           params.set("search", search.trim())
@@ -73,7 +75,7 @@ export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult
     return () => {
       cancelled = true
     }
-  }, [search, showArchived, page, refreshKey])
+  }, [search, showArchived, scope, page, refreshKey])
 
   return { patients, totalCount, isLoading, error, refresh }
 }
