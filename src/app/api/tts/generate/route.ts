@@ -79,8 +79,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Compute hash
-  const hash = contentHash(cleanText, config.voiceId)
+  // Speed per source type: lessons (Traumreisen etc.) are slower and calmer
+  const speed = source_type === "lesson" ? 0.55 : 0.75
+
+  // Compute hash (includes speed so different speeds get separate cache entries)
+  const hash = contentHash(cleanText, config.voiceId, speed)
 
   // Check cache BEFORE rate limit — cached results are free
   const serviceClient = createSupabaseServiceClient()
@@ -121,14 +124,14 @@ export async function POST(request: NextRequest) {
   const chunks = chunkText(cleanText)
   const hashPrefix = hash.substring(0, 4)
 
-  console.log(`[TTS] Generating ${chunks.length} chunks (${cleanText.length} chars) for ${source_type}`)
+  console.log(`[TTS] Generating ${chunks.length} chunks (${cleanText.length} chars) for ${source_type} at speed ${speed}`)
   const startTime = Date.now()
 
   try {
     // Step 1: Generate all audio chunks in parallel via ElevenLabs
     const audioBuffers = await Promise.all(
       chunks.map((chunk, i) =>
-        generateSpeech(chunk, config).then((buf) => {
+        generateSpeech(chunk, config, speed).then((buf) => {
           console.log(`[TTS] Chunk ${i}/${chunks.length} generated (${buf.byteLength} bytes)`)
           return buf
         })

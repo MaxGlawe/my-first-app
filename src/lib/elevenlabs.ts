@@ -57,11 +57,12 @@ export function stripHtml(html: string): string {
     .trim()
 }
 
-/** Generate SHA-256 content hash for cache lookup */
-export function contentHash(text: string, voiceId: string): string {
+/** Generate SHA-256 content hash for cache lookup (includes speed for distinct cache entries) */
+export function contentHash(text: string, voiceId: string, speed?: number): string {
+  const speedKey = speed != null ? `:spd${speed}` : ""
   return crypto
     .createHash("sha256")
-    .update(`${voiceId}:${text}`)
+    .update(`${voiceId}${speedKey}:${text}`)
     .digest("hex")
 }
 
@@ -134,7 +135,8 @@ const RETRY_DELAY_MS = 1500
 /** Call ElevenLabs TTS API and return raw audio buffer (MP3) — with auto-retry */
 export async function generateSpeech(
   text: string,
-  config: TTSConfig
+  config: TTSConfig,
+  speed = 0.75,
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null
 
@@ -161,7 +163,7 @@ export async function generateSpeech(
             style: 0.05,
             use_speaker_boost: false,
           },
-          speed: 0.75,
+          speed,
         }),
       }
     )
