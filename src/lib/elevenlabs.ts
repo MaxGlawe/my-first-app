@@ -132,12 +132,21 @@ const RETRYABLE_STATUS = new Set([500, 502, 503, 429])
 const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 1500
 
+export interface SpeechOptions {
+  speed?: number
+  /** Higher = more consistent, calmer delivery (0.0-1.0) */
+  stability?: number
+  /** Lower = more monotone/calm (0.0-1.0) */
+  style?: number
+}
+
 /** Call ElevenLabs TTS API and return raw audio buffer (MP3) — with auto-retry */
 export async function generateSpeech(
   text: string,
   config: TTSConfig,
-  speed = 0.75,
+  opts: SpeechOptions = {},
 ): Promise<ArrayBuffer> {
+  const { speed = 0.75, stability = 0.9, style = 0.05 } = opts
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -158,9 +167,9 @@ export async function generateSpeech(
           text,
           model_id: config.modelId,
           voice_settings: {
-            stability: 0.9,
+            stability,
             similarity_boost: 0.75,
-            style: 0.05,
+            style,
             use_speaker_boost: false,
           },
           speed,

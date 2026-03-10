@@ -79,8 +79,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Speed per source type: lessons (Traumreisen etc.) are slower and calmer
-  const speed = source_type === "lesson" ? 0.55 : 0.75
+  // Speech settings per source type
+  const speechOpts = source_type === "lesson"
+    ? { speed: 0.4, stability: 0.95, style: 0.0 }  // Traumreisen: langsam, ruhig, gleichmäßig
+    : { speed: 0.75, stability: 0.9, style: 0.05 }  // Übungen: normal-langsam
+  const speed = speechOpts.speed
 
   // Compute hash (includes speed so different speeds get separate cache entries)
   const hash = contentHash(cleanText, config.voiceId, speed)
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
     // Step 1: Generate all audio chunks in parallel via ElevenLabs
     const audioBuffers = await Promise.all(
       chunks.map((chunk, i) =>
-        generateSpeech(chunk, config, speed).then((buf) => {
+        generateSpeech(chunk, config, speechOpts).then((buf) => {
           console.log(`[TTS] Chunk ${i}/${chunks.length} generated (${buf.byteLength} bytes)`)
           return buf
         })
