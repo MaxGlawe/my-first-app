@@ -117,52 +117,78 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Generate audio
+  // Generate audio — all chunks in parallel for speed
   const chunks = chunkText(cleanText)
-  const audio_urls: string[] = []
+  const hashPrefix = hash.substring(0, 4)
+
+  console.log(`[TTS] Generating ${chunks.length} chunks (${cleanText.length} chars) for ${source_type}`)
+  const startTime = Date.now()
 
   try {
-    for (let i = 0; i < chunks.length; i++) {
-      const audioBuffer = await generateSpeech(chunks[i], config)
+    // Step 1: Generate all audio chunks in parallel via ElevenLabs
+    const audioBuffers = await Promise.all(
+      chunks.map((chunk, i) =>
+        generateSpeech(chunk, config).then((buf) => {
+          console.log(`[TTS] Chunk ${i}/${chunks.length} generated (${buf.byteLength} bytes)`)
+          return buf
+        })
+      )
+    )
 
-      // Storage path: {source_type}/{hash_prefix}/{hash}_{chunk}.mp3
-      const hashPrefix = hash.substring(0, 4)
-      const storagePath = `${source_type}/${hashPrefix}/${hash}_${i}.mp3`
+    const ttsTime = Date.now() - startTime
+    console.log(`[TTS] All chunks generated in ${ttsTime}ms`)
 
-      // Upload to storage
-      const { error: uploadError } = await serviceClient.storage
-        .from("tts-audio")
-        .upload(storagePath, audioBuffer, {
-          contentType: "audio/mpeg",
-          upsert: true,
+    // Step 2: Upload all chunks + insert cache records in parallel
+    const audio_urls = await Promise.all(
+      audioBuffers.map(async (audioBuffer, i) => {
+        const storagePath = `${source_type}/${hashPrefix}/${hash}_${i}.mp3`
+
+        // Upload to storage
+        const { error: uploadError } = await serviceClient.storage
+          .from("tts-audio")
+          .upload(storagePath, audioBuffer, {
+            contentType: "audio/mpeg",
+            upsert: true,
+          })
+
+        if (uploadError) {
+          console.error(`[TTS] Upload error chunk ${i}:`, uploadError)
+          throw new Error("Audio konnte nicht gespeichert werden.")
+        }
+
+        // Get public URL
+        const { data: urlData } = serviceClient.storage
+          .from("tts-audio")
+          .getPublicUrl(storagePath)
+
+        // Insert cache record (fire-and-forget, don't block URL return)
+        serviceClient.from("tts_audio_cache").insert({
+          content_hash: hash,
+          voice_id: config.voiceId,
+          model_id: config.modelId,
+          source_type,
+          source_id: source_id ?? null,
+          chunk_index: i,
+          total_chunks: chunks.length,
+          storage_path: storagePath,
+          file_size_bytes: audioBuffer.byteLength,
+          input_char_count: chunks[i].length,
+        }).then(({ error }) => {
+          if (error) console.warn(`[TTS] Cache insert error chunk ${i}:`, error.message)
         })
 
-      if (uploadError) {
-        console.error(`[TTS] Upload error chunk ${i}:`, uploadError)
-        throw new Error("Audio konnte nicht gespeichert werden.")
-      }
-
-      // Get public URL
-      const { data: urlData } = serviceClient.storage
-        .from("tts-audio")
-        .getPublicUrl(storagePath)
-
-      audio_urls.push(urlData.publicUrl)
-
-      // Insert cache record
-      await serviceClient.from("tts_audio_cache").insert({
-        content_hash: hash,
-        voice_id: config.voiceId,
-        model_id: config.modelId,
-        source_type,
-        source_id: source_id ?? null,
-        chunk_index: i,
-        total_chunks: chunks.length,
-        storage_path: storagePath,
-        file_size_bytes: audioBuffer.byteLength,
-        input_char_count: chunks[i].length,
+        return urlData.publicUrl
       })
-    }
+    )
+
+    const totalTime = Date.now() - startTime
+    console.log(`[TTS] Complete: ${chunks.length} chunks in ${totalTime}ms (TTS: ${ttsTime}ms)`)
+
+    return NextResponse.json({
+      audio_urls,
+      cached: false,
+      total_chunks: chunks.length,
+    })
   } catch (err) {
     console.error("[TTS] Generation error:", err)
     return NextResponse.json(
@@ -175,10 +201,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-
-  return NextResponse.json({
-    audio_urls,
-    cached: false,
-    total_chunks: chunks.length,
-  })
 }
