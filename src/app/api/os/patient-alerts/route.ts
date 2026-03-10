@@ -9,12 +9,17 @@
  * Alert rules:
  *   ROT  | Schmerz >= 8 in the last 3 days
  *   ROT  | Pain increase >= 3 points over 3 consecutive days
- *   ROT  | Compliance < 25% last 7 days (active assignment)
- *   ROT  | No check-in for >= 7 days (active assignment)
+ *   ROT  | Compliance < 25% last 7 days (active assignment, past grace period)
+ *   ROT  | No check-in for >= 7 days (active assignment, past grace period)
  *   GELB | Pain increase >= 2 points over 3 days
- *   GELB | Compliance 25-49% last 7 days
- *   GELB | No check-in for 3-6 days
+ *   GELB | Compliance 25-49% last 7 days (past grace period)
+ *   GELB | No check-in for 3-6 days (past grace period)
  *   GRUEN| No trigger
+ *
+ * Grace period: New patients get GRACE_PERIOD_DAYS before compliance & check-in
+ * alerts activate. Pain alerts always fire (safety-critical).
+ * Minimum data: Compliance only evaluated when >= MIN_EXPECTED_FOR_COMPLIANCE
+ * sessions are expected (prevents volatile percentages like 0/1 = 0%).
  *
  * Data sources: pain_diary_entries, assignment_completions, patient_assignments, patients
  * No new tables required.
@@ -59,6 +64,22 @@ export interface PatientAlert {
   compliance: ComplianceDetails | null
   lastMessageDate: string | null // last chat message date
 }
+
+// -- Configuration ------------------------------------------------------------
+
+/**
+ * Grace period: New patients are exempt from compliance & check-in alerts
+ * for the first N days after their oldest assignment started.
+ * Pain alerts always fire regardless (safety-critical).
+ */
+const GRACE_PERIOD_DAYS = 5
+
+/**
+ * Minimum expected sessions before compliance % is evaluated.
+ * With only 1-2 expected sessions, percentages are too volatile
+ * (e.g. 0/1 = 0% → immediately RED, which is misleading).
+ */
+const MIN_EXPECTED_FOR_COMPLIANCE = 3
 
 // -- Day-of-week helper (same pattern as dashboard-stats) ---------------------
 
@@ -311,6 +332,21 @@ export async function GET(_request: NextRequest) {
       }
     }
 
+    // -- Grace period check -----------------------------------------------------
+
+    // Oldest assignment start date determines how long the patient has been active
+    const oldestAssignmentStart = patientAssignments
+      .map((a) => new Date(a.start_date))
+      .sort((a, b) => a.getTime() - b.getTime())[0]
+
+    const assignmentAgeDays = Math.floor(
+      (today.getTime() - oldestAssignmentStart.getTime()) / 86_400_000,
+    )
+
+    // New patients in grace period: skip compliance & check-in alerts
+    // (Pain alerts always fire — they are safety-critical)
+    const isInGracePeriod = assignmentAgeDays < GRACE_PERIOD_DAYS
+
     // -- Compliance & check-in rules (per assignment) -------------------------
 
     // Aggregate compliance across all patient assignments
@@ -349,7 +385,7 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    // Compliance calculation
+    // Compliance calculation (always compute for display, but only alert past grace period)
     const compliancePercent = totalExpected > 0
       ? Math.min(100, Math.round((totalDone / totalExpected) * 100))
       : null
@@ -358,8 +394,14 @@ export async function GET(_request: NextRequest) {
       ? { expected: totalExpected, done: totalDone, percent: compliancePercent! }
       : null
 
-    // Compliance rule
-    if (totalExpected > 0 && compliancePercent !== null) {
+    // Compliance alert — only if:
+    //  1. Past grace period (patient had time to get started)
+    //  2. Enough expected sessions for a meaningful percentage
+    if (
+      !isInGracePeriod &&
+      totalExpected >= MIN_EXPECTED_FOR_COMPLIANCE &&
+      compliancePercent !== null
+    ) {
       if (compliancePercent < 25) {
         gruende.push({
           key: "compliance-rot",
@@ -377,48 +419,34 @@ export async function GET(_request: NextRequest) {
       }
     }
 
-    // Check-in gap rule
-    if (lastCheckIn !== null) {
-      const daysSinceCheckIn = Math.floor(
-        (today.getTime() - new Date(lastCheckIn).getTime()) / 86_400_000,
-      )
-      if (daysSinceCheckIn >= 7) {
+    // Check-in gap rule — only past grace period
+    if (!isInGracePeriod) {
+      if (lastCheckIn !== null) {
+        const daysSinceCheckIn = Math.floor(
+          (today.getTime() - new Date(lastCheckIn).getTime()) / 86_400_000,
+        )
+        if (daysSinceCheckIn >= 7) {
+          gruende.push({
+            key: "kein-checkin-rot",
+            label: `Kein Check-In seit ${daysSinceCheckIn} Tagen`,
+            severity: "ROT",
+            empfehlung: "Patient ist seit ueber einer Woche inaktiv. Direkt anrufen oder Push-Erinnerung senden.",
+          })
+        } else if (daysSinceCheckIn >= 3) {
+          gruende.push({
+            key: "kein-checkin-gelb",
+            label: `Kein Check-In seit ${daysSinceCheckIn} Tagen`,
+            severity: "GELB",
+            empfehlung: "Patient hat sich einige Tage nicht gemeldet. Freundliche Erinnerung senden.",
+          })
+        }
+      } else {
+        // No check-in ever recorded (and past grace period)
         gruende.push({
           key: "kein-checkin-rot",
-          label: `Kein Check-In seit ${daysSinceCheckIn} Tagen`,
-          severity: "ROT",
-          empfehlung: "Patient ist seit ueber einer Woche inaktiv. Direkt anrufen oder Push-Erinnerung senden.",
-        })
-      } else if (daysSinceCheckIn >= 3) {
-        gruende.push({
-          key: "kein-checkin-gelb",
-          label: `Kein Check-In seit ${daysSinceCheckIn} Tagen`,
-          severity: "GELB",
-          empfehlung: "Patient hat sich einige Tage nicht gemeldet. Freundliche Erinnerung senden.",
-        })
-      }
-    } else {
-      // No check-in ever recorded
-      const oldestAssignment = patientAssignments.sort(
-        (a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
-      )[0]
-      const assignmentAge = Math.floor(
-        (today.getTime() - new Date(oldestAssignment.start_date).getTime()) /
-          86_400_000,
-      )
-      if (assignmentAge >= 7) {
-        gruende.push({
-          key: "kein-checkin-rot",
-          label: "Noch kein Check-In aufgezeichnet (7+ Tage)",
+          label: `Noch kein Check-In aufgezeichnet (${assignmentAgeDays}+ Tage)`,
           severity: "ROT",
           empfehlung: "Patient hat die App noch nie genutzt. Pruefen ob Einladung angekommen ist und ggf. erneut senden.",
-        })
-      } else if (assignmentAge >= 3) {
-        gruende.push({
-          key: "kein-checkin-gelb",
-          label: `Noch kein Check-In aufgezeichnet (${assignmentAge} Tage)`,
-          severity: "GELB",
-          empfehlung: "Patient ist noch nicht aktiv. Push-Erinnerung senden oder beim naechsten Termin ansprechen.",
         })
       }
     }
