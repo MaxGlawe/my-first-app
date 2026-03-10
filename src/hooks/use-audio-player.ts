@@ -206,9 +206,6 @@ export function useAudioPlayer(
         stopProgressTracking()
       }
 
-      // Explicitly load the new source before playing
-      audio.load()
-
       audio
         .play()
         .then(() => {
