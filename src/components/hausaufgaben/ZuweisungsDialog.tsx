@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import Image from "next/image"
 import { CalendarIcon, Loader2, Search, X, Dumbbell, ClipboardList, BookOpen, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import type { PatientAssignment, Wochentag, AdhocExercise } from "@/types/hausaufgaben"
@@ -461,7 +462,7 @@ export function ZuweisungsDialog({
 
               {/* Search results dropdown */}
               {exerciseResults.length > 0 && (
-                <div className="border rounded-md divide-y max-h-44 overflow-y-auto shadow-sm">
+                <div className="border rounded-md divide-y max-h-60 overflow-y-auto shadow-sm">
                   {exerciseResults.map((ex) => (
                     <button
                       key={ex.id}
@@ -469,13 +470,30 @@ export function ZuweisungsDialog({
                       onClick={() => addAdhocExercise(ex)}
                       className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2"
                     >
-                      <Dumbbell className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="font-medium">{ex.name}</span>
-                      {ex.muskelgruppen.length > 0 && (
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {ex.muskelgruppen.slice(0, 2).join(", ")}
-                        </span>
+                      {ex.media_url && ex.media_type === "image" ? (
+                        <div className="h-9 w-9 rounded-md overflow-hidden bg-muted shrink-0">
+                          <Image
+                            src={ex.media_url}
+                            alt={ex.name}
+                            width={36}
+                            height={36}
+                            className="h-full w-full object-cover"
+                            unoptimized
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <Dumbbell className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       )}
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium block truncate">{ex.name}</span>
+                        {ex.muskelgruppen.length > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            {ex.muskelgruppen.slice(0, 3).join(", ")}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>
