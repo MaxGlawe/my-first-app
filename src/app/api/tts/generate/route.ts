@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
 
   // Speech settings per source type
   const speechOpts = source_type === "lesson"
-    ? { speed: 0.4, stability: 0.95, style: 0.0 }  // Traumreisen: langsam, ruhig, gleichmäßig
+    ? { speed: 0.6, stability: 0.95, style: 0.0 }  // Traumreisen: ruhig, gleichmäßig (0.4 war zu leise)
     : { speed: 0.75, stability: 0.9, style: 0.05 }  // Übungen: normal-langsam
   const speed = speechOpts.speed
 
