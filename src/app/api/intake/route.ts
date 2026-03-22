@@ -1,6 +1,8 @@
 /**
  * POST /api/intake — Public intake form submission (no auth required)
  * GET /api/intake — List all intake requests (staff only)
+ *
+ * Security: Rate-limited, honeypot, disposable email blocklist, timing check
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -10,6 +12,42 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/html-escape"
+
+// ── Disposable / testing email domain blocklist ──────────────────────
+const BLOCKED_EMAIL_DOMAINS = new Set([
+  // Testing / pentest domains
+  "mailnull.com", "maildrop.cc", "mailsac.com", "mailinator.com",
+  "guerrillamail.com", "guerrillamail.de", "grr.la", "guerrillamailblock.com",
+  "sharklasers.com", "guerrillamail.info", "guerrillamail.net",
+  // Disposable email services
+  "tempmail.com", "temp-mail.org", "tempmailo.com", "tempail.com",
+  "throwaway.email", "throwawaymail.com", "trashmail.com", "trashmail.de",
+  "trashmail.net", "trashmail.me", "trash-mail.com",
+  "yopmail.com", "yopmail.fr", "yopmail.net",
+  "10minutemail.com", "10minutemail.net", "10minutemail.de",
+  "minutemail.com", "tempinbox.com",
+  "dispostable.com", "discard.email", "discardmail.com", "discardmail.de",
+  "mailcatch.com", "mailexpire.com", "mailnesia.com",
+  "spamgourmet.com", "spamgourmet.net",
+  "fakeinbox.com", "fakemail.net",
+  "mohmal.com", "mailtemp.info",
+  "getairmail.com", "filzmail.com",
+  "einrot.com", "einrot.de",
+  "getnada.com", "binkmail.com",
+  "harakirimail.com", "mailforspam.com",
+  "mytemp.email", "tempmail.de", "wegwerfmail.de", "wegwerfmail.net",
+  "spoofmail.de", "objectmail.com",
+  "mailnull.net", "devnull.email",
+  "mailtothis.com", "emkei.cz",
+])
+
+function isDisposableEmail(email: string): boolean {
+  const domain = email.split("@")[1]?.toLowerCase()
+  if (!domain) return true
+  return BLOCKED_EMAIL_DOMAINS.has(domain)
+}
+
+// ── Schema ───────────────────────────────────────────────────────────
 
 const intakeSchema = z.object({
   vorname: z.string().min(1, "Vorname ist erforderlich.").max(100),
@@ -24,16 +62,28 @@ const intakeSchema = z.object({
   datenschutz_akzeptiert: z.boolean().refine((v) => v === true, "Pflichtfeld"),
   agb_akzeptiert: z.boolean().refine((v) => v === true, "Pflichtfeld"),
   heilpraktiker_info: z.boolean().refine((v) => v === true, "Pflichtfeld"),
-  // Honeypot
+  // Honeypot fields (must stay empty)
   website: z.string().max(0, "Bot erkannt.").optional().default(""),
+  fax_number: z.string().max(0, "Bot erkannt.").optional().default(""),
+  // Timing check: form load timestamp (ms)
+  _t: z.number().optional(),
 })
 
 export async function POST(request: NextRequest) {
-  // Rate limiting by IP
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
-  if (isRateLimited(ip, 5, 3_600_000)) {
+
+  // Rate limiting: 2 requests per minute per IP (strict)
+  if (isRateLimited(`intake:${ip}`, 2, 60_000)) {
     return NextResponse.json(
-      { error: "Zu viele Anfragen. Bitte versuchen Sie es später erneut." },
+      { error: "Zu viele Anfragen. Bitte versuchen Sie es in einer Minute erneut." },
+      { status: 429 }
+    )
+  }
+
+  // Global rate limit: max 20 intake requests per hour total
+  if (isRateLimited("intake:global", 20, 3_600_000)) {
+    return NextResponse.json(
+      { error: "Derzeit sind zu viele Anfragen eingegangen. Bitte versuchen Sie es später." },
       { status: 429 }
     )
   }
@@ -46,10 +96,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 
-  // Honeypot check
-  if (body.website) {
+  // Honeypot checks — bots fill hidden fields
+  if (body.website || body.fax_number) {
     // Silent success to not reveal bot detection
     return NextResponse.json({ success: true })
+  }
+
+  // Timing check — real users need at least 5 seconds to fill a form
+  if (body._t) {
+    const elapsedMs = Date.now() - body._t
+    if (elapsedMs < 5_000) {
+      // Submitted too fast — likely a bot
+      return NextResponse.json({ success: true })
+    }
+  }
+
+  // Disposable email blocklist
+  if (isDisposableEmail(body.email)) {
+    return NextResponse.json(
+      { error: "Bitte verwenden Sie eine reguläre E-Mail-Adresse (keine Wegwerf-Adressen)." },
+      { status: 400 }
+    )
   }
 
   const serviceClient = createSupabaseServiceClient()

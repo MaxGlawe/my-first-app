@@ -55,6 +55,7 @@ interface FormData {
   agb_akzeptiert: boolean
   heilpraktiker_info: boolean
   website: string // honeypot
+  fax_number: string // honeypot 2
 }
 
 const initialData: FormData = {
@@ -71,6 +72,7 @@ const initialData: FormData = {
   agb_akzeptiert: false,
   heilpraktiker_info: false,
   website: "",
+  fax_number: "",
 }
 
 export function IntakeForm() {
@@ -80,6 +82,7 @@ export function IntakeForm() {
   const [data, setData] = useState<FormData>(initialData)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [formLoadTime] = useState(() => Date.now())
 
   useEffect(() => { trackConversion("anfrage_opened") }, [trackConversion])
 
@@ -139,7 +142,7 @@ export function IntakeForm() {
       const res = await fetch("/api/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, _t: formLoadTime }),
       })
 
       if (!res.ok) {
@@ -167,7 +170,7 @@ export function IntakeForm() {
         </Alert>
       )}
 
-      {/* Honeypot — hidden from real users */}
+      {/* Honeypot fields — hidden from real users, bots fill them */}
       <div className="absolute opacity-0 pointer-events-none h-0 overflow-hidden" aria-hidden="true">
         <input
           type="text"
@@ -176,6 +179,14 @@ export function IntakeForm() {
           autoComplete="off"
           value={data.website}
           onChange={(e) => update({ website: e.target.value })}
+        />
+        <input
+          type="text"
+          name="fax_number"
+          tabIndex={-1}
+          autoComplete="off"
+          value={data.fax_number}
+          onChange={(e) => update({ fax_number: e.target.value })}
         />
       </div>
 
