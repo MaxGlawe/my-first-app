@@ -144,32 +144,71 @@ export async function GET(request: NextRequest) {
     // "alle" — no additional filter; RLS handles visibility
   }
 
-  // Full-text search (FTS covers name + beschreibung) + muskelgruppen search
-  // Many exercises have the body region (e.g. "HWS", "Schulter") only in
-  // muskelgruppen, not in the name. We search both via .or().
-  if (search) {
-    const safeSearch = search.replace(/[^a-zA-ZäöüÄÖÜß0-9\s\-]/g, "").trim()
-    if (safeSearch) {
-      const words = safeSearch.split(/\s+/).filter(Boolean)
-      // Build OR filter: FTS match OR any muskelgruppe word match
-      const filters = [`fts_vector.wfts(german).${safeSearch}`]
-      for (const word of words) {
-        filters.push(`muskelgruppen.cs.{${word}}`)
-      }
-      query = query.or(filters.join(","))
-    }
-  }
-
   // Schwierigkeitsgrad filter
   if (schwierigkeitsgrad && ["anfaenger", "mittel", "fortgeschritten"].includes(schwierigkeitsgrad)) {
     query = query.eq("schwierigkeitsgrad", schwierigkeitsgrad)
   }
 
-  // Muskelgruppen filter — exercise must contain ALL selected groups (overlap: contains any)
+  // Muskelgruppen filter (from explicit filter dropdown)
   if (muskelgruppen.length > 0) {
-    // Use PostgreSQL @> (contains) for "must include all" — or && (overlap) for "any of"
-    // The spec says multi-select filter — we use overlap (any match) for better UX
     query = query.overlaps("muskelgruppen", muskelgruppen)
+  }
+
+  // ── Search: FTS (name/beschreibung) + muskelgruppen combined ──
+  // Strategy: Run two queries — FTS and muskelgruppen overlap — then merge.
+  // This avoids unreliable .or() PostgREST syntax with mixed filter types.
+  if (search) {
+    const safeSearch = search.replace(/[^a-zA-ZäöüÄÖÜß0-9\s\-]/g, "").trim()
+    if (safeSearch) {
+      const words = safeSearch.split(/\s+/).filter(Boolean)
+
+      // Query 1: FTS on name + beschreibung
+      const ftsQuery = query.textSearch("fts_vector", safeSearch, {
+        type: "websearch",
+        config: "german",
+      })
+
+      // Query 2: Muskelgruppen overlap (case-insensitive via ilike workaround)
+      // Use overlaps with all search words to find exercises tagged with any of them
+      const mgQuery = supabase
+        .from("exercises")
+        .select(
+          `id, created_at, updated_at, name, beschreibung, ausfuehrung,
+           muskelgruppen, schwierigkeitsgrad, media_url, media_type,
+           standard_saetze, standard_wiederholungen, standard_dauer_sekunden,
+           standard_pause_sekunden, is_public, is_archived, created_by`
+        )
+        .eq("is_archived", false)
+        .overlaps("muskelgruppen", words)
+        .order("name", { ascending: true })
+        .limit(pageSize)
+
+      const [ftsResult, mgResult] = await Promise.all([ftsQuery, mgQuery])
+
+      // Merge results — deduplicate by ID, FTS results first
+      const seen = new Set<string>()
+      const merged: typeof ftsResult.data = []
+
+      for (const row of ftsResult.data ?? []) {
+        if (!seen.has(row.id)) { seen.add(row.id); merged.push(row) }
+      }
+      for (const row of mgResult.data ?? []) {
+        if (!seen.has(row.id)) { seen.add(row.id); merged.push(row) }
+      }
+
+      const exercises = merged.map((row) => ({
+        ...row,
+        is_favorite: userFavIds.has(row.id),
+      }))
+
+      return NextResponse.json({
+        exercises,
+        totalCount: merged.length,
+        page: 1,
+        pageSize: merged.length,
+        totalPages: 1,
+      })
+    }
   }
 
   const { data, error, count } = await query

@@ -180,7 +180,7 @@ export function ZuweisungsDialog({
       setExerciseSearchLoading(true)
       try {
         const res = await fetch(
-          `/api/exercises?search=${encodeURIComponent(exerciseSearch.trim())}&limit=8`
+          `/api/exercises?search=${encodeURIComponent(exerciseSearch.trim())}&pageSize=50`
         )
         const json = await res.json()
         setExerciseResults(json.exercises ?? [])
