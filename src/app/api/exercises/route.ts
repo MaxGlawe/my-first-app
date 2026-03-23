@@ -154,60 +154,18 @@ export async function GET(request: NextRequest) {
     query = query.overlaps("muskelgruppen", muskelgruppen)
   }
 
-  // ── Search: FTS (name/beschreibung) + muskelgruppen combined ──
-  // Strategy: Run two queries — FTS and muskelgruppen overlap — then merge.
-  // This avoids unreliable .or() PostgREST syntax with mixed filter types.
+  // ── Search: name/beschreibung (ilike) + muskelgruppen (overlap) ──
+  // Uses .or() with ilike + overlap so a search for "Schulter" finds exercises
+  // that have "Schulter" in the name, description, OR muskelgruppen tags.
   if (search) {
     const safeSearch = search.replace(/[^a-zA-ZäöüÄÖÜß0-9\s\-]/g, "").trim()
     if (safeSearch) {
       const words = safeSearch.split(/\s+/).filter(Boolean)
-
-      // Query 1: FTS on name + beschreibung
-      const ftsQuery = query.textSearch("fts_vector", safeSearch, {
-        type: "websearch",
-        config: "german",
-      })
-
-      // Query 2: Muskelgruppen overlap (case-insensitive via ilike workaround)
-      // Use overlaps with all search words to find exercises tagged with any of them
-      const mgQuery = supabase
-        .from("exercises")
-        .select(
-          `id, created_at, updated_at, name, beschreibung, ausfuehrung,
-           muskelgruppen, schwierigkeitsgrad, media_url, media_type,
-           standard_saetze, standard_wiederholungen, standard_dauer_sekunden,
-           standard_pause_sekunden, is_public, is_archived, created_by`
-        )
-        .eq("is_archived", false)
-        .overlaps("muskelgruppen", words)
-        .order("name", { ascending: true })
-        .limit(pageSize)
-
-      const [ftsResult, mgResult] = await Promise.all([ftsQuery, mgQuery])
-
-      // Merge results — deduplicate by ID, FTS results first
-      const seen = new Set<string>()
-      const merged: typeof ftsResult.data = []
-
-      for (const row of ftsResult.data ?? []) {
-        if (!seen.has(row.id)) { seen.add(row.id); merged.push(row) }
-      }
-      for (const row of mgResult.data ?? []) {
-        if (!seen.has(row.id)) { seen.add(row.id); merged.push(row) }
-      }
-
-      const exercises = merged.map((row) => ({
-        ...row,
-        is_favorite: userFavIds.has(row.id),
-      }))
-
-      return NextResponse.json({
-        exercises,
-        totalCount: merged.length,
-        page: 1,
-        pageSize: merged.length,
-        totalPages: 1,
-      })
+      const likePattern = `%${safeSearch}%`
+      // OR: name matches, beschreibung matches, or muskelgruppen contains any search word
+      query = query.or(
+        `name.ilike.${likePattern},beschreibung.ilike.${likePattern},muskelgruppen.ov.{${words.join(",")}}`
+      )
     }
   }
 
