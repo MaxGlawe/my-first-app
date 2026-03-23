@@ -144,12 +144,20 @@ export async function GET(request: NextRequest) {
     // "alle" — no additional filter; RLS handles visibility
   }
 
-  // Full-text search (Supabase FTS)
+  // Full-text search (FTS covers name + beschreibung) + muskelgruppen search
+  // Many exercises have the body region (e.g. "HWS", "Schulter") only in
+  // muskelgruppen, not in the name. We search both via .or().
   if (search) {
-    query = query.textSearch("fts_vector", search, {
-      type: "websearch",
-      config: "german",
-    })
+    const safeSearch = search.replace(/[^a-zA-ZäöüÄÖÜß0-9\s\-]/g, "").trim()
+    if (safeSearch) {
+      const words = safeSearch.split(/\s+/).filter(Boolean)
+      // Build OR filter: FTS match OR any muskelgruppe word match
+      const filters = [`fts_vector.wfts(german).${safeSearch}`]
+      for (const word of words) {
+        filters.push(`muskelgruppen.cs.{${word}}`)
+      }
+      query = query.or(filters.join(","))
+    }
   }
 
   // Schwierigkeitsgrad filter

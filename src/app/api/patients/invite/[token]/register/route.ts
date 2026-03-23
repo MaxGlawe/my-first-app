@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
+import { sendEmail } from "@/lib/email"
 import { z } from "zod"
 
 const registerSchema = z.object({
@@ -148,6 +149,108 @@ export async function POST(
   if (updateError) {
     console.error("[POST /api/patients/invite/register] Update error:", updateError)
   }
+
+  // Send welcome email (fire-and-forget)
+  const appUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+  sendEmail({
+    to: email,
+    subject: "Willkommen bei Praxis OS — Deine Reise zu mehr Wohlbefinden beginnt",
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 0;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #059669 0%, #0d9488 50%, #0891b2 100%); border-radius: 16px 16px 0 0; padding: 40px 32px; text-align: center;">
+          <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 16px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 28px;">🌿</span>
+          </div>
+          <h1 style="color: white; font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.3px;">
+            Willkommen bei Praxis OS
+          </h1>
+          <p style="color: rgba(255,255,255,0.85); font-size: 15px; margin: 0; font-weight: 400;">
+            Deine persönliche Therapie-Begleitung
+          </p>
+        </div>
+
+        <!-- Body -->
+        <div style="background: #ffffff; padding: 36px 32px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
+          <p style="font-size: 16px; color: #1e293b; margin: 0 0 16px; line-height: 1.6;">
+            Hallo ${firstName},
+          </p>
+          <p style="font-size: 15px; color: #475569; margin: 0 0 24px; line-height: 1.7;">
+            Dein Konto ist eingerichtet — und damit beginnt eine Reise, die wir gemeinsam
+            gestalten. Kein Schema F, kein Standardprogramm. Sondern Therapie, die sich nach
+            dir richtet: nach deinem Körper, deinem Alltag, deinem Tempo.
+          </p>
+
+          <!-- What awaits -->
+          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px 24px; margin: 0 0 24px;">
+            <p style="font-size: 14px; font-weight: 600; color: #166534; margin: 0 0 12px;">
+              Was dich in deiner App erwartet:
+            </p>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 6px 0; font-size: 14px; color: #15803d; vertical-align: top; width: 24px;">✦</td>
+                <td style="padding: 6px 0 6px 8px; font-size: 14px; color: #374151; line-height: 1.5;">
+                  <strong>Dein Trainingsplan</strong> — individuell für dich erstellt, jederzeit abrufbar
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-size: 14px; color: #15803d; vertical-align: top;">✦</td>
+                <td style="padding: 6px 0 6px 8px; font-size: 14px; color: #374151; line-height: 1.5;">
+                  <strong>Übungen mit Anleitung</strong> — Schritt für Schritt, so oft du möchtest
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-size: 14px; color: #15803d; vertical-align: top;">✦</td>
+                <td style="padding: 6px 0 6px 8px; font-size: 14px; color: #374151; line-height: 1.5;">
+                  <strong>Direkter Draht zu deinem Therapeuten</strong> — per Chat, wenn du Fragen hast
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 0; font-size: 14px; color: #15803d; vertical-align: top;">✦</td>
+                <td style="padding: 6px 0 6px 8px; font-size: 14px; color: #374151; line-height: 1.5;">
+                  <strong>Dein Fortschritt</strong> — sichtbar, motivierend, ehrlich
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- CTA Button -->
+          <div style="text-align: center; margin: 0 0 28px;">
+            <a href="${appUrl}/login"
+               style="display: inline-block; background: linear-gradient(135deg, #059669, #0d9488); color: white; padding: 14px 36px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; letter-spacing: 0.2px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);">
+              Zur App &rarr;
+            </a>
+          </div>
+
+          <div style="background: #f8fafc; border-radius: 10px; padding: 16px 20px; margin: 0 0 24px;">
+            <p style="font-size: 13px; color: #64748b; margin: 0 0 8px; font-weight: 600;">
+              So meldest du dich an:
+            </p>
+            <p style="font-size: 13px; color: #64748b; margin: 0; line-height: 1.6;">
+              Öffne <a href="${appUrl}/login" style="color: #059669; font-weight: 600; text-decoration: none;">${appUrl.replace("https://", "")}</a>
+              in deinem Browser und melde dich mit deiner E-Mail-Adresse und dem Passwort an, das du gerade erstellt hast.
+            </p>
+          </div>
+
+          <!-- Personal note -->
+          <p style="font-size: 14px; color: #64748b; margin: 0; line-height: 1.7; font-style: italic; border-left: 3px solid #d1d5db; padding-left: 16px;">
+            Ein kleiner Tipp: Speichere die Seite als Lesezeichen oder füge sie zum Startbildschirm
+            deines Handys hinzu — so hast du deine Therapie immer griffbereit.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8fafc; border-radius: 0 0 16px 16px; padding: 24px 32px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
+          <p style="font-size: 13px; color: #94a3b8; margin: 0 0 4px;">
+            Physiotherapie Glawe — Praxis OS
+          </p>
+          <p style="font-size: 12px; color: #cbd5e1; margin: 0;">
+            Bei Fragen erreichst du uns jederzeit über den Chat in der App.
+          </p>
+        </div>
+      </div>
+    `,
+  }).catch((err) => console.error("[register] Welcome email failed:", err))
 
   return NextResponse.json({
     success: true,
