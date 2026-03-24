@@ -36,6 +36,9 @@ export interface Patient {
   invite_token?: string | null
   invite_sent_at?: string | null
   invite_status?: "invited" | "registered" | null
+
+  // BGF (enriched by API, not in DB)
+  bgf_organization_name?: string | null
 }
 
 export interface PatientFormValues {

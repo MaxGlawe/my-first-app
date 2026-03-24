@@ -158,8 +158,15 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
                     <AmpelDot status={statusMap.get(patient.id)!} size="sm" />
                   )}
                   <div>
-                    <div className="font-medium">
-                      {patient.nachname}, {patient.vorname}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">
+                        {patient.nachname}, {patient.vorname}
+                      </span>
+                      {patient.bgf_organization_name && (
+                        <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 h-5 border-blue-200 bg-blue-50 text-blue-700">
+                          {patient.bgf_organization_name}
+                        </Badge>
+                      )}
                     </div>
                     {patient.email && (
                       <div className="text-sm text-slate-500">{patient.email}</div>

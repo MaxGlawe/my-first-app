@@ -34,12 +34,12 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
-  const isInviteRoute = pathname.startsWith('/invite/')
-  const isInviteApi = pathname.startsWith('/api/patients/invite/')
-  const isContractSigningPage = pathname.startsWith('/vertrag/')
-  const isContractPublicApi = pathname.startsWith('/api/contracts/')
+  const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
+  const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
+  const isContractSigningPage = pathname.startsWith('/vertrag/') || pathname.startsWith('/bgf-vertrag/')
+  const isContractPublicApi = pathname.startsWith('/api/contracts/') || pathname.startsWith('/api/bgf-contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
   const isAnalyticsTrackApi = pathname === '/api/analytics/track'
   const isLandingAnalyticsApi = pathname === '/api/analytics/pageview' || pathname === '/api/analytics/conversion' || pathname === '/api/analytics/duration'
@@ -81,6 +81,70 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login'
       url.searchParams.set('error', 'account_disabled')
       return NextResponse.redirect(url)
+    }
+
+    // ── HR-Admin check: patients who are organization admins ──
+    // They should access /hr/* routes, NOT /app/* or /os/*
+    if (role === 'patient') {
+      const { data: orgAdminCheck } = await adminClient
+        .from('organization_admins')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (orgAdminCheck) {
+        // This "patient" is actually an HR admin
+        // Clear must_change_password if still set (HR set password via invite link)
+        if (user.user_metadata?.must_change_password === true) {
+          await adminClient.auth.admin.updateUserById(user.id, {
+            user_metadata: { ...user.user_metadata, must_change_password: false },
+          })
+        }
+
+        // Allow /hr/* routes, redirect everything else
+        if (pathname.startsWith('/hr')) {
+          // Let them through to HR dashboard
+        } else if (pathname === '/login') {
+          url.pathname = '/hr/dashboard'
+          return NextResponse.redirect(url)
+        } else if (pathname.startsWith('/app') || pathname.startsWith('/os')) {
+          url.pathname = '/hr/dashboard'
+          return NextResponse.redirect(url)
+        }
+        // Skip the rest of patient-specific middleware
+        return supabaseResponse
+      }
+    }
+
+    // ── BGF-Member check: patients who are organization members ──
+    // They should go to BGF onboarding first, then BGF dashboard
+    if (role === 'patient' && pathname.startsWith('/app')) {
+      // Allow BGF routes through without redirect
+      if (!pathname.startsWith('/app/bgf')) {
+        const { data: bgfMember } = await adminClient
+          .from('organization_members')
+          .select('id, ist_analyse_abgeschlossen, status')
+          .eq('user_id', user.id)
+          .in('status', ['aktiv', 'eingeladen'])
+          .maybeSingle()
+
+        if (bgfMember) {
+          // BGF member detected — route to BGF flow
+          if (!bgfMember.ist_analyse_abgeschlossen) {
+            // Onboarding not done → send to Ist-Analyse
+            if (pathname !== '/app/bgf/onboarding') {
+              url.pathname = '/app/bgf/onboarding'
+              return NextResponse.redirect(url)
+            }
+          } else {
+            // Onboarding done → send to BGF dashboard (not patient dashboard)
+            if (pathname === '/app/dashboard') {
+              url.pathname = '/app/bgf/dashboard'
+              return NextResponse.redirect(url)
+            }
+          }
+        }
+      }
     }
 
     // Patients cannot access /os/* routes
@@ -186,9 +250,19 @@ export async function updateSession(request: NextRequest) {
 
     // Redirect authenticated users away from login page
     if (isPublicRoute && pathname === '/login') {
-      if (role === 'admin') url.pathname = '/os/admin/dashboard'
-      else if (role === 'patient') url.pathname = '/app/dashboard'
-      else url.pathname = '/os/dashboard'
+      if (role === 'admin') {
+        url.pathname = '/os/admin/dashboard'
+      } else if (role === 'patient') {
+        // Check if this patient is actually an HR admin
+        const { data: orgAdmin } = await adminClient
+          .from('organization_admins')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        url.pathname = orgAdmin ? '/hr/dashboard' : '/app/dashboard'
+      } else {
+        url.pathname = '/os/dashboard'
+      }
       return NextResponse.redirect(url)
     }
   }

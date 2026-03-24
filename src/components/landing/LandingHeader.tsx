@@ -50,7 +50,7 @@ export function LandingHeader() {
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
               { label: "Preise", href: "#preise" },
-              { label: "FAQ", href: "#faq" },
+              { label: "Für Unternehmen", href: "/unternehmen" },
             ].map((link) => (
               <a
                 key={link.label}

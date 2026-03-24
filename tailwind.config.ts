@@ -11,6 +11,7 @@ const config: Config = {
   	extend: {
   		fontFamily: {
   			sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+  			display: ['var(--font-display)', 'Space Grotesk', 'system-ui', 'sans-serif'],
   		},
   		fontSize: {
   			'display-xl': ['clamp(3.5rem, 8vw, 7rem)', { lineHeight: '1.05', letterSpacing: '-0.03em' }],
@@ -20,14 +21,18 @@ const config: Config = {
   		},
   		colors: {
   			landing: {
-  				bg: '#ffffff',
-  				'bg-warm': '#fdfcfa',
-  				fg: '#0a0a0a',
-  				'fg-muted': '#666666',
-  				'fg-subtle': '#999999',
-  				border: '#e5e5e5',
-  				accent: '#4a7c6b',
-  				'accent-light': '#eff5f2',
+  				bg: '#FAFAF7',
+  				'bg-warm': '#F5F2ED',
+  				'bg-cream': '#FFFDF9',
+  				fg: '#1A1A2E',
+  				'fg-muted': '#4A5568',
+  				'fg-subtle': '#8896A6',
+  				border: '#E2DDD5',
+  				accent: '#2D6A4F',
+  				'accent-hover': '#3D7A66',
+  				'accent-light': '#E8F0EC',
+  				'accent-warm': '#D4A574',
+  				highlight: '#7CB69D',
   			},
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

@@ -24,6 +24,7 @@ import {
   BarChart3,
   Inbox,
   Gift,
+  HeartPulse,
 } from "lucide-react"
 import {
   Sidebar,
@@ -52,7 +53,7 @@ interface NavItem {
 
 export function OsSidebar() {
   const pathname = usePathname()
-  const { role, isAdmin, isTrainer, isPraxismanagement } = useUserRole()
+  const { role, isAdmin, isTrainer, isPraxismanagement, isBgf } = useUserRole()
 
   // ── Praxis section (visible to all OS roles) ──
   const praxisNav: NavItem[] = [
@@ -174,6 +175,31 @@ export function OsSidebar() {
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {isBgf && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>BGF</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === "/os/bgf" || pathname.startsWith("/os/bgf/")}
+                      tooltip="BGF-Dashboard"
+                    >
+                      <Link href="/os/bgf">
+                        <HeartPulse />
+                        <span>BGF-Dashboard</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>

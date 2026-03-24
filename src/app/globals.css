@@ -86,6 +86,30 @@
 
 /* ── Landing Page: Premium Animations ────────────────────────────────── */
 
+/* Noise texture overlay */
+.noise-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+.noise-overlay-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
 /* Fade in up */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(30px); }
@@ -108,9 +132,9 @@
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+@keyframes heartbeat-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(45, 90, 76, 0.2); }
+  50% { box-shadow: 0 0 35px rgba(45, 90, 76, 0.45); }
 }
 @keyframes line-grow {
   from { height: 0; }
@@ -129,13 +153,38 @@
   to { opacity: 1; transform: translateX(0); }
 }
 
+/* EKG drawing animation */
+@keyframes ekg-draw {
+  to { stroke-dashoffset: 0; }
+}
+.ekg-line {
+  stroke-dasharray: var(--ekg-length, 1000);
+  stroke-dashoffset: var(--ekg-length, 1000);
+}
+.ekg-line.revealed {
+  animation: ekg-draw 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Spine straighten animation */
+@keyframes spine-straighten {
+  from { d: path("M 50 10 C 35 60, 65 120, 40 180 C 60 240, 30 300, 55 360 C 70 400, 35 440, 50 490"); }
+  to { d: path("M 50 10 C 48 60, 52 120, 49 180 C 51 240, 49 300, 50 360 C 51 400, 49 440, 50 490"); }
+}
+
+/* Nerve network pulse */
+@keyframes nerve-pulse {
+  0% { opacity: 0; stroke-width: 0.5; }
+  50% { opacity: 0.6; stroke-width: 1.5; }
+  100% { opacity: 0; stroke-width: 0.5; }
+}
+
 .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-fade-in { animation: fade-in 0.6s ease-out both; }
 .animate-float { animation: float 6s ease-in-out infinite; }
 .animate-float-delayed { animation: float-delayed 7s ease-in-out 1s infinite; }
 .animate-float-slow { animation: float 8s ease-in-out 2s infinite; }
 .animate-gradient { background-size: 200% 200%; animation: gradient-shift 6s ease infinite; }
-.animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+.animate-heartbeat-pulse { animation: heartbeat-pulse 2s ease-in-out infinite; }
 .animate-dot-pulse { animation: dot-pulse 2s ease-in-out infinite; }
 
 .animation-delay-150 { animation-delay: 0.15s; }
@@ -179,12 +228,12 @@
 .reveal-stagger > .reveal:nth-child(5) { transition-delay: 480ms; }
 .reveal-stagger > .reveal:nth-child(6) { transition-delay: 600ms; }
 
-/* Glass morphism */
+/* Glass morphism — updated for new palette */
 .glass {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .glass-light {
   background: rgba(255, 255, 255, 0.7);
@@ -193,23 +242,23 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Emerald glow effect */
-.glow-emerald {
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.15),
-              0 0 60px rgba(16, 185, 129, 0.08);
+/* Sage glow effect */
+.glow-sage {
+  box-shadow: 0 0 30px rgba(45, 90, 76, 0.12),
+              0 0 60px rgba(45, 90, 76, 0.06);
 }
 
-/* The smart line */
+/* The smart line — updated */
 .smart-line {
   width: 2px;
-  background: linear-gradient(to bottom, #10b981, #14b8a6);
+  background: linear-gradient(to bottom, #2D5A4C, #3D7A66);
 }
 .smart-line-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #14b8a6);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  background: linear-gradient(135deg, #2D5A4C, #3D7A66);
+  box-shadow: 0 0 12px rgba(45, 90, 76, 0.4);
 }
 
 /* Signature draw animation */
@@ -228,10 +277,40 @@
   }
 }
 
-/* Display numbers */
+/* Display numbers — medical monitor style */
 .display-number {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
+}
+
+/* Medical card — prescription style */
+.card-prescription {
+  position: relative;
+  transform: rotate(-0.5deg);
+  border-left: 4px solid #2D5A4C;
+}
+.card-prescription::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(45, 90, 76, 0.2);
+}
+
+/* Asymmetric card tilts */
+.tilt-left { transform: rotate(-1deg); }
+.tilt-right { transform: rotate(1deg); }
+.tilt-left:hover, .tilt-right:hover { transform: rotate(0deg); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Warm gradient backgrounds for section transitions */
+.bg-warm-gradient {
+  background: linear-gradient(180deg, #FAF8F5 0%, #F5F2ED 100%);
+}
+.bg-dark-gradient {
+  background: linear-gradient(180deg, #0C1117 0%, #161D27 50%, #0C1117 100%);
 }
 
 /* ── Milestone / Confetti Animations ──────────────────────────────────── */

@@ -2,9 +2,9 @@
 
 import { CONTRACT_TYPE_CONFIG } from "@/types/contract"
 import type { ContractType } from "@/types/contract"
-import { Video, Activity, Clock } from "lucide-react"
+import { Video, Activity, Clock, type LucideIcon } from "lucide-react"
 
-const typeIcons: Record<ContractType, React.ElementType> = {
+const typeIcons: Record<ContractType, LucideIcon> = {
   einzelsitzung: Video,
   mini_reha_post_op: Activity,
   chronik_programm: Clock,

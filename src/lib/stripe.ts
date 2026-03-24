@@ -8,8 +8,8 @@
 import Stripe from "stripe"
 
 export const SUBSCRIPTION_PRICES = {
-  monthly: 14.99,
-  yearly: 149.99,
+  monthly: 16.99,
+  yearly: 169.99,
 } as const
 
 let stripeInstance: Stripe | null = null

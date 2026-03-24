@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/training-reminder",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/bgf-invoicing",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/bgf-quarterly-report",
+      "schedule": "0 7 * * *"
     }
   ]
 }

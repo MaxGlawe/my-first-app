@@ -47,6 +47,8 @@ export interface UserProfile {
   status: UserStatus
   last_sign_in_at: string | null
   created_at: string
+  bgf_freigeschaltet: boolean
+  bgf_level: string | null
 }
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -177,6 +179,37 @@ export function UserListTable() {
     }
   }
 
+  const handleBgfToggle = async (user: UserProfile) => {
+    setActionError(null)
+    const newValue = !user.bgf_freigeschaltet
+    try {
+      const { supabase } = await import("@/lib/supabase")
+      const { error } = await supabase
+        .from("user_profiles")
+        .update({
+          bgf_freigeschaltet: newValue,
+          bgf_level: newValue ? "berechtigt" : "gesperrt",
+          bgf_freigeschaltet_am: newValue ? new Date().toISOString() : null,
+        })
+        .eq("id", user.id)
+
+      if (error) {
+        setActionError("BGF-Status konnte nicht geändert werden.")
+        return
+      }
+
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, bgf_freigeschaltet: newValue, bgf_level: newValue ? "berechtigt" : "gesperrt" }
+            : u
+        )
+      )
+    } catch {
+      setActionError("Ein unerwarteter Fehler ist aufgetreten.")
+    }
+  }
+
   const formatDate = (dateString: string | null): string => {
     if (!dateString) return "Noch nie"
     return new Date(dateString).toLocaleDateString("de-DE", {
@@ -227,6 +260,7 @@ export function UserListTable() {
               <TableHead>E-Mail</TableHead>
               <TableHead>Rolle</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>BGF</TableHead>
               <TableHead>Letzter Login</TableHead>
               <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
@@ -234,7 +268,7 @@ export function UserListTable() {
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   Keine Nutzer gefunden.
                 </TableCell>
               </TableRow>
@@ -322,6 +356,22 @@ export function UserListTable() {
                         )}
                       </AlertDialog>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {user.role !== "patient" && user.role !== "praxismanagement" ? (
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={user.bgf_freigeschaltet}
+                          onCheckedChange={() => handleBgfToggle(user)}
+                          className="scale-90"
+                        />
+                        <span className={`text-xs font-medium ${user.bgf_freigeschaltet ? "text-emerald-600" : "text-slate-400"}`}>
+                          {user.bgf_freigeschaltet ? "Aktiv" : "—"}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-300">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatDate(user.last_sign_in_at)}

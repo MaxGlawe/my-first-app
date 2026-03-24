@@ -90,8 +90,9 @@ export async function POST(
 
   const dashData = await dashRes.json()
 
-  // Generate report with Claude
+  // Generate report with Claude (structured output via tool_use)
   const anthropic = new Anthropic()
+  const { generateBgfReportPdf } = await import("@/lib/pdf/bgf-report-pdf")
 
   const heute = new Date()
   const quartal = `Q${Math.ceil((heute.getMonth() + 1) / 3)} ${heute.getFullYear()}`
@@ -119,34 +120,111 @@ DATEN:
 - Ø Pausen-Fit Bewertung: ${dashData.feedback.avg_sterne ?? "keine"}/5 (${dashData.feedback.anzahl_bewertungen} Bewertungen)
 - Abteilungen: ${dashData.abteilungen?.map((a: { name: string; teilnahmequote: number; total: number }) => `${a.name} (${a.total} MA, ${a.teilnahmequote}% Teilnahme)`).join("; ") || "keine Aufteilung"}
 
-STRUKTUR DES BERICHTS:
-1. ZUSAMMENFASSUNG (3-4 Sätze Kernaussagen)
-2. TEILNAHME & ENGAGEMENT (Aktivierungsquote, Pausen-Fit Nutzung, Feedback)
-3. GESUNDHEITSSTATUS (Schmerz, Stress, Schlaf — anonymisiert)
-4. HÄUFIGSTE BESCHWERDEN (Top 5 mit Prozentzahlen)
-5. ABTEILUNGSVERGLEICH (falls Daten vorhanden — anonymisiert, nur bei ≥5 MA pro Abteilung)
-6. EMPFEHLUNGEN (3-5 konkrete, umsetzbare Maßnahmen basierend auf den Daten)
-7. ROI-EINSCHÄTZUNG (geschätzte AU-Tage-Einsparung basierend auf Schmerzreduktion und Teilnahme)
+Erstelle:
+1. Eine ZUSAMMENFASSUNG (3-4 Sätze, die wichtigsten Erkenntnisse)
+2. Den vollständigen BERICHT in Markdown (Teilnahme, Gesundheitsstatus, Beschwerden, Abteilungsvergleich, ROI)
+3. Exakt 3-5 HANDLUNGSEMPFEHLUNGEN — konkret, priorisiert, direkt umsetzbar für die Geschäftsleitung
+4. Eine ROI-Einschätzung (Ø AU-Tag = 300€, Ø 5 Rücken-AU-Tage/MA/Jahr bei Schmerz >4)
 
 WICHTIG:
-- Keine individuellen Gesundheitsdaten nennen
-- Alle Daten sind anonymisiert und aggregiert
-- Empfehlungen müssen konkret und umsetzbar sein (z.B. "Ergonomie-Schulung für Abteilung X" statt "Ergonomie verbessern")
-- ROI-Berechnung: Ø AU-Tag kostet 300€, Ø 5 Rücken-AU-Tage/MA/Jahr bei Ø Schmerz >4
-
-Formatiere mit Markdown (## Überschriften, **fett**, Aufzählungen).`
+- Empfehlungen müssen KONKRET sein ("Ergonomie-Workshop für Abt. Lager im Q2 durchführen" statt "Ergonomie verbessern")
+- Jede Empfehlung beginnt mit einer klaren Handlungsaufforderung
+- Keine individuellen Gesundheitsdaten, alles anonymisiert`
 
   try {
     const message = await anthropic.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 4096,
+      tools: [
+        {
+          name: "erstelle_gesundheitsbericht",
+          description: "Strukturierter Gesundheitsbericht für PDF-Generierung",
+          input_schema: {
+            type: "object" as const,
+            properties: {
+              zusammenfassung: {
+                type: "string",
+                description: "Executive Summary — 3-4 Sätze Kernaussagen für die Geschäftsleitung",
+              },
+              inhalt: {
+                type: "string",
+                description: "Vollständiger Berichtstext in Markdown (Teilnahme, Gesundheit, Beschwerden, Abteilungen, ROI)",
+              },
+              empfehlungen: {
+                type: "array",
+                items: { type: "string" },
+                description: "3-5 konkrete, priorisierte Handlungsempfehlungen",
+              },
+              roi_einsparung_jahr: {
+                type: "number",
+                description: "Geschätzte jährliche Einsparung in Euro durch Fehltagereduktion",
+              },
+              roi_prozent: {
+                type: "number",
+                description: "ROI in Prozent (Einsparung / BGF-Kosten × 100)",
+              },
+            },
+            required: ["zusammenfassung", "inhalt", "empfehlungen"],
+          },
+        },
+      ],
+      tool_choice: { type: "tool", name: "erstelle_gesundheitsbericht" },
       messages: [{ role: "user", content: prompt }],
     })
 
-    const textBlock = message.content.find((b) => b.type === "text")
-    if (!textBlock || textBlock.type !== "text") {
+    const toolBlock = message.content.find((b) => b.type === "tool_use")
+    if (!toolBlock || toolBlock.type !== "tool_use") {
       return NextResponse.json({ error: "KI konnte keinen Report generieren." }, { status: 500 })
     }
+
+    const raw = toolBlock.input as Record<string, unknown>
+
+    // Robust parsing — Claude Haiku sometimes injects XML tags or returns
+    // arrays as JSON strings (known issue with German text + tool_use)
+    function cleanText(val: unknown): string {
+      if (typeof val !== "string") return ""
+      return val
+        .replace(/<\/?[a-z_]+(?:\s[^>]*)?>/gi, "") // strip XML-like tags
+        .replace(/\*\*(.+?)\*\*/g, "$1") // strip markdown bold for summary
+        .trim()
+    }
+
+    function coerceArray(val: unknown): string[] {
+      if (Array.isArray(val)) return val.map((v) => String(v))
+      if (typeof val === "string") {
+        try { const parsed = JSON.parse(val); if (Array.isArray(parsed)) return parsed.map(String) } catch {}
+        return val.split("\n").filter((l) => l.trim().length > 5)
+      }
+      return []
+    }
+
+    const zusammenfassung = cleanText(raw.zusammenfassung)
+    const inhalt = typeof raw.inhalt === "string" ? raw.inhalt : ""
+    const empfehlungen = coerceArray(raw.empfehlungen).map((e) =>
+      e.replace(/<\/?[a-z_]+(?:\s[^>]*)?>/gi, "").replace(/\*\*(.+?)\*\*/g, "$1").trim()
+    )
+    const roi_einsparung_jahr = typeof raw.roi_einsparung_jahr === "number" ? raw.roi_einsparung_jahr : 0
+    const roi_prozent = typeof raw.roi_prozent === "number" ? raw.roi_prozent : 0
+
+    // Generate PDF
+    const pdfBuffer = await generateBgfReportPdf({
+      firma: org.name,
+      quartal,
+      branche: org.branche || "",
+      kontakt: org.kontakt_name,
+      erstellt_am: new Date().toISOString(),
+      dashboard: {
+        ...dashData,
+        roi: {
+          einsparung_pro_jahr: roi_einsparung_jahr,
+          roi_prozent: roi_prozent,
+        },
+      },
+      empfehlungen,
+      zusammenfassung,
+    })
+
+    const pdfBase64 = pdfBuffer.toString("base64")
 
     return NextResponse.json({
       report: {
@@ -155,8 +233,11 @@ Formatiere mit Markdown (## Überschriften, **fett**, Aufzählungen).`
         firma: org.name,
         erstellt_am: new Date().toISOString(),
         erstellt_von: "Praxis OS BGF — KI-generiert",
-        inhalt: textBlock.text,
+        inhalt,
+        zusammenfassung,
+        empfehlungen,
         daten: dashData,
+        pdf_base64: pdfBase64,
       },
     })
   } catch (err) {

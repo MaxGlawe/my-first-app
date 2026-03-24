@@ -14,10 +14,13 @@ interface UseUserRoleResult {
   isPraxismanagement: boolean
   /** Trainer roles that do Funktionsuntersuchung + Trainingsdokumentation */
   isFunktionsRole: boolean
+  /** BGF (Betriebliche Gesundheitsförderung) access */
+  isBgf: boolean
 }
 
 export function useUserRole(): UseUserRoleResult {
   const [role, setRole] = useState<UserRole | null>(null)
+  const [bgfFreigeschaltet, setBgfFreigeschaltet] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -38,12 +41,13 @@ export function useUserRole(): UseUserRoleResult {
 
         const { data: profile } = await supabase
           .from("user_profiles")
-          .select("role")
+          .select("role, bgf_freigeschaltet")
           .eq("id", user.id)
           .single()
 
         if (!cancelled) {
           setRole((profile?.role as UserRole) ?? null)
+          setBgfFreigeschaltet(profile?.bgf_freigeschaltet === true)
         }
       } catch {
         if (!cancelled) setRole(null)
@@ -59,14 +63,16 @@ export function useUserRole(): UseUserRoleResult {
   }, [])
 
   const isTrainer = role === "praeventionstrainer" || role === "personal_trainer"
+  const isAdmin = role === "admin"
 
   return {
     role,
     isLoading,
     isHeilpraktiker: role === "heilpraktiker",
-    isAdmin: role === "admin",
+    isAdmin,
     isTrainer,
     isPraxismanagement: role === "praxismanagement",
     isFunktionsRole: isTrainer,
+    isBgf: isAdmin || bgfFreigeschaltet,
   }
 }

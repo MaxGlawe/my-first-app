@@ -50,6 +50,8 @@ export function ExerciseVorlesen({
 
   const handlePlay = useCallback(async () => {
     clearError()
+    // Unlock mobile audio context synchronously before any async work
+    player.warmUp()
 
     // Use cached play items if available
     if (cachedItemsRef.current) {

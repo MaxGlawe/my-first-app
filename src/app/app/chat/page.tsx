@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ChatHeader } from "@/components/chat/ChatHeader"
 import { ChatFenster } from "@/components/chat/ChatFenster"
 import { supabase } from "@/lib/supabase"
+import { useBgfMembership } from "@/hooks/use-bgf-membership"
 
 interface PatientProfile {
   id: string
@@ -18,6 +19,7 @@ interface PatientProfile {
 }
 
 export default function PatientChatPage() {
+  const { isMember: isBgfMember } = useBgfMembership()
   const [profile, setProfile] = useState<PatientProfile | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -121,7 +123,7 @@ export default function PatientChatPage() {
       <ChatHeader
         name={therapeutName}
         subtitle="Dein Therapeut"
-        backHref="/app/dashboard"
+        backHref={isBgfMember ? "/app/bgf/dashboard" : "/app/dashboard"}
       />
       <div className="flex-1 min-h-0">
         <ChatFenster

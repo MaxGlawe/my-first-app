@@ -29,10 +29,11 @@
 | PROJ-15 | Neue Berufsbilder (Trainer, Praxismanagement) | Deployed | [Spec](PROJ-15-neue-berufsbilder.md) | 2026-02-19 |
 | PROJ-16 | Patienten-App 2.0 (Design, Schmerztagebuch, Gamification) | In Progress | [Spec](PROJ-16-patienten-app-v2.md) | 2026-02-19 |
 | PROJ-17 | Patienten-Ampelsystem (Traffic Light Alert System) | In Progress | [Spec](PROJ-17-patienten-ampelsystem.md) | 2026-03-06 |
+| PROJ-18 | Betriebliche Gesundheitsförderung (BGF) | In Progress | [Spec](PROJ-18-bgf-betriebliche-gesundheitsfoerderung.md) | 2026-03-15 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-18
+## Next Available ID: PROJ-19
 
 ## Build Order (Empfohlen)
 
@@ -63,4 +64,12 @@ Phase 5 — Skalierung
 
 Phase 6 — Neue Berufsbilder
   PROJ-15 Trainer & Praxismanagement           ← Braucht PROJ-1, 6, 8
+
+Phase 7 — B2B: Betriebliche Gesundheitsförderung
+  PROJ-18 BGF-System                           ← Braucht PROJ-1, 8, 9, 10, 14, 15, 17
+    Phase 18.1  Fundament (Org, Members, HR-Rolle)
+    Phase 18.2  Ist-Analyse & Pausen-Fit (KI)
+    Phase 18.3  Ampel + BGF-Dashboard
+    Phase 18.4  Reporting & Abrechnung
+    Phase 18.5  Launch & Skalierung
 ```

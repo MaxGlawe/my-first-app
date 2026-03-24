@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 const PAGE_SIZE = 20
 
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("patients")
     .select(
-      "id, vorname, nachname, geburtsdatum, geschlecht, email, krankenkasse, avatar_url, archived_at, therapeut_id, created_at",
+      "id, vorname, nachname, geburtsdatum, geschlecht, email, krankenkasse, avatar_url, archived_at, therapeut_id, user_id, created_at",
       { count: "exact" }
     )
     .order("nachname", { ascending: true })
@@ -117,8 +118,37 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // Enrich with BGF organization name (if patient is a BGF member)
+  let enrichedPatients = data ?? []
+
+  const userIds = enrichedPatients
+    .map((p) => p.user_id)
+    .filter(Boolean) as string[]
+
+  if (userIds.length > 0) {
+    const sc = createSupabaseServiceClient()
+    const { data: bgfMembers } = await sc
+      .from("organization_members")
+      .select("user_id, organization_id, organizations(name)")
+      .in("user_id", userIds)
+      .in("status", ["aktiv", "eingeladen"])
+
+    if (bgfMembers && bgfMembers.length > 0) {
+      const bgfMap = new Map(
+        bgfMembers.map((m) => [
+          m.user_id,
+          (m.organizations as unknown as { name: string })?.name ?? "BGF",
+        ])
+      )
+      enrichedPatients = enrichedPatients.map((p) => ({
+        ...p,
+        bgf_organization_name: p.user_id ? bgfMap.get(p.user_id) ?? null : null,
+      }))
+    }
+  }
+
   return NextResponse.json({
-    patients: data ?? [],
+    patients: enrichedPatients,
     totalCount: count ?? 0,
     page,
     pageSize,

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { constructWebhookEvent } from "@/lib/stripe"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { createSubscriptionInvoice } from "@/lib/billing/auto-invoice"
 import type Stripe from "stripe"
 
 export async function POST(request: NextRequest) {
@@ -117,6 +118,37 @@ export async function POST(request: NextRequest) {
               .eq("id", planId)
           }
         }
+
+        // ── Auto-generate Heilpraktiker invoice for subscription payments ──
+        if (invoice.subscription && invoice.amount_paid > 0) {
+          const customerId = typeof invoice.customer === "string"
+            ? invoice.customer
+            : invoice.customer?.id
+
+          if (customerId) {
+            // Extract period from invoice lines
+            const lines = invoice.lines?.data ?? []
+            const subLine = lines.find((l: { type: string }) => l.type === "subscription")
+            const periodStart = subLine?.period?.start
+              ? new Date(subLine.period.start * 1000).toISOString()
+              : new Date().toISOString()
+            const periodEnd = subLine?.period?.end
+              ? new Date(subLine.period.end * 1000).toISOString()
+              : new Date().toISOString()
+
+            // Fire-and-forget: don't block webhook response
+            createSubscriptionInvoice({
+              stripeCustomerId: customerId,
+              amountPaid: invoice.amount_paid / 100, // cents → EUR
+              periodStart,
+              periodEnd,
+              stripeInvoiceId: invoice.id,
+            }).catch((err) => {
+              console.error("[Stripe Webhook] Auto-invoice generation failed:", err)
+            })
+          }
+        }
+
         break
       }
 
