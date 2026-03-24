@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import Anthropic from "@anthropic-ai/sdk"
 
 const bodySchema = z.object({
@@ -306,8 +307,10 @@ Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
       })
     }
 
-    // Insert the new lesson — auto-freigegeben since curriculum is approved
-    const { data: newLesson, error: insertErr } = await supabase
+    // Insert the new lesson — use service client to bypass RLS
+    // (patients can't INSERT into education_modules, but auth is already verified above)
+    const sc = createSupabaseServiceClient()
+    const { data: newLesson, error: insertErr } = await sc
       .from("education_modules")
       .insert({
         hauptproblem,
@@ -337,7 +340,7 @@ Nutze das Tool "save_lesson", um dein Ergebnis zurückzugeben.`,
       explanation: q.explanation ?? null,
     }))
 
-    const { data: savedQuizzes } = await supabase
+    const { data: savedQuizzes } = await sc
       .from("education_quizzes")
       .insert(quizRows)
       .select("id, module_id, question_number, question_text, options, correct_index, explanation")
