@@ -318,8 +318,8 @@ function SubscriptionCard({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="monthly">Monatlich — 14,99€/Monat</SelectItem>
-                      <SelectItem value="yearly">Jahresmitgliedschaft — 149,99€/Jahr (2 Monate gratis)</SelectItem>
+                      <SelectItem value="monthly">Monatlich — 16,99€/Monat</SelectItem>
+                      <SelectItem value="yearly">Jahresmitgliedschaft — 169,99€/Jahr (2 Monate gratis)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

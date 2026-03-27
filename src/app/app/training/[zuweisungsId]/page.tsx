@@ -938,9 +938,11 @@ export default function TrainingSessionPage() {
           </Button>
         </Link>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-slate-400 truncate">{assignment.plan_name ?? "Training"}</p>
-          <p className="text-sm font-semibold text-slate-700">
-            Übung {currentIndex + 1} von {exercises.length}
+          <p className="text-xs text-slate-400 truncate">
+            Übung {currentIndex + 1} von {exercises.length} — {assignment.plan_name ?? "Training"}
+          </p>
+          <p className="text-sm font-semibold text-slate-700 truncate">
+            {currentExercise?.name ?? "Übung"}
           </p>
         </div>
         {quizScore && (

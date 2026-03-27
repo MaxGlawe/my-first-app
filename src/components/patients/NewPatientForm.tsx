@@ -436,8 +436,8 @@ export function NewPatientForm() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="monthly">Monatlich — 14,99 €/Monat</SelectItem>
-                              <SelectItem value="yearly">Jährlich — 149,99 €/Jahr</SelectItem>
+                              <SelectItem value="monthly">Monatlich — 16,99 €/Monat</SelectItem>
+                              <SelectItem value="yearly">Jährlich — 169,99 €/Jahr</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

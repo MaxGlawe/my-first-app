@@ -337,7 +337,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
                   <div className="space-y-0.5">
                     <Label className="text-sm font-medium">Betreuungspauschale aktivieren</Label>
                     <p className="text-xs text-muted-foreground">
-                      1. Monat kostenfrei, danach {planType === "yearly" ? "149,99€/Jahr" : "14,99€/Monat"}
+                      1. Monat kostenfrei, danach {planType === "yearly" ? "169,99€/Jahr" : "16,99€/Monat"}
                     </p>
                   </div>
                   <Switch
@@ -356,8 +356,8 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="monthly">Monatlich — 14,99€/Monat</SelectItem>
-                          <SelectItem value="yearly">Jahresmitgliedschaft — 149,99€/Jahr</SelectItem>
+                          <SelectItem value="monthly">Monatlich — 16,99€/Monat</SelectItem>
+                          <SelectItem value="yearly">Jahresmitgliedschaft — 169,99€/Jahr</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
