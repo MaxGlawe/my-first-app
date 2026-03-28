@@ -197,12 +197,13 @@ export async function POST(request: NextRequest) {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
         message = await anthropic.messages.create({
-          model: "claude-haiku-4-5-20251001",
+          model: "claude-sonnet-4-6",
           max_tokens: 2048,
           system: `Du bist ein erfahrener Physiotherapeut und Gesundheitspädagoge. Erstelle eine einzelne Wissenslektion für Patienten.
 
 REGELN:
-- Schreibe auf B1-Deutsch (einfache Sprache)
+- Schreibe auf B1-Deutsch (einfache, verständliche Sprache)
+- WICHTIG: Achte auf korrekte deutsche Rechtschreibung und Grammatik. Keine Tippfehler!
 - Verwende HTML-Tags: <h2>, <p>, <ul>, <li>, <strong>
 - Fragen sollen Kernverständnis prüfen
 - Motivierend und praxisnah
