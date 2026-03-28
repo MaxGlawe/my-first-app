@@ -307,6 +307,12 @@ function SatzTracker({
   const [showPause, setShowPause] = useState(false)
   const [pendingCount, setPendingCount] = useState(completedSets)
 
+  // Sync pendingCount when exercise changes (completedSets resets to 0)
+  useEffect(() => {
+    setPendingCount(completedSets)
+    setShowPause(false)
+  }, [completedSets])
+
   const handleSetDone = () => {
     const next = pendingCount + 1
     setPendingCount(next)
