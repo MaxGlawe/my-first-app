@@ -121,6 +121,7 @@ export function LibraryPanel({ className, onAddExercise }: LibraryPanelProps) {
     filter: {
       search: debouncedSearch,
       muskelgruppen: muskelgruppe && muskelgruppe !== "__all__" ? [muskelgruppe] : [],
+      equipment: [],
       schwierigkeitsgrad: "",
       quelle: favoritenOnly ? "favoriten" : "alle",
     },

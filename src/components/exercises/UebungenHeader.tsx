@@ -64,6 +64,7 @@ export function UebungenHeader({
     onFilterChange({
       search: filter.search,
       muskelgruppen: [],
+      equipment: [],
       schwierigkeitsgrad: "",
       quelle: "alle",
     })

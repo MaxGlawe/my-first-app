@@ -25,6 +25,7 @@ const PAGE_SIZE = 24
 const DEFAULT_FILTER: ExerciseFilter = {
   search: "",
   muskelgruppen: [],
+  equipment: [],
   schwierigkeitsgrad: "",
   quelle: "alle",
 }

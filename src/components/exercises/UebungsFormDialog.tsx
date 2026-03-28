@@ -27,6 +27,7 @@ import { Plus, Trash2, GripVertical, AlertCircle } from "lucide-react"
 import { MediaUploadField } from "./MediaUploadField"
 import {
   MUSKELGRUPPEN,
+  EQUIPMENT_OPTIONS,
   SCHWIERIGKEITSGRAD_LABELS,
 } from "@/types/exercise"
 import type {
@@ -50,6 +51,7 @@ const DEFAULT_FORM: ExerciseFormValues = {
   beschreibung: "",
   ausfuehrung: [{ nummer: 1, beschreibung: "" }],
   muskelgruppen: [],
+  equipment: [],
   schwierigkeitsgrad: "anfaenger",
   media_url: undefined,
   media_type: undefined,
@@ -69,6 +71,7 @@ function exerciseToForm(exercise: Exercise): ExerciseFormValues {
         ? exercise.ausfuehrung
         : [{ nummer: 1, beschreibung: "" }],
     muskelgruppen: exercise.muskelgruppen ?? [],
+    equipment: exercise.equipment ?? [],
     schwierigkeitsgrad: exercise.schwierigkeitsgrad,
     media_url: exercise.media_url ?? undefined,
     media_type: exercise.media_type ?? undefined,
@@ -146,6 +149,19 @@ export function UebungsFormDialog({
         muskelgruppen: existing.includes(gruppe)
           ? existing.filter((g) => g !== gruppe)
           : [...existing, gruppe],
+      }
+    })
+  }
+
+  // --- Equipment ---
+  function toggleEquipment(item: string) {
+    setForm((prev) => {
+      const existing = prev.equipment ?? []
+      return {
+        ...prev,
+        equipment: existing.includes(item)
+          ? existing.filter((e) => e !== item)
+          : [...existing, item],
       }
     })
   }
@@ -320,6 +336,31 @@ export function UebungsFormDialog({
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Equipment / Hilfsmittel */}
+            <div className="space-y-3">
+              <Label>Equipment / Hilfsmittel</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {EQUIPMENT_OPTIONS.map((item) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`form-eq-${item}`}
+                      checked={(form.equipment ?? []).includes(item)}
+                      onCheckedChange={() => toggleEquipment(item)}
+                    />
+                    <Label
+                      htmlFor={`form-eq-${item}`}
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      {item}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Leer lassen für Bodyweight-Übungen ohne Equipment.
+              </p>
             </div>
 
             {/* Schwierigkeitsgrad */}

@@ -28,6 +28,30 @@ export const MUSKELGRUPPEN = [
 
 export type Muskelgruppe = typeof MUSKELGRUPPEN[number]
 
+export const EQUIPMENT_OPTIONS = [
+  "Keine (Bodyweight)",
+  "Faszienrolle",
+  "Theraband",
+  "Kettlebell",
+  "Kurzhanteln",
+  "Gymnastikmatte",
+  "Pezziball",
+  "Stab",
+  "Balance Pad",
+  "Schlingentrainer (TRX)",
+  "Massageball",
+  "Beinpresse",
+  "Latzug",
+  "Kabelzug",
+  "Rudergerät",
+  "Beinstrecker",
+  "Beinbeuger",
+  "Stuhl",
+  "Wand/Türrahmen",
+] as const
+
+export type Equipment = typeof EQUIPMENT_OPTIONS[number]
+
 export interface AusfuehrungsSchritt {
   nummer: number
   beschreibung: string
@@ -45,6 +69,7 @@ export interface Exercise {
 
   // Kategorisierung
   muskelgruppen: string[]
+  equipment: string[]
   schwierigkeitsgrad: Schwierigkeitsgrad
 
   // Medien
@@ -71,6 +96,7 @@ export interface ExerciseFormValues {
   beschreibung?: string
   ausfuehrung: AusfuehrungsSchritt[]
   muskelgruppen: string[]
+  equipment?: string[]
   schwierigkeitsgrad: Schwierigkeitsgrad
   media_url?: string
   media_type?: MediaType
@@ -86,6 +112,7 @@ export type ExerciseQuelle = "alle" | "praxis" | "eigene" | "favoriten"
 export interface ExerciseFilter {
   search: string
   muskelgruppen: string[]
+  equipment: string[]
   schwierigkeitsgrad: Schwierigkeitsgrad | ""
   quelle: ExerciseQuelle
 }

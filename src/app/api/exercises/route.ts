@@ -29,6 +29,10 @@ const exerciseBaseSchema = z.object({
   muskelgruppen: z
     .array(z.string().min(1).max(100))
     .min(1, "Mindestens eine Muskelgruppe ist erforderlich."),
+  equipment: z
+    .array(z.string().min(1).max(100))
+    .optional()
+    .default([]),
   schwierigkeitsgrad: z.enum(["anfaenger", "mittel", "fortgeschritten"], {
     error: "Ungültiger Schwierigkeitsgrad.",
   }),
@@ -64,6 +68,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search")?.trim() ?? ""
   const schwierigkeitsgrad = searchParams.get("schwierigkeitsgrad") ?? ""
   const muskelgruppenRaw = searchParams.get("muskelgruppen") ?? ""
+  const equipmentRaw = searchParams.get("equipment") ?? ""
   const quelle = searchParams.get("quelle") ?? "alle"
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
   const pageSize = Math.min(
@@ -103,6 +108,7 @@ export async function GET(request: NextRequest) {
       beschreibung,
       ausfuehrung,
       muskelgruppen,
+      equipment,
       schwierigkeitsgrad,
       media_url,
       media_type,
@@ -154,6 +160,14 @@ export async function GET(request: NextRequest) {
     query = query.overlaps("muskelgruppen", muskelgruppen)
   }
 
+  // Equipment filter
+  const equipmentFilter = equipmentRaw
+    ? equipmentRaw.split(",").map((e) => e.trim()).filter(Boolean)
+    : []
+  if (equipmentFilter.length > 0) {
+    query = query.overlaps("equipment", equipmentFilter)
+  }
+
   // ── Search: name/beschreibung (ilike) + muskelgruppen (overlap) ──
   // Uses .or() with ilike + overlap so a search for "Schulter" finds exercises
   // that have "Schulter" in the name, description, OR muskelgruppen tags.
@@ -162,9 +176,9 @@ export async function GET(request: NextRequest) {
     if (safeSearch) {
       const words = safeSearch.split(/\s+/).filter(Boolean)
       const likePattern = `%${safeSearch}%`
-      // OR: name matches, beschreibung matches, or muskelgruppen contains any search word
+      // OR: name matches, beschreibung matches, muskelgruppen or equipment contains any search word
       query = query.or(
-        `name.ilike.${likePattern},beschreibung.ilike.${likePattern},muskelgruppen.ov.{${words.join(",")}}`
+        `name.ilike.${likePattern},beschreibung.ilike.${likePattern},muskelgruppen.ov.{${words.join(",")}},equipment.ov.{${words.join(",")}}`
       )
     }
   }
@@ -243,6 +257,7 @@ export async function POST(request: NextRequest) {
     beschreibung: values.beschreibung?.trim() || null,
     ausfuehrung: values.ausfuehrung?.length ? values.ausfuehrung : null,
     muskelgruppen: values.muskelgruppen,
+    equipment: values.equipment?.length ? values.equipment : [],
     schwierigkeitsgrad: values.schwierigkeitsgrad,
     media_url: values.media_url?.trim() || null,
     media_type: values.media_type || null,

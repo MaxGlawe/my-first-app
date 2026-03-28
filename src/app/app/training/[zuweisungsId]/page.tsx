@@ -51,6 +51,7 @@ interface FlatExercise {
   exerciseId: string
   name: string
   muskelgruppen: string[]
+  equipment: string[]
   beschreibung: string | null
   ausfuehrung: Array<{ nummer: number; beschreibung: string }> | null
   media_url: string | null
@@ -132,6 +133,7 @@ function flattenExercises(assignment: PatientAppAssignment): FlatExercise[] {
             exerciseId: pe.exercise_id,
             name: pe.exercises.name,
             muskelgruppen: pe.exercises.muskelgruppen ?? [],
+            equipment: (pe.exercises as Record<string, unknown>).equipment as string[] ?? [],
             beschreibung: pe.exercises.beschreibung ?? null,
             ausfuehrung: pe.exercises.ausfuehrung ?? null,
             media_url: pe.exercises.media_url ?? null,
@@ -148,6 +150,7 @@ function flattenExercises(assignment: PatientAppAssignment): FlatExercise[] {
         exerciseId: ae.exercise_id,
         name: ae.exercise_name ?? "Übung",
         muskelgruppen: ae.muskelgruppen ?? [],
+        equipment: ((ae as unknown as Record<string, unknown>).equipment as string[]) ?? [],
         beschreibung: ae.beschreibung ?? ae.anmerkung ?? null,
         ausfuehrung: ae.ausfuehrung ?? null,
         media_url: ae.media_url ?? null,
@@ -1005,6 +1008,11 @@ export default function TrainingSessionPage() {
                   {currentExercise.muskelgruppen.map((m) => (
                     <Badge key={m} variant="secondary" className="text-xs">
                       {m}
+                    </Badge>
+                  ))}
+                  {(currentExercise.equipment ?? []).filter(e => e !== "Keine (Bodyweight)").map((e) => (
+                    <Badge key={e} variant="outline" className="text-xs border-indigo-200 text-indigo-600 bg-indigo-50">
+                      {e}
                     </Badge>
                   ))}
                 </div>
