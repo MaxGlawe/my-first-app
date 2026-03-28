@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Trash2, GripVertical, AlertCircle } from "lucide-react"
+import { Plus, Trash2, GripVertical, AlertCircle, X } from "lucide-react"
 import { MediaUploadField } from "./MediaUploadField"
 import {
   MUSKELGRUPPEN,
@@ -37,6 +37,129 @@ import type {
   MediaType,
   AusfuehrungsSchritt,
 } from "@/types/exercise"
+
+// ── Equipment Tag Input with suggestions + free text ─────────────────────────
+
+function EquipmentTagInput({
+  value,
+  onChange,
+}: {
+  value: string[]
+  onChange: (tags: string[]) => void
+}) {
+  const [input, setInput] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const suggestions = EQUIPMENT_OPTIONS.filter(
+    (opt) =>
+      opt !== "Keine (Bodyweight)" &&
+      !value.includes(opt) &&
+      (input.length === 0 || opt.toLowerCase().includes(input.toLowerCase()))
+  )
+
+  function addTag(tag: string) {
+    const trimmed = tag.trim()
+    if (trimmed && !value.includes(trimmed)) {
+      onChange([...value, trimmed])
+    }
+    setInput("")
+    setShowSuggestions(false)
+    inputRef.current?.focus()
+  }
+
+  function removeTag(tag: string) {
+    onChange(value.filter((t) => t !== tag))
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && input.trim()) {
+      e.preventDefault()
+      addTag(input)
+    }
+    if (e.key === "Backspace" && input === "" && value.length > 0) {
+      removeTag(value[value.length - 1])
+    }
+    if (e.key === "Escape") {
+      setShowSuggestions(false)
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Tags */}
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {value.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 border border-indigo-200 px-2.5 py-1 text-xs font-medium text-indigo-700"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="rounded-full hover:bg-indigo-200 p-0.5 transition-colors"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Input + Suggestions */}
+      <div className="relative">
+        <Input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setShowSuggestions(true)
+          }}
+          onFocus={() => setShowSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          onKeyDown={handleKeyDown}
+          placeholder={value.length === 0 ? "z.B. Faszienrolle, Beinpresse, TRX..." : "Weiteres Equipment..."}
+          className="h-9"
+        />
+
+        {/* Dropdown suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-40 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+            {suggestions.slice(0, 10).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  addTag(opt)
+                }}
+              >
+                {opt}
+              </button>
+            ))}
+            {input.trim() && !suggestions.some((s) => s.toLowerCase() === input.toLowerCase()) && (
+              <button
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm text-indigo-600 font-medium hover:bg-indigo-50 border-t border-slate-100"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  addTag(input)
+                }}
+              >
+                &ldquo;{input.trim()}&rdquo; hinzufügen
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Main Dialog ──────────────────────────────────────────────────────────────
 
 interface UebungsFormDialogProps {
   open: boolean
@@ -149,19 +272,6 @@ export function UebungsFormDialog({
         muskelgruppen: existing.includes(gruppe)
           ? existing.filter((g) => g !== gruppe)
           : [...existing, gruppe],
-      }
-    })
-  }
-
-  // --- Equipment ---
-  function toggleEquipment(item: string) {
-    setForm((prev) => {
-      const existing = prev.equipment ?? []
-      return {
-        ...prev,
-        equipment: existing.includes(item)
-          ? existing.filter((e) => e !== item)
-          : [...existing, item],
       }
     })
   }
@@ -338,28 +448,15 @@ export function UebungsFormDialog({
               </div>
             </div>
 
-            {/* Equipment / Hilfsmittel */}
+            {/* Equipment / Hilfsmittel — Tag-Input mit Vorschlägen */}
             <div className="space-y-3">
               <Label>Equipment / Hilfsmittel</Label>
-              <div className="grid grid-cols-3 gap-2">
-                {EQUIPMENT_OPTIONS.map((item) => (
-                  <div key={item} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`form-eq-${item}`}
-                      checked={(form.equipment ?? []).includes(item)}
-                      onCheckedChange={() => toggleEquipment(item)}
-                    />
-                    <Label
-                      htmlFor={`form-eq-${item}`}
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      {item}
-                    </Label>
-                  </div>
-                ))}
-              </div>
+              <EquipmentTagInput
+                value={form.equipment ?? []}
+                onChange={(tags) => setForm((prev) => ({ ...prev, equipment: tags }))}
+              />
               <p className="text-xs text-muted-foreground">
-                Leer lassen für Bodyweight-Übungen ohne Equipment.
+                Vorschlag auswählen oder eigenen Namen eintippen + Enter. Leer lassen für Bodyweight.
               </p>
             </div>
 
