@@ -129,6 +129,30 @@ export async function GET(
     | { name: string; beschreibung: string | null }
     | null
 
+  // Enrich adhoc_exercises with exercise names from the exercises table
+  let enrichedAdhoc = row.adhoc_exercises ?? null
+  if (Array.isArray(row.adhoc_exercises) && row.adhoc_exercises.length > 0) {
+    const exerciseIds = row.adhoc_exercises
+      .map((ex: { exercise_id?: string }) => ex.exercise_id)
+      .filter(Boolean)
+
+    if (exerciseIds.length > 0) {
+      const { data: exercises } = await supabase
+        .from("exercises")
+        .select("id, name")
+        .in("id", exerciseIds)
+
+      const nameMap = new Map(
+        (exercises ?? []).map((e: { id: string; name: string }) => [e.id, e.name])
+      )
+
+      enrichedAdhoc = row.adhoc_exercises.map((ex: { exercise_id?: string; exercise_name?: string }) => ({
+        ...ex,
+        exercise_name: nameMap.get(ex.exercise_id ?? "") ?? ex.exercise_name ?? null,
+      }))
+    }
+  }
+
   return NextResponse.json({
     assignment: {
       id: row.id,
@@ -139,7 +163,7 @@ export async function GET(
       end_date: row.end_date,
       active_days: row.active_days,
       status: row.status,
-      adhoc_exercises: row.adhoc_exercises ?? null,
+      adhoc_exercises: enrichedAdhoc,
       notiz: row.notiz ?? null,
       hauptproblem: row.hauptproblem ?? null,
       created_at: row.created_at,
@@ -251,6 +275,25 @@ export async function PUT(
       { error: "Zuweisung konnte nicht aktualisiert werden." },
       { status: 500 }
     )
+  }
+
+  // Auto-enroll patient in education if hauptproblem is set.
+  // Education enrollments persist independently — removing hauptproblem from
+  // an assignment does NOT delete the enrollment (preserves lesson progress).
+  if (hauptproblem?.trim()) {
+    void supabase
+      .from("education_enrollments")
+      .upsert(
+        {
+          patient_id: patientId,
+          hauptproblem: hauptproblem.trim(),
+          enrolled_by: user.id,
+        },
+        { onConflict: "patient_id,hauptproblem" }
+      )
+      .then(({ error: enrollErr }) => {
+        if (enrollErr) console.error("[assignments PUT] Education enrollment error:", enrollErr)
+      })
   }
 
   return NextResponse.json({ assignment: updated })

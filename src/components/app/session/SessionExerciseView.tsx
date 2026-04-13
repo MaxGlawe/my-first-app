@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Play, SkipForward, ImageOff, ChevronDown, ChevronUp } from "lucide-react"
 import type { FlatExercise } from "@/lib/training-helpers"
@@ -33,6 +33,11 @@ export function SessionExerciseView({
   const [showSteps, setShowSteps] = useState(false)
   const [mediaError, setMediaError] = useState(false)
 
+  // Reset media error when exercise changes
+  useEffect(() => {
+    setMediaError(false)
+  }, [exercise.id])
+
   const { params } = exercise
   const isHold = !!params.dauer_sekunden && !params.wiederholungen
   const isRep = !!params.wiederholungen
@@ -49,6 +54,7 @@ export function SessionExerciseView({
         {exercise.media_url && !mediaError ? (
           exercise.media_type === "video" ? (
             <video
+              key={exercise.media_url}
               src={exercise.media_url}
               className="h-full w-full object-contain"
               playsInline
@@ -58,6 +64,7 @@ export function SessionExerciseView({
             />
           ) : (
             <img
+              key={exercise.media_url}
               src={exercise.media_url}
               alt={exercise.name}
               className="h-full w-full object-contain"

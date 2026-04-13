@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +12,7 @@ import {
   getActiveAssignments,
 } from "@/hooks/use-patient-app"
 import type { PatientAppAssignment } from "@/hooks/use-patient-app"
+import { ActiveDaysOverrideDialog } from "@/components/app/ActiveDaysOverrideDialog"
 import {
   Dumbbell,
   Clock,
@@ -19,6 +21,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Calendar,
+  CalendarCog,
 } from "lucide-react"
 
 function countExercises(assignment: PatientAppAssignment): number {
@@ -48,10 +51,17 @@ function estimateDuration(assignment: PatientAppAssignment): number {
   return Math.max(5, Math.round(secs / 60))
 }
 
-function AssignmentCard({ assignment }: { assignment: PatientAppAssignment }) {
+function AssignmentCard({
+  assignment,
+  onOpenDaysDialog,
+}: {
+  assignment: PatientAppAssignment
+  onOpenDaysDialog: (a: PatientAppAssignment) => void
+}) {
   const count = countExercises(assignment)
   const duration = estimateDuration(assignment)
   const isDone = assignment.completed_today
+  const hasOverride = !!assignment.patient_active_days
 
   return (
     <div
@@ -95,6 +105,15 @@ function AssignmentCard({ assignment }: { assignment: PatientAppAssignment }) {
           <Clock className="h-4 w-4" />
           ca. {duration} Min.
         </span>
+        <button
+          onClick={() => onOpenDaysDialog(assignment)}
+          className={`flex items-center gap-1.5 ml-auto hover:text-emerald-600 transition-colors ${
+            hasOverride ? "text-emerald-600" : ""
+          }`}
+        >
+          <CalendarCog className="h-4 w-4" />
+          <span className="text-xs">Tage</span>
+        </button>
       </div>
 
       {isDone ? (
@@ -112,7 +131,8 @@ function AssignmentCard({ assignment }: { assignment: PatientAppAssignment }) {
 }
 
 export default function TrainingPage() {
-  const { assignments, isLoading, error } = usePatientApp()
+  const { assignments, isLoading, error, refresh } = usePatientApp()
+  const [daysDialogAssignment, setDaysDialogAssignment] = useState<PatientAppAssignment | null>(null)
 
   const todayAssignments = getTodayAssignments(assignments)
   const activeAssignments = getActiveAssignments(assignments)
@@ -166,7 +186,7 @@ export default function TrainingPage() {
                 Heute
               </h2>
               {todayAssignments.map((a) => (
-                <AssignmentCard key={a.id} assignment={a} />
+                <AssignmentCard key={a.id} assignment={a} onOpenDaysDialog={setDaysDialogAssignment} />
               ))}
             </section>
           ) : (
@@ -211,9 +231,18 @@ export default function TrainingPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-4 text-xs text-slate-400">
+                    <div className="flex items-center gap-4 text-xs text-slate-400">
                       <span>{count} Übungen</span>
                       <span>ca. {duration} Min.</span>
+                      <button
+                        onClick={() => setDaysDialogAssignment(a)}
+                        className={`flex items-center gap-1 ml-auto hover:text-emerald-600 transition-colors ${
+                          a.patient_active_days ? "text-emerald-600" : ""
+                        }`}
+                      >
+                        <CalendarCog className="h-3.5 w-3.5" />
+                        Tage
+                      </button>
                     </div>
                   </div>
                 )
@@ -232,6 +261,18 @@ export default function TrainingPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Active Days Override Dialog */}
+      {daysDialogAssignment && (
+        <ActiveDaysOverrideDialog
+          open={!!daysDialogAssignment}
+          onOpenChange={(open) => { if (!open) setDaysDialogAssignment(null) }}
+          assignmentId={daysDialogAssignment.id}
+          therapistDays={daysDialogAssignment.therapist_active_days ?? daysDialogAssignment.active_days}
+          currentDays={daysDialogAssignment.active_days}
+          onSuccess={refresh}
+        />
       )}
     </div>
   )

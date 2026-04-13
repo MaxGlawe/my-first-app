@@ -49,6 +49,8 @@ export interface PatientAppAssignment extends PatientAssignment {
   is_training_today: boolean
   completed_today: boolean
   next_training_day: string | null
+  therapist_active_days: string[] | null
+  patient_active_days: string[] | null
 }
 
 // ── usePatientApp ─────────────────────────────────────────────────────────────

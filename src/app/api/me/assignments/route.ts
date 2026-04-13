@@ -128,6 +128,7 @@ export async function GET() {
       start_date,
       end_date,
       active_days,
+      patient_active_days,
       status,
       adhoc_exercises,
       notiz,
@@ -230,7 +231,9 @@ export async function GET() {
 
   // Build enriched assignments
   const assignments = rows.map((row) => {
-    const activeDays = (row.active_days as string[]) ?? []
+    const therapistDays = (row.active_days as string[]) ?? []
+    const patientDays = (row.patient_active_days as string[] | null) ?? null
+    const activeDays = patientDays ?? therapistDays
     const completedDates = completionsByAssignment[row.id] ?? []
     const plan = row.training_plans as unknown as {
       id: string
@@ -286,6 +289,8 @@ export async function GET() {
       start_date: row.start_date,
       end_date: row.end_date,
       active_days: activeDays,
+      therapist_active_days: therapistDays,
+      patient_active_days: patientDays,
       status: row.status,
       adhoc_exercises: Array.isArray(row.adhoc_exercises)
         ? (row.adhoc_exercises as Array<Record<string, unknown>>).map((ae) => {

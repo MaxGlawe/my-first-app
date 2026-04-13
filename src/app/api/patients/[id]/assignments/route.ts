@@ -265,6 +265,30 @@ export async function GET(
     completionsByAssignment[c.assignment_id].push(c.completed_date)
   }
 
+  // Collect all exercise IDs from adhoc_exercises to enrich with names
+  const allExerciseIds: string[] = []
+  for (const row of rows) {
+    if (Array.isArray(row.adhoc_exercises)) {
+      for (const ex of row.adhoc_exercises as { exercise_id?: string }[]) {
+        if (ex.exercise_id && !allExerciseIds.includes(ex.exercise_id)) {
+          allExerciseIds.push(ex.exercise_id)
+        }
+      }
+    }
+  }
+
+  const exerciseNameMap = new Map<string, string>()
+  if (allExerciseIds.length > 0) {
+    const { data: exercises } = await supabase
+      .from("exercises")
+      .select("id, name")
+      .in("id", allExerciseIds)
+
+    for (const ex of exercises ?? []) {
+      exerciseNameMap.set(ex.id, ex.name)
+    }
+  }
+
   // Build response
   const assignments = rows.map((row) => {
     const plan = row.training_plans as unknown as
@@ -295,7 +319,12 @@ export async function GET(
       end_date: row.end_date,
       active_days: activeDays,
       status: row.status,
-      adhoc_exercises: row.adhoc_exercises ?? null,
+      adhoc_exercises: Array.isArray(row.adhoc_exercises)
+        ? (row.adhoc_exercises as { exercise_id?: string; exercise_name?: string }[]).map((ex) => ({
+            ...ex,
+            exercise_name: exerciseNameMap.get(ex.exercise_id ?? "") ?? ex.exercise_name ?? null,
+          }))
+        : null,
       notiz: row.notiz ?? null,
       hauptproblem: row.hauptproblem ?? null,
       created_at: row.created_at,
@@ -417,6 +446,24 @@ export async function POST(
       { error: "Zuweisung konnte nicht erstellt werden." },
       { status: 500 }
     )
+  }
+
+  // Auto-enroll patient in education if hauptproblem is set.
+  // Uses ON CONFLICT DO NOTHING — safe to call multiple times.
+  if (hauptproblem?.trim()) {
+    void supabase
+      .from("education_enrollments")
+      .upsert(
+        {
+          patient_id: patientId,
+          hauptproblem: hauptproblem.trim(),
+          enrolled_by: user.id,
+        },
+        { onConflict: "patient_id,hauptproblem" }
+      )
+      .then(({ error: enrollErr }) => {
+        if (enrollErr) console.error("[assignments POST] Education enrollment error:", enrollErr)
+      })
   }
 
   return NextResponse.json(

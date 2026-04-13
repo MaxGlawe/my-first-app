@@ -40,20 +40,25 @@ export async function GET() {
     return NextResponse.json({ modules: [], curricula: [] })
   }
 
-  // Get unique hauptprobleme from all patient assignments (aktiv, pausiert, abgeschlossen)
-  // Not just "aktiv" — patients should still see their education content
-  // even if the assignment is paused or completed
+  // Get unique hauptprobleme from education_enrollments (decoupled from assignments).
+  // Enrollments persist independently — modifying assignments does NOT remove education access.
+  // Fallback: also check patient_assignments for backwards compatibility (pre-enrollment data).
+  const { data: enrollments } = await supabase
+    .from("education_enrollments")
+    .select("hauptproblem")
+    .eq("patient_id", patient.id)
+    .in("status", ["aktiv", "abgeschlossen"])
+
   const { data: assignments } = await supabase
     .from("patient_assignments")
     .select("hauptproblem")
     .eq("patient_id", patient.id)
     .not("hauptproblem", "is", null)
 
-  const hauptprobleme = [...new Set(
-    (assignments ?? [])
-      .map((a) => a.hauptproblem as string)
-      .filter(Boolean)
-  )]
+  const hauptprobleme = [...new Set([
+    ...(enrollments ?? []).map((e) => e.hauptproblem),
+    ...(assignments ?? []).map((a) => a.hauptproblem as string).filter(Boolean),
+  ])]
 
   if (hauptprobleme.length === 0) {
     return NextResponse.json({ modules: [], curricula: [] })
