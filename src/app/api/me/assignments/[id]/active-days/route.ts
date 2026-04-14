@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -61,8 +62,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Kein Patientenprofil gefunden." }, { status: 404 })
   }
 
+  // Use service client to bypass RLS (patient doesn't have direct access to patient_assignments).
+  // Security: we verified the patient identity above, and filter by patient_id below.
+  const service = createSupabaseServiceClient()
+
   // Fetch assignment — must belong to this patient and be active
-  const { data: assignment, error: fetchErr } = await supabase
+  const { data: assignment, error: fetchErr } = await service
     .from("patient_assignments")
     .select("id, active_days, patient_active_days, status")
     .eq("id", assignmentId)
@@ -119,7 +124,7 @@ export async function PATCH(
   const sortedOriginal = [...therapistDays].sort()
   const isSameAsOriginal = sortedNew.every((d, i) => d === sortedOriginal[i])
 
-  const { data: updated, error: updateErr } = await supabase
+  const { data: updated, error: updateErr } = await service
     .from("patient_assignments")
     .update({
       patient_active_days: isSameAsOriginal ? null : newDays,
