@@ -444,21 +444,19 @@ export function ZuweisungsDialog({
               <Label>Übungen auswählen *</Label>
 
               {/* Search input */}
-              {!isEditing && (
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Übung suchen (mind. 2 Zeichen)..."
-                    value={exerciseSearch}
-                    onChange={(e) => setExerciseSearch(e.target.value)}
-                    className="pl-8"
-                    autoComplete="off"
-                  />
-                  {exerciseSearchLoading && (
-                    <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-              )}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Übung suchen (mind. 2 Zeichen)..."
+                  value={exerciseSearch}
+                  onChange={(e) => setExerciseSearch(e.target.value)}
+                  className="pl-8"
+                  autoComplete="off"
+                />
+                {exerciseSearchLoading && (
+                  <Loader2 className="absolute right-2.5 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
 
               {/* Search results dropdown */}
               {exerciseResults.length > 0 && (

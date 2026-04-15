@@ -18,6 +18,18 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 const VALID_WOCHENTAGE = ["mo", "di", "mi", "do", "fr", "sa", "so"] as const
 
+// ── Zod schema for ad-hoc exercise entry ─────────────────────────────────────
+
+const adhocExerciseSchema = z.object({
+  exercise_id: z.string().uuid("Ungültige Übungs-ID."),
+  exercise_name: z.string().optional().nullable(),
+  saetze: z.number().int().min(1).max(99),
+  wiederholungen: z.number().int().min(1).max(999).nullable().optional(),
+  dauer_sekunden: z.number().int().min(1).max(7200).nullable().optional(),
+  pause_sekunden: z.number().int().min(0).max(3600),
+  anmerkung: z.string().max(2000).nullable().optional(),
+})
+
 // ── Zod schema for PUT body ───────────────────────────────────────────────────
 
 const updateAssignmentSchema = z
@@ -38,6 +50,8 @@ const updateAssignmentSchema = z
       .max(7),
 
     notiz: z.string().max(1000).optional().nullable(),
+
+    adhoc_exercises: z.array(adhocExerciseSchema).max(50).optional().nullable(),
 
     hauptproblem: z.string().min(2).max(200).optional().nullable(),
   })
@@ -243,23 +257,30 @@ export async function PUT(
     )
   }
 
-  const { start_date, end_date, active_days, notiz, hauptproblem } = parseResult.data
+  const { start_date, end_date, active_days, notiz, adhoc_exercises, hauptproblem } = parseResult.data
 
   // Determine correct status after date change:
   // If end_date is now in the past → mark as abgelaufen, else restore to aktiv
   const today = new Date().toISOString().split("T")[0]
   const newStatus = end_date < today ? "abgelaufen" : "aktiv"
 
+  // Build update payload — only include adhoc_exercises if provided
+  const updatePayload: Record<string, unknown> = {
+    start_date,
+    end_date,
+    active_days,
+    notiz: notiz?.trim() || null,
+    hauptproblem: hauptproblem !== undefined ? (hauptproblem?.trim() || null) : undefined,
+    status: newStatus,
+  }
+
+  if (adhoc_exercises !== undefined) {
+    updatePayload.adhoc_exercises = adhoc_exercises ?? null
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from("patient_assignments")
-    .update({
-      start_date,
-      end_date,
-      active_days,
-      notiz: notiz?.trim() || null,
-      hauptproblem: hauptproblem !== undefined ? (hauptproblem?.trim() || null) : undefined,
-      status: newStatus,
-    })
+    .update(updatePayload)
     .eq("id", assignmentId)
     .select(
       "id, patient_id, therapist_id, plan_id, start_date, end_date, active_days, status, adhoc_exercises, notiz, hauptproblem, created_at, updated_at"
