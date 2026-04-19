@@ -28,7 +28,7 @@ export function CtaSection() {
           </h2>
 
           <p className="mt-6 text-lg text-emerald-100/90 max-w-2xl mx-auto leading-relaxed">
-            Ersteinschätzung in 20 Minuten per Video — wir analysieren Ihre
+            Ersteinschätzung in 30 Minuten per Video — wir analysieren Ihre
             Situation und zeigen Ihnen den besten Weg zur Besserung.
           </p>
 
@@ -38,7 +38,7 @@ export function CtaSection() {
                 size="lg"
                 className="bg-white text-emerald-700 hover:bg-emerald-50 text-base px-6 sm:px-10 h-14 rounded-full font-semibold shadow-xl shadow-emerald-800/20 transition-all hover:-translate-y-0.5 hover:shadow-2xl"
               >
-                Ersteinschätzung buchen — 29€
+                Ersteinschätzung buchen — 69€
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>

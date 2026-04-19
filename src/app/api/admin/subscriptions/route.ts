@@ -70,6 +70,7 @@ const activateSchema = z.object({
   patient_id: z.string().uuid(),
   plan_type: z.enum(["monthly", "yearly"]).default("monthly"),
   promo_code: z.string().optional(),
+  patient_type: z.enum(["praxis", "extern"]).default("praxis"),
 })
 
 export async function POST(request: NextRequest) {
@@ -166,8 +167,11 @@ export async function POST(request: NextRequest) {
       .eq("id", promo.id)
   }
 
-  // Calculate trial period: 1 month base + extra from promo
-  const trialDays = (1 + extraFreeMonths) * 30
+  // Calculate trial period: base depends on patient type, plus promo bonus
+  //   - praxis (Bestandspatient): 14 days base
+  //   - extern (Neukunde, hat 69€ Ist-Analyse bereits separat bezahlt): 30 days base
+  const baseTrialDays = body.patient_type === "extern" ? 30 : 14
+  const trialDays = baseTrialDays + extraFreeMonths * 30
 
   const now = new Date()
   const trialEnd = new Date(now)
@@ -252,11 +256,19 @@ export async function POST(request: NextRequest) {
     year: "numeric",
   })
 
+  // Push + email texts depend on patient type
+  const trialIntro = body.patient_type === "extern"
+    ? "Dein erster Monat ist kostenfrei."
+    : "Deine ersten 14 Tage sind kostenfrei."
+  const pushBody = body.patient_type === "extern"
+    ? "Dein erster Monat ist kostenlos. Starte jetzt mit deinem Trainingsplan."
+    : "Deine ersten 14 Tage sind kostenlos. Starte jetzt mit deinem Trainingsplan."
+
   // Push notification
   import("@/lib/push").then(({ sendPushToPatient }) => {
     sendPushToPatient(body.patient_id, {
       title: "Dein App-Zugang ist freigeschaltet!",
-      body: `Dein erster Monat ist kostenlos. Starte jetzt mit deinem Trainingsplan.`,
+      body: pushBody,
       url: "/app/dashboard",
       tag: "subscription_activated",
     }).catch(console.error)
@@ -282,7 +294,7 @@ export async function POST(request: NextRequest) {
             <li>Wissens-Lektionen zu deinem Beschwerdebild</li>
           </ul>
           <p style="color: #475569; font-size: 15px; line-height: 1.6;">
-            <strong>Dein erster Monat ist kostenfrei.</strong>
+            <strong>${trialIntro}</strong>
             ${extraFreeMonths > 0 ? ` Plus ${extraFreeMonths} Bonus-Monat${extraFreeMonths > 1 ? 'e' : ''} durch deinen Promo-Code.` : ''}
             Die Testphase endet am ${trialEndFormatted}.
           </p>

@@ -157,7 +157,7 @@ export default function PatientAboPage() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">
-                    {subscription.status === "trial" ? "Ab dem 2. Monat" : "Preis"}
+                    {subscription.status === "trial" ? "Nach Testphase" : "Preis"}
                   </p>
                   <p className="font-medium">{formatCurrency(subscription.price_amount)}</p>
                 </div>
@@ -178,7 +178,7 @@ export default function PatientAboPage() {
               {subscription.status === "trial" && (
                 <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm text-blue-800">
                   <p>
-                    Dein erster Monat ist <span className="font-semibold">kostenfrei</span>.
+                    Deine ersten <span className="font-semibold">14 Tage sind kostenfrei</span>.
                     {subscription.extra_free_months > 0 && (
                       <> Plus {subscription.extra_free_months} Bonus-{subscription.extra_free_months === 1 ? "Monat" : "Monate"} durch deinen Promo-Code.</>
                     )}

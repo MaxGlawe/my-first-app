@@ -47,7 +47,7 @@ export const BESCHWERDEN: Beschwerde[] = [
       { question: "Kann Physiotherapie bei Rückenschmerzen online funktionieren?", answer: "Ja, zahlreiche Studien belegen die Wirksamkeit von Tele-Physiotherapie bei Rückenschmerzen. Durch die Video-Befunderhebung können wir Ihre Bewegungsmuster analysieren und gezielte Übungen anleiten — genauso effektiv wie vor Ort." },
       { question: "Wie schnell bessern sich meine Rückenschmerzen?", answer: "Die meisten Patienten spüren nach 2-3 Wochen konsequentem Training eine deutliche Verbesserung. Chronische Beschwerden benötigen oft 8-12 Wochen systematische Therapie." },
       { question: "Brauche ich spezielle Geräte für die Übungen?", answer: "Nein, die meisten Übungen arbeiten mit Ihrem eigenen Körpergewicht. Gelegentlich empfehlen wir ein Theraband oder eine Faszienrolle — beides günstig erhältlich." },
-      { question: "Was kostet die Online-Physiotherapie bei Rückenschmerzen?", answer: "Eine Einzelsitzung kostet 89€. Für chronische Rückenschmerzen empfehlen wir das Chronik-Programm (8-12 Wochen) für 649€ inkl. unbegrenztem Chat-Support." },
+      { question: "Was kostet die Online-Physiotherapie bei Rückenschmerzen?", answer: "Die Video-Analyse (30 Min.) kostet 69€ und wird auf Ihre Behandlung angerechnet. Für chronische Rückenschmerzen bieten wir individuelle Behandlungspakete an — den passenden Umfang besprechen wir persönlich in der Analyse. Preise auf Anfrage." },
     ],
     keywords: ["Rückenschmerzen Physiotherapie", "Online Physiotherapie Rücken", "Rückenschmerzen Übungen", "LWS Syndrom Behandlung", "Rückenschmerzen online behandeln"],
   },

@@ -138,7 +138,7 @@ export function PaymentSetupGate({ children }: { children: React.ReactNode }) {
               </div>
               {billing.price_amount && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">Preis ab 2. Monat</span>
+                  <span className="text-slate-500">Preis nach Testphase</span>
                   <span className="font-medium text-slate-800">
                     {formatCurrency(billing.price_amount)} / {billing.plan_type === "yearly" ? "Jahr" : "Monat"}
                   </span>
@@ -177,7 +177,7 @@ export function PaymentSetupGate({ children }: { children: React.ReactNode }) {
             <div className="mt-3 pt-3 border-t border-slate-200">
               <p className="text-xs text-emerald-600 font-medium flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                Erster Monat kostenfrei — jederzeit kündbar
+                Testphase kostenfrei — jederzeit kündbar
               </p>
             </div>
           </div>

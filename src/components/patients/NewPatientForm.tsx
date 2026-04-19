@@ -30,6 +30,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { KrankenkasseCombobox } from "./KrankenkasseCombobox"
 import { AlertTriangle, Mail, Gift, BadgeCheck, XCircle, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -68,6 +69,7 @@ export function NewPatientForm() {
   const [pendingData, setPendingData] = useState<PatientFormValues | null>(null)
   const [sendInvite, setSendInvite] = useState(false)
   const [activateSubscription, setActivateSubscription] = useState(true)
+  const [patientType, setPatientType] = useState<"praxis" | "extern">("praxis")
   const [planType, setPlanType] = useState<"monthly" | "yearly">("monthly")
   const [promoCode, setPromoCode] = useState("")
   const [promoValid, setPromoValid] = useState<{ valid: boolean; type?: string; value?: number; error?: string } | null>(null)
@@ -163,6 +165,7 @@ export function NewPatientForm() {
           const inviteBody: Record<string, unknown> = {}
           if (activateSubscription) {
             inviteBody.plan_type = planType
+            inviteBody.patient_type = patientType
             if (promoCode && promoValid?.valid) inviteBody.promo_code = promoCode
           }
 
@@ -429,6 +432,44 @@ export function NewPatientForm() {
 
                     {activateSubscription && (
                       <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Patiententyp</Label>
+                          <RadioGroup
+                            value={patientType}
+                            onValueChange={(v) => setPatientType(v as "praxis" | "extern")}
+                            className="space-y-2"
+                          >
+                            <label
+                              htmlFor="np-pt-praxis"
+                              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                patientType === "praxis" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <RadioGroupItem value="praxis" id="np-pt-praxis" className="mt-0.5" />
+                              <div className="flex-1 space-y-0.5">
+                                <p className="text-sm font-medium">Praxis-Patient</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Bestandspatient — 14 Tage kostenfrei testen, danach Betreuungspauschale.
+                                </p>
+                              </div>
+                            </label>
+                            <label
+                              htmlFor="np-pt-extern"
+                              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                                patientType === "extern" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <RadioGroupItem value="extern" id="np-pt-extern" className="mt-0.5" />
+                              <div className="flex-1 space-y-0.5">
+                                <p className="text-sm font-medium">Neukunde / Warteliste</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Ist-Analyse (69€) wurde bereits separat berechnet — 1 Monat kostenfrei, danach Betreuungspauschale.
+                                </p>
+                              </div>
+                            </label>
+                          </RadioGroup>
+                        </div>
+
                         <div className="space-y-1.5">
                           <Label className="text-xs text-muted-foreground">Abo-Modell</Label>
                           <Select value={planType} onValueChange={(v) => setPlanType(v as "monthly" | "yearly")}>

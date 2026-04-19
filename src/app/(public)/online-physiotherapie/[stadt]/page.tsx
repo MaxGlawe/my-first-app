@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!city) return {}
   return {
     title: `Online Physiotherapie ${city.name} — Jetzt Termin buchen`,
-    description: `Physiotherapie in ${city.name} per Video: Professionelle Behandlung ohne Wartezeit. Individueller Trainingsplan, persönliche Betreuung & schnelle Termine. Ersteinschätzung ab 29 €.`,
+    description: `Physiotherapie in ${city.name} per Video: Professionelle Behandlung ohne Wartezeit. Individueller Trainingsplan, persönliche Betreuung & schnelle Termine. Ersteinschätzung ab 69 €.`,
     keywords: [
       `Physiotherapie ${city.name}`,
       `Online Physiotherapie ${city.name}`,
@@ -94,7 +94,7 @@ function getAdvantages(city: string, variant: number) {
       "Evidenzbasierte Behandlungsmethoden",
       "Tägliches Befindlichkeits-Tracking per App",
       "Trainingspläne, die sich Ihrem Fortschritt anpassen",
-      "Ersteinschätzung bereits ab 29 €",
+      "Ersteinschätzung bereits ab 69 €",
     ],
     [
       `Schnelle Termine für Patienten in ${city}`,
@@ -152,7 +152,7 @@ function getProcessSteps(city: string, variant: number) {
     ],
     [
       { title: "Kontakt aufnehmen", desc: `Über unser Formular erreichen Sie uns in weniger als 2 Minuten. Wir antworten innerhalb eines Werktags.` },
-      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir Ihnen am besten helfen können — ab 29 €.` },
+      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir Ihnen am besten helfen können — ab 69 €.` },
       { title: "Therapieplan erhalten", desc: `Basierend auf Ihrer Untersuchung erhalten Sie einen evidenzbasierten Trainingsplan für Ihre Beschwerden.` },
       { title: "Fortlaufende Betreuung", desc: `Ihr Therapeut begleitet Sie per Video und Chat — als wären Sie direkt in der Praxis in ${city}.` },
     ],
@@ -172,7 +172,7 @@ function getFaq(city: string, variant: number) {
     },
     {
       q: `Was kostet Online-Physiotherapie?`,
-      a: `Die Ersteinschätzung beginnt ab 29 €. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf Ihren Bedürfnissen.`,
+      a: `Die Ersteinschätzung beginnt ab 69 €. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf Ihren Bedürfnissen.`,
     },
   ]
 
@@ -292,7 +292,7 @@ export default async function StadtPage({ params }: Props) {
               >
                 Jetzt Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm text-slate-400 sm:self-center">ab 29 €</span>
+              <span className="text-sm text-slate-400 sm:self-center">ab 69 €</span>
             </div>
           </div>
         </div>
@@ -498,7 +498,7 @@ export default async function StadtPage({ params }: Props) {
               href="/anfrage"
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-emerald-700 font-semibold rounded-xl hover:bg-emerald-50 transition-colors shadow-lg shadow-emerald-700/20"
             >
-              Anfrage stellen — ab 29 € <ArrowRight className="h-4 w-4" />
+              Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>

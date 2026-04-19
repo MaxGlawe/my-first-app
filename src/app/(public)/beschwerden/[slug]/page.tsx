@@ -101,7 +101,7 @@ export default async function BeschwerdePage({ params }: Props) {
               >
                 Jetzt Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm text-slate-400 sm:self-center">ab 29 €</span>
+              <span className="text-sm text-slate-400 sm:self-center">ab 69 €</span>
             </div>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default async function BeschwerdePage({ params }: Props) {
               href="/anfrage"
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-emerald-700 font-semibold rounded-xl hover:bg-emerald-50 transition-colors shadow-lg shadow-emerald-700/20"
             >
-              Anfrage stellen — ab 29 € <ArrowRight className="h-4 w-4" />
+              Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>

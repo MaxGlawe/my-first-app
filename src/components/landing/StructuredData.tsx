@@ -26,23 +26,21 @@ export function StructuredData() {
       itemListElement: [
         {
           "@type": "Offer",
-          name: "Einzelsitzung",
-          description: "Video-Behandlung (45 Min.) mit Trainingsplan und Chat-Support",
-          price: "89",
+          name: "Video-Analyse",
+          description: "Ausführliche Video-Analyse (30 Min.) mit Befunderhebung, Diagnose und Trainingsplan",
+          price: "69",
           priceCurrency: "EUR",
         },
         {
           "@type": "Offer",
           name: "Mini-Reha Post-OP",
-          description: "Strukturierte Nachbehandlung nach Operationen (6–8 Wochen)",
-          price: "449",
+          description: "Strukturierte Nachbehandlung nach Operationen (6–8 Wochen). Preis auf Anfrage.",
           priceCurrency: "EUR",
         },
         {
           "@type": "Offer",
           name: "Chronik-Programm",
-          description: "Für langjährige Beschwerden mit Struktur und Konsequenz (8–12 Wochen)",
-          price: "649",
+          description: "Für langjährige Beschwerden mit Struktur und Konsequenz (8–12 Wochen). Preis auf Anfrage.",
           priceCurrency: "EUR",
         },
       ],

@@ -20,7 +20,7 @@ const faqCategories = [
       {
         question: "Für welche Beschwerden eignet sich Online-Therapie?",
         answer:
-          "Online-Therapie eignet sich besonders gut für: Rückenschmerzen (LWS, BWS, HWS), Schulter- und Nackenbeschwerden, Kniebeschwerden, Rehabilitaton nach Operationen, Prävention und Haltungskorrektur. Nicht geeignet ist sie für akute Notfälle, frische Frakturen oder Beschwerden, die eine manuelle Untersuchung vor Ort erfordern. In der Ersteinschätzung (20 Min., 29€) klären wir gemeinsam, ob Online-Therapie für Sie der richtige Weg ist.",
+          "Online-Therapie eignet sich besonders gut für: Rückenschmerzen (LWS, BWS, HWS), Schulter- und Nackenbeschwerden, Kniebeschwerden, Rehabilitaton nach Operationen, Prävention und Haltungskorrektur. Nicht geeignet ist sie für akute Notfälle, frische Frakturen oder Beschwerden, die eine manuelle Untersuchung vor Ort erfordern. In der Ersteinschätzung (30 Min., 69€) klären wir gemeinsam, ob Online-Therapie für Sie der richtige Weg ist.",
       },
       {
         question: "Was brauche ich technisch?",
@@ -55,7 +55,7 @@ const faqCategories = [
       {
         question: "Was ist, wenn mir die Therapie nicht hilft?",
         answer:
-          "Schon in der Ersteinschätzung (20 Min., 29€) besprechen wir ehrlich, ob Online-Therapie für Ihre Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir Ihnen offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir Sie und finden gemeinsam eine Lösung. Die 29€ werden selbstverständlich auf Ihre Behandlung angerechnet.",
+          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für Ihre Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir Ihnen offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir Sie und finden gemeinsam eine Lösung. Die 69€ werden selbstverständlich auf Ihre Behandlung angerechnet.",
       },
       {
         question:

@@ -7,7 +7,7 @@ import Link from "next/link"
 
 const einzelsitzung = {
   features: [
-    "Ausführliche Video-Behandlung (45 Min.)",
+    "Ausführliche Video-Analyse (30 Min.)",
     "Individuelle Befunderhebung & Diagnose",
     "Persönlicher Trainingsplan mit Video-Anleitungen",
     "Chat-Support bis zum nächsten Termin",
@@ -18,7 +18,7 @@ const einzelsitzung = {
 const rehaPackages = [
   {
     name: "Mini-Reha Post-OP",
-    price: "ab 449€",
+    price: "Auf Anfrage",
     duration: "6\u20138 Wochen",
     description:
       "Strukturierte Nachbehandlung nach Operationen \u2014 von der Wundheilung bis zur vollen Belastbarkeit.",
@@ -35,7 +35,7 @@ const rehaPackages = [
   },
   {
     name: "Chronik-Programm",
-    price: "ab 649€",
+    price: "Auf Anfrage",
     duration: "8\u201312 Wochen",
     description:
       "F\u00fcr langj\u00e4hrige Beschwerden, die Struktur und Konsequenz brauchen \u2014 weil Schmerz kein Dauerzustand sein muss.",
@@ -90,7 +90,7 @@ export function PricingSection() {
                   Einzelsitzung
                 </span>
                 <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-                  Video-Behandlung
+                  Video-Analyse
                 </h3>
                 <p className="text-slate-500 mb-6 max-w-lg">
                   Ideal für akute Beschwerden, Zweitmeinungen oder wenn Sie
@@ -112,11 +112,11 @@ export function PricingSection() {
               <div className="text-center lg:text-right">
                 <div className="flex items-baseline gap-1 justify-center lg:justify-end">
                   <span className="text-5xl sm:text-6xl font-bold text-slate-900 tracking-tight">
-                    89€
+                    69€
                   </span>
                 </div>
                 <p className="text-sm text-slate-400 mt-1 mb-6">
-                  pro Sitzung (45 Min.)
+                  pro Analyse (30 Min.)
                 </p>
                 <Link href="/anfrage">
                   <Button
@@ -229,7 +229,7 @@ export function PricingSection() {
             <span className="hidden sm:block h-4 w-px bg-slate-200" />
             <p className="text-sm text-slate-500">
               <span className="font-semibold text-emerald-600">
-                Ersteinschätzung nur 29€
+                Ersteinschätzung nur 69€
               </span>{" "}
               — wird auf Ihre Behandlung angerechnet.
             </p>
@@ -315,7 +315,7 @@ export function PricingSection() {
 
             <p className="text-center text-xs text-slate-400 mt-6">
               Gerne prüfen wir Ihre individuelle Erstattungssituation im
-              Ersteinschätzung (29€, wird angerechnet).
+              Ersteinschätzung (69€, wird angerechnet).
             </p>
           </div>
         </ScrollReveal>

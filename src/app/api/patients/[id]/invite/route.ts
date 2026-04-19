@@ -36,7 +36,7 @@ export async function POST(
   }
 
   // Parse optional subscription params
-  let body: { plan_type?: string; promo_code?: string } = {}
+  let body: { plan_type?: string; promo_code?: string; patient_type?: string } = {}
   try {
     body = await request.json()
   } catch {
@@ -117,8 +117,12 @@ export async function POST(
       }
     }
 
-    // 2. Calculate trial days
-    const trialDays = (1 + extraFreeMonths) * 30
+    // 2. Calculate trial days: base depends on patient type, plus promo bonus
+    //    - praxis (Bestandspatient): 14 days base
+    //    - extern (Neukunde, hat 69€ Ist-Analyse bereits separat bezahlt): 30 days base
+    const patientType = body.patient_type === "extern" ? "extern" : "praxis"
+    const baseTrialDays = patientType === "extern" ? 30 : 14
+    const trialDays = baseTrialDays + extraFreeMonths * 30
     const now = new Date()
     const trialEnd = new Date(now)
     trialEnd.setDate(trialEnd.getDate() + trialDays)
@@ -219,10 +223,13 @@ export async function POST(
         await serviceClient.from("patient_subscriptions").insert(subscriptionData)
       }
 
-      // Build subscription info for email
+      // Build subscription info for email — text depends on patient type
+      const trialIntro = patientType === "extern"
+        ? "Dein erster Monat ist kostenfrei."
+        : "Deine ersten 14 Tage sind kostenfrei."
       subscriptionInfo = `
         <p style="color: #475569; font-size: 15px; line-height: 1.6;">
-          <strong>Dein erster Monat ist kostenfrei.</strong>
+          <strong>${trialIntro}</strong>
           ${extraFreeMonths > 0 ? ` Plus ${extraFreeMonths} Bonus-Monat${extraFreeMonths > 1 ? "e" : ""} durch deinen Promo-Code.` : ""}
           Die Testphase läuft bis zum ${trialEndFormatted}.
         </p>
