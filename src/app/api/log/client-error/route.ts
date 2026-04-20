@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 
 const schema = z.object({
@@ -43,11 +44,17 @@ export async function POST(request: NextRequest) {
   }
 
   // Best-effort user identification — don't block on auth failures
+  let userId: string | null = null
+  let userEmail: string | null = null
   let userTag = "anon"
   try {
     const supabase = await createSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) userTag = `${user.email ?? user.id}`
+    if (user) {
+      userId = user.id
+      userEmail = user.email ?? null
+      userTag = userEmail ?? user.id
+    }
   } catch {
     // ignore — logging errors from unauthenticated requests is still useful
   }
@@ -62,6 +69,26 @@ export async function POST(request: NextRequest) {
     `\n  ua:  ${body.userAgent ?? "?"}`,
     stackHead ? `\n  stack: ${stackHead}` : ""
   )
+
+  // Persist to client_errors table (service client bypasses RLS).
+  // Best-effort — if this fails, we still have the console.error above.
+  try {
+    const serviceClient = createSupabaseServiceClient()
+    await serviceClient.from("client_errors").insert({
+      user_id: userId,
+      user_email: userEmail,
+      source: body.source,
+      message: body.message,
+      stack: body.stack ?? null,
+      url: body.url ?? null,
+      user_agent: body.userAgent ?? null,
+      ip,
+      lineno: body.lineno ?? null,
+      colno: body.colno ?? null,
+    })
+  } catch (err) {
+    console.error("[client-error] DB insert failed:", err)
+  }
 
   return NextResponse.json({ ok: true })
 }

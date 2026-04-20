@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { UserCog, Users, Link2, BarChart3 } from "lucide-react"
+import { UserCog, Users, Link2, BarChart3, Bug } from "lucide-react"
 
 export const metadata = {
   title: "Admin Dashboard | Praxis OS",
@@ -69,6 +69,23 @@ export default function AdminDashboardPage() {
           <CardContent>
             <Link href="/os/admin/integrations">
               <Button variant="outline" className="w-full hover:border-emerald-300 hover:text-emerald-700">Integrationen verwalten</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/80 backdrop-blur-sm border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="h-9 w-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+                <Bug className="h-5 w-5 text-red-600" />
+              </div>
+              Client-Fehler
+            </CardTitle>
+            <CardDescription>JavaScript-Fehler in der App überwachen</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/os/admin/client-errors">
+              <Button variant="outline" className="w-full hover:border-red-300 hover:text-red-700">Fehler anzeigen</Button>
             </Link>
           </CardContent>
         </Card>
