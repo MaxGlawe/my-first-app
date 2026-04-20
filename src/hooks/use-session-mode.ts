@@ -34,7 +34,10 @@ interface UseSessionModeOptions {
 }
 
 const SET_DONE_DELAY = 600
-const TRANSITION_DELAY = 700
+// Short transition so the slide animation renders, but stays well within
+// iOS' user-gesture grace window so audio.play() after the next exercise
+// starts without being blocked as autoplay.
+const TRANSITION_DELAY = 300
 
 export function useSessionMode(options: UseSessionModeOptions) {
   const { totalExercises, getSetsForExercise, getPauseForExercise, storageKey } = options

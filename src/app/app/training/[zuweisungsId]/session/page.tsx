@@ -13,7 +13,7 @@ import { SessionStartScreen } from "@/components/app/session/SessionStartScreen"
 import { SessionExerciseView } from "@/components/app/session/SessionExerciseView"
 import { SessionPauseScreen } from "@/components/app/session/SessionPauseScreen"
 import { SessionTransition } from "@/components/app/session/SessionTransition"
-import { SessionFeedbackSheet } from "@/components/app/session/SessionFeedbackSheet"
+import { SessionExerciseDoneScreen } from "@/components/app/session/SessionExerciseDoneScreen"
 import { SessionCompletionScreen } from "@/components/app/session/SessionCompletionScreen"
 import { SessionTTSController } from "@/components/app/session/SessionTTSController"
 import type { SessionTTSControllerHandle } from "@/components/app/session/SessionTTSController"
@@ -240,12 +240,19 @@ export default function SessionPage() {
           />
         )}
 
-        {/* Feedback sheet */}
+        {/* Exercise done — explicit next tap (also keeps iOS audio context alive) */}
         {session.phase === "feedback" && (
-          <SessionFeedbackSheet
+          <SessionExerciseDoneScreen
             exerciseName={currentExercise?.name ?? ""}
-            onSubmit={session.submitFeedback}
-            onSkip={session.skipFeedback}
+            currentIndex={session.exerciseIndex}
+            totalExercises={exercises.length}
+            nextExerciseName={nextExercise?.name ?? null}
+            onNext={() => {
+              // Warm up audio context synchronously inside the user-gesture
+              // handler so the next exercise's TTS plays without iOS blocking it.
+              ttsControllerRef.current?.warmUp()
+              session.skipFeedback()
+            }}
           />
         )}
 
