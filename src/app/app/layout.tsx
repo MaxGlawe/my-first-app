@@ -8,6 +8,7 @@ import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { PaymentSetupGate } from "@/components/app/PaymentSetupGate"
 import { CheckInGate } from "@/components/app/CheckInGate"
 import { MilestonePopup } from "@/components/app/MilestonePopup"
+import { ClientErrorReporter } from "@/components/app/ClientErrorReporter"
 import { useStreak } from "@/hooks/use-streak"
 import { useBgfMembership } from "@/hooks/use-bgf-membership"
 
@@ -39,9 +40,11 @@ export default function PatientenAppLayout({
   // Session mode: fullscreen without navigation or wrappers
   if (isSessionMode) {
     return (
-      <div className="min-h-screen">
-        {children}
-      </div>
+      <ClientErrorReporter>
+        <div className="min-h-screen">
+          {children}
+        </div>
+      </ClientErrorReporter>
     )
   }
 
@@ -52,39 +55,45 @@ export default function PatientenAppLayout({
 
   if (isBgfRoute && isBgfFullscreen) {
     return (
-      <div className="min-h-screen">
-        {children}
-      </div>
+      <ClientErrorReporter>
+        <div className="min-h-screen">
+          {children}
+        </div>
+      </ClientErrorReporter>
     )
   }
 
   // BGF routes + shared routes for BGF members — BGF nav, no patient wrappers
   if (isBgfRoute || isSharedBgfRoute) {
     return (
-      <div className="min-h-screen">
-        <main className="pb-20">{children}</main>
-        <BgfNavigation />
-      </div>
+      <ClientErrorReporter>
+        <div className="min-h-screen">
+          <main className="pb-20">{children}</main>
+          <BgfNavigation />
+        </div>
+      </ClientErrorReporter>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <OnboardingWizard>
-        <Suspense>
-          <PaymentSetupGate>
-            <CheckInGate>
-              <main className="pb-20">{children}</main>
-            </CheckInGate>
-          </PaymentSetupGate>
-        </Suspense>
-      </OnboardingWizard>
+    <ClientErrorReporter>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <OnboardingWizard>
+          <Suspense>
+            <PaymentSetupGate>
+              <CheckInGate>
+                <main className="pb-20">{children}</main>
+              </CheckInGate>
+            </PaymentSetupGate>
+          </Suspense>
+        </OnboardingWizard>
 
-      {/* Mobile bottom navigation */}
-      <PatientenNavigation />
+        {/* Mobile bottom navigation */}
+        <PatientenNavigation />
 
-      {/* Achievement celebration popup */}
-      <MilestoneOverlay />
-    </div>
+        {/* Achievement celebration popup */}
+        <MilestoneOverlay />
+      </div>
+    </ClientErrorReporter>
   )
 }

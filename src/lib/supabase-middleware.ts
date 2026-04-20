@@ -43,6 +43,7 @@ export async function updateSession(request: NextRequest) {
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
   const isAnalyticsTrackApi = pathname === '/api/analytics/track'
   const isLandingAnalyticsApi = pathname === '/api/analytics/pageview' || pathname === '/api/analytics/conversion' || pathname === '/api/analytics/duration'
+  const isClientErrorLogApi = pathname === '/api/log/client-error' && request.method === 'POST'
   const isRootPage = pathname === '/'
 
   // SEO-critical routes — must be accessible to crawlers
@@ -54,7 +55,7 @@ export async function updateSession(request: NextRequest) {
   const isPushSendApi = pathname === '/api/push/send'
   const isWebhookApi = pathname.startsWith('/api/webhooks/') // includes /api/webhooks/stripe
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
