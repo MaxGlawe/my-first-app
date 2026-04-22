@@ -3,6 +3,39 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { PAUSE_MARKER_PREFIX } from "@/lib/trainer-script"
 
+// MediaError codes → human-readable label. Helps debug Safari audio failures
+// that otherwise just surface as opaque "Script error." in window.onerror.
+const MEDIA_ERROR_CODE: Record<number, string> = {
+  1: "MEDIA_ERR_ABORTED",
+  2: "MEDIA_ERR_NETWORK",
+  3: "MEDIA_ERR_DECODE",
+  4: "MEDIA_ERR_SRC_NOT_SUPPORTED",
+}
+
+function reportAudioError(kind: string, details: Record<string, unknown>) {
+  try {
+    const body = JSON.stringify({
+      source: "error",
+      message: `Audio/${kind}: ${details.message ?? "unknown"}`,
+      stack: JSON.stringify(details, null, 2),
+      url: typeof window !== "undefined" ? window.location.href : null,
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+    })
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" })
+      if (navigator.sendBeacon("/api/log/client-error", blob)) return
+    }
+    fetch("/api/log/client-error", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // Reporting must never throw
+  }
+}
+
 export type PlayerStatus =
   | "idle"
   | "loading"
@@ -184,6 +217,9 @@ export function useAudioPlayer(
 
       // Reuse existing audio element if warm (keeps mobile audio context alive)
       const audio = voiceRef.current ?? new Audio()
+      // crossOrigin must be set BEFORE src to take effect. Lets error events
+      // surface real details instead of Safari's opaque "Script error."
+      audio.crossOrigin = "anonymous"
       audio.src = item
       audio.volume = optionsRef.current.voiceVolume ?? 1.0
       audio.preload = "auto"
@@ -195,13 +231,21 @@ export function useAudioPlayer(
 
       audio.onerror = (e) => {
         const mediaErr = audio.error
-        console.error("[AudioPlayer] audio.onerror", {
-          code: mediaErr?.code,
-          message: mediaErr?.message,
-          src: audio.src?.substring(0, 120),
-          event: e,
-        })
-        setError(`Audio-Fehler: ${mediaErr?.message ?? "unbekannt"}`)
+        const code = mediaErr?.code
+        const details = {
+          code,
+          codeLabel: code ? MEDIA_ERROR_CODE[code] ?? "UNKNOWN" : "NO_CODE",
+          message: mediaErr?.message ?? "unknown",
+          srcHead: audio.src?.substring(0, 200),
+          networkState: audio.networkState,
+          readyState: audio.readyState,
+          chunkIndex: index,
+          totalChunks: urlsRef.current.length,
+          eventType: (e as Event).type,
+        }
+        console.error("[AudioPlayer] audio.onerror", details)
+        reportAudioError("load", details)
+        setError(`Audio-Fehler: ${mediaErr?.message ?? MEDIA_ERROR_CODE[code ?? 0] ?? "unbekannt"}`)
         setStatus("error")
         stopProgressTracking()
       }
@@ -213,7 +257,16 @@ export function useAudioPlayer(
           startProgressTracking()
         })
         .catch((err) => {
-          console.error("[AudioPlayer] play() rejected:", err?.name, err?.message, "src:", item?.substring(0, 120))
+          const details = {
+            errorName: err?.name ?? "UnknownError",
+            message: err?.message ?? "unknown",
+            srcHead: item?.substring(0, 200),
+            chunkIndex: index,
+            totalChunks: urlsRef.current.length,
+          }
+          console.error("[AudioPlayer] play() rejected:", details)
+          // Always report — so we learn which browsers/patients trigger which error
+          reportAudioError("play", details)
           // If autoplay was blocked, try again on next user interaction
           if (err?.name === "NotAllowedError") {
             setError("Bitte tippe erneut zum Abspielen.")
