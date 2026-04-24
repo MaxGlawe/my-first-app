@@ -38,9 +38,19 @@ export async function POST(request: NextRequest) {
         const sub = event.data.object as any
         const patientId = sub.metadata?.praxis_os_patient_id
 
-        if (!patientId) break
+        if (!patientId) {
+          console.warn(`[Stripe Webhook] ${event.type} — no patient_id in metadata for sub ${sub.id}`)
+          break
+        }
 
         const status = mapStripeStatus(sub.status as Stripe.Subscription.Status)
+
+        // Stripe API ≥ 2024-09-30 moved current_period_start / current_period_end
+        // from the subscription object onto each subscription_item. Read both
+        // locations so we work across old and new API versions.
+        const item = sub.items?.data?.[0]
+        const periodStart = sub.current_period_start ?? item?.current_period_start
+        const periodEnd = sub.current_period_end ?? item?.current_period_end
 
         const updateData: Record<string, unknown> = {
           status,
@@ -48,21 +58,29 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         }
 
-        // Period timestamps (unix seconds → ISO string)
-        if (typeof sub.current_period_start === "number") {
-          updateData.current_period_start = new Date(sub.current_period_start * 1000).toISOString()
+        if (typeof periodStart === "number") {
+          updateData.current_period_start = new Date(periodStart * 1000).toISOString()
         }
-        if (typeof sub.current_period_end === "number") {
-          updateData.current_period_end = new Date(sub.current_period_end * 1000).toISOString()
+        if (typeof periodEnd === "number") {
+          updateData.current_period_end = new Date(periodEnd * 1000).toISOString()
         }
         if (typeof sub.trial_end === "number") {
           updateData.trial_end = new Date(sub.trial_end * 1000).toISOString()
         }
 
-        await supabase
+        const { error: updateErr } = await supabase
           .from("patient_subscriptions")
           .update(updateData)
           .eq("patient_id", patientId)
+
+        if (updateErr) {
+          console.error(`[Stripe Webhook] ${event.type} — DB update failed for patient ${patientId}:`, updateErr)
+        } else {
+          console.log(
+            `[Stripe Webhook] ${event.type} sub=${sub.id} patient=${patientId} status=${status} ` +
+            `period_end=${typeof periodEnd === "number" ? new Date(periodEnd * 1000).toISOString() : "missing"}`
+          )
+        }
 
         break
       }
@@ -91,6 +109,10 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as any
         const installmentNumber = invoice.metadata?.installment_number
         const planId = invoice.metadata?.payment_plan_id
+        console.log(
+          `[Stripe Webhook] invoice.paid id=${invoice.id} amount=${invoice.amount_paid / 100}€ ` +
+          `subscription=${invoice.subscription ?? "—"}`
+        )
 
         // Update payment installment if this is a plan payment
         if (planId && installmentNumber) {
