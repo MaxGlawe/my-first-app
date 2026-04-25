@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { Check, CheckCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ChatMessage } from "@/types/chat"
@@ -51,19 +50,17 @@ export function NachrichtBubble({ message, isMine }: NachrichtBubbleProps) {
             : "bg-white text-slate-800 rounded-bl-sm border border-slate-100"
         )}
       >
-        {/* Media preview */}
+        {/* Media preview — plain <img> avoids next/image's domain whitelist
+            and caching of signed URLs that expire after 7 days. */}
         {hasMedia && (
           <div className="mb-2">
             <a href={message.media_url!} target="_blank" rel="noopener noreferrer">
-              <div className="relative w-48 h-48 rounded-lg overflow-hidden">
-                <Image
-                  src={message.media_url!}
-                  alt="Bild"
-                  fill
-                  className="object-cover"
-                  sizes="192px"
-                />
-              </div>
+              <img
+                src={message.media_url!}
+                alt="Bild zur Nachricht"
+                loading="lazy"
+                className="block w-48 h-48 rounded-lg object-cover bg-slate-100"
+              />
             </a>
           </div>
         )}
