@@ -232,6 +232,11 @@ export function useAudioPlayer(
       audio.onerror = (e) => {
         const mediaErr = audio.error
         const code = mediaErr?.code
+        // Code 1 = MEDIA_ERR_ABORTED = we paused/changed src deliberately.
+        // Same kind of harmless interruption as play()'s AbortError.
+        if (code === 1) {
+          return
+        }
         const details = {
           code,
           codeLabel: code ? MEDIA_ERROR_CODE[code] ?? "UNKNOWN" : "NO_CODE",
@@ -264,15 +269,23 @@ export function useAudioPlayer(
             chunkIndex: index,
             totalChunks: urlsRef.current.length,
           }
-          console.error("[AudioPlayer] play() rejected:", details)
-          // Always report — so we learn which browsers/patients trigger which error
-          reportAudioError("play", details)
-          // If autoplay was blocked, try again on next user interaction
-          if (err?.name === "NotAllowedError") {
-            setError("Bitte tippe erneut zum Abspielen.")
-          } else {
-            setError(`Wiedergabe fehlgeschlagen: ${err?.message ?? "unbekannt"}`)
+          // AbortError = play() was interrupted by a deliberate pause()/src-change
+          // (exercise switch, user stop). Expected, harmless — silently swallow.
+          if (err?.name === "AbortError") {
+            return
           }
+          // NotAllowedError = browser autoplay policy blocked us. Expected on
+          // first play before user gesture; the UI prompts the user to tap.
+          if (err?.name === "NotAllowedError") {
+            console.warn("[AudioPlayer] autoplay blocked, waiting for user gesture")
+            setError("Bitte tippe erneut zum Abspielen.")
+            setStatus("error")
+            return
+          }
+          // Anything else is a real failure (codec, network, decode) — report.
+          console.error("[AudioPlayer] play() rejected:", details)
+          reportAudioError("play", details)
+          setError(`Wiedergabe fehlgeschlagen: ${err?.message ?? "unbekannt"}`)
           setStatus("error")
         })
     },
