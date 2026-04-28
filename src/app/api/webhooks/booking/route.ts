@@ -175,6 +175,14 @@ const appointmentRawSchema = z.object({
   therapist_name: z.string().max(200).optional().nullable(),
   service_name: z.string().max(200).optional().nullable(),
   status: z.enum(["scheduled", "cancelled", "completed"]).default("scheduled"),
+  // UTM/Referrer attribution — passed through from booking tool when the
+  // patient came via a tracked link (e.g. wwwpraxis-os.com direct-book button).
+  // All optional; missing means organic / direct booking.
+  referrer: z.object({
+    source: z.string().max(200).optional().nullable(),
+    medium: z.string().max(200).optional().nullable(),
+    campaign: z.string().max(200).optional().nullable(),
+  }).optional().nullable(),
 }).refine(
   (d) => d.id || d.booking_appointment_id,
   { message: "Either 'id' or 'booking_appointment_id' is required", path: ["booking_appointment_id"] }
@@ -192,6 +200,9 @@ function normalizeAppointmentPayload(raw: z.infer<typeof appointmentRawSchema>) 
     therapist_name: raw.therapist_name,
     service_name: raw.service_name,
     status: raw.status,
+    referrer_source: raw.referrer?.source ?? null,
+    referrer_medium: raw.referrer?.medium ?? null,
+    referrer_campaign: raw.referrer?.campaign ?? null,
   }
 }
 
@@ -384,6 +395,9 @@ async function handleAppointmentEvent(
         therapist_name: data.therapist_name ?? null,
         service_name: data.service_name ?? null,
         status: data.status,
+        referrer_source: data.referrer_source,
+        referrer_medium: data.referrer_medium,
+        referrer_campaign: data.referrer_campaign,
         synced_at: new Date().toISOString(),
       },
       {
