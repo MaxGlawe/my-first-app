@@ -55,7 +55,7 @@ const faqCategories = [
       {
         question: "Was ist, wenn mir die Therapie nicht hilft?",
         answer:
-          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für Ihre Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir Ihnen offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir Sie und finden gemeinsam eine Lösung. Die 69€ werden selbstverständlich auf Ihre Behandlung angerechnet.",
+          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für Ihre Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir Ihnen offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir Sie und finden gemeinsam eine Lösung. Die Betreuungspauschale (16,99€/Monat) ist jederzeit kündbar — Sie gehen also kein Risiko ein.",
       },
       {
         question:

@@ -45,7 +45,7 @@ export function CtaSection() {
           </div>
 
           <p className="mt-5 text-sm text-emerald-200/70">
-            Wird auf Ihre Behandlung angerechnet — keine Verordnung nötig
+            Persönlicher Therapeut — keine Verordnung nötig
           </p>
         </ScrollReveal>
       </div>

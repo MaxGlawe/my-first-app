@@ -19,7 +19,7 @@ const steps = [
     title: "Video-Erstgespräch",
     description:
       "In einem persönlichen Video-Termin lernen wir Sie kennen, führen eine gründliche Untersuchung durch und erstellen Ihren individuellen Behandlungsplan.",
-    detail: "30 Minuten — 69€, wird auf Behandlung angerechnet",
+    detail: "30 Minuten — 69€ einmalig, danach 16,99€/Monat Betreuung",
     gradient: "from-blue-500 to-indigo-500",
   },
   {

@@ -229,9 +229,9 @@ export function PricingSection() {
             <span className="hidden sm:block h-4 w-px bg-slate-200" />
             <p className="text-sm text-slate-500">
               <span className="font-semibold text-emerald-600">
-                Ersteinschätzung nur 69€
+                Ersteinschätzung 69€
               </span>{" "}
-              — wird auf Ihre Behandlung angerechnet.
+              — danach Betreuung optional ab 16,99€/Monat.
             </p>
           </div>
         </ScrollReveal>
@@ -314,8 +314,8 @@ export function PricingSection() {
             </div>
 
             <p className="text-center text-xs text-slate-400 mt-6">
-              Gerne prüfen wir Ihre individuelle Erstattungssituation im
-              Ersteinschätzung (69€, wird angerechnet).
+              Gerne prüfen wir Ihre individuelle Erstattungssituation in der
+              Ersteinschätzung (69€, einmalig).
             </p>
           </div>
         </ScrollReveal>
