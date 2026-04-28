@@ -105,9 +105,9 @@ export const CONTRACT_TYPE_CONFIG: Record<ContractType, {
 }> = {
   einzelsitzung: {
     label: "Einzelsitzung",
-    description: "Video-Behandlung (45 Min.) mit Trainingsplan und Chat-Support",
+    description: "Video-Behandlung (30 Min.) mit Trainingsplan und Chat-Support",
     defaultLeistungen: [
-      { beschreibung: "Video-Behandlung (45 Min.)", preis: 89 },
+      { beschreibung: "Video-Behandlung (30 Min.)", preis: 69 },
       { beschreibung: "Individuelle Befunderhebung & Diagnose", preis: 0 },
       { beschreibung: "Persönlicher Trainingsplan mit Video-Anleitungen", preis: 0 },
       { beschreibung: "Chat-Support bis zum nächsten Termin", preis: 0 },
@@ -118,7 +118,9 @@ export const CONTRACT_TYPE_CONFIG: Record<ContractType, {
     label: "Mini-Reha Post-OP",
     description: "Strukturierte Nachbehandlung nach Operationen (6–8 Wochen)",
     defaultLeistungen: [
-      { beschreibung: "Mini-Reha Post-OP Programm (6–8 Wochen)", preis: 449, details: "6–8 Video-Sitzungen à 45 Min." },
+      // Default = 7 Sitzungen × 69 € (Mittelwert aus 6–8). Im Vertrags-UI
+      // jederzeit anpassbar — Pakete sind individuell verhandelbar.
+      { beschreibung: "Mini-Reha Post-OP Programm (6–8 Wochen)", preis: 483, details: "6–8 Video-Sitzungen à 30 Min." },
       { beschreibung: "Individuelle Reha-Phasen nach OP-Protokoll", preis: 0 },
       { beschreibung: "Täglicher Trainingsplan mit progressiver Steigerung", preis: 0 },
       { beschreibung: "Unbegrenzter Chat-Support", preis: 0 },
@@ -130,7 +132,9 @@ export const CONTRACT_TYPE_CONFIG: Record<ContractType, {
     label: "Chronik-Programm",
     description: "Für langjährige Beschwerden mit Struktur und Konsequenz (8–12 Wochen)",
     defaultLeistungen: [
-      { beschreibung: "Chronik-Programm (8–12 Wochen)", preis: 649, details: "8–10 Video-Sitzungen à 45 Min." },
+      // Default = 9 Sitzungen × 69 € (Mittelwert aus 8–10). Im Vertrags-UI
+      // jederzeit anpassbar.
+      { beschreibung: "Chronik-Programm (8–12 Wochen)", preis: 621, details: "8–10 Video-Sitzungen à 30 Min." },
       { beschreibung: "Umfassende Schmerzanalyse & Zielsetzung", preis: 0 },
       { beschreibung: "Individueller Trainingsplan mit wöchentlicher Anpassung", preis: 0 },
       { beschreibung: "Schmerztagebuch & Verlaufskontrolle", preis: 0 },

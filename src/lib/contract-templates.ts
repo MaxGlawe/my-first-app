@@ -54,7 +54,7 @@ export function generateVertragText(ctx: ContractContext): VertragText {
     : ""
 
   const sitzungenText = ctx.sitzungenAnzahl
-    ? `Der Vertrag umfasst ${ctx.sitzungenAnzahl} Video-Sitzungen à ca. 45 Minuten.`
+    ? `Der Vertrag umfasst ${ctx.sitzungenAnzahl} Video-Sitzungen à ca. 30 Minuten.`
     : ""
 
   const einzelpreisText = ctx.zahlungsweise === "pro_sitzung"
