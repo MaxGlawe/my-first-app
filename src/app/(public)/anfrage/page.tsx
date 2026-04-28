@@ -1,6 +1,6 @@
 import { Metadata } from "next"
 import Link from "next/link"
-import { Calendar, MessageCircle, ArrowRight, Clock, Check } from "lucide-react"
+import { Calendar, MessageCircle, ArrowRight, Clock, Check, ExternalLink } from "lucide-react"
 import { IntakeForm } from "@/components/intake/IntakeForm"
 
 export const metadata: Metadata = {
@@ -55,7 +55,7 @@ export default function AnfragePage() {
           </li>
           <li className="flex items-start gap-2">
             <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-            <span>Wird auf eine fortführende Behandlung angerechnet</span>
+            <span>Persönlicher Therapeut über die gesamte Behandlung</span>
           </li>
           <li className="flex items-start gap-2">
             <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -70,8 +70,15 @@ export default function AnfragePage() {
           className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:-translate-y-0.5"
         >
           Termin auswählen
-          <ArrowRight className="h-4 w-4" />
+          <ExternalLink className="h-4 w-4" />
         </a>
+
+        <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5">
+          <ExternalLink className="h-3 w-3 shrink-0" />
+          Du wirst zur Buchung auf unsere Praxis-Website
+          <span className="font-mono text-slate-600">physiotherapie-glawe.de</span>
+          weitergeleitet (öffnet in neuem Tab).
+        </p>
       </div>
 
       {/* Divider */}
