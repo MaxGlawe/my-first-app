@@ -24,7 +24,7 @@ const rehaPackages = [
       "Strukturierte Nachbehandlung nach Operationen \u2014 von der Wundheilung bis zur vollen Belastbarkeit.",
     features: [
       "Individuelle Reha-Phasen nach OP-Protokoll",
-      "6\u20138 Video-Sitzungen (\u00e0 45 Min.)",
+      "6\u20138 Video-Sitzungen (\u00e0 30 Min.)",
       "T\u00e4glicher Trainingsplan mit progressiver Steigerung",
       "Laufende Anpassung an Heilungsverlauf",
       "Unbegrenzter Chat-Support",
@@ -41,7 +41,7 @@ const rehaPackages = [
       "F\u00fcr langj\u00e4hrige Beschwerden, die Struktur und Konsequenz brauchen \u2014 weil Schmerz kein Dauerzustand sein muss.",
     features: [
       "Umfassende Schmerzanalyse & Zielsetzung",
-      "8\u201310 Video-Sitzungen (\u00e0 45 Min.)",
+      "8\u201310 Video-Sitzungen (\u00e0 30 Min.)",
       "Individueller Trainingsplan mit w\u00f6chentlicher Anpassung",
       "Schmerztagebuch & Verlaufskontrolle",
       "Unbegrenzter Chat-Support",
