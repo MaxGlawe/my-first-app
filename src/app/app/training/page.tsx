@@ -62,6 +62,7 @@ function AssignmentCard({
   const duration = estimateDuration(assignment)
   const isDone = assignment.completed_today
   const hasOverride = !!assignment.patient_active_days
+  const [notizExpanded, setNotizExpanded] = useState(false)
 
   return (
     <div
@@ -70,7 +71,7 @@ function AssignmentCard({
       }`}
     >
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           <div
             className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
               isDone ? "bg-emerald-100" : "bg-emerald-50"
@@ -82,12 +83,29 @@ function AssignmentCard({
               <Dumbbell className="h-6 w-6 text-emerald-600" />
             )}
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-base font-bold text-slate-800 leading-tight">
               {assignment.plan_name ?? "Training"}
             </p>
             {assignment.notiz && (
-              <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{assignment.notiz}</p>
+              <button
+                type="button"
+                onClick={() => setNotizExpanded((v) => !v)}
+                className="mt-0.5 w-full text-left group"
+                aria-expanded={notizExpanded}
+                aria-label={notizExpanded ? "Anmerkung einklappen" : "Anmerkung ganz lesen"}
+              >
+                <p
+                  className={`text-xs text-slate-500 leading-relaxed whitespace-pre-wrap break-words ${
+                    notizExpanded ? "" : "line-clamp-1"
+                  }`}
+                >
+                  {assignment.notiz}
+                </p>
+                <span className="text-[11px] font-medium text-emerald-600 group-hover:text-emerald-700 mt-0.5 inline-block">
+                  {notizExpanded ? "weniger" : "mehr lesen"}
+                </span>
+              </button>
             )}
           </div>
         </div>
