@@ -6,6 +6,16 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 
+// Local-date formatter — avoids the UTC drift that .toISOString() introduces
+// for timezones east of UTC (e.g. Europe/Berlin), which silently shifts dates
+// by one day for late-evening / early-morning local times.
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 // ── Achievement Definitions ──────────────────────────────────────────────────
 
 interface Achievement {
@@ -44,7 +54,7 @@ function computeAchievements(ctx: {
     const cursor = new Date(today)
 
     for (let i = 0; i < 30; i++) {
-      const dateStr = cursor.toISOString().split("T")[0]
+      const dateStr = formatLocalDate(cursor)
       if (sortedDates.includes(dateStr)) {
         checkInStreak++
       } else if (i > 0) {
@@ -210,19 +220,54 @@ export async function GET() {
   const completionDates = (completions ?? []).map((c) => c.completed_date as string)
   const uniqueDates = [...new Set(completionDates)].sort().reverse()
 
-  // Calculate current streak (consecutive days from today going backwards)
+  // Need active assignments to know which days are planned training days vs rest days
+  const { data: streakAssignments } = await supabase
+    .from("patient_assignments")
+    .select("active_days, start_date, end_date")
+    .eq("patient_id", patient.id)
+    .eq("status", "aktiv")
+
+  const DOW_CODES: Record<number, string> = {
+    1: "mo", 2: "di", 3: "mi", 4: "do", 5: "fr", 6: "sa", 0: "so",
+  }
+
+  // Helper: is the given date a planned training day in any active assignment?
+  function isPlannedDay(date: Date, dateStr: string): boolean {
+    if (!streakAssignments || streakAssignments.length === 0) return false
+    const dowCode = DOW_CODES[date.getDay()]
+    for (const a of streakAssignments) {
+      if (dateStr < a.start_date || dateStr > a.end_date) continue
+      if ((a.active_days as string[]).includes(dowCode)) return true
+    }
+    return false
+  }
+
+  // Calculate current streak: consecutive *planned* training days completed.
+  // Rest days (e.g. Tue/Thu when plan is Mo/Wed/Fri) are skipped — they
+  // neither extend nor break the streak.
+  // Today is special: if today is a planned day and not yet completed,
+  // we tolerate it (streak doesn't break before the day is "over").
   let streak = 0
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const todayStr = formatLocalDate(today)
   const cursor = new Date(today)
 
   for (let i = 0; i < 365; i++) {
-    const dateStr = cursor.toISOString().split("T")[0]
-    if (uniqueDates.includes(dateStr)) {
-      streak++
-    } else if (i > 0) {
-      break
+    const dateStr = formatLocalDate(cursor)
+    const planned = isPlannedDay(cursor, dateStr)
+    const completed = uniqueDates.includes(dateStr)
+
+    if (planned) {
+      if (completed) {
+        streak++
+      } else if (i === 0 && dateStr === todayStr) {
+        // Today's training not yet done — don't break the streak yet
+      } else {
+        break
+      }
     }
+    // Rest days: skip silently
     cursor.setDate(cursor.getDate() - 1)
   }
 
@@ -250,7 +295,7 @@ export async function GET() {
     for (let d = 0; d < 7; d++) {
       const day = new Date(mondayOfWeek)
       day.setDate(mondayOfWeek.getDate() + d)
-      const dateStr = day.toISOString().split("T")[0]
+      const dateStr = formatLocalDate(day)
       const dowCode = DOW_MAP[day.getDay()]
 
       for (const a of assignments) {
@@ -265,10 +310,10 @@ export async function GET() {
     }
 
     // Count completions this week
-    const weekStart = mondayOfWeek.toISOString().split("T")[0]
+    const weekStart = formatLocalDate(mondayOfWeek)
     const weekEnd = new Date(mondayOfWeek)
     weekEnd.setDate(mondayOfWeek.getDate() + 6)
-    const weekEndStr = weekEnd.toISOString().split("T")[0]
+    const weekEndStr = formatLocalDate(weekEnd)
 
     weeklyDone = uniqueDates.filter(
       (d) => d >= weekStart && d <= weekEndStr
@@ -311,7 +356,7 @@ export async function GET() {
       for (let d = 0; d < 7; d++) {
         const day = new Date(weekStart)
         day.setDate(weekStart.getDate() + d)
-        const dateStr = day.toISOString().split("T")[0]
+        const dateStr = formatLocalDate(day)
         const dowCode = DOW_MAP[day.getDay()]
 
         let isPlanned = false

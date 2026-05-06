@@ -73,6 +73,16 @@ function useAnalytics(days: number) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// Local-date formatter — avoids the UTC drift that .toISOString() introduces
+// for timezones east of UTC. Without this, completed days were shown as missed
+// because the day-string mismatched the DB-stored local date.
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 function buildLast4WeeksDays(): Date[] {
   const days: Date[] = []
   const today = new Date()
@@ -97,7 +107,7 @@ function getDayStatus(
   today.setHours(0, 0, 0, 0)
   if (date > today) return "future"
 
-  const dateStr = date.toISOString().split("T")[0]
+  const dateStr = formatLocalDate(date)
   const DOW_MAP: Record<number, string> = {
     1: "mo", 2: "di", 3: "mi", 4: "do", 5: "fr", 6: "sa", 0: "so",
   }
@@ -317,8 +327,8 @@ export default function ProgressPage() {
 
   // Compliance calculation
   const days = buildLast4WeeksDays()
-  const last28Start = days[0]?.toISOString().split("T")[0] ?? ""
-  const todayStr = new Date().toISOString().split("T")[0]
+  const last28Start = days[0] ? formatLocalDate(days[0]) : ""
+  const todayStr = formatLocalDate(new Date())
   const totalDone = assignments.reduce((sum, a) => {
     return sum + (a.completed_dates ?? []).filter((d) => d >= last28Start && d <= todayStr).length
   }, 0)
