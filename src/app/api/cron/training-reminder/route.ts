@@ -112,15 +112,18 @@ export async function GET(req: NextRequest) {
   // Deduplicate patient IDs (one patient may have multiple subscriptions)
   const candidatePatientIds = [...new Set(subscriptions.map((s) => s.patient_id))]
 
-  // 4. Filter: only patients who have an active training assignment TODAY
+  // 4. Filter: only patients who have an active training assignment TODAY.
+  // We can't filter active_days vs. patient_active_days at the SQL level
+  // (Supabase's .contains doesn't support COALESCE-style fallback), so we
+  // pull both columns and decide in JS. patient_active_days, when set,
+  // overrides the therapist's active_days.
   const { data: assignments, error: assignError } = await supabase
     .from("patient_assignments")
-    .select("patient_id")
+    .select("patient_id, active_days, patient_active_days")
     .in("patient_id", candidatePatientIds)
     .eq("status", "aktiv")
     .lte("start_date", today)
     .gte("end_date", today)
-    .contains("active_days", [todayCode])
 
   if (assignError) {
     console.error("[cron/training-reminder] Error fetching assignments:", assignError.message)
@@ -131,8 +134,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, sent: 0, message: "Keine aktiven Trainingstage für diese Stunde." })
   }
 
-  // Deduplicate patient IDs from assignments
-  const targetPatientIds = [...new Set(assignments.map((a) => a.patient_id))]
+  // Apply effective-days logic: patient override wins when present
+  const matchingAssignments = assignments.filter((a) => {
+    const effectiveDays =
+      (a.patient_active_days as string[] | null) ?? (a.active_days as string[] | null) ?? []
+    return effectiveDays.includes(todayCode)
+  })
+
+  if (matchingAssignments.length === 0) {
+    return NextResponse.json({ ok: true, sent: 0, message: "Keine effektiven Trainingstage für diese Stunde." })
+  }
+
+  // Deduplicate patient IDs from matching assignments
+  const targetPatientIds = [...new Set(matchingAssignments.map((a) => a.patient_id))]
 
   // 5. Send push to all target patients
   const result = await sendPushToPatients(targetPatientIds, {

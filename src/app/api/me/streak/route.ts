@@ -220,15 +220,22 @@ export async function GET() {
   const completionDates = (completions ?? []).map((c) => c.completed_date as string)
   const uniqueDates = [...new Set(completionDates)].sort().reverse()
 
-  // Need active assignments to know which days are planned training days vs rest days
+  // Need active assignments to know which days are planned training days vs rest days.
+  // patient_active_days (the patient's own override) wins over the therapist's
+  // active_days when present.
   const { data: streakAssignments } = await supabase
     .from("patient_assignments")
-    .select("active_days, start_date, end_date")
+    .select("active_days, patient_active_days, start_date, end_date")
     .eq("patient_id", patient.id)
     .eq("status", "aktiv")
 
   const DOW_CODES: Record<number, string> = {
     1: "mo", 2: "di", 3: "mi", 4: "do", 5: "fr", 6: "sa", 0: "so",
+  }
+
+  // Helper: get the effective training-day list — patient override or therapist days
+  function effectiveDays(a: { active_days: unknown; patient_active_days: unknown }): string[] {
+    return ((a.patient_active_days as string[] | null) ?? (a.active_days as string[] | null)) ?? []
   }
 
   // Helper: is the given date a planned training day in any active assignment?
@@ -237,7 +244,7 @@ export async function GET() {
     const dowCode = DOW_CODES[date.getDay()]
     for (const a of streakAssignments) {
       if (dateStr < a.start_date || dateStr > a.end_date) continue
-      if ((a.active_days as string[]).includes(dowCode)) return true
+      if (effectiveDays(a).includes(dowCode)) return true
     }
     return false
   }
@@ -271,10 +278,11 @@ export async function GET() {
     cursor.setDate(cursor.getDate() - 1)
   }
 
-  // Weekly goal: how many training sessions are planned vs completed this week
+  // Weekly goal: how many training sessions are planned vs completed this week.
+  // Same effective-days logic as the streak above — patient override wins.
   const { data: assignments } = await supabase
     .from("patient_assignments")
-    .select("active_days, start_date, end_date")
+    .select("active_days, patient_active_days, start_date, end_date")
     .eq("patient_id", patient.id)
     .eq("status", "aktiv")
 
@@ -300,7 +308,7 @@ export async function GET() {
 
       for (const a of assignments) {
         if (dateStr < a.start_date || dateStr > a.end_date) continue
-        if ((a.active_days as string[]).includes(dowCode)) {
+        if (effectiveDays(a).includes(dowCode)) {
           if (!weekDays.includes(dateStr)) {
             weekDays.push(dateStr)
             weeklyGoal++
@@ -362,7 +370,7 @@ export async function GET() {
         let isPlanned = false
         for (const a of assignments) {
           if (dateStr < a.start_date || dateStr > a.end_date) continue
-          if ((a.active_days as string[]).includes(dowCode)) {
+          if (effectiveDays(a).includes(dowCode)) {
             isPlanned = true
             break
           }
