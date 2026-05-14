@@ -25,6 +25,7 @@ import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
+import { escapeHtml } from "@/lib/html-escape"
 import crypto from "crypto"
 
 // ──────────────────────────────────────────────────
@@ -197,50 +198,61 @@ export async function POST(request: NextRequest) {
     to: email,
     subject: "Dein Zugang zu Praxis OS — Kurse & Inhalte",
     html: `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 0;">
-        <div style="background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); border-radius: 16px 16px 0 0; padding: 40px 32px; text-align: center;">
-          <h1 style="color: white; font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.3px;">
-            Willkommen bei Praxis OS
-          </h1>
-          <p style="color: rgba(255,255,255,0.85); font-size: 15px; margin: 0; font-weight: 400;">
-            Dein Kursbereich ist bereit
-          </p>
-        </div>
-        <div style="background: #ffffff; padding: 36px 32px; border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;">
-          <p style="font-size: 16px; color: #1e293b; margin: 0 0 16px; line-height: 1.6;">
-            Hallo ${firstName},
-          </p>
-          <p style="font-size: 15px; color: #475569; margin: 0 0 24px; line-height: 1.7;">
-            Dein Zugang wurde eingerichtet. Du kannst dich ab sofort mit deiner E-Mail-Adresse
-            und dem folgenden temporären Passwort anmelden:
-          </p>
-          <div style="background: #f1f5f9; border-radius: 10px; padding: 16px 20px; margin: 0 0 24px; text-align: center;">
-            <p style="font-size: 13px; color: #64748b; margin: 0 0 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-              Temporäres Passwort
-            </p>
-            <p style="font-size: 18px; color: #0f172a; margin: 0; font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 2px;">
-              ${tempPassword}
-            </p>
-            <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">
-              Bitte ändere dein Passwort nach dem ersten Login.
-            </p>
-          </div>
-          <div style="text-align: center; margin: 0 0 28px;">
-            <a href="${appUrl}/login"
-               style="display: inline-block; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; padding: 14px 36px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px; letter-spacing: 0.2px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
-              Jetzt anmelden &rarr;
-            </a>
-          </div>
-          <p style="font-size: 14px; color: #64748b; margin: 0; line-height: 1.7;">
-            Nach dem Login findest du alle deine gekauften Kurse unter <strong>„Meine Inhalte"</strong>.
-          </p>
-        </div>
-        <div style="background: #f8fafc; border-radius: 0 0 16px 16px; padding: 24px 32px; text-align: center; border: 1px solid #e5e7eb; border-top: none;">
-          <p style="font-size: 13px; color: #94a3b8; margin: 0;">
-            Physiotherapie Glawe — Praxis OS
-          </p>
-        </div>
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f1f5f9;">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px 16px;">
+      <div style="background-color: #ecfdf5; border: 1px solid #e2e8f0; border-bottom: none; border-radius: 16px 16px 0 0; padding: 36px 32px;">
+        <p style="color: #059669; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 8px;">
+          Praxis OS · Kurse
+        </p>
+        <h1 style="color: #0f172a; font-size: 24px; font-weight: 700; margin: 0;">
+          Willkommen bei Praxis OS
+        </h1>
       </div>
+      <div style="background-color: #ffffff; padding: 36px 32px; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="font-size: 16px; color: #1e293b; margin: 0 0 16px; line-height: 1.6;">
+          Hallo ${escapeHtml(firstName)},
+        </p>
+        <p style="font-size: 15px; color: #475569; margin: 0 0 24px; line-height: 1.7;">
+          dein Zugang wurde eingerichtet. Du kannst dich ab sofort mit deiner
+          E-Mail-Adresse und dem folgenden temporären Passwort anmelden:
+        </p>
+        <div style="background-color: #f1f5f9; border-radius: 10px; padding: 16px 20px; margin: 0 0 24px; text-align: center;">
+          <p style="font-size: 12px; color: #64748b; margin: 0 0 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+            Temporäres Passwort
+          </p>
+          <p style="font-size: 18px; color: #0f172a; margin: 0; font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: 2px;">
+            ${tempPassword}
+          </p>
+          <p style="font-size: 12px; color: #94a3b8; margin: 8px 0 0;">
+            Bitte ändere dein Passwort nach dem ersten Login.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 0 0 28px;">
+          <a href="${appUrl}/login"
+             style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 15px;">
+            Jetzt anmelden &rarr;
+          </a>
+        </div>
+        <p style="font-size: 14px; color: #64748b; margin: 0; line-height: 1.7;">
+          Nach dem Login findest du alle deine gekauften Kurse unter <strong>„Meine Inhalte"</strong>.
+        </p>
+      </div>
+      <div style="background-color: #f8fafc; border-radius: 0 0 16px 16px; padding: 20px 32px; text-align: center; border: 1px solid #e2e8f0; border-top: none;">
+        <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+          Physiotherapie Glawe — Praxis OS
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
     `,
   }).catch((err) => console.error("[buyer-accounts] Welcome email failed:", err))
 

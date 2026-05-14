@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server"
-import { constructWebhookEvent } from "@/lib/stripe"
+import { constructWebhookEvent, getStripe } from "@/lib/stripe"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createSubscriptionInvoice } from "@/lib/billing/auto-invoice"
 import type Stripe from "stripe"
@@ -207,6 +207,197 @@ export async function POST(request: NextRequest) {
         const setupIntent = event.data.object as Stripe.SetupIntent
         // Payment method is now saved on the customer
         console.log("[Stripe Webhook] SEPA mandate setup succeeded:", setupIntent.id)
+        break
+      }
+
+      // ── Shop: One-time purchase ─────────────────────
+      case "checkout.session.completed": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const session = event.data.object as any
+
+        // Only handle shop purchases — skip subscription/setup checkouts
+        if (session.mode !== "payment") break
+        const productId = session.metadata?.product_id
+        if (!productId) break
+
+        let userId: string | undefined = session.metadata?.user_id
+
+        // ── PROJ-21: Gast-Kauf — kein user_id, aber guest_email in den Metadaten ──
+        // Account über den internen PROJ-19-Endpunkt auflösen/anlegen (idempotent).
+        if (!userId) {
+          const guestEmail = session.metadata?.guest_email
+          if (!guestEmail) {
+            console.warn(
+              `[Stripe Webhook] checkout.session.completed session=${session.id} — weder user_id noch guest_email, übersprungen`
+            )
+            break
+          }
+
+          const secret = process.env.INTERNAL_API_SECRET
+          if (!secret) {
+            console.error(
+              "[Stripe Webhook] INTERNAL_API_SECRET fehlt — Käufer-Account kann nicht angelegt werden"
+            )
+            return NextResponse.json({ error: "Config error" }, { status: 500 })
+          }
+
+          const appUrl =
+            process.env.NEXT_PUBLIC_APP_URL ??
+            process.env.NEXT_PUBLIC_SITE_URL ??
+            "https://wwwpraxis-os.com"
+          const firstName = session.metadata?.guest_first_name?.trim() || "Kund:in"
+          const lastName = session.metadata?.guest_last_name?.trim() || "—"
+
+          try {
+            const res = await fetch(`${appUrl}/api/buyer-accounts`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-internal-api-secret": secret,
+              },
+              body: JSON.stringify({ email: guestEmail, firstName, lastName }),
+            })
+            if (!res.ok) {
+              console.error(
+                `[Stripe Webhook] /api/buyer-accounts antwortete ${res.status} für ${guestEmail}`
+              )
+              // 500 → Stripe wiederholt den Webhook; buyer-accounts + Entitlement-Upsert sind idempotent
+              return NextResponse.json(
+                { error: "Buyer account creation failed" },
+                { status: 500 }
+              )
+            }
+            const json = await res.json()
+            userId = json.userId
+          } catch (err) {
+            console.error("[Stripe Webhook] /api/buyer-accounts Aufruf fehlgeschlagen:", err)
+            return NextResponse.json(
+              { error: "Buyer account creation failed" },
+              { status: 500 }
+            )
+          }
+
+          console.log(
+            `[Stripe Webhook] Gast-Kauf → Account aufgelöst: ${guestEmail} → user=${userId}`
+          )
+        }
+
+        if (!userId) break
+
+        console.log(`[Stripe Webhook] checkout.session.completed session=${session.id} user=${userId} product=${productId}`)
+
+        // Load all content entries for this product
+        const { data: contents, error: contentsErr } = await supabase
+          .from("product_contents")
+          .select("content_type, content_id")
+          .eq("product_id", productId)
+
+        if (contentsErr) {
+          console.error("[Stripe Webhook] Failed to load product_contents:", contentsErr)
+          break
+        }
+
+        if (!contents || contents.length === 0) {
+          console.warn(`[Stripe Webhook] No product_contents found for product ${productId}`)
+          break
+        }
+
+        // Insert one entitlement per content item — idempotent via ON CONFLICT DO NOTHING
+        for (const c of contents) {
+          const { error: entErr } = await supabase
+            .from("content_entitlements")
+            .upsert(
+              {
+                user_id: userId,
+                content_type: c.content_type,
+                content_id: c.content_id,
+                source: "purchase",
+                valid_from: new Date().toISOString(),
+                valid_until: null, // lifetime
+              },
+              { onConflict: "user_id,content_type,content_id,source", ignoreDuplicates: true }
+            )
+
+          if (entErr) {
+            console.error(
+              `[Stripe Webhook] Failed to insert entitlement for user=${userId} content=${c.content_id}:`,
+              entErr
+            )
+          } else {
+            console.log(
+              `[Stripe Webhook] Entitlement granted user=${userId} content_type=${c.content_type} content_id=${c.content_id}`
+            )
+          }
+        }
+
+        break
+      }
+
+      // ── Shop: Rückerstattung — Entitlement entziehen ──────────
+      case "charge.refunded": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const charge = event.data.object as any
+
+        // Nur bei vollständiger Rückerstattung
+        if (!charge.refunded) break
+
+        const paymentIntentId =
+          typeof charge.payment_intent === "string"
+            ? charge.payment_intent
+            : charge.payment_intent?.id
+        if (!paymentIntentId) break
+
+        // Zugehörige Checkout-Session finden — sie trägt unsere Metadaten
+        const stripe = getStripe()
+        const sessions = await stripe.checkout.sessions.list({
+          payment_intent: paymentIntentId,
+          limit: 1,
+        })
+        const refundSession = sessions.data[0]
+        if (!refundSession || refundSession.mode !== "payment") break
+
+        const refundProductId = refundSession.metadata?.product_id
+        if (!refundProductId) break
+
+        // User auflösen — eingeloggter Kauf (user_id) oder Gast-Kauf (guest_email)
+        let refundUserId: string | undefined = refundSession.metadata?.user_id
+        if (!refundUserId && refundSession.metadata?.guest_email) {
+          const { data: profile } = await supabase
+            .from("user_profiles")
+            .select("id")
+            .ilike("email", refundSession.metadata.guest_email)
+            .maybeSingle()
+          refundUserId = profile?.id
+        }
+        if (!refundUserId) break
+
+        // Kauf-Entitlements für dieses Produkt entziehen
+        const { data: refundContents } = await supabase
+          .from("product_contents")
+          .select("content_type, content_id")
+          .eq("product_id", refundProductId)
+
+        for (const c of refundContents ?? []) {
+          const { error: delErr } = await supabase
+            .from("content_entitlements")
+            .delete()
+            .eq("user_id", refundUserId)
+            .eq("content_type", c.content_type)
+            .eq("content_id", c.content_id)
+            .eq("source", "purchase")
+
+          if (delErr) {
+            console.error(
+              `[Stripe Webhook] charge.refunded — Entitlement-Entzug fehlgeschlagen user=${refundUserId} content=${c.content_id}:`,
+              delErr
+            )
+          } else {
+            console.log(
+              `[Stripe Webhook] charge.refunded — Entitlement entzogen user=${refundUserId} content_id=${c.content_id}`
+            )
+          }
+        }
+
         break
       }
     }

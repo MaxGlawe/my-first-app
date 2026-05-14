@@ -50,6 +50,7 @@ export function LandingHeader() {
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
               { label: "Preise", href: "#preise" },
+              { label: "Kurse", href: "/kurse" },
               { label: "Für Unternehmen", href: "/unternehmen" },
             ].map((link) => (
               <a
@@ -107,6 +108,7 @@ export function LandingHeader() {
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
               { label: "Preise", href: "#preise" },
+              { label: "Kurse", href: "/kurse" },
               { label: "FAQ", href: "#faq" },
             ].map((link) => (
               <a

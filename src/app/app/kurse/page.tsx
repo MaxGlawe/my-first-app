@@ -15,6 +15,7 @@ import {
   Sparkles,
   BookOpen,
   Star,
+  ShoppingBag,
 } from "lucide-react"
 
 // ── Color config ────────────────────────────────────────────────────────────
@@ -367,6 +368,24 @@ export default function KursUebersichtPage() {
                 </p>
               </div>
             )}
+
+            {/* Shop-Einstieg — weitere Kurse entdecken */}
+            <Link href="/shop" className="block group">
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/60 p-5 flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                  <ShoppingBag className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-slate-800 mb-0.5">
+                    Mehr Kurse im Shop
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Entdecke weitere Kurse — im Abo inklusive oder einzeln freischaltbar.
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </Link>
           </>
         )}
       </div>

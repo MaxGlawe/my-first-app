@@ -43,6 +43,7 @@ export function LandingFooter() {
                 { label: "Ablauf", href: "#ablauf" },
                 { label: "Vorteile", href: "#vorteile" },
                 { label: "Preise", href: "#preise" },
+                { label: "Kurse", href: "/kurse" },
                 { label: "FAQ", href: "#faq" },
                 { label: "Anfrage stellen", href: "/anfrage" },
               ].map((l) => (

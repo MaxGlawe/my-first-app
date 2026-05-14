@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HeuteKarte, NoAssignmentState } from "@/components/app/HeuteKarte"
 import { HydrationCard } from "@/components/app/HydrationCard"
 import { MeineTermineKarte } from "@/components/app/MeineTermineKarte"
-import { MeineKurseKarte } from "@/components/app/MeineKurseKarte"
 import { DailyInsightCard } from "@/components/app/DailyInsightCard"
 import { WeeklySummaryCard } from "@/components/app/WeeklySummaryCard"
 import { GlassCard } from "@/components/app/GlassCard"
@@ -39,6 +38,7 @@ import {
   MessageCircle,
   TrendingUp,
   CreditCard,
+  ShoppingBag,
 } from "lucide-react"
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -301,7 +301,7 @@ export default function PatientDashboardPage() {
             {/* ── Quick-Link Grid (2×2) ─────────────────────────── */}
             <div className="grid grid-cols-2 gap-3 animate-fade-in-up animation-delay-450">
               <QuickLink
-                href="/app/courses"
+                href="/app/kurse"
                 icon={<BookOpen className="h-5 w-5 text-teal-600" />}
                 iconBg="bg-teal-100"
                 title="Kurse"
@@ -330,9 +330,15 @@ export default function PatientDashboardPage() {
               />
             </div>
 
-            {/* ── Kurse & Termine ────────────────────────────────── */}
+            {/* ── Kurs-Shop & Termine ────────────────────────────── */}
             <div className="animate-fade-in-up animation-delay-600">
-              <MeineKurseKarte />
+              <LinkCard
+                href="/shop"
+                icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
+                iconBg="bg-emerald-100"
+                title="Kurs-Shop"
+                subtitle="Weitere Kurse entdecken & freischalten"
+              />
             </div>
             <div className="animate-fade-in-up animation-delay-600">
               <MeineTermineKarte />

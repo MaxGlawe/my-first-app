@@ -34,13 +34,19 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
   const isContractSigningPage = pathname.startsWith('/vertrag/') || pathname.startsWith('/bgf-vertrag/')
   const isContractPublicApi = pathname.startsWith('/api/contracts/') || pathname.startsWith('/api/bgf-contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
+  // PROJ-21: Gast-Checkout des öffentlichen Website-Shops — nur dieser eine POST-Endpunkt
+  const isPublicCheckoutApi = pathname === '/api/shop/public-checkout' && request.method === 'POST'
+  // PROJ-21: "Zugang erneut senden" — nur dieser eine POST-Endpunkt
+  const isResendAccessApi = pathname === '/api/shop/resend-access' && request.method === 'POST'
+  // PROJ-21: Öffentlicher Produktkatalog — nur lesend (GET) für anonyme Website-Besucher
+  const isShopCatalogApi = pathname.startsWith('/api/shop/products') && request.method === 'GET'
   const isAnalyticsTrackApi = pathname === '/api/analytics/track'
   const isLandingAnalyticsApi = pathname === '/api/analytics/pageview' || pathname === '/api/analytics/conversion' || pathname === '/api/analytics/duration'
   const isClientErrorLogApi = pathname === '/api/log/client-error' && request.method === 'POST'
@@ -58,7 +64,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
@@ -94,6 +100,7 @@ export async function updateSession(request: NextRequest) {
       // Erlaubte Routen für externe Käufer
       const isBuyerRoute =
         pathname.startsWith('/shop') ||
+        pathname.startsWith('/api/shop') ||
         pathname.startsWith('/api/me/buyer') ||
         pathname.startsWith('/api/me/profile') ||
         pathname.startsWith('/api/auth/') ||
@@ -249,13 +256,12 @@ export async function updateSession(request: NextRequest) {
 
     // Praxismanagement: restricted access
     // - Can READ clinical routes (handled at component level with read-only banner)
-    // - Cannot access therapy tools (exercises, training plans, courses, etc.)
+    // - Cannot access therapy tools (exercises, training plans, etc.)
     // - Cannot access Funktionsuntersuchung or Trainingsdokumentation
     const isTherapyToolRoute =
       pathname.startsWith('/os/exercises') ||
       pathname.startsWith('/os/training-plans') ||
       pathname.startsWith('/os/hausaufgaben') ||
-      pathname.startsWith('/os/courses') ||
       /^\/os\/patients\/[^/]+\/funktionsuntersuchung(\/|$)/.test(pathname) ||
       /^\/os\/patients\/[^/]+\/trainingsdoku(\/|$)/.test(pathname)
 

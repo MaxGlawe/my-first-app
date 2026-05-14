@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { hasContentAccess } from "@/lib/content-access"
 
 interface PatientRef {
   id: string
@@ -42,12 +43,15 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const patient = await getPatient()
-  if (!patient) {
-    return NextResponse.json({ error: "Patient nicht gefunden." }, { status: 404 })
-  }
-  const patientId = patient.id
 
+  // ── Auth: require login ──────────────────────────────────────
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
+  }
+
+  const patient = await getPatient()
   const sc = createSupabaseServiceClient()
 
   const { data: path } = await sc
@@ -60,6 +64,58 @@ export async function GET(
   if (!path) {
     return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
   }
+
+  // ── Access check: purchase entitlement OR active abo ─────────
+  const access = await hasContentAccess(user.id, "learning_path", path.id)
+
+  if (!access) {
+    // Find the product slug for the "Kaufen"-Button
+    const { data: productContent } = await sc
+      .from("product_contents")
+      .select("products!inner(slug)")
+      .eq("content_type", "learning_path")
+      .eq("content_id", path.id)
+      .maybeSingle()
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const productSlug = (productContent?.products as any)?.slug ?? null
+
+    return NextResponse.json(
+      {
+        path: {
+          id: path.id,
+          slug: path.slug,
+          name: path.name,
+          subtitle: path.subtitle,
+          icon: path.icon,
+          color: path.color,
+          duration_days: path.duration_days,
+          hero_image: path.hero_image,
+        },
+        gesperrt: true,
+        product_slug: productSlug,
+        enrollment: null,
+        lessons: [],
+      },
+      { status: 200 }
+    )
+  }
+
+  // ── Kurs-Konsumierung erfordert ein Patienten-Konto ──────────
+  // Externe Käufer können Kurse kaufen (PROJ-20), aber das Konsumieren —
+  // Module, Fortschritt, Quiz, Zertifikat — hängt an der patienten-basierten
+  // Kurs-Engine (patient_path_enrollments / _progress). Externe-Käufer-
+  // Konsumierung ist bewusst ein eigenes, noch zu spezifizierendes Feature
+  // (Entscheidung "Option B", 2026-05-14). Externe Käufer erreichen diese
+  // Route ohnehin nicht — die Middleware sperrt sie auf /shop/*.
+  if (!patient) {
+    return NextResponse.json(
+      { error: "Kurs-Konsumierung erfordert aktuell ein Patienten-Konto." },
+      { status: 403 }
+    )
+  }
+
+  const patientId = patient.id
 
   // All lessons for the path (ordered by day), with their quiz questions
   const { data: lessonRows } = await sc

@@ -1,22 +1,31 @@
 "use client"
 
 /**
- * PROJ-19: /shop/dashboard
+ * PROJ-19 / PROJ-20: /shop/dashboard — "Meine Inhalte"
  *
- * Eingeschränktes Dashboard für externe Käufer (Rolle: externer_kaeufer).
- * Zeigt gekaufte Inhalte (Entitlements) und einen Upsell-Bereich für
- * die Voll-App. Wird durch PROJ-20 mit echten Kurskarten befüllt.
+ * Dashboard für externe Käufer (Rolle: externer_kaeufer): gekaufte Inhalte
+ * (Entitlements) + Upsell für die Voll-App. Praxis-OS-Stil mit ShopHeader —
+ * Logo & "Shop" führen zurück in den Shop.
  */
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ShopHeader } from "@/components/shop/ShopHeader"
+import {
+  Package,
+  GraduationCap,
+  Route as RouteIcon,
+  ArrowRight,
+  LogOut,
+  Target,
+  ClipboardList,
+  MessageCircle,
+  TrendingUp,
+} from "lucide-react"
 
-// ──────────────────────────────────────────────────
-// Types
-// ──────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface BuyerProfile {
   email: string
@@ -40,36 +49,36 @@ interface BuyerData {
   role: string
 }
 
-// ──────────────────────────────────────────────────
-// Upsell feature list
-// ──────────────────────────────────────────────────
+// ── Upsell ────────────────────────────────────────────────────────────────────
 
 const UPSELL_FEATURES = [
   {
-    icon: "🎯",
+    icon: <Target className="h-5 w-5 text-emerald-600" />,
     title: "Persönliche Video-Analyse",
-    description: "Lass deine Bewegungsqualität von einem Physiotherapeuten analysieren — 20 min, live per Video.",
+    description:
+      "Lass deine Bewegungsqualität von einem Physiotherapeuten analysieren — 30 Min., live per Video.",
   },
   {
-    icon: "📋",
+    icon: <ClipboardList className="h-5 w-5 text-emerald-600" />,
     title: "Individueller Trainingsplan",
-    description: "Kein Schema F. Dein Plan wird auf deinen Körper, deine Ziele und deinen Alltag zugeschnitten.",
+    description:
+      "Kein Schema F. Dein Plan wird auf deinen Körper, deine Ziele und deinen Alltag zugeschnitten.",
   },
   {
-    icon: "💬",
+    icon: <MessageCircle className="h-5 w-5 text-emerald-600" />,
     title: "Direkter Chat mit deinem Therapeuten",
-    description: "Fragen zu Schmerzen, Übungen oder Fortschritt — dein Therapeut ist erreichbar.",
+    description:
+      "Fragen zu Schmerzen, Übungen oder Fortschritt — dein Therapeut ist erreichbar.",
   },
   {
-    icon: "📈",
+    icon: <TrendingUp className="h-5 w-5 text-emerald-600" />,
     title: "Langzeit-Begleitung & Dokumentation",
-    description: "Schmerz-Tagebuch, Fortschritts-Tracking, Behandlungs-Dokumentation — alles an einem Ort.",
+    description:
+      "Schmerz-Tagebuch, Fortschritts-Tracking, Behandlungs-Dokumentation — alles an einem Ort.",
   },
 ]
 
-// ──────────────────────────────────────────────────
-// Component
-// ──────────────────────────────────────────────────
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BuyerDashboardPage() {
   const [data, setData] = useState<BuyerData | null>(null)
@@ -88,28 +97,40 @@ export default function BuyerDashboardPage() {
   }, [])
 
   const bookingUrl =
-    process.env.NEXT_PUBLIC_BOOKING_URL ?? "https://wwwpraxis-os.com/online-physiotherapie"
+    process.env.NEXT_PUBLIC_BOOKING_URL ??
+    "https://wwwpraxis-os.com/online-physiotherapie"
 
-  // ── Loading ────────────────────────────────────────────────────────
+  const handleSignOut = async () => {
+    await fetch("/api/auth/signout", { method: "POST" })
+    window.location.href = "/login"
+  }
+
+  // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-6">
-        <div className="max-w-3xl mx-auto space-y-6">
-          <Skeleton className="h-12 w-64" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-64 w-full" />
+      <div className="min-h-screen bg-slate-50">
+        <ShopHeader />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-44 w-full rounded-2xl" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
         </div>
       </div>
     )
   }
 
-  // ── Error ──────────────────────────────────────────────────────────
+  // ── Error ────────────────────────────────────────────────────────────────
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
+      <div className="min-h-screen bg-slate-50">
+        <ShopHeader />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
+          <p className="text-rose-600 text-sm font-medium mb-4">{error}</p>
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+            className="rounded-xl"
+          >
             Erneut versuchen
           </Button>
         </div>
@@ -123,147 +144,160 @@ export default function BuyerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-sm">PO</span>
-            </div>
-            <span className="font-semibold text-slate-900 text-lg">Praxis OS</span>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={async () => {
-              await fetch("/api/auth/signout", { method: "POST" })
-              window.location.href = "/login"
-            }}
-            className="text-slate-500 hover:text-slate-700"
-          >
-            Abmelden
-          </Button>
-        </div>
-      </div>
+      <ShopHeader />
 
-      <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-        {/* Welcome */}
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Hallo, {firstName}
-          </h1>
-          <p className="text-slate-500 mt-1">Hier findest du alle deine Inhalte.</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        {/* Begrüßung */}
+        <div className="flex items-start justify-between gap-4 animate-fade-in-up">
+          <div>
+            <span className="text-xs font-semibold text-emerald-600 uppercase tracking-[0.2em]">
+              Meine Inhalte
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1.5">
+              Hallo, {firstName}
+            </h1>
+            <p className="text-slate-500 mt-1 text-sm">
+              Hier findest du alle deine gekauften Kurse und Programme.
+            </p>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-1.5 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors shrink-0"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Abmelden</span>
+          </button>
         </div>
 
         {/* Meine Inhalte */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-slate-900">
-                Meine Inhalte
-              </CardTitle>
-              {hasContent && (
-                <Badge variant="secondary" className="text-xs">
-                  {entitlements.length} {entitlements.length === 1 ? "Inhalt" : "Inhalte"}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!hasContent ? (
-              <div className="text-center py-10">
-                <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📦</span>
-                </div>
-                <p className="text-slate-500 text-sm font-medium mb-1">
-                  Noch keine Inhalte
-                </p>
-                <p className="text-slate-400 text-xs max-w-xs mx-auto">
-                  Deine gekauften Kurse und Programme erscheinen hier, sobald dein
-                  Kauf verarbeitet wurde.
-                </p>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 animate-fade-in-up animation-delay-150">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-slate-900">
+              Gekaufte Inhalte
+            </h2>
+            {hasContent && (
+              <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                {entitlements.length}{" "}
+                {entitlements.length === 1 ? "Inhalt" : "Inhalte"}
+              </span>
+            )}
+          </div>
+
+          {!hasContent ? (
+            <div className="text-center py-10">
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Package className="h-6 w-6 text-slate-400" />
               </div>
-            ) : (
-              <div className="space-y-3">
-                {entitlements.map((e) => (
-                  <div
-                    key={e.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <span className="text-base">
-                          {e.content_type === "course" ? "🎓" : "🛤️"}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-800 capitalize">
-                          {e.content_type === "course" ? "Kurs" : "Lernpfad"}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Seit {new Date(e.valid_from).toLocaleDateString("de-DE")}
-                          {e.valid_until
-                            ? ` · bis ${new Date(e.valid_until).toLocaleDateString("de-DE")}`
-                            : " · lebenslang"}
-                        </p>
-                      </div>
+              <p className="text-slate-600 text-sm font-semibold mb-1">
+                Noch keine Inhalte
+              </p>
+              <p className="text-slate-400 text-xs max-w-xs mx-auto mb-4">
+                Deine gekauften Kurse erscheinen hier, sobald dein Kauf
+                verarbeitet wurde.
+              </p>
+              <Link
+                href="/shop/kurse"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
+              >
+                Kurse entdecken
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2.5">
+              {entitlements.map((e) => (
+                <div
+                  key={e.id}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0">
+                      {e.content_type === "course" ? (
+                        <GraduationCap className="h-5 w-5 text-emerald-600" />
+                      ) : (
+                        <RouteIcon className="h-5 w-5 text-emerald-600" />
+                      )}
                     </div>
-                    <Badge variant="outline" className="text-xs font-normal capitalize">
-                      {e.source === "purchase"
-                        ? "Kauf"
-                        : e.source === "subscription"
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">
+                        {e.content_type === "course" ? "Kurs" : "Lernpfad"}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        Seit{" "}
+                        {new Date(e.valid_from).toLocaleDateString("de-DE")}
+                        {e.valid_until
+                          ? ` · bis ${new Date(e.valid_until).toLocaleDateString("de-DE")}`
+                          : " · lebenslang"}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-medium text-slate-500 border border-slate-200 bg-white px-2.5 py-1 rounded-full">
+                    {e.source === "purchase"
+                      ? "Kauf"
+                      : e.source === "subscription"
                         ? "Abo"
                         : e.source}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Upsell: Voll-App */}
-        <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-violet-50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-slate-900">
-              Mehr mit der Voll-App
-            </CardTitle>
-            <p className="text-sm text-slate-500 mt-1">
-              Starte deine persönliche Therapie-Begleitung — individuell,
-              professionell, auf deinen Körper zugeschnitten.
+        <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 sm:p-7 text-white relative overflow-hidden animate-fade-in-up animation-delay-300">
+          <div className="absolute -top-10 -right-10 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl" />
+          <div className="relative">
+            <p className="text-[11px] font-bold tracking-[0.2em] text-emerald-400 uppercase mb-2">
+              Praxis OS · Voll-App
             </p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <h2 className="text-lg font-bold text-white mb-1.5">
+              Mehr als ein Kurs — deine persönliche Therapie-Begleitung
+            </h2>
+            <p className="text-sm text-slate-300 leading-relaxed mb-5">
+              Individuell, professionell, auf deinen Körper zugeschnitten.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
               {UPSELL_FEATURES.map((feature) => (
                 <div
                   key={feature.title}
-                  className="bg-white rounded-xl border border-slate-200 p-4"
+                  className="bg-white/[0.06] border border-white/10 rounded-xl p-4"
                 >
-                  <div className="text-xl mb-2">{feature.icon}</div>
-                  <p className="text-sm font-semibold text-slate-800 mb-1">
+                  <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center mb-2.5">
+                    {feature.icon}
+                  </div>
+                  <p className="text-sm font-semibold text-white mb-1">
                     {feature.title}
                   </p>
-                  <p className="text-xs text-slate-500 leading-relaxed">
+                  <p className="text-xs text-slate-400 leading-relaxed">
                     {feature.description}
                   </p>
                 </div>
               ))}
             </div>
-            <div className="pt-1">
-              <Button
-                className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-700 hover:to-violet-700 text-white font-semibold shadow-lg shadow-blue-200"
-                onClick={() => (window.location.href = bookingUrl)}
-              >
-                Jetzt Video-Analyse buchen (69 €) →
-              </Button>
-              <p className="text-center text-xs text-slate-400 mt-2">
-                20-minütige Video-Analyse · Einmalig · Keine versteckten Kosten
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+
+            <Button
+              onClick={() => (window.location.href = bookingUrl)}
+              className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl h-12"
+            >
+              Jetzt Video-Analyse buchen (69 €)
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+            <p className="text-center text-xs text-slate-400 mt-2.5">
+              30-minütige Video-Analyse · Einmalig · Keine versteckten Kosten
+            </p>
+          </div>
+        </div>
       </div>
+
+      <footer className="border-t border-slate-200 mt-6 py-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-xs text-slate-400">
+            © {new Date().getFullYear()} Praxis OS · Alle Preise inkl. MwSt.
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
