@@ -30,10 +30,14 @@
 | PROJ-16 | Patienten-App 2.0 (Design, Schmerztagebuch, Gamification) | In Progress | [Spec](PROJ-16-patienten-app-v2.md) | 2026-02-19 |
 | PROJ-17 | Patienten-Ampelsystem (Traffic Light Alert System) | In Progress | [Spec](PROJ-17-patienten-ampelsystem.md) | 2026-03-06 |
 | PROJ-18 | Betriebliche Gesundheitsförderung (BGF) | In Progress | [Spec](PROJ-18-bgf-betriebliche-gesundheitsfoerderung.md) | 2026-03-15 |
+| PROJ-19 | Externe Käufer-Accounts | In Review | [Spec](PROJ-19-externe-kaeufer-accounts.md) | 2026-05-14 |
+| PROJ-20 | Kurs-Shop & Kauf-Flow (In-App) | Planned | [Spec](PROJ-20-kurs-shop-kauf-flow.md) | 2026-05-14 |
+| PROJ-21 | Öffentlicher Shop (Website) | Planned | [Spec](PROJ-21-oeffentlicher-shop-website.md) | 2026-05-14 |
+| PROJ-22 | Ablösung PROJ-13 & Inhalts-Migration | Planned | [Spec](PROJ-22-kurssystem-abloesung.md) | 2026-05-14 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-19
+## Next Available ID: PROJ-23
 
 ## Build Order (Empfohlen)
 
@@ -72,4 +76,10 @@ Phase 7 — B2B: Betriebliche Gesundheitsförderung
     Phase 18.3  Ampel + BGF-Dashboard
     Phase 18.4  Reporting & Abrechnung
     Phase 18.5  Launch & Skalierung
+
+Phase 8 — Praxis OS Shop (Kurse als Produkte)
+  PROJ-19 Externe Käufer-Accounts              ← Fundament (Account-Typ + RLS)
+  PROJ-20 Kurs-Shop & Kauf-Flow (In-App)       ← Braucht PROJ-19
+  PROJ-21 Öffentlicher Shop (Website)          ← Braucht PROJ-19 & 20
+  PROJ-22 Ablösung PROJ-13 & Inhalts-Migration ← Braucht PROJ-20
 ```

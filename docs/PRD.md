@@ -50,6 +50,12 @@ Praxis OS ist ein ganzheitliches Praxismanagementsystem für Physiotherapie-Prax
 | P1 | Patienten-App: Chat (Therapeut ↔ Patient) | PROJ-12 | Planned |
 | P2 | Kurs-System (Skalierbares Gruppen-Angebot) | PROJ-13 | Planned |
 | P2 | PWA-Setup & Push-Notifications | PROJ-14 | Planned |
+| P3 (Shop) | Externe Käufer-Accounts | PROJ-19 | Planned |
+| P3 (Shop) | Kurs-Shop & Kauf-Flow (In-App) | PROJ-20 | Planned |
+| P3 (Shop) | Öffentlicher Shop (Website) | PROJ-21 | Planned |
+| P3 (Shop) | Ablösung PROJ-13 & Inhalts-Migration | PROJ-22 | Planned |
+
+> Hinweis: Diese Roadmap-Tabelle ist nicht lückenlos gepflegt — der maßgebliche, aktuelle Feature-Stand steht in `features/INDEX.md`.
 
 ## Success Metrics
 
