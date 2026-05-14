@@ -53,6 +53,15 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      // PROJ-22: altes Kurssystem (PROJ-13) abgelöst — alte Routen umleiten
+      { source: "/app/courses", destination: "/app/kurse", permanent: false },
+      { source: "/app/courses/:path*", destination: "/app/kurse", permanent: false },
+      { source: "/os/courses", destination: "/os/dashboard", permanent: false },
+      { source: "/os/courses/:path*", destination: "/os/dashboard", permanent: false },
+    ]
+  },
 }
 
 export default withPWA(nextConfig)

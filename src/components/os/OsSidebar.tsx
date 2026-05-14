@@ -9,7 +9,6 @@ import {
   Dumbbell,
   ClipboardList,
   BookOpen,
-  GraduationCap,
   MessageCircle,
   Settings,
   Building2,
@@ -79,7 +78,6 @@ export function OsSidebar() {
       { label: "Übungsdatenbank", href: "/os/exercises", icon: Dumbbell },
       { label: "Trainingspläne", href: "/os/training-plans", icon: ClipboardList },
       { label: "Hausaufgaben", href: "/os/hausaufgaben", icon: BookOpen },
-      { label: "Kurse", href: "/os/courses", icon: GraduationCap },
     )
   }
 

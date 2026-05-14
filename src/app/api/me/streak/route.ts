@@ -339,12 +339,10 @@ export async function GET() {
     .order("entry_date", { ascending: false })
     .limit(90)
 
-  // Completed courses for Wissensdurst achievement
-  const { count: completedCourses } = await supabase
-    .from("course_enrollments")
-    .select("id", { count: "exact", head: true })
-    .eq("patient_id", patient.id)
-    .eq("status", "abgeschlossen")
+  // Das "Wissensdurst"-Achievement zählte abgeschlossene Kurse des alten
+  // PROJ-13-Kurssystems. Mit PROJ-22 abgelöst → vorerst 0; Anbindung an das
+  // neue Kurssystem (learning_paths) ist ein Follow-up.
+  const completedCourses = 0
 
   // Calculate consecutive compliant weeks (for "Fleißig" achievement)
   // Look back 8 weeks and count consecutive weeks with ≥80% compliance

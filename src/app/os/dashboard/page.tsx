@@ -16,7 +16,6 @@ import {
   Dumbbell,
   ClipboardList,
   BookOpen,
-  GraduationCap,
   MessageCircle,
   Activity,
   CheckCircle2,
@@ -96,12 +95,6 @@ const quickActions: QuickAction[] = [
     description: "Compliance-Übersicht",
     href: "/os/hausaufgaben",
     icon: BookOpen,
-  },
-  {
-    title: "Kurse",
-    description: "Gruppen-Kurse verwalten",
-    href: "/os/courses",
-    icon: GraduationCap,
   },
 ]
 
