@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HeuteKarte, NoAssignmentState } from "@/components/app/HeuteKarte"
+import { HydrationCard } from "@/components/app/HydrationCard"
 import { MeineTermineKarte } from "@/components/app/MeineTermineKarte"
 import { MeineKurseKarte } from "@/components/app/MeineKurseKarte"
 import { DailyInsightCard } from "@/components/app/DailyInsightCard"
@@ -195,6 +196,11 @@ export default function PatientDashboardPage() {
               ) : (
                 <NoAssignmentState />
               )}
+            </div>
+
+            {/* ── Hydration (daily micro-interaction) ──────────── */}
+            <div className="animate-fade-in-up animation-delay-225">
+              <HydrationCard />
             </div>
 
             {/* ── Pain/Wellbeing Sparkline ───────────────────────── */}
