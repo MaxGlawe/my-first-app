@@ -2,14 +2,17 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Dumbbell, ClipboardList, TrendingUp, MessageCircle } from "lucide-react"
+import { Home, Dumbbell, GraduationCap, TrendingUp, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { usePatientChatUnread } from "@/hooks/use-chat"
 
+// 5 slots — Pläne wurde durch Kurse ersetzt; die Plan-Übersicht ist weiterhin
+// über Training erreichbar (Plans page existiert noch, nur nicht mehr im
+// primären Navi-Slot).
 const NAV_ITEMS = [
   { href: "/app/dashboard", label: "Home", icon: Home },
   { href: "/app/training", label: "Training", icon: Dumbbell },
-  { href: "/app/plans", label: "Pläne", icon: ClipboardList },
+  { href: "/app/kurse", label: "Kurse", icon: GraduationCap },
   { href: "/app/progress", label: "Fortschritt", icon: TrendingUp },
   { href: "/app/chat", label: "Nachrichten", icon: MessageCircle },
 ]
