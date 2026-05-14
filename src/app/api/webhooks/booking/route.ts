@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createHmac, timingSafeEqual } from "crypto"
 import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 
 // ----------------------------------------------------------------
 // Rate limiting (DB-based — works across all serverless instances)
@@ -303,6 +304,64 @@ async function handlePatientCreated(
 
     // booking_system_id already set to the same value → duplicate
     return { status: "duplicate" }
+  }
+
+  // ── PROJ-19: Existiert ein externer_kaeufer-Account mit dieser E-Mail? ──
+  // Wenn ja → Upgrade zu Patient, statt einen losgelösten Patienten anzulegen.
+  // Das ist der Upgrade-Weg: Käufer bucht Video-Analyse → Webhook stößt das
+  // Upgrade an. Die Logik liegt in der geteilten Funktion upgradeBuyerToPatient
+  // (kein HTTP-Self-Call).
+  const { data: buyerProfile } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .eq("email", data.email)
+    .eq("role", "externer_kaeufer")
+    .maybeSingle()
+
+  if (buyerProfile) {
+    console.log(
+      `[webhook/booking] PROJ-19: externer_kaeufer-Account für ${data.email} gefunden — Upgrade zu Patient.`
+    )
+
+    // Default-Therapeut (erster Admin) — wie bei der regulären Patienten-Anlage
+    const { data: defaultTherapist, error: therapistErr } = await supabase
+      .from("user_profiles")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle()
+
+    if (therapistErr || !defaultTherapist) {
+      return {
+        status: "error",
+        errorMessage: "Kein Default-Therapeut (Admin) für das Upgrade gefunden.",
+      }
+    }
+
+    const upgrade = await upgradeBuyerToPatient({
+      userId: buyerProfile.id,
+      therapeutId: defaultTherapist.id,
+      vorname: data.vorname,
+      nachname: data.nachname,
+      geburtsdatum: data.geburtsdatum,
+      telefon: data.telefon,
+      bookingSystemId: data.booking_patient_id,
+    })
+
+    if (!upgrade.upgraded && !upgrade.alreadyPatient) {
+      return {
+        status: "error",
+        errorMessage:
+          upgrade.error ?? "Upgrade externer Käufer → Patient fehlgeschlagen.",
+      }
+    }
+
+    return {
+      status: "success",
+      errorMessage: upgrade.alreadyPatient
+        ? `externer_kaeufer-Account ${data.email} war bereits Patient (idempotent).`
+        : `externer_kaeufer-Account ${data.email} wurde zu Patient hochgestuft (Booking-ID: ${data.booking_patient_id}).`,
+    }
   }
 
   // 2. New patient — auto-create with default therapist

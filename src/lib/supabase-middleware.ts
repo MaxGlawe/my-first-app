@@ -54,8 +54,11 @@ export async function updateSession(request: NextRequest) {
   const isCronApi = pathname.startsWith('/api/cron/')
   const isPushSendApi = pathname === '/api/push/send'
   const isWebhookApi = pathname.startsWith('/api/webhooks/') // includes /api/webhooks/stripe
+  // Interner Endpunkt — server-to-server aufgerufen (Shop-Checkout, PROJ-20),
+  // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
+  const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
@@ -82,6 +85,34 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login'
       url.searchParams.set('error', 'account_disabled')
       return NextResponse.redirect(url)
+    }
+
+    // ── PROJ-19: Externer Käufer ──────────────────────────────────────────
+    // Externe Käufer sehen nur ihren eigenen Bereich (/shop/*).
+    // Alle klinischen Bereiche (/app/*, /os/*, /hr/*) sind gesperrt.
+    if (role === 'externer_kaeufer') {
+      // Erlaubte Routen für externe Käufer
+      const isBuyerRoute =
+        pathname.startsWith('/shop') ||
+        pathname.startsWith('/api/me/buyer') ||
+        pathname.startsWith('/api/me/profile') ||
+        pathname.startsWith('/api/auth/') ||
+        pathname === '/login' ||
+        pathname === '/login/update-password' ||
+        isPublicRoute
+
+      if (!isBuyerRoute) {
+        url.pathname = '/shop/dashboard'
+        return NextResponse.redirect(url)
+      }
+
+      // Redirect from login to buyer dashboard
+      if (pathname === '/login') {
+        url.pathname = '/shop/dashboard'
+        return NextResponse.redirect(url)
+      }
+
+      return supabaseResponse
     }
 
     // ── HR-Admin check: patients who are organization admins ──
@@ -253,6 +284,8 @@ export async function updateSession(request: NextRequest) {
     if (isPublicRoute && pathname === '/login') {
       if (role === 'admin') {
         url.pathname = '/os/admin/dashboard'
+      } else if (role === 'externer_kaeufer') {
+        url.pathname = '/shop/dashboard'
       } else if (role === 'patient') {
         // Check if this patient is actually an HR admin
         const { data: orgAdmin } = await adminClient
