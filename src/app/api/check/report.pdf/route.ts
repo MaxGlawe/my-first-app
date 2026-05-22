@@ -42,6 +42,20 @@ export async function GET(request: NextRequest) {
     return new Response("Not ready", { status: 404 })
   }
 
+  // PROJ-23: PDF-Download als Conversion fürs Analyse-Tool zählen (fire-and-forget)
+  void supabase
+    .from("conversion_events")
+    .insert({
+      session_id: leadId,
+      event_type: "schmerzcheck_pdf_download",
+      path: "/api/check/report.pdf",
+      metadata: { lead_id: leadId },
+    })
+    .then(
+      () => {},
+      () => {}
+    )
+
   const answers = await loadAnswers(supabase, leadId)
   const view = buildReportView(result as SchmerzResult, lead.first_name, answers)
   const now = new Date()

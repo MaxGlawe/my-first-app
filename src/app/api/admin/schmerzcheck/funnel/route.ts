@@ -28,7 +28,7 @@ export async function GET() {
   // Bulk reads, tally in JS (modest data volume)
   const { data: leads } = await service
     .from("schmerzcheck_leads")
-    .select("status, consent_status, utm_source")
+    .select("status, consent_status, utm_source, booked_at")
     .limit(10000)
   const { data: results } = await service
     .from("schmerzcheck_results")
@@ -37,6 +37,16 @@ export async function GET() {
   const { data: emailEvents } = await service
     .from("schmerzcheck_email_events")
     .select("email_code, event_type")
+    .limit(50000)
+  const { data: pageViews } = await service
+    .from("page_views")
+    .select("session_id, device_type")
+    .eq("path", "/schmerzcheck")
+    .limit(50000)
+  const { data: convEvents } = await service
+    .from("conversion_events")
+    .select("event_type")
+    .eq("event_type", "schmerzcheck_pdf_download")
     .limit(50000)
   const { data: recent } = await service
     .from("schmerzcheck_leads")
@@ -56,6 +66,14 @@ export async function GET() {
   const leadRows = leads ?? []
   const byStatus = tally(leadRows, "status")
   const consentConfirmed = leadRows.filter((l) => l.consent_status === "confirmed").length
+  const booked = leadRows.filter((l) => l.booked_at).length
+
+  // UTM-Quelle (null/leer => "(direkt)")
+  const byUtmSource: Record<string, number> = {}
+  for (const l of leadRows) {
+    const src = typeof l.utm_source === "string" && l.utm_source.trim() ? l.utm_source : "(direkt)"
+    byUtmSource[src] = (byUtmSource[src] ?? 0) + 1
+  }
 
   const resultRows = (results ?? []).filter((r) => r.status === "completed")
   const byCategory = tally(resultRows, "result_category")
@@ -69,10 +87,19 @@ export async function GET() {
     if (e.event_type === "unsubscribed") unsubscribed++
   }
 
+  // Landing-Besucher (eindeutige Sessions) + Geräte + PDF-Downloads
+  const pvRows = pageViews ?? []
+  const visitors = new Set(pvRows.map((p) => p.session_id)).size
+  const byDevice = tally(pvRows, "device_type")
+  const pdfDownloads = (convEvents ?? []).length
+  const completed = resultRows.length
+
   return NextResponse.json({
-    leads: { total: leadRows.length, byStatus, consentConfirmed },
-    results: { total: resultRows.length, byCategory, bySeverity },
+    funnel: { visitors, leads: leadRows.length, confirmed: consentConfirmed, completed, pdfDownloads, booked },
+    leads: { total: leadRows.length, byStatus, consentConfirmed, booked, byUtmSource },
+    results: { total: completed, byCategory, bySeverity },
     emails: { sent: emailSent, unsubscribed },
+    devices: byDevice,
     recent: recent ?? [],
   })
 }
