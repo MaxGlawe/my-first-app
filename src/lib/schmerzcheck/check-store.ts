@@ -101,4 +101,12 @@ export async function stopSchmerzcheckDrip(
     event_type: "unsubscribed",
     metadata: { reason },
   })
+
+  // Buchung = Konversion → vollständige Karten-Freischaltung im Report
+  if (reason === "booked") {
+    await supabase
+      .from("schmerzcheck_leads")
+      .update({ booked_at: new Date().toISOString() })
+      .eq("id", lead.id)
+  }
 }

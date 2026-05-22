@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell } from "lucide-react"
+import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell, Lock } from "lucide-react"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyLeadToken } from "@/lib/lead-jwt"
 import { loadAnswers } from "@/lib/schmerzcheck/check-store"
 import { buildReportView, type SchmerzResult } from "@/lib/schmerzcheck/report"
+import { VIDEO_ANALYSE_URL } from "@/lib/schmerzcheck/recommendations"
 import type { AmpelBand } from "@/lib/schmerzcheck/ampel"
 import { SpineDiagram } from "@/components/schmerzcheck/SpineDiagram"
 import { Barometer, BAND_DOT } from "@/components/schmerzcheck/Barometer"
@@ -65,7 +66,7 @@ export default async function CheckResultPage({
   const supabase = createSupabaseServiceClient()
   const { data: lead } = await supabase
     .from("schmerzcheck_leads")
-    .select("first_name, status")
+    .select("first_name, status, booked_at")
     .eq("id", leadId)
     .maybeSingle()
 
@@ -89,6 +90,8 @@ export default async function CheckResultPage({
   const pdfHref = `/api/check/report.pdf?t=${encodeURIComponent(t ?? "")}`
   const ampel = view.ampel
   const strat = STRATEGY[ampel.overall]
+  const unlocked = Boolean(lead.booked_at) // Karten voll freigeschaltet nach Buchung
+  const FREE_CARDS = 2 // so viele Karten sind ohne Buchung sichtbar
 
   return (
     <div className="mx-auto max-w-[780px] px-5 pb-20 pt-8">
@@ -192,31 +195,83 @@ export default async function CheckResultPage({
         </div>
       </Section>
 
-      {/* Section 3b — 12 Mobility-Karten (Bonus) */}
+      {/* Section 3b — 12 Mobility-Karten (Bonus; 2 frei, Rest nach Buchung) */}
       <Section eyebrow="Bonus · Ganzkörper-Routine" title="Deine 12 Mobility-Karten">
         <p className="mb-5 text-[14px] text-slate-500">
-          Deine tägliche Mobility von Kopf bis Fuß — eine Karte pro Übung. Tipp eine Karte an,
-          um sie groß anzusehen oder zu speichern.
+          {unlocked
+            ? "Deine tägliche Mobility von Kopf bis Fuß — alle 12 Karten freigeschaltet. Tipp eine Karte an, um sie groß anzusehen oder zu speichern."
+            : "Deine tägliche Mobility von Kopf bis Fuß. Die ersten beiden Karten sind frei — die übrigen 10 schaltest du mit deiner Video-Analyse frei."}
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {MOBILITY_CARDS.map((c) => (
-            <a
-              key={c.n}
-              href={`/images/mobility-karten/karte-${c.n}.png`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
-            >
-              <Image
-                src={`/images/mobility-karten/karte-${c.n}.png`}
-                alt={`Mobility-Karte ${c.n}: ${c.label}`}
-                width={1122}
-                height={1402}
-                className="h-auto w-full"
-              />
-            </a>
-          ))}
+          {MOBILITY_CARDS.map((c, i) => {
+            const open = unlocked || i < FREE_CARDS
+            if (open) {
+              return (
+                <a
+                  key={c.n}
+                  href={`/images/mobility-karten/karte-${c.n}.png`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
+                >
+                  <Image
+                    src={`/images/mobility-karten/karte-${c.n}.png`}
+                    alt={`Mobility-Karte ${c.n}: ${c.label}`}
+                    width={1122}
+                    height={1402}
+                    className="h-auto w-full"
+                  />
+                </a>
+              )
+            }
+            return (
+              <div
+                key={c.n}
+                aria-label="Gesperrte Karte — mit Video-Analyse freischalten"
+                className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]"
+              >
+                <Image
+                  src={`/images/mobility-karten/karte-${c.n}.png`}
+                  alt=""
+                  aria-hidden
+                  width={1122}
+                  height={1402}
+                  className="h-auto w-full scale-110 blur-[7px]"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-white/55 backdrop-blur-[3px]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white/90 shadow-sm">
+                    <Lock className="h-4 w-4 text-emerald-700" />
+                  </span>
+                </div>
+              </div>
+            )
+          })}
         </div>
+
+        {!unlocked && (
+          <div className="mt-5 rounded-2xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-50 to-[#fbfaf6] p-6 text-center">
+            <div className="mb-1.5 inline-flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide text-emerald-800">
+              <Lock className="h-4 w-4" /> 10 weitere Karten gesperrt
+            </div>
+            <p className="mx-auto mb-4 max-w-md text-[14.5px] leading-relaxed text-slate-700">
+              Deine komplette Ganzkörper-Routine wartet hinter dem Milchglas. Mit deiner{" "}
+              <strong>Video-Analyse</strong> schalten sich alle 12 Karten frei — abgestimmt auf
+              deinen Bereich.
+            </p>
+            <ReportCta
+              href={VIDEO_ANALYSE_URL}
+              label="Video-Analyse buchen & alle Karten freischalten"
+              variant="booking"
+              band={ampel.overall}
+            />
+            <p className="mt-3 text-[12px] text-slate-400">
+              69 € Erstanalyse · anschließend Betreuung 16,99 €/Monat · monatlich kündbar
+            </p>
+            <p className="mt-2 text-[11px] text-slate-400">
+              Nach deiner Buchung lädst du diese Seite einmal neu — dann sind alle Karten offen.
+            </p>
+          </div>
+        )}
       </Section>
 
       {/* Section 4 — Empfehlung (band-aware) */}

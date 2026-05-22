@@ -73,8 +73,8 @@ const STACK_CARDS = [
   },
   {
     tag: "Bonus",
-    title: "Die 12 Bewegungs-Wissenskarten",
-    desc: "Was die Forschung wirklich über Schmerz, Bewegung und den Körper weiß — verdichtet auf 12 verständliche Karten zum Mitnehmen.",
+    title: "Mobility-Karten für deinen Bereich",
+    desc: "Erste Übungs-Karten direkt im Report zum Loslegen — die komplette 12-teilige Ganzkörper-Routine schaltest du mit deiner Video-Analyse frei.",
     visual: <KnowledgeCardsVisual />,
   },
 ]
