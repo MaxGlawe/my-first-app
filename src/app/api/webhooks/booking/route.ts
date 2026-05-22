@@ -20,6 +20,7 @@ import { createHmac, timingSafeEqual } from "crypto"
 import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
+import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
 
 // ----------------------------------------------------------------
 // Rate limiting (DB-based — works across all serverless instances)
@@ -253,6 +254,9 @@ async function handlePatientCreated(
 
   const data = normalizePatientPayload(parsed.data)
 
+  // PROJ-23: Schmerzcheck-Lead bucht (Konversion) → Drip stoppen (fire-and-forget)
+  void stopSchmerzcheckDrip(supabase, data.email).catch(() => {})
+
   // 1. Check for existing patient by email (duplicate detection)
   //    Two separate .eq() queries — avoids raw string interpolation in .or()
   const { data: byPrimaryEmail, error: lookupErr1 } = await supabase
@@ -425,7 +429,7 @@ async function handleAppointmentEvent(
   // Find patient by booking_system_id
   const { data: patient, error: lookupError } = await supabase
     .from("patients")
-    .select("id")
+    .select("id, email")
     .eq("booking_system_id", data.booking_patient_id)
     .limit(1)
     .maybeSingle()
@@ -468,6 +472,11 @@ async function handleAppointmentEvent(
   if (upsertError) {
     console.error("[webhook/booking] Appointment upsert failed:", upsertError.message)
     return { status: "error", errorMessage: "Termin konnte nicht gespeichert werden." }
+  }
+
+  // PROJ-23: gebuchter Termin → Schmerzcheck-Drip für diesen Patienten stoppen
+  if (data.status === "scheduled") {
+    void stopSchmerzcheckDrip(supabase, patient.email).catch(() => {})
   }
 
   return { status: "success" }

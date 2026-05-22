@@ -34,13 +34,20 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/schmerzcheck', '/check']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
   const isContractSigningPage = pathname.startsWith('/vertrag/') || pathname.startsWith('/bgf-vertrag/')
   const isContractPublicApi = pathname.startsWith('/api/contracts/') || pathname.startsWith('/api/bgf-contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
+  // PROJ-23: Schmerzcheck-Funnel — öffentliche Lead-Capture (POST) + Double-Opt-in-Confirm (GET)
+  const isSchmerzcheckLeadApi = pathname === '/api/leads/schmerzcheck' && request.method === 'POST'
+  const isSchmerzcheckConfirmApi = pathname === '/api/leads/schmerzcheck/confirm' && request.method === 'GET'
+  // PROJ-23 Phase 2: Schmerzcheck-Assessment-API (token-gated im Handler selbst)
+  const isCheckApi = pathname.startsWith('/api/check/') && (request.method === 'GET' || request.method === 'POST')
+  // PROJ-23 Phase 4: 1-Klick-Unsubscribe (token-gated im Handler selbst)
+  const isUnsubscribeApi = pathname === '/api/email/unsubscribe' && request.method === 'GET'
   // PROJ-21: Gast-Checkout des öffentlichen Website-Shops — nur dieser eine POST-Endpunkt
   const isPublicCheckoutApi = pathname === '/api/shop/public-checkout' && request.method === 'POST'
   // PROJ-21: "Zugang erneut senden" — nur dieser eine POST-Endpunkt
@@ -64,7 +71,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }

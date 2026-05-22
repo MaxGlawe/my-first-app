@@ -1,0 +1,65 @@
+/**
+ * PROJ-23 / Phase 3: Recommendation engine (spec §6.5).
+ *
+ * Exactly ONE recommendation per result_category. Verbatim copy. HWG-safe:
+ * these suggest *next steps* / *what makes sense*, never an outcome or healing.
+ * Red-flag / physician-assessment categories get NO commercial upsell.
+ */
+import type { ResultCategory } from "./scoring"
+
+export type CtaType = "booking" | "roadmap" | "info"
+
+export interface Recommendation {
+  text: string
+  ctaLabel: string
+  ctaType: CtaType
+}
+
+/** External Video-Analyse booking (existing calendar). Env-overridable. */
+export const VIDEO_ANALYSE_URL =
+  process.env.SCHMERZCHECK_VIDEO_ANALYSE_URL ||
+  "https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os&utm_source=schmerzcheck&utm_medium=report&utm_campaign=video-analyse"
+
+export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
+  needs_physician_assessment: {
+    text: "Wir empfehlen dir, deine Beschwerden zeitnah ärztlich abklären zu lassen, bevor du mit Bewegungs-Routinen startest.",
+    ctaLabel: "Mehr zur ärztlichen Einordnung",
+    ctaType: "info",
+  },
+  acute_severe: {
+    text: "Deine Beschwerden sind aktuell ausgeprägt. Wir empfehlen einen kurzfristigen Termin in der Praxis Glawe — oder eine fokussierte Video-Analyse mit einem unserer Therapeuten.",
+    ctaLabel: "Video-Analyse buchen (69 €)",
+    ctaType: "booking",
+  },
+  chronic_severe: {
+    text: "Du trägst die Beschwerden schon eine Weile. Hier macht eine strukturierte Einordnung durch einen Therapeuten Sinn — wir empfehlen eine Video-Analyse.",
+    ctaLabel: "Video-Analyse buchen (69 €)",
+    ctaType: "booking",
+  },
+  acute_moderate: {
+    text: "Deine Beschwerden sind moderat und noch nicht alt. Starte mit der Bewegungs-Roadmap. Wenn nach 2–3 Wochen keine Besserung — melde dich gern.",
+    ctaLabel: "Bewegungs-Roadmap starten",
+    ctaType: "roadmap",
+  },
+  chronic_moderate: {
+    text: "Strukturierte Bewegung wird dir helfen, Klarheit zu gewinnen. Die Roadmap ist ein guter Einstieg. Wenn du eine therapeutische Einordnung möchtest, empfiehlt sich die Video-Analyse.",
+    ctaLabel: "Video-Analyse buchen (69 €)",
+    ctaType: "booking",
+  },
+  mild: {
+    text: "Deine Beschwerden sind leicht. Die Bewegungs-Roadmap ist genau der richtige Schritt. Bleib dran — und wenn etwas unklar bleibt, melde dich.",
+    ctaLabel: "Bewegungs-Roadmap starten",
+    ctaType: "roadmap",
+  },
+}
+
+export function getRecommendation(category: ResultCategory): Recommendation {
+  return RECOMMENDATIONS[category] ?? RECOMMENDATIONS.mild
+}
+
+/** Resolve the CTA target for a recommendation. */
+export function getCtaHref(rec: Recommendation): string {
+  if (rec.ctaType === "booking") return VIDEO_ANALYSE_URL
+  if (rec.ctaType === "roadmap") return "#roadmap"
+  return "/anfrage" // info — non-commercial contact
+}

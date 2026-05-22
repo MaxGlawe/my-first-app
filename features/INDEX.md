@@ -34,10 +34,11 @@
 | PROJ-20 | Kurs-Shop & Kauf-Flow (In-App) | In Review | [Spec](PROJ-20-kurs-shop-kauf-flow.md) | 2026-05-14 |
 | PROJ-21 | Öffentlicher Shop (Website) | In Review | [Spec](PROJ-21-oeffentlicher-shop-website.md) | 2026-05-14 |
 | PROJ-22 | Ablösung PROJ-13 & Inhalts-Migration | In Review | [Spec](PROJ-22-kurssystem-abloesung.md) | 2026-05-14 |
+| PROJ-23 | Schmerzcheck-Funnel (B2C Akquise) | In Progress | [Spec](PROJ-23-schmerzcheck-funnel.md) | 2026-05-21 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-23
+## Next Available ID: PROJ-24
 
 ## Build Order (Empfohlen)
 
