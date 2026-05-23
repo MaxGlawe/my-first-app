@@ -141,7 +141,7 @@ function ActiveCourseCard({ path }: { path: PathSummary }) {
                 {e.completed_days} von {path.duration_days} Modulen
               </span>
               <span className={`text-[11px] font-semibold ${c.accent} flex items-center gap-0.5 group-hover:gap-1 transition-all`}>
-                {isCompleted ? "Zertifikat" : "Weiter"}
+                {isCompleted ? "Teilnahmezertifikat" : "Weiter"}
                 <ArrowRight className="h-3 w-3" />
               </span>
             </div>
@@ -248,7 +248,7 @@ export default function KursUebersichtPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-white leading-tight mb-2">
-            Deine Kurse
+            Deine Challenges
           </h1>
           <p className="text-sm text-slate-400 leading-relaxed">
             Geführte Therapieprogramme — Schritt für Schritt zurück in Bewegung.
@@ -328,7 +328,7 @@ export default function KursUebersichtPage() {
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-sky-500" />
                   <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                    Kurs-Katalog
+                    Challenge-Katalog
                   </h2>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -361,15 +361,15 @@ export default function KursUebersichtPage() {
                   <GraduationCap className="h-10 w-10 text-slate-300" />
                 </div>
                 <h3 className="text-base font-bold text-slate-700 mb-2">
-                  Noch keine Kurse verfügbar
+                  Noch keine Challenges verfügbar
                 </h3>
                 <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
-                  Dein Therapeut schaltet dir bald einen Kurs frei.
+                  Dein Therapeut schaltet dir bald eine Challenge frei.
                 </p>
               </div>
             )}
 
-            {/* Shop-Einstieg — weitere Kurse entdecken */}
+            {/* Shop-Einstieg — weitere Challenges entdecken */}
             <Link href="/shop" className="block group">
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/60 p-5 flex items-center gap-4 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
@@ -377,10 +377,10 @@ export default function KursUebersichtPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-slate-800 mb-0.5">
-                    Mehr Kurse im Shop
+                    Mehr Challenges im Shop
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    Entdecke weitere Kurse — im Abo inklusive oder einzeln freischaltbar.
+                    Entdecke weitere Challenges — im Abo inklusive oder einzeln freischaltbar.
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />

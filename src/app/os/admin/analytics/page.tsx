@@ -4,9 +4,10 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Activity, Users, TrendingUp, Calendar, Globe, BarChart3, Stethoscope } from "lucide-react"
+import { Activity, Users, TrendingUp, Calendar, Globe, BarChart3, Stethoscope, ShoppingBag } from "lucide-react"
 import { WebsiteAnalyticsTab } from "@/components/admin/WebsiteAnalyticsTab"
 import { SchmerzcheckFunnelTab } from "@/components/admin/SchmerzcheckFunnelTab"
+import { ShopAnalyticsTab } from "@/components/admin/ShopAnalyticsTab"
 
 interface AnalyticsSummary {
   events_by_type: Record<string, number>
@@ -197,6 +198,10 @@ export default function AdminAnalyticsPage() {
             <Stethoscope className="h-4 w-4" />
             Schmerzcheck
           </TabsTrigger>
+          <TabsTrigger value="shop" className="gap-1.5">
+            <ShoppingBag className="h-4 w-4" />
+            Shop
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="website">
@@ -209,6 +214,10 @@ export default function AdminAnalyticsPage() {
 
         <TabsContent value="schmerzcheck">
           <SchmerzcheckFunnelTab />
+        </TabsContent>
+
+        <TabsContent value="shop">
+          <ShopAnalyticsTab />
         </TabsContent>
       </Tabs>
     </div>

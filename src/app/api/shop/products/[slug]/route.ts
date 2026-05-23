@@ -149,6 +149,7 @@ export async function GET(
       zugriff_status: zugriffStatus,
       effektiver_preis: effektiverPreis,
       hat_aktives_abo: hasActiveSub,
+      eingeloggt: !!user,
     },
     contents: linkedPaths,
   })

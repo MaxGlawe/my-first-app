@@ -141,8 +141,8 @@ export function CourseIntro({
                 <HowItWorksRow
                   icon={<Award className="h-4 w-4" />}
                   accent={color.accent}
-                  title="Zertifikat zum Abschluss"
-                  text={`Wer alle ${totalModules} Module schafft, erhält ein persönliches Abschluss-Zertifikat.`}
+                  title="Teilnahmezertifikat zum Abschluss"
+                  text={`Wer alle ${totalModules} Module schafft, erhält ein persönliches Teilnahmezertifikat.`}
                 />
               </div>
 
@@ -195,7 +195,7 @@ export function CourseIntro({
                   ) : (
                     <Sparkles className="h-4 w-4 mr-2" />
                   )}
-                  Kurs starten
+                  Challenge starten
                 </Button>
               )}
             </div>

@@ -30,7 +30,7 @@ export async function generateMetadata({
         title: product.titel,
         description:
           product.kurzbeschreibung ??
-          "Von Physiotherapeuten entwickelter 21-Tage-Kurs bei Praxis OS.",
+          "Von Physiotherapeuten entwickelte 21-Tage-Challenge bei Praxis OS.",
         alternates: { canonical: `/kurse/${slug}` },
       }
     }
@@ -38,7 +38,7 @@ export async function generateMetadata({
     // Fällt unten auf den generischen Titel zurück
   }
 
-  return { title: "Kurs" }
+  return { title: "Challenge" }
 }
 
 export default function Page() {

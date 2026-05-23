@@ -15,7 +15,7 @@ const STORAGE_KEY = "praxis-os-onboarding-done"
 
 const STEPS = [
   {
-    icon: <NextImage src="/images/Physio Logo_ausgeschnitten.png" alt="Physiotherapie Glawe — Logo" width={64} height={64} className="object-contain" />,
+    icon: <NextImage src="/images/physio-logo.png" alt="Physiotherapie Glawe — Logo" width={64} height={64} className="object-contain" />,
     bg: "from-teal-500 to-emerald-500",
     title: "Willkommen bei Praxis OS!",
     description:

@@ -107,7 +107,7 @@ export function CourseCertificate({
 
         <div className="relative z-10">
           <p className="text-xs font-bold text-white/70 uppercase tracking-widest mb-2">
-            Kurs abgeschlossen
+            Challenge abgeschlossen
           </p>
           <h1 className="text-2xl font-bold text-white leading-tight mb-2">{courseName}</h1>
           {subtitle && (
@@ -123,7 +123,7 @@ export function CourseCertificate({
           <div className="flex items-center justify-center gap-2 mb-5">
             <Sparkles className={`h-4 w-4 ${iconText}`} />
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-              Zertifikat der Teilnahme
+              Teilnahmezertifikat
             </p>
             <Sparkles className={`h-4 w-4 ${iconText}`} />
           </div>
@@ -133,7 +133,7 @@ export function CourseCertificate({
 
           <div className="text-center space-y-4">
             <div>
-              <p className="text-xs text-slate-400 mb-1">Kurs</p>
+              <p className="text-xs text-slate-400 mb-1">Challenge</p>
               <p className="text-base font-bold text-slate-800">{courseName}</p>
             </div>
 
@@ -187,7 +187,7 @@ export function CourseCertificate({
             }
           >
             <Download className="mr-2 h-4 w-4" />
-            Zertifikat herunterladen
+            Teilnahmezertifikat herunterladen
           </Button>
           <Button
             variant="outline"
@@ -196,7 +196,7 @@ export function CourseCertificate({
               if (navigator.share) {
                 navigator.share({
                   title: `${courseName} — abgeschlossen!`,
-                  text: `Ich habe den Kurs "${courseName}" auf Praxis OS erfolgreich abgeschlossen!`,
+                  text: `Ich habe die Challenge "${courseName}" auf Praxis OS erfolgreich abgeschlossen!`,
                 }).catch(() => undefined)
               }
             }}

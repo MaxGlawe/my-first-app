@@ -11,6 +11,7 @@
 
 import Link from "next/link"
 import { ShopHeader } from "@/components/shop/ShopHeader"
+import { Hero3DCarousel } from "@/components/shop/Hero3DCarousel"
 import {
   Sparkles,
   ShieldCheck,
@@ -46,8 +47,8 @@ const UPDATES: ShopUpdate[] = [
     tag: "Neu im Shop",
     tagColor: "bg-emerald-50 text-emerald-700",
     icon: <Sparkles className="h-5 w-5 text-emerald-600" />,
-    title: "21-Tage-Kurse jetzt verfügbar",
-    text: "Vier geführte Programme für Rücken, Schmerz, Faszien und mehr — als Einmalkauf oder im Abo enthalten.",
+    title: "21-Tage-Challenges jetzt verfügbar",
+    text: "Vier geführte Challenges für Rücken, Schmerz, Faszien und mehr — als Einmalkauf oder im Abo enthalten.",
     href: "/shop/kurse",
   },
   {
@@ -62,7 +63,7 @@ const UPDATES: ShopUpdate[] = [
     tagColor: "bg-slate-100 text-slate-600",
     icon: <Activity className="h-5 w-5 text-slate-500" />,
     title: "Schmerzcheck",
-    text: "Ein geführter Selbst-Check, der dir den passenden Kurs für dein Anliegen empfiehlt.",
+    text: "Ein geführter Selbst-Check, der dir die passende Challenge für dein Anliegen empfiehlt.",
   },
 ]
 
@@ -86,27 +87,31 @@ export default function ShopLandingPage() {
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
 
             {/* Linke Spalte — Text */}
-            <div className="animate-fade-in-up">
-              <div className="flex items-center gap-2.5 mb-5">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
+            <div className="animate-fade-in-up order-2 lg:order-1">
+              <div className="flex items-center gap-3 mb-5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/physio-logo.png"
+                  alt="Praxis OS"
+                  className="h-12 w-auto"
+                />
                 <span className="text-xs font-semibold text-emerald-400 uppercase tracking-[0.2em]">
-                  Praxis OS · Kurs-Shop
+                  Praxis OS · Shop
                 </span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-bold text-white leading-[1.1] mb-5">
-                Kurse, die wirklich{" "}
+                Dein Körper. Geleitet.{" "}
                 <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
-                  wirken
+                  Verstanden
                 </span>
                 .
               </h1>
 
               <p className="text-slate-300 text-lg leading-relaxed mb-8">
-                Von Physiotherapeuten entwickelte 21-Tage-Programme — für Rücken,
-                Schmerz, Faszien und mehr. Einmal kaufen, lebenslang behalten.
+                Praxis OS — von Physiotherapeuten entwickelte Inhalte für
+                Rücken, Schmerz und Bewegung. Einmal kaufen, lebenslang
+                behalten.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 mb-8">
@@ -114,7 +119,7 @@ export default function ShopLandingPage() {
                   href="/shop/kurse"
                   className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl px-5 h-12 transition-colors shadow-lg shadow-emerald-500/25"
                 >
-                  Alle Kurse entdecken
+                  Alle Challenges entdecken
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
@@ -135,16 +140,9 @@ export default function ShopLandingPage() {
               </div>
             </div>
 
-            {/* Rechte Spalte — Hero-Bild */}
-            <div className="hidden lg:block animate-fade-in-up animation-delay-150">
-              <div className="relative aspect-square rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-emerald-900/40">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/images/kurse/hero.png"
-                  alt="Praxis OS Kurse"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+            {/* Rechte Spalte — Hero-Carousel: rotiert durch die Produkt-Cover */}
+            <div className="animate-fade-in-up animation-delay-150 order-1 lg:order-2">
+              <Hero3DCarousel fallback="/images/kurse/hero.png" />
             </div>
 
           </div>
@@ -158,7 +156,7 @@ export default function ShopLandingPage() {
             Neu bei Praxis OS
           </h2>
           <p className="text-slate-500 mt-1 text-sm">
-            Was sich im Shop tut — neue Kurse, Features und Ankündigungen.
+            Was sich im Shop tut — neue Challenges, Features und Ankündigungen.
           </p>
         </div>
 

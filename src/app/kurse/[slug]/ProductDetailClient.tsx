@@ -21,14 +21,19 @@ import {
   BookOpen,
   ShieldCheck,
   Mail,
-  Star,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react"
+import { ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ShopHeader } from "@/components/shop/ShopHeader"
 import { TrustRow } from "@/components/shop/TrustRow"
 import { AppUpsell } from "@/components/shop/AppUpsell"
+import { ProductReviews, ProductReviewsSummary } from "@/components/shop/ProductReviews"
 import { cn } from "@/lib/utils"
+import { useCart } from "@/lib/cart-context"
+import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { toast } from "sonner"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -40,7 +45,7 @@ interface Product {
   kurzbeschreibung: string | null
   beschreibung: string | null
   hero_bild: string | null
-  produkt_typ: "kurs" | "programm" | "masterclass"
+  produkt_typ: "challenge" | "programm" | "masterclass"
   anliegen: string[] | null
   preis: number
   waehrung: string
@@ -49,6 +54,7 @@ interface Product {
   zugriff_status: "im_abo" | "besitz" | "kaufbar"
   effektiver_preis: number
   hat_aktives_abo: boolean
+  eingeloggt: boolean
 }
 
 interface Lesson {
@@ -115,6 +121,27 @@ function GuestCtaBlock({ product }: { product: Product }) {
   const [lastName, setLastName] = useState("")
   const [isCheckingOut, setIsCheckingOut] = useState(false)
 
+  const { add: addToCart, remove: removeFromCart, has: hasInCart, open: openCart } = useCart()
+  const { trackConversion } = useConversionTracker()
+  const inCart = hasInCart(product.slug)
+
+  const handleAddToCart = () => {
+    if (inCart) {
+      removeFromCart(product.slug)
+      return
+    }
+    addToCart({
+      slug: product.slug,
+      titel: product.titel,
+      // Volumen-Kauf läuft ohne Abo-Rabatt — wir nehmen den regulären Einmalpreis.
+      preis: product.preis,
+      waehrung: product.waehrung,
+      hero_bild: product.hero_bild,
+    })
+    trackConversion("shop_add_to_cart", { slug: product.slug })
+    openCart()
+  }
+
   // Eingeloggter Besucher mit Zugang (Randfall — Website ist öffentlich)
   if (zugriff_status === "besitz" || zugriff_status === "im_abo") {
     return (
@@ -124,7 +151,7 @@ function GuestCtaBlock({ product }: { product: Product }) {
           <p className="font-semibold text-emerald-900">Du hast bereits Zugang</p>
         </div>
         <p className="text-sm text-emerald-700">
-          Dieser Kurs ist in deinem Konto verfügbar.
+          Diese Challenge ist in deinem Konto verfügbar.
         </p>
         <Button
           asChild
@@ -142,6 +169,7 @@ function GuestCtaBlock({ product }: { product: Product }) {
       toast.error("Bitte gib eine gültige E-Mail-Adresse ein.")
       return
     }
+    trackConversion("shop_checkout_start", { slugs: [product.slug] })
     setIsCheckingOut(true)
     try {
       const res = await fetch("/api/shop/public-checkout", {
@@ -169,6 +197,23 @@ function GuestCtaBlock({ product }: { product: Product }) {
 
   return (
     <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-5 shadow-sm">
+      {/* Hinweis: Abo-Mitglieder bekommen alles gratis */}
+      <Link
+        href="/login"
+        className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-3 hover:bg-emerald-100/70 transition-colors group"
+      >
+        <Sparkles className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-emerald-900 leading-snug">
+            Schon Praxis-OS-Mitglied?
+          </p>
+          <p className="text-xs text-emerald-700 leading-relaxed mt-0.5">
+            Mit deinem Abo ist diese Challenge automatisch enthalten — anmelden statt kaufen.
+          </p>
+        </div>
+        <ArrowRight className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+
       {/* Preis */}
       <div>
         <div className="flex items-baseline gap-3 mb-1">
@@ -236,6 +281,31 @@ function GuestCtaBlock({ product }: { product: Product }) {
           )}
         </Button>
       </form>
+
+      {/* In den Warenkorb — Mehrartikel-Kauf */}
+      <button
+        type="button"
+        onClick={handleAddToCart}
+        className={cn(
+          "w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+          inCart
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+        )}
+      >
+        {inCart ? (
+          <>
+            <CheckCircle2 className="h-4 w-4" />
+            Im Warenkorb
+            <span className="text-[11px] text-emerald-600 font-normal">· entfernen</span>
+          </>
+        ) : (
+          <>
+            <ShoppingBag className="h-4 w-4" />
+            In den Warenkorb
+          </>
+        )}
+      </button>
 
       {/* Hinweis: Zugang per E-Mail */}
       <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-3">
@@ -316,19 +386,29 @@ export function ProductDetailClient() {
   const [data, setData] = useState<ProductDetailResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { trackConversion } = useConversionTracker()
 
   useEffect(() => {
     if (!slug) return
     setIsLoading(true)
     fetch(`/api/shop/products/${slug}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Kurs konnte nicht geladen werden.")
+        if (!res.ok) throw new Error("Challenge konnte nicht geladen werden.")
         return res.json()
       })
       .then((json: ProductDetailResponse) => setData(json))
       .catch((err: Error) => setError(err.message))
       .finally(() => setIsLoading(false))
   }, [slug])
+
+  // Conversion: Produktansicht (einmal pro geladenem Produkt) — Hook dedupliziert.
+  useEffect(() => {
+    if (!data?.product) return
+    trackConversion("shop_product_view", {
+      slug: data.product.slug,
+      produkt_typ: data.product.produkt_typ,
+    })
+  }, [data, trackConversion])
 
   const renderCta = useCallback(
     (product: Product) => <GuestCtaBlock product={product} />,
@@ -339,7 +419,7 @@ export function ProductDetailClient() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Kurse" />
+        <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -362,19 +442,19 @@ export function ProductDetailClient() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Kurse" />
+        <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Lock className="h-7 w-7 text-slate-400" />
           </div>
           <h2 className="text-xl font-semibold text-slate-800 mb-2">
-            Kurs nicht gefunden
+            Challenge nicht gefunden
           </h2>
           <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-            {error ?? "Dieser Kurs existiert nicht oder ist nicht mehr verfügbar."}
+            {error ?? "Diese Challenge existiert nicht oder ist nicht mehr verfügbar."}
           </p>
           <Button asChild variant="outline" className="rounded-xl">
-            <Link href="/kurse">Zu allen Kursen</Link>
+            <Link href="/kurse">Zu allen Challenges</Link>
           </Button>
         </div>
       </div>
@@ -388,7 +468,7 @@ export function ProductDetailClient() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Kurse" />
+      <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
@@ -444,15 +524,8 @@ export function ProductDetailClient() {
                 </p>
               )}
 
-              {/* Bewertungs-Platzhalter — echte Bewertungen folgen */}
-              <div className="flex items-center gap-2">
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-slate-300" />
-                  ))}
-                </div>
-                <span className="text-sm text-slate-400">Bewertungen folgen</span>
-              </div>
+              {/* Echte Bewertungen: Schnitt + Anzahl */}
+              <ProductReviewsSummary slug={product.slug} />
 
               <div className="flex flex-wrap gap-4 pt-1">
                 <div className="flex items-center gap-1.5 text-sm text-slate-500">
@@ -482,7 +555,7 @@ export function ProductDetailClient() {
             {product.beschreibung && (
               <div className="space-y-3">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Über diesen Kurs
+                  Über diese Challenge
                 </h2>
                 <p className="text-slate-600 leading-relaxed whitespace-pre-line">
                   {product.beschreibung}
@@ -494,7 +567,7 @@ export function ProductDetailClient() {
             {lessons.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Kurs-Inhalte — {durationDays} Module
+                  Challenge-Inhalte — {durationDays} Module
                 </h2>
                 <LessonList lessons={lessons} />
               </div>
@@ -511,7 +584,7 @@ export function ProductDetailClient() {
                   "Evidenzbasierte Übungen von Physiotherapeuten entwickelt",
                   "Lernmaterialien & Hintergrundwissen zu jedem Modul",
                   "Quiz nach jedem Modul zur Wissensverankerung",
-                  "Abschluss-Zertifikat nach Kursende",
+                  "Teilnahmezertifikat nach 21 Tagen",
                   "Lebenslanger Zugriff nach Einmalkauf",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
@@ -521,6 +594,16 @@ export function ProductDetailClient() {
                 ))}
               </ul>
             </div>
+
+            {/* Bewertungen */}
+            <ProductReviews
+              slug={product.slug}
+              isLoggedIn={product.eingeloggt}
+              canReview={
+                product.eingeloggt &&
+                (product.zugriff_status === "besitz" || product.zugriff_status === "im_abo")
+              }
+            />
 
             {/* Voll-App-Upsell */}
             <AppUpsell />

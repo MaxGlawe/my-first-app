@@ -7,12 +7,16 @@
  */
 
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { Toaster } from "@/components/ui/sonner"
+import { CartProvider } from "@/lib/cart-context"
+import { CartDrawer } from "@/components/shop/CartDrawer"
+import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
 
 export const metadata: Metadata = {
-  title: "Kurse",
+  title: "Shop",
   description:
-    "Von Physiotherapeuten entwickelte 21-Tage-Kurse für Rücken, Schmerz, Faszien und mehr. Einmal kaufen, lebenslang behalten.",
+    "Von Physiotherapeuten entwickelte 21-Tage-Challenges für Rücken, Schmerz, Faszien und mehr. Einmal kaufen, lebenslang behalten.",
 }
 
 export default function KurseLayout({
@@ -21,9 +25,16 @@ export default function KurseLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-slate-50">
-      {children}
-      <Toaster position="bottom-center" />
-    </div>
+    <CartProvider>
+      <div className="min-h-screen bg-slate-50">
+        {children}
+        <CartDrawer />
+        <Toaster position="bottom-center" />
+      </div>
+      {/* Page-View- + UTM-Tracking für alle /kurse/*-Seiten (Shop-Analytics) */}
+      <Suspense fallback={null}>
+        <LandingAnalytics />
+      </Suspense>
+    </CartProvider>
   )
 }

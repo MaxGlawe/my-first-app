@@ -33,7 +33,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ShopHeader } from "@/components/shop/ShopHeader"
+import { ProductReviews, ProductReviewsSummary } from "@/components/shop/ProductReviews"
 import { cn } from "@/lib/utils"
+import { useCart } from "@/lib/cart-context"
 import { toast } from "sonner"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ interface Product {
   kurzbeschreibung: string | null
   beschreibung: string | null
   hero_bild: string | null
-  produkt_typ: "kurs" | "programm" | "masterclass"
+  produkt_typ: "challenge" | "programm" | "masterclass"
   anliegen: string[] | null
   preis: number
   waehrung: string
@@ -54,6 +56,7 @@ interface Product {
   zugriff_status: "im_abo" | "besitz" | "kaufbar"
   effektiver_preis: number
   hat_aktives_abo: boolean
+  eingeloggt: boolean
 }
 
 interface Lesson {
@@ -113,9 +116,11 @@ interface CtaBlockProps {
   product: Product
   onBuy: () => void
   isCheckingOut: boolean
+  onAddToCart: () => void
+  inCart: boolean
 }
 
-function CtaBlock({ product, onBuy, isCheckingOut }: CtaBlockProps) {
+function CtaBlock({ product, onBuy, isCheckingOut, onAddToCart, inCart }: CtaBlockProps) {
   const { zugriff_status, effektiver_preis, preis, abo_rabatt_prozent, hat_aktives_abo } = product
   const isDiscounted = effektiver_preis < preis
 
@@ -127,7 +132,7 @@ function CtaBlock({ product, onBuy, isCheckingOut }: CtaBlockProps) {
             <CheckCircle2 className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <p className="font-semibold text-emerald-900">Du besitzt diesen Kurs</p>
+            <p className="font-semibold text-emerald-900">Du besitzt diese Challenge</p>
             <p className="text-sm text-emerald-700">Lebenslanger Zugriff · Einmalig gekauft</p>
           </div>
         </div>
@@ -136,7 +141,7 @@ function CtaBlock({ product, onBuy, isCheckingOut }: CtaBlockProps) {
           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl h-12"
         >
           <Link href="/app/kurse">
-            Kurs öffnen
+            Challenge öffnen
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </Button>
@@ -225,19 +230,29 @@ function CtaBlock({ product, onBuy, isCheckingOut }: CtaBlockProps) {
           )}
         </Button>
 
-        {/* In den Warenkorb — funktional als eigenes Feature später */}
+        {/* In den Warenkorb — Mehrartikel-Kauf */}
         <button
           type="button"
-          onClick={() =>
-            toast.info("Warenkorb", {
-              description: "Mehrere Kurse auf einmal kaufen — bald verfügbar.",
-            })
-          }
-          className="w-full h-11 rounded-xl border border-slate-200 text-slate-500 text-sm font-medium flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+          onClick={onAddToCart}
+          className={cn(
+            "w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+            inCart
+              ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+              : "border-slate-200 text-slate-600 hover:bg-slate-50"
+          )}
         >
-          <ShoppingBag className="h-4 w-4" />
-          In den Warenkorb
-          <span className="text-[11px] text-slate-400 font-normal">· bald verfügbar</span>
+          {inCart ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" />
+              Im Warenkorb
+              <span className="text-[11px] text-emerald-600 font-normal">· entfernen</span>
+            </>
+          ) : (
+            <>
+              <ShoppingBag className="h-4 w-4" />
+              In den Warenkorb
+            </>
+          )}
         </button>
       </div>
 
@@ -261,7 +276,7 @@ function CtaBlock({ product, onBuy, isCheckingOut }: CtaBlockProps) {
             <Link href="/app/abo" className="text-emerald-700 underline underline-offset-2">
               Praxis-OS-Abo
             </Link>{" "}
-            ist dieser Kurs bereits kostenlos enthalten.
+            ist diese Challenge bereits kostenlos enthalten.
           </p>
         </div>
       )}
@@ -326,12 +341,14 @@ export default function ShopProductDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [isCheckingOut, setIsCheckingOut] = useState(false)
 
+  const { add: addToCart, remove: removeFromCart, has: hasInCart, open: openCart } = useCart()
+
   useEffect(() => {
     if (!slug) return
     setIsLoading(true)
     fetch(`/api/shop/products/${slug}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Kurs konnte nicht geladen werden.")
+        if (!res.ok) throw new Error("Challenge konnte nicht geladen werden.")
         return res.json()
       })
       .then((json: ProductDetailResponse) => setData(json))
@@ -361,11 +378,29 @@ export default function ShopProductDetailPage() {
     }
   }, [data])
 
+  const handleAddToCart = useCallback(() => {
+    const product = data?.product
+    if (!product) return
+    if (hasInCart(product.slug)) {
+      removeFromCart(product.slug)
+      return
+    }
+    addToCart({
+      slug: product.slug,
+      titel: product.titel,
+      // Volumen-Kauf läuft ohne Abo-Rabatt — wir nehmen den regulären Einmalpreis.
+      preis: product.preis,
+      waehrung: product.waehrung,
+      hero_bild: product.hero_bild,
+    })
+    openCart()
+  }, [data, hasInCart, removeFromCart, addToCart, openCart])
+
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Kurse" />
+        <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
@@ -388,19 +423,19 @@ export default function ShopProductDetailPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Kurse" />
+        <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Lock className="h-7 w-7 text-slate-400" />
           </div>
           <h2 className="text-xl font-semibold text-slate-800 mb-2">
-            Kurs nicht gefunden
+            Challenge nicht gefunden
           </h2>
           <p className="text-slate-500 mb-6 max-w-sm mx-auto">
-            {error ?? "Dieser Kurs existiert nicht oder ist nicht mehr verfügbar."}
+            {error ?? "Diese Challenge existiert nicht oder ist nicht mehr verfügbar."}
           </p>
           <Button asChild variant="outline" className="rounded-xl">
-            <Link href="/shop/kurse">Zu allen Kursen</Link>
+            <Link href="/shop/kurse">Zu allen Challenges</Link>
           </Button>
         </div>
       </div>
@@ -414,7 +449,7 @@ export default function ShopProductDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Kurse" />
+      <ShopHeader showBack backHref="/shop/kurse" backLabel="Alle Challenges" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 items-start">
@@ -470,6 +505,9 @@ export default function ShopProductDetailPage() {
                 </p>
               )}
 
+              {/* Echte Bewertungen: Schnitt + Anzahl */}
+              <ProductReviewsSummary slug={product.slug} />
+
               {/* Meta */}
               <div className="flex flex-wrap gap-4 pt-1">
                 <div className="flex items-center gap-1.5 text-sm text-slate-500">
@@ -491,14 +529,20 @@ export default function ShopProductDetailPage() {
 
             {/* Mobile CTA */}
             <div className="lg:hidden">
-              <CtaBlock product={product} onBuy={handleBuy} isCheckingOut={isCheckingOut} />
+              <CtaBlock
+                product={product}
+                onBuy={handleBuy}
+                isCheckingOut={isCheckingOut}
+                onAddToCart={handleAddToCart}
+                inCart={hasInCart(product.slug)}
+              />
             </div>
 
             {/* Beschreibung */}
             {product.beschreibung && (
               <div className="space-y-3">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Über diesen Kurs
+                  Über diese Challenge
                 </h2>
                 <p className="text-slate-600 leading-relaxed whitespace-pre-line">
                   {product.beschreibung}
@@ -510,7 +554,7 @@ export default function ShopProductDetailPage() {
             {lessons.length > 0 && (
               <div className="space-y-4">
                 <h2 className="text-base font-semibold text-slate-900">
-                  Kurs-Inhalte — {durationDays} Module
+                  Challenge-Inhalte — {durationDays} Module
                 </h2>
                 <LessonList lessons={lessons} />
               </div>
@@ -527,7 +571,7 @@ export default function ShopProductDetailPage() {
                   "Evidenzbasierte Übungen von Physiotherapeuten entwickelt",
                   "Lernmaterialien & Hintergrundwissen zu jedem Modul",
                   "Quiz nach jedem Modul zur Wissensverankerung",
-                  "Abschluss-Zertifikat nach Kursende",
+                  "Teilnahmezertifikat nach 21 Tagen",
                   "Lebenslanger Zugriff nach Einmalkauf",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
@@ -537,12 +581,27 @@ export default function ShopProductDetailPage() {
                 ))}
               </ul>
             </div>
+
+            {/* Bewertungen */}
+            <ProductReviews
+              slug={product.slug}
+              isLoggedIn={product.eingeloggt}
+              canReview={
+                product.zugriff_status === "besitz" || product.zugriff_status === "im_abo"
+              }
+            />
           </div>
 
           {/* ── Rechts: Sticky CTA ─────────────────────────────────────── */}
           <div className="hidden lg:block">
             <div className="sticky top-20 space-y-4">
-              <CtaBlock product={product} onBuy={handleBuy} isCheckingOut={isCheckingOut} />
+              <CtaBlock
+                product={product}
+                onBuy={handleBuy}
+                isCheckingOut={isCheckingOut}
+                onAddToCart={handleAddToCart}
+                inCart={hasInCart(product.slug)}
+              />
             </div>
           </div>
         </div>

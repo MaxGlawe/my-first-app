@@ -45,7 +45,7 @@ export async function POST(
     .maybeSingle()
 
   if (!path) {
-    return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
+    return NextResponse.json({ error: "Challenge nicht gefunden." }, { status: 404 })
   }
 
   // Already actively enrolled? Return existing instead of erroring out.
@@ -93,7 +93,7 @@ export async function DELETE(
     .maybeSingle()
 
   if (!path) {
-    return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
+    return NextResponse.json({ error: "Challenge nicht gefunden." }, { status: 404 })
   }
 
   const { error } = await sc

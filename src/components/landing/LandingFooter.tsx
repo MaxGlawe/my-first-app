@@ -10,7 +10,7 @@ export function LandingFooter() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2.5 mb-4">
               <Image
-                src="/images/Physio Logo_ausgeschnitten.png"
+                src="/images/physio-logo.png"
                 alt="Physiotherapie Glawe — Logo"
                 width={36}
                 height={36}
@@ -43,7 +43,7 @@ export function LandingFooter() {
                 { label: "Ablauf", href: "#ablauf" },
                 { label: "Vorteile", href: "#vorteile" },
                 { label: "Preise", href: "#preise" },
-                { label: "Kurse", href: "/kurse" },
+                { label: "Shop", href: "/kurse" },
                 { label: "FAQ", href: "#faq" },
                 { label: "Anfrage stellen", href: "/anfrage" },
               ].map((l) => (

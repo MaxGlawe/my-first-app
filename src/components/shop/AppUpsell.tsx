@@ -18,7 +18,7 @@ export function AppUpsell() {
             Praxis OS · Voll-App
           </p>
           <h3 className="text-lg sm:text-xl font-bold text-white mb-1.5">
-            Mehr als ein Kurs — deine persönliche Therapie-Begleitung
+            Mehr als eine Challenge — deine persönliche Therapie-Begleitung
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed">
             Individuelle Trainingspläne, Video-Analyse durch einen Physiotherapeuten

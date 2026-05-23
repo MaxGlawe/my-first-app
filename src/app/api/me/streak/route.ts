@@ -170,7 +170,7 @@ function computeAchievements(ctx: {
     {
       id: "knowledge",
       name: "Wissensdurst",
-      description: "Einen kompletten Kurs abgeschlossen",
+      description: "Eine komplette Challenge abgeschlossen",
       icon: "🎓",
       unlocked: completedCourses >= 1,
       unlockedAt: null,

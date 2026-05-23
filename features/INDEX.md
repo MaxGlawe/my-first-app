@@ -30,15 +30,16 @@
 | PROJ-16 | Patienten-App 2.0 (Design, Schmerztagebuch, Gamification) | In Progress | [Spec](PROJ-16-patienten-app-v2.md) | 2026-02-19 |
 | PROJ-17 | Patienten-Ampelsystem (Traffic Light Alert System) | In Progress | [Spec](PROJ-17-patienten-ampelsystem.md) | 2026-03-06 |
 | PROJ-18 | Betriebliche Gesundheitsförderung (BGF) | In Progress | [Spec](PROJ-18-bgf-betriebliche-gesundheitsfoerderung.md) | 2026-03-15 |
-| PROJ-19 | Externe Käufer-Accounts | In Review | [Spec](PROJ-19-externe-kaeufer-accounts.md) | 2026-05-14 |
-| PROJ-20 | Kurs-Shop & Kauf-Flow (In-App) | In Review | [Spec](PROJ-20-kurs-shop-kauf-flow.md) | 2026-05-14 |
-| PROJ-21 | Öffentlicher Shop (Website) | In Review | [Spec](PROJ-21-oeffentlicher-shop-website.md) | 2026-05-14 |
-| PROJ-22 | Ablösung PROJ-13 & Inhalts-Migration | In Review | [Spec](PROJ-22-kurssystem-abloesung.md) | 2026-05-14 |
-| PROJ-23 | Schmerzcheck-Funnel (B2C Akquise) | In Progress | [Spec](PROJ-23-schmerzcheck-funnel.md) | 2026-05-21 |
+| PROJ-19 | Externe Käufer-Accounts | Deployed | [Spec](PROJ-19-externe-kaeufer-accounts.md) | 2026-05-14 |
+| PROJ-20 | Kurs-Shop & Kauf-Flow (In-App) | Deployed | [Spec](PROJ-20-kurs-shop-kauf-flow.md) | 2026-05-14 |
+| PROJ-21 | Öffentlicher Shop (Website) | Deployed | [Spec](PROJ-21-oeffentlicher-shop-website.md) | 2026-05-14 |
+| PROJ-22 | Ablösung PROJ-13 & Inhalts-Migration | Deployed | [Spec](PROJ-22-kurssystem-abloesung.md) | 2026-05-14 |
+| PROJ-23 | Schmerzcheck-Funnel (B2C Akquise) | Deployed | [Spec](PROJ-23-schmerzcheck-funnel.md) | 2026-05-21 |
+| PROJ-24 | Bewegungskarten (Karten-Decks) & Shop-Ausbau (Warenkorb, Bewertungen, Shop-Analytics) | Deployed | — | 2026-05-23 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-24
+## Next Available ID: PROJ-25
 
 ## Build Order (Empfohlen)
 

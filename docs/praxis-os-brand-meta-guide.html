@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Praxis OS · Brand & Content Guide für Meta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --emerald-50:  #ecfdf5;
+    --emerald-100: #d1fae5;
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-700: #047857;
+    --teal-500:    #14b8a6;
+    --cyan-500:    #06b6d4;
+    --slate-50:    #f8fafc;
+    --slate-100:   #f1f5f9;
+    --slate-200:   #e2e8f0;
+    --slate-300:   #cbd5e1;
+    --slate-400:   #94a3b8;
+    --slate-500:   #64748b;
+    --slate-700:   #334155;
+    --slate-800:   #1e293b;
+    --slate-900:   #0f172a;
+    --rose-500:    #f43f5e;
+    --rose-50:     #fff1f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #ffffff;
+    color: var(--slate-700);
+    line-height: 1.65;
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  /* ───────── Cover / Hero ───────── */
+  .cover {
+    background: linear-gradient(135deg, #ffffff 0%, var(--emerald-50) 100%);
+    padding: 96px 24px 80px;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .cover .container { text-align: center; }
+  .cover .brand {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--emerald-600);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding: 6px 14px;
+    background: white;
+    border: 1px solid var(--emerald-100);
+    border-radius: 999px;
+  }
+  .cover h1 {
+    font-size: 48px;
+    line-height: 1.1;
+    font-weight: 800;
+    color: var(--slate-900);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .cover h1 span {
+    background: linear-gradient(135deg, var(--emerald-500) 0%, var(--teal-500) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .cover .sub {
+    font-size: 18px;
+    color: var(--slate-500);
+    max-width: 580px;
+    margin: 0 auto 32px;
+  }
+  .cover .meta {
+    display: inline-flex;
+    gap: 32px;
+    font-size: 12px;
+    color: var(--slate-400);
+  }
+  .cover .meta strong { color: var(--slate-700); font-weight: 600; }
+
+  /* ───────── Section ───────── */
+  section { padding: 64px 0; border-bottom: 1px solid var(--slate-100); }
+  section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--emerald-600);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin: 32px 0 12px;
+  }
+  .section-intro {
+    font-size: 17px;
+    color: var(--slate-500);
+    max-width: 640px;
+    margin-bottom: 32px;
+  }
+
+  p { margin-bottom: 16px; }
+  p:last-child { margin-bottom: 0; }
+
+  ul { padding-left: 0; list-style: none; }
+  ul li {
+    position: relative;
+    padding-left: 22px;
+    margin-bottom: 8px;
+  }
+  ul li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 11px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--emerald-500);
+  }
+
+  /* ───────── Boxes ───────── */
+  .box {
+    background: var(--slate-50);
+    border: 1px solid var(--slate-200);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 16px 0;
+  }
+  .box.accent {
+    background: var(--emerald-50);
+    border-color: var(--emerald-100);
+  }
+  .box .label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--emerald-600);
+    margin-bottom: 8px;
+  }
+  .box .quote {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--slate-900);
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  /* ───────── Do / Don't ───────── */
+  .do-dont {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .do, .dont {
+    border-radius: 12px;
+    padding: 18px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .do {
+    background: var(--emerald-50);
+    border: 1px solid var(--emerald-100);
+    color: var(--slate-800);
+  }
+  .dont {
+    background: var(--rose-50);
+    border: 1px solid #fecdd3;
+    color: var(--slate-800);
+  }
+  .do .tag, .dont .tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .do .tag { background: var(--emerald-600); color: white; }
+  .dont .tag { background: var(--rose-500); color: white; }
+  .do em, .dont em {
+    display: block;
+    margin-top: 8px;
+    font-style: normal;
+    font-size: 12px;
+    color: var(--slate-500);
+  }
+
+  /* ───────── Color palette ───────── */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .swatch {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--slate-200);
+  }
+  .swatch .color {
+    height: 80px;
+    border-bottom: 1px solid var(--slate-200);
+  }
+  .swatch .meta-row {
+    padding: 10px 12px;
+    background: white;
+  }
+  .swatch .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--slate-900);
+    margin-bottom: 2px;
+  }
+  .swatch .hex {
+    font-size: 11px;
+    color: var(--slate-500);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  /* ───────── Type sample ───────── */
+  .type-sample {
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 10px 0;
+  }
+  .type-sample .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--slate-400);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .type-sample .h1-demo { font-size: 36px; font-weight: 800; color: var(--slate-900); line-height: 1.1; letter-spacing: -0.02em; }
+  .type-sample .h2-demo { font-size: 26px; font-weight: 700; color: var(--slate-900); line-height: 1.2; }
+  .type-sample .body-demo { font-size: 16px; color: var(--slate-700); }
+  .type-sample .cap-demo {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--emerald-600);
+  }
+
+  /* ───────── Mix table ───────── */
+  table.mix {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table.mix th, table.mix td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--slate-100);
+    font-size: 14px;
+  }
+  table.mix th {
+    background: var(--slate-50);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--slate-500);
+  }
+  table.mix tr:last-child td { border-bottom: none; }
+  table.mix .pct {
+    font-weight: 700;
+    color: var(--emerald-600);
+    font-size: 16px;
+  }
+
+  /* ───────── Template list ───────── */
+  .tpl {
+    background: white;
+    border: 1px solid var(--slate-200);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 10px 0;
+    font-size: 15px;
+    color: var(--slate-700);
+  }
+  .tpl::before {
+    content: "›";
+    color: var(--emerald-500);
+    font-weight: 700;
+    margin-right: 8px;
+  }
+
+  /* ───────── Pill ───────── */
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+  .pill.emerald { background: var(--emerald-50); color: var(--emerald-700); }
+  .pill.slate { background: var(--slate-100); color: var(--slate-700); }
+
+  /* ───────── Footer ───────── */
+  footer {
+    background: var(--slate-50);
+    padding: 48px 24px;
+    text-align: center;
+    border-top: 1px solid var(--slate-200);
+  }
+  footer p { color: var(--slate-500); font-size: 13px; }
+  footer .logo {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--emerald-600);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* ───────── Print ───────── */
+  @media print {
+    section { page-break-inside: avoid; }
+    .cover { padding: 48px 24px 32px; }
+    body { font-size: 13px; }
+    .swatch .color { height: 50px; }
+  }
+
+  /* ───────── Mobile ───────── */
+  @media (max-width: 640px) {
+    .cover h1 { font-size: 32px; }
+    .cover .sub { font-size: 16px; }
+    h2 { font-size: 24px; }
+    .do-dont { grid-template-columns: 1fr; }
+    .cover .meta { flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ Cover ═══════════ -->
+<header class="cover">
+  <div class="container">
+    <span class="brand">Praxis OS · Brand &amp; Content Guide</span>
+    <h1>Therapeut für die <span>Hosentasche</span>.</h1>
+    <p class="sub">Tonalität, Premium-Positionierung und Farbwelt für Meta-Content. Damit jeder Reel, jede Story, jede Ad konsistent klingt — und HWG-konform bleibt.</p>
+    <div class="meta">
+      <span><strong>Version</strong> 1.0</span>
+      <span><strong>Kanäle</strong> Instagram · Facebook</span>
+      <span><strong>Zielgruppe</strong> B2C — Schmerz, Bewegung, Wahrnehmung</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════ 1. Wer wir sind ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">01 · Identität</span>
+    <h2>Wer Praxis OS ist</h2>
+    <p class="section-intro">Praxis OS ist eine Online-Physiotherapie-Praxis. Kein Tool. Kein SaaS. Kein Wellness-Programm. Ein Therapeut, den du immer dabei hast — und eine App, die dich durch deinen Alltag begleitet.</p>
+
+    <div class="box accent">
+      <span class="label">Markenkern</span>
+      <p class="quote">Therapeut für die Hosentasche — von Physiotherapeuten entwickelt, persönlich begleitet, sofort verfügbar.</p>
+    </div>
+
+    <h3>Was wir sind</h3>
+    <ul>
+      <li>Eine digitale Physiotherapie-Praxis</li>
+      <li>Klinisch fundiert, therapeutisch verankert</li>
+      <li>Warm im Umgang, präzise im Versprechen</li>
+      <li>Skalierbar — eine Marke, mehrere Therapeuten möglich</li>
+      <li>Vertrauensanker für die, die Schmerz nicht mehr ignorieren wollen</li>
+    </ul>
+
+    <h3>Was wir nicht sind</h3>
+    <ul>
+      <li>Keine Wellness-/Lifestyle-Marke (kein Headspace, kein Calm)</li>
+      <li>Keine Fitness-/Workout-App (kein Freeletics)</li>
+      <li>Keine Telemedizin-Sprechstunde</li>
+      <li>Kein Influencer-Coaching</li>
+      <li>Keine Software, die der Patient kauft — er bekommt einen Therapeuten</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════ 2. Tonalität ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">02 · Tonalität</span>
+    <h2>Warm. Empathisch. Substantiell.</h2>
+    <p class="section-intro">Du sprichst zu Menschen, die wahrscheinlich seit Wochen oder Monaten Schmerzen haben und schon einiges versucht haben. Sie sind frustriert, aber nicht naiv. Begegne ihnen auf Augenhöhe: ernst, freundlich, klar.</p>
+
+    <h3>Grundregeln</h3>
+    <ul>
+      <li><strong>Du-Form, immer.</strong> Auch in Captions, auch in Ads.</li>
+      <li><strong>Schmerz ernst nehmen</strong> — niemals überdramatisieren oder verharmlosen.</li>
+      <li><strong>Konkret bleiben</strong> — eine konkrete Sache pro Post, nicht zehn.</li>
+      <li><strong>Wissen vor Versprechen</strong> — was du erklärst, glaubt der Leser dir. Was du versprichst, prüft er.</li>
+      <li><strong>Keine Plattitüden</strong> — kein „Du schaffst das!", kein „Glaube an dich".</li>
+    </ul>
+
+    <h3>Stimmen-Anker</h3>
+    <div class="box">
+      <p>Stell dir vor: Ein erfahrener Physiotherapeut spricht mit einem Patienten in der Praxis — ruhig, fundiert, mitfühlend, ohne Verkaufsdruck. Genau diese Stimme.</p>
+    </div>
+
+    <h3>Sprach-Beispiele</h3>
+    <div class="do-dont">
+      <div class="do">
+        <span class="tag">Sag das</span>
+        Dein Schmerz ist real. Lass uns verstehen, woher er kommt.
+      </div>
+      <div class="dont">
+        <span class="tag">Nicht so</span>
+        Endlich schmerzfrei in nur 21 Tagen — garantiert!
+      </div>
+      <div class="do">
+        <span class="tag">Sag das</span>
+        Bewegung, die zu deinem Alltag passt. Schritt für Schritt.
+      </div>
+      <div class="dont">
+        <span class="tag">Nicht so</span>
+        Killer-Workout! 30 Tage Hardcore-Transformation!
+      </div>
+      <div class="do">
+        <span class="tag">Sag das</span>
+        Verstehe, was dein Körper dir sagt — bevor du etwas dagegen tust.
+      </div>
+      <div class="dont">
+        <span class="tag">Nicht so</span>
+        Hör auf deinen Körper. Das ist alles, was du brauchst. ✨🌿
+      </div>
+      <div class="do">
+        <span class="tag">Sag das</span>
+        Von Physiotherapeuten entwickelt. Im Alltag erprobt.
+      </div>
+      <div class="dont">
+        <span class="tag">Nicht so</span>
+        Die beste App der Welt. Vertraue uns!
+      </div>
+    </div>
+
+    <h3>Wörter, die wir lieben</h3>
+    <div>
+      <span class="pill emerald">Verstehen</span>
+      <span class="pill emerald">Wahrnehmen</span>
+      <span class="pill emerald">Bewegung</span>
+      <span class="pill emerald">Begleitung</span>
+      <span class="pill emerald">Routine</span>
+      <span class="pill emerald">Spürbar</span>
+      <span class="pill emerald">Schritt für Schritt</span>
+      <span class="pill emerald">Substanz</span>
+      <span class="pill emerald">Therapeutisch</span>
+      <span class="pill emerald">Im Alltag</span>
+    </div>
+
+    <h3>Wörter, die wir vermeiden</h3>
+    <div>
+      <span class="pill slate">Heilen</span>
+      <span class="pill slate">Garantiert</span>
+      <span class="pill slate">Schmerzfrei</span>
+      <span class="pill slate">Killer</span>
+      <span class="pill slate">Hardcore</span>
+      <span class="pill slate">Transformation</span>
+      <span class="pill slate">Energie / Fluss / Toxine</span>
+      <span class="pill slate">Wundermittel</span>
+      <span class="pill slate">100%</span>
+      <span class="pill slate">Nur heute</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 3. Premium-Positionierung ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">03 · Premium-Positionierung</span>
+    <h2>Substanz statt Show.</h2>
+    <p class="section-intro">Praxis OS ist nicht günstig — und das ist okay. Premium heißt bei uns nicht Glamour, sondern Tiefe. Die Marke wirkt teuer, weil sie es ehrlich verdient hat.</p>
+
+    <h3>Was Premium für uns heißt</h3>
+    <ul>
+      <li><strong>Substanz statt Show</strong> — Inhalt wertig, keine leere Verpackung.</li>
+      <li><strong>Klinisch fundiert</strong> — von Physiotherapeuten entwickelt, nicht von Marketing-Teams.</li>
+      <li><strong>Persönliche Begleitung</strong> — kein anonymer Algorithmus, ein echter Coach.</li>
+      <li><strong>Lebenslanger Wert</strong> — einmal kaufen, lebenslang behalten.</li>
+      <li><strong>Klar abgegrenzt</strong> — Therapie, nicht Wellness; Routine, nicht Hype.</li>
+    </ul>
+
+    <h3>Was wir bewusst nicht machen</h3>
+    <ul>
+      <li>Keine 50%-Rabatte / FOMO-Verkaufsdruck</li>
+      <li>Keine Influencer-Kooperationen (für jetzt)</li>
+      <li>Keine 12-Wochen-Body-Transformations-Vorher-Nachher</li>
+      <li>Keine Esoterik (Energiefluss, Toxine, Chakren)</li>
+      <li>Keine Generic-Stock-Photos von lächelnden Frauen mit Yogamatte</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════ 4. Farbwelt ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">04 · Farbwelt</span>
+    <h2>Klinisch hell. Emerald-Akzent.</h2>
+    <p class="section-intro">Hell, weiß, viel Whitespace — das ist die Basis. Emerald als Akzent für Vertrauen, Wachstum, klinische Reinheit. Slate-Töne für Text und Tiefe.</p>
+
+    <h3>Primär</h3>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="color" style="background: var(--emerald-500);"></div>
+        <div class="meta-row">
+          <div class="name">Emerald 500</div>
+          <div class="hex">#10b981 · Marke, Akzent</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--emerald-600);"></div>
+        <div class="meta-row">
+          <div class="name">Emerald 600</div>
+          <div class="hex">#059669 · CTA, Buttons</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--emerald-50); border: 1px solid var(--emerald-100);"></div>
+        <div class="meta-row">
+          <div class="name">Emerald 50</div>
+          <div class="hex">#ecfdf5 · Highlight-BG</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Sekundär (Text & Struktur)</h3>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="color" style="background: var(--slate-900);"></div>
+        <div class="meta-row">
+          <div class="name">Slate 900</div>
+          <div class="hex">#0f172a · Headlines</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--slate-700);"></div>
+        <div class="meta-row">
+          <div class="name">Slate 700</div>
+          <div class="hex">#334155 · Body Text</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--slate-500);"></div>
+        <div class="meta-row">
+          <div class="name">Slate 500</div>
+          <div class="hex">#64748b · Captions</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--slate-200); border: 1px solid var(--slate-300);"></div>
+        <div class="meta-row">
+          <div class="name">Slate 200</div>
+          <div class="hex">#e2e8f0 · Borders</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Backgrounds</h3>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="color" style="background: white; border: 1px solid var(--slate-200);"></div>
+        <div class="meta-row">
+          <div class="name">White</div>
+          <div class="hex">#ffffff · Haupt-BG</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--slate-50); border: 1px solid var(--slate-200);"></div>
+        <div class="meta-row">
+          <div class="name">Slate 50</div>
+          <div class="hex">#f8fafc · Karten-BG</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Akzent-Erweiterung (sparsam einsetzen)</h3>
+    <div class="swatch-grid">
+      <div class="swatch">
+        <div class="color" style="background: var(--teal-500);"></div>
+        <div class="meta-row">
+          <div class="name">Teal 500</div>
+          <div class="hex">#14b8a6 · Gradienten</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="color" style="background: var(--cyan-500);"></div>
+        <div class="meta-row">
+          <div class="name">Cyan 500</div>
+          <div class="hex">#06b6d4 · Hydration</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <strong>Faustregel:</strong> Auf einem Post oder Reel-Frame dominiert immer Weiß/Slate-50 (60-70%). Emerald nur als Akzent (Logo, CTA, einzelne Highlights). Dunkle Hintergründe nur in Ausnahmefällen (Premium-Masterclass-Branding).
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 5. Typografie ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">05 · Typografie</span>
+    <h2>Inter. Klar. Gut atmen.</h2>
+    <p class="section-intro">Eine Schrift, viele Gewichte. Headlines fett und kompakt. Body atmet. Caps mit weitem Tracking nur für Brand-Akzente.</p>
+
+    <div class="type-sample">
+      <div class="label">Headline · Inter 800 · -2% letter-spacing</div>
+      <div class="h1-demo">Dein Körper. Verstanden.</div>
+    </div>
+
+    <div class="type-sample">
+      <div class="label">Subhead · Inter 700</div>
+      <div class="h2-demo">Bewegung, die zu deinem Alltag passt.</div>
+    </div>
+
+    <div class="type-sample">
+      <div class="label">Body · Inter 400 · 16-18px · line-height 1.6</div>
+      <div class="body-demo">Schmerz ist nicht nur eine Empfindung — es ist eine Information. Wenn du lernst, sie zu lesen, verändert sich, wie du auf deinen Körper hörst.</div>
+    </div>
+
+    <div class="type-sample">
+      <div class="label">Brand-Caps · Inter 700 · 0.2em letter-spacing</div>
+      <div class="cap-demo">PRAXIS OS · ONLINE-PHYSIOTHERAPIE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 6. Bildwelt ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">06 · Bildwelt</span>
+    <h2>Hell. Natürlich. Echt.</h2>
+    <p class="section-intro">Praxis OS sieht aus wie eine moderne Physiopraxis bei Tag — nicht wie ein Gym, nicht wie ein Yoga-Studio, nicht wie eine Klinik. Tageslicht, viel Weiß, Menschen die sich bewegen statt leiden.</p>
+
+    <h3>Lichtstil</h3>
+    <ul>
+      <li>Natürliches Tageslicht, soft und warm</li>
+      <li>Nie überbelichtet, nie düster</li>
+      <li>Klinisch sauber, aber nicht steril</li>
+      <li>Schatten erlaubt — gibt Tiefe, ohne dramatisch zu sein</li>
+    </ul>
+
+    <h3>Settings</h3>
+    <ul>
+      <li>Helle Praxisräume oder Wohnräume</li>
+      <li>Studio mit viel Weiß und Holz</li>
+      <li>Outdoor: Park, Spaziergang, frühmorgens oder spätnachmittags</li>
+      <li>Niemals: Gym mit Hanteln, dunkler Yoga-Raum, klinischer OP-Look</li>
+    </ul>
+
+    <h3>Therapeut-Darstellung</h3>
+    <ul>
+      <li>Generisch — kein zwingendes Personen-Branding</li>
+      <li>Wenn gezeigt: Hände, Bewegung, Übungsdemonstration</li>
+      <li>Wenn Gesicht: warm-professionell, Augenkontakt, leichtes Lächeln</li>
+      <li>Kleidung: schlichte Praxiskleidung in Weiß/Slate/Emerald</li>
+      <li>Keine Stethoskope, keine Arztkittel — wir sind keine Klinik</li>
+    </ul>
+
+    <h3>Patient-Darstellung</h3>
+    <ul>
+      <li>Diverse Altersgruppen (Schwerpunkt 30-65)</li>
+      <li>Realistische Körper — keine Fitness-Models</li>
+      <li>Aktiv in Bewegung, nicht passiv-leidend</li>
+      <li>Niemals Schmerz-Grimassen oder dramatisches „Au mein Rücken"</li>
+      <li>Lieber: ruhige Konzentration, leichtes Lächeln, Alltagssituationen</li>
+    </ul>
+
+    <h3>Anatomie-Visualisierung</h3>
+    <ul>
+      <li>Klare, didaktische Illustrationen statt Foto-Anatomie</li>
+      <li>Vereinfacht — nicht medizinisch detailliert</li>
+      <li>Emerald-Akzent für Highlights (markierter Bereich)</li>
+      <li>Keine blutigen / drastischen Darstellungen</li>
+    </ul>
+
+    <div class="do-dont">
+      <div class="do">
+        <span class="tag">Bild Do</span>
+        Patient mittleren Alters, ruhig in Bewegung, helles Wohnzimmer, Tageslicht.
+        <em>Vermittelt: Therapie ist Teil deines Lebens, nicht extra Stress.</em>
+      </div>
+      <div class="dont">
+        <span class="tag">Bild Don't</span>
+        Fitness-Model in Sport-BH, schwitzend, dunkles Gym, dramatische Posen.
+        <em>Vermittelt: Performance, Druck, „nicht für mich".</em>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 7. Content-Formate ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">07 · Meta-Content-Formate</span>
+    <h2>Was funktioniert, in welchem Format.</h2>
+    <p class="section-intro">Reels schlagen alles. Karussell ist Story-Format. Stories sind Quick-Tipps und Engagement. Static-Posts nur, wenn sie wirklich wertig sind.</p>
+
+    <h3>Reels (Hauptformat)</h3>
+    <ul>
+      <li><strong>Länge:</strong> 15–30 Sekunden, optimal 20</li>
+      <li><strong>Hook:</strong> In den ersten 2 Sekunden eine Frage oder ein Bruch mit Erwartung</li>
+      <li><strong>Untertitel:</strong> Immer (80% schauen ohne Ton)</li>
+      <li><strong>Format:</strong> 9:16 vertikal, 1080×1920</li>
+      <li><strong>Branding:</strong> Logo dezent unten links, Emerald-Akzent</li>
+      <li><strong>Outro:</strong> Klare nächste Aktion, keine harten Verkäufer-CTAs</li>
+    </ul>
+
+    <h3>Karussell-Posts</h3>
+    <ul>
+      <li><strong>Slides:</strong> 4–7 Stück, konsistente Farbwelt</li>
+      <li><strong>Aufbau:</strong> Slide 1 = Hook · 2-5 = Inhalt · Letzte = Soft-CTA</li>
+      <li><strong>Visual:</strong> Helle Background, Emerald-Highlight, viel Atemraum</li>
+      <li><strong>Text pro Slide:</strong> Max 30 Wörter</li>
+    </ul>
+
+    <h3>Stories</h3>
+    <ul>
+      <li>Behind-the-Scenes aus der Praxis</li>
+      <li>Quick-Tipps („Eine Übung, die heute reicht")</li>
+      <li>Polls & Fragen → erhöht Engagement</li>
+      <li>Highlights kuratieren: Themen-Buckets als Container</li>
+    </ul>
+
+    <h3>Static-Posts</h3>
+    <ul>
+      <li>Selten — nur wenn besonders wertig</li>
+      <li>Quote-Cards mit echtem Wissen, keine Plattitüden</li>
+      <li>Tipp-Cards mit einer konkreten Sache</li>
+      <li>Reels schlagen Static im Algorithmus immer</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ═══════════ 8. Content-Mix ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">08 · Content-Mix</span>
+    <h2>40 · 30 · 20 · 10.</h2>
+    <p class="section-intro">Diese Verteilung schützt vor Werbe-Charakter und baut langfristig Vertrauen. Auf einen Verkaufs-Post kommen neun, die geben.</p>
+
+    <table class="mix">
+      <thead>
+        <tr><th>Anteil</th><th>Bucket</th><th>Beispiele</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pct">40%</span></td>
+          <td><strong>Awareness · Wissen</strong></td>
+          <td>„Was du über Faszien wissen solltest" · „5 Mythen über Rückenschmerzen"</td>
+        </tr>
+        <tr>
+          <td><span class="pct">30%</span></td>
+          <td><strong>Authority · Expertise</strong></td>
+          <td>Physiotherapeut erklärt · Hintergrund-Insights · Forschung vereinfacht</td>
+        </tr>
+        <tr>
+          <td><span class="pct">20%</span></td>
+          <td><strong>Social Proof · Storys</strong></td>
+          <td>Patienten-Storys (anonymisiert) · häufige Fragen · Praxis-Alltag</td>
+        </tr>
+        <tr>
+          <td><span class="pct">10%</span></td>
+          <td><strong>Soft-Sell · Conversion</strong></td>
+          <td>Video-Analyse (69€) · App-Hinweise · Challenges (HWG-clean formuliert)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════ 9. Hook-Templates ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">09 · Hook-Templates</span>
+    <h2>Die ersten 2 Sekunden.</h2>
+    <p class="section-intro">Ohne Hook scrollt der Nutzer weiter. Diese Templates sind sofort einsetzbar — Variable in eckigen Klammern austauschen.</p>
+
+    <h3>Reel-Hooks</h3>
+    <div class="tpl">3 Dinge, die fast jeder über [Schmerz-Thema] falsch versteht …</div>
+    <div class="tpl">Wenn dein [Körperteil] weh tut, denkst du wahrscheinlich, es liegt an [Mythos]. Stimmt nur teilweise.</div>
+    <div class="tpl">Was kein Arzt dir in 8 Minuten erklären kann …</div>
+    <div class="tpl">Hör auf zu denken, dass [verbreiteter Irrtum].</div>
+    <div class="tpl">Eine kleine Bewegung. Mehr Wirkung als 30 Min Workout.</div>
+    <div class="tpl">Das fragen mich Patienten in der Praxis am häufigsten:</div>
+
+    <h3>Karussell-Hooks</h3>
+    <div class="tpl">Lies das, bevor du wieder [verbreitete Reaktion: zur Apotheke gehst / einen Termin buchst / die Übung machst].</div>
+    <div class="tpl">Welcher [Schmerz-/Bewegungs-]Typ bist du? (3 Vergleiche)</div>
+    <div class="tpl">5 Dinge, die dein Therapeut dir sagen würde — wenn er Zeit hätte.</div>
+    <div class="tpl">Was [Körperteil/System] dir sagt, wenn du genau hinhörst.</div>
+  </div>
+</section>
+
+<!-- ═══════════ 10. CTA-Templates ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">10 · CTA-Templates</span>
+    <h2>Klar. Ruhig. Ohne Druck.</h2>
+    <p class="section-intro">Praxis OS verkauft nicht hart. Wir laden ein. CTAs sind eine Erweiterung des Vertrauens, nicht eine Abkürzung dazu.</p>
+
+    <h3>Video-Analyse (Tripwire · 69€)</h3>
+    <div class="tpl">Buche dir eine Video-Analyse — wir schauen uns gemeinsam an, was bei dir los ist.</div>
+    <div class="tpl">Erste Einschätzung von einem Physiotherapeuten? 30 Minuten Video. Link in Bio.</div>
+
+    <h3>App / Abo (16,99/Monat)</h3>
+    <div class="tpl">Mehr dazu in der App. Trainingsplan, Schmerztagebuch, Therapeut im Chat. Link in Bio.</div>
+    <div class="tpl">Begleitung — kein Programm. Schau's dir an, Link in Bio.</div>
+
+    <h3>Shop / Challenge (49€)</h3>
+    <div class="tpl">Schritt für Schritt in 21 Tagen — in deinem Tempo. Link in Bio.</div>
+    <div class="tpl">Wenn du anfangen willst, ohne gleich Therapeut zu buchen: unsere Challenges. Link in Bio.</div>
+
+    <h3>Bewusst vermeiden</h3>
+    <div class="do-dont">
+      <div class="dont">
+        <span class="tag">Vermeiden</span>
+        Klick jetzt!
+      </div>
+      <div class="dont">
+        <span class="tag">Vermeiden</span>
+        Nur heute 50% Rabatt!
+      </div>
+      <div class="dont">
+        <span class="tag">Vermeiden</span>
+        Letzte Plätze — schnell sein!
+      </div>
+      <div class="dont">
+        <span class="tag">Vermeiden</span>
+        DM uns für Infos! 🔥
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 11. HWG-Compliance ═══════════ -->
+<section style="background: var(--rose-50); border-bottom: 1px solid #fecdd3;">
+  <div class="container">
+    <span class="section-eyebrow" style="color: var(--rose-500);">11 · HWG · Compliance</span>
+    <h2>Was du auf Meta NICHT sagen darfst.</h2>
+    <p class="section-intro">Das Heilmittelwerbegesetz (HWG) ist in Deutschland strikt. Für Physiotherapie-Werbung gelten enge Grenzen — Heilversprechen, Vorher-Nachher mit Krankheitsbezug und konkrete Wirkungs-Claims sind verboten. Abmahnungen sind real und teuer.</p>
+
+    <h3>Verbotene Formulierungen</h3>
+    <div class="do-dont">
+      <div class="dont"><span class="tag">Verboten</span>„Heilt deinen Rückenschmerz"</div>
+      <div class="dont"><span class="tag">Verboten</span>„Schmerzfrei nach 21 Tagen"</div>
+      <div class="dont"><span class="tag">Verboten</span>„Garantiert wirksam gegen [Krankheit]"</div>
+      <div class="dont"><span class="tag">Verboten</span>„Ersatz für Medikamente"</div>
+      <div class="dont"><span class="tag">Verboten</span>„Behandelt Bandscheibenvorfälle"</div>
+      <div class="dont"><span class="tag">Verboten</span>Vorher-Nachher mit Schmerz/Krankheit</div>
+    </div>
+
+    <h3>HWG-konforme Alternativen</h3>
+    <div class="do-dont">
+      <div class="do"><span class="tag">Konform</span>„Verstehe deinen Schmerz besser"</div>
+      <div class="do"><span class="tag">Konform</span>„Für mehr Beweglichkeit im Alltag"</div>
+      <div class="do"><span class="tag">Konform</span>„Routine aufbauen, die zu dir passt"</div>
+      <div class="do"><span class="tag">Konform</span>„Begleitung durch einen Physiotherapeuten"</div>
+      <div class="do"><span class="tag">Konform</span>„Übungen aus der Physiotherapie"</div>
+      <div class="do"><span class="tag">Konform</span>„Wahrnehmung schulen, Körper verstehen"</div>
+    </div>
+
+    <h3>Übersetzungs-Faustregeln</h3>
+    <ul>
+      <li>Statt „hilft gegen" → „begleitet bei"</li>
+      <li>Statt „heilt" → „verstehen lernen"</li>
+      <li>Statt „schmerzfrei" → „schmerzbewusst" / „wahrnehmend"</li>
+      <li>Statt „behandelt" → „arbeitet mit"</li>
+      <li>Statt „in X Tagen weg" → „in X Tagen besser kennen"</li>
+    </ul>
+
+    <div class="box" style="background: white; border: 1px solid #fecdd3;">
+      <strong>Wichtig:</strong> Bei konkreten Krankheits-Indikationen (Bandscheibenvorfall, Arthrose, Skoliose etc.) ist große Vorsicht geboten. Erlaubt sind in der Regel: allgemeine Bewegungs-, Wahrnehmungs- und Routinen-Themen. Im Zweifel: einen Anwalt für Medizin- oder Heilmittelwerberecht kontaktieren — eine Stunde Beratung schützt vor fünfstelliger Abmahnung.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 12. Quick Reference ═══════════ -->
+<section>
+  <div class="container">
+    <span class="section-eyebrow">12 · Quick Reference</span>
+    <h2>Vor jedem Post in 30 Sekunden.</h2>
+    <p class="section-intro">Diese Checkliste prüft jeder Reel, Karussell, Story- und Static-Post vor dem Veröffentlichen.</p>
+
+    <div class="box accent">
+      <span class="label">Brand-Check</span>
+      <ul>
+        <li>Du-Form?</li>
+        <li>Warm, nicht klinisch-distanziert?</li>
+        <li>Konkret, nicht generisch?</li>
+        <li>Keine Plattitüden, keine Esoterik?</li>
+        <li>Emerald-Akzent sichtbar, ohne zu erschlagen?</li>
+        <li>Helle Bildwelt, viel Whitespace?</li>
+        <li>Untertitel bei Reels?</li>
+        <li>CTA klar, ohne Druck?</li>
+        <li>HWG-Check: kein Heilversprechen?</li>
+        <li>Themen-Bucket klar (Wissen / Authority / Proof / Soft-Sell)?</li>
+      </ul>
+    </div>
+
+    <div class="box">
+      <strong>Wenn auch nur einer dieser Punkte „nein" ist:</strong> nicht veröffentlichen. Lieber einen Tag warten und nachbessern, als die Marke zu beschädigen.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="logo">Praxis OS · Brand Guide</div>
+  <p>Version 1.0 · Mai 2026 · Lebendiges Dokument — Updates bei jeder größeren Kampagne.</p>
+</footer>
+
+</body>
+</html>

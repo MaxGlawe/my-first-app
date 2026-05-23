@@ -8,11 +8,13 @@
 
 import Link from "next/link"
 import { ShopHeader } from "@/components/shop/ShopHeader"
+import { ClearCartOnMount } from "@/components/shop/ClearCartOnMount"
 import { CheckCircle2, Mail, ArrowRight } from "lucide-react"
 
 export default function KurseErfolgPage() {
   return (
     <div className="min-h-screen bg-slate-50">
+      <ClearCartOnMount />
       <ShopHeader mode="website" />
 
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
@@ -26,7 +28,7 @@ export default function KurseErfolgPage() {
             Kauf erfolgreich
           </h1>
           <p className="text-slate-500 leading-relaxed mb-6">
-            Vielen Dank! Deine Zahlung ist eingegangen — dein Kurs gehört dir,
+            Vielen Dank! Deine Zahlung ist eingegangen — deine Challenge gehört dir,
             lebenslang.
           </p>
 

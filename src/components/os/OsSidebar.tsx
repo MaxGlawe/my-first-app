@@ -24,6 +24,7 @@ import {
   Inbox,
   Gift,
   HeartPulse,
+  Star,
 } from "lucide-react"
 import {
   Sidebar,
@@ -92,6 +93,7 @@ export function OsSidebar() {
         { label: "Rechnungen", href: "/os/admin/billing", icon: Receipt },
         { label: "Analytics", href: "/os/admin/analytics", icon: BarChart3 },
         { label: "Promo-Codes", href: "/os/admin/promo-codes", icon: Gift },
+        { label: "Shop-Bewertungen", href: "/os/admin/shop-reviews", icon: Star },
       ]
     : []
 
@@ -113,7 +115,7 @@ export function OsSidebar() {
             <SidebarMenuButton size="lg" asChild>
               <Link href="/os/dashboard">
                 <img
-                  src="/images/Physio Logo_ausgeschnitten.png"
+                  src="/images/physio-logo.png"
                   alt="Physiotherapie Glawe"
                   className="aspect-square size-8 rounded-lg object-contain"
                 />

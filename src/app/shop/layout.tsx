@@ -6,12 +6,17 @@
  */
 
 import { Toaster } from "@/components/ui/sonner"
+import { CartProvider } from "@/lib/cart-context"
+import { CartDrawer } from "@/components/shop/CartDrawer"
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-stone-50">
-      {children}
-      <Toaster position="bottom-center" />
-    </div>
+    <CartProvider>
+      <div className="min-h-screen bg-stone-50">
+        {children}
+        <CartDrawer />
+        <Toaster position="bottom-center" />
+      </div>
+    </CartProvider>
   )
 }

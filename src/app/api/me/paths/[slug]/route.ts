@@ -62,7 +62,7 @@ export async function GET(
     .maybeSingle()
 
   if (!path) {
-    return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
+    return NextResponse.json({ error: "Challenge nicht gefunden." }, { status: 404 })
   }
 
   // ── Access check: purchase entitlement OR active abo ─────────
@@ -110,7 +110,7 @@ export async function GET(
   // Route ohnehin nicht — die Middleware sperrt sie auf /shop/*.
   if (!patient) {
     return NextResponse.json(
-      { error: "Kurs-Konsumierung erfordert aktuell ein Patienten-Konto." },
+      { error: "Diese Challenge erfordert aktuell ein Patienten-Konto." },
       { status: 403 }
     )
   }

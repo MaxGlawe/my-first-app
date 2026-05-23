@@ -55,6 +55,9 @@ function ShopKurse() {
   const [selectedAnliegen, setSelectedAnliegen] = useState<string | null>(
     searchParams.get("anliegen")
   )
+  const [selectedTyp, setSelectedTyp] = useState<"challenge" | "masterclass">(
+    searchParams.get("typ") === "masterclass" ? "masterclass" : "challenge"
+  )
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") ?? "")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -63,7 +66,7 @@ function ShopKurse() {
     setIsLoading(true)
     fetch("/api/shop/products")
       .then((res) => {
-        if (!res.ok) throw new Error("Kurse konnten nicht geladen werden.")
+        if (!res.ok) throw new Error("Challenges konnten nicht geladen werden.")
         return res.json()
       })
       .then((json: { products: ShopProduct[] }) => setProducts(json.products ?? []))
@@ -72,7 +75,7 @@ function ShopKurse() {
   }, [])
 
   const visibleProducts = useMemo(() => {
-    let list = products
+    let list = products.filter((p) => (p.produkt_typ ?? "challenge") === selectedTyp)
     if (favOnly) list = list.filter((p) => favorites.includes(p.slug))
     if (selectedAnliegen) list = list.filter((p) => p.anliegen?.includes(selectedAnliegen))
     const q = searchQuery.trim().toLowerCase()
@@ -84,7 +87,7 @@ function ShopKurse() {
       )
     }
     return list
-  }, [products, favOnly, selectedAnliegen, searchQuery, favorites])
+  }, [products, favOnly, selectedAnliegen, selectedTyp, searchQuery, favorites])
 
   const hasActiveFilter = favOnly || !!selectedAnliegen || searchQuery.trim().length > 0
 
@@ -108,17 +111,42 @@ function ShopKurse() {
         {/* Kopf */}
         <div className="animate-fade-in-up">
           <span className="text-xs font-semibold text-emerald-600 uppercase tracking-[0.2em]">
-            Praxis OS · Kurs-Shop
+            Praxis OS · Shop
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1.5">
-            {favOnly ? "Deine Favoriten" : "Alle Kurse"}
+            {favOnly ? "Deine Favoriten" : "Alle Challenges"}
           </h1>
           <p className="text-slate-500 mt-1 text-sm">
             {favOnly
-              ? `${favCount} ${favCount === 1 ? "Kurs" : "Kurse"} gemerkt`
-              : "Von Physiotherapeuten entwickelte 21-Tage-Programme — einmal kaufen, lebenslang behalten."}
+              ? `${favCount} ${favCount === 1 ? "Challenge" : "Challenges"} gemerkt`
+              : "Von Physiotherapeuten entwickelte 21-Tage-Challenges — einmal kaufen, lebenslang behalten."}
           </p>
         </div>
+
+        {/* Produkttyp-Schalter */}
+        {!favOnly && (
+          <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 text-sm font-medium">
+            {(
+              [
+                ["challenge", "Challenges"],
+                ["masterclass", "Masterclasses"],
+              ] as const
+            ).map(([val, label]) => (
+              <button
+                key={val}
+                onClick={() => setSelectedTyp(val)}
+                className={cn(
+                  "rounded-full px-4 py-1.5 transition-all",
+                  selectedTyp === val
+                    ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/25"
+                    : "text-slate-600 hover:text-emerald-700"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Favoriten-Banner mit Reset */}
         {favOnly && (
@@ -127,12 +155,12 @@ function ShopKurse() {
             className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
           >
             <X className="h-4 w-4" />
-            Alle Kurse anzeigen
+            Alle Challenges anzeigen
           </button>
         )}
 
-        {/* Rubrik-Filter */}
-        {!favOnly && (
+        {/* Rubrik-Filter (nur bei Challenges) */}
+        {!favOnly && selectedTyp === "challenge" && (
           <div
             className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1"
             style={{ scrollbarWidth: "none" }}
@@ -184,37 +212,56 @@ function ShopKurse() {
         {!isLoading && !error && (
           <>
             {visibleProducts.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">{favOnly ? "🤍" : "🔍"}</span>
-                </div>
-                <p className="text-slate-600 font-semibold mb-1">
-                  {favOnly
-                    ? "Noch keine Favoriten gemerkt"
-                    : searchQuery.trim()
-                      ? `Keine Treffer für „${searchQuery.trim()}“`
-                      : "Keine Kurse in dieser Rubrik"}
-                </p>
-                {favOnly && (
-                  <p className="text-sm text-slate-400 mb-2">
-                    Tippe auf das Herz bei einem Kurs, um ihn hier zu sammeln.
+              selectedTyp === "masterclass" ? (
+                <div className="text-center py-16">
+                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">🎓</span>
+                  </div>
+                  <p className="text-slate-800 font-bold text-lg mb-1">Masterclasses — in Kürze</p>
+                  <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                    Tiefere, geführte Programme von Praxis OS. Wir arbeiten daran — bald hier
+                    verfügbar.
                   </p>
-                )}
-                {hasActiveFilter && (
                   <button
-                    onClick={clearAll}
-                    className="text-sm text-emerald-600 font-semibold underline underline-offset-2 mt-1"
+                    onClick={() => setSelectedTyp("challenge")}
+                    className="text-sm text-emerald-600 font-semibold underline underline-offset-2 mt-3"
                   >
-                    Alle Kurse anzeigen
+                    Challenges ansehen
                   </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">{favOnly ? "🤍" : "🔍"}</span>
+                  </div>
+                  <p className="text-slate-600 font-semibold mb-1">
+                    {favOnly
+                      ? "Noch keine Favoriten gemerkt"
+                      : searchQuery.trim()
+                        ? `Keine Treffer für „${searchQuery.trim()}“`
+                        : "Keine Challenges in dieser Rubrik"}
+                  </p>
+                  {favOnly && (
+                    <p className="text-sm text-slate-400 mb-2">
+                      Tippe auf das Herz bei einer Challenge, um sie hier zu sammeln.
+                    </p>
+                  )}
+                  {hasActiveFilter && (
+                    <button
+                      onClick={clearAll}
+                      className="text-sm text-emerald-600 font-semibold underline underline-offset-2 mt-1"
+                    >
+                      Alle Challenges anzeigen
+                    </button>
+                  )}
+                </div>
+              )
             ) : (
               <>
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-slate-500">
                     {visibleProducts.length}{" "}
-                    {visibleProducts.length === 1 ? "Kurs" : "Kurse"}
+                    {visibleProducts.length === 1 ? "Challenge" : "Challenges"}
                     {hasActiveFilter ? " gefunden" : " verfügbar"}
                   </p>
                   {hasActiveFilter && !favOnly && (

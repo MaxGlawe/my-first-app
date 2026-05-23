@@ -9,6 +9,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { constructWebhookEvent, getStripe } from "@/lib/stripe"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createSubscriptionInvoice } from "@/lib/billing/auto-invoice"
+import { signDeckToken } from "@/lib/deck-token"
+import { renderDeckPurchaseEmail } from "@/lib/deck-emails"
+import { sendEmail } from "@/lib/email"
 import type Stripe from "stripe"
 
 export async function POST(request: NextRequest) {
@@ -210,123 +213,287 @@ export async function POST(request: NextRequest) {
         break
       }
 
-      // ── Shop: One-time purchase ─────────────────────
+      // ── Shop: One-time purchase (Einzel- oder Mehrartikel-Warenkorb) ──
       case "checkout.session.completed": {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const session = event.data.object as any
 
         // Only handle shop purchases — skip subscription/setup checkouts
         if (session.mode !== "payment") break
-        const productId = session.metadata?.product_id
-        if (!productId) break
 
-        let userId: string | undefined = session.metadata?.user_id
+        // Mehrartikel: product_ids (comma-separated). Rückwärtskompatibel: product_id (alt).
+        const productIds: string[] = session.metadata?.product_ids
+          ? String(session.metadata.product_ids)
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : session.metadata?.product_id
+            ? [String(session.metadata.product_id)]
+            : []
 
-        // ── PROJ-21: Gast-Kauf — kein user_id, aber guest_email in den Metadaten ──
-        // Account über den internen PROJ-19-Endpunkt auflösen/anlegen (idempotent).
-        if (!userId) {
-          const guestEmail = session.metadata?.guest_email
-          if (!guestEmail) {
-            console.warn(
-              `[Stripe Webhook] checkout.session.completed session=${session.id} — weder user_id noch guest_email, übersprungen`
-            )
-            break
-          }
+        if (productIds.length === 0) break
 
-          const secret = process.env.INTERNAL_API_SECRET
-          if (!secret) {
-            console.error(
-              "[Stripe Webhook] INTERNAL_API_SECRET fehlt — Käufer-Account kann nicht angelegt werden"
-            )
-            return NextResponse.json({ error: "Config error" }, { status: 500 })
-          }
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL ??
+          process.env.NEXT_PUBLIC_SITE_URL ??
+          "https://wwwpraxis-os.com"
 
-          const appUrl =
-            process.env.NEXT_PUBLIC_APP_URL ??
-            process.env.NEXT_PUBLIC_SITE_URL ??
-            "https://wwwpraxis-os.com"
-          const firstName = session.metadata?.guest_first_name?.trim() || "Kund:in"
-          const lastName = session.metadata?.guest_last_name?.trim() || "—"
+        // ── Produkte laden + nach Typ aufteilen ───────────────────────────
+        // Decks (produkt_typ='deck') sind accountlose Impuls-Produkte: Kauf →
+        // Bestätigungs-Mail mit signiertem Link, KEIN Account, KEINE Entitlements.
+        // Alle anderen Produkte (Challenges, Kurse, …) behalten den
+        // bestehenden Account- + Entitlement-Flow.
+        const { data: purchasedProducts, error: productsErr } = await supabase
+          .from("products")
+          .select("id, slug, titel, produkt_typ, preis, waehrung")
+          .in("id", productIds)
 
-          try {
-            const res = await fetch(`${appUrl}/api/buyer-accounts`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-internal-api-secret": secret,
-              },
-              body: JSON.stringify({ email: guestEmail, firstName, lastName }),
+        if (productsErr) {
+          console.error(
+            `[Stripe Webhook] Failed to load products for session=${session.id}:`,
+            productsErr
+          )
+          // 500 → Stripe wiederholt (idempotent)
+          return NextResponse.json({ error: "Product load failed" }, { status: 500 })
+        }
+
+        const decks = (purchasedProducts ?? []).filter(
+          (p) => p.produkt_typ === "deck"
+        )
+        // nonDecks = alle gekauften product_ids, die KEIN Deck sind. Auf Basis der
+        // product_ids (nicht der geladenen Produkte), damit der Account-/Entitlement-
+        // Flow rückwärtskompatibel bleibt, falls ein Produkt nicht in `products`
+        // gefunden wurde (z.B. älterer Datensatz) — es wird dann als nonDeck behandelt.
+        const deckIds = new Set(decks.map((d) => d.id))
+        const nonDeckProductIds = productIds.filter((id) => !deckIds.has(id))
+
+        console.log(
+          `[Stripe Webhook] checkout.session.completed session=${session.id} ` +
+            `decks=[${decks.map((d) => d.slug).join(",")}] nonDecks=[${nonDeckProductIds.join(",")}]`
+        )
+
+        // ── Shop-Analytics: Kauf-Event pro gekauftem Produkt (fire-and-forget) ──
+        // Schreibt für JEDES geladene Produkt (Decks UND nonDecks) einen
+        // conversion_events-Eintrag. Direkt über den Service-Client (nicht über
+        // die API — deren Zod-Schema erwartet eine UUID-session_id; wir nutzen
+        // hier bewusst die Stripe-session.id als session_id, da die Spalte TEXT
+        // ist). Fehler hier dürfen den Kauf-/Entitlement-Flow NICHT brechen und
+        // KEINEN Stripe-Retry erzwingen → bewusst kein 500, nur Logging.
+        if ((purchasedProducts ?? []).length > 0) {
+          const purchaseRows = (purchasedProducts ?? []).map((p) => ({
+            session_id: String(session.id),
+            event_type: "shop_purchase",
+            path: "/api/webhooks/stripe",
+            metadata: {
+              product_id: p.id,
+              slug: p.slug,
+              produkt_typ: p.produkt_typ,
+              amount: p.preis,
+              currency: p.waehrung,
+            },
+          }))
+          // Fire-and-forget: Supabase-Queries resolven (sie werfen nicht); ein
+          // DB-Fehler wird im then-Callback geloggt. Promise.resolve(...) kapselt
+          // den PromiseLike sicher, ohne den Webhook zu blockieren.
+          Promise.resolve(
+            supabase.from("conversion_events").insert(purchaseRows)
+          )
+            .then(({ error: convErr }) => {
+              if (convErr) {
+                console.error(
+                  `[Stripe Webhook] shop_purchase-Tracking fehlgeschlagen (session=${session.id}):`,
+                  convErr
+                )
+              }
             })
-            if (!res.ok) {
+            .catch((err: unknown) =>
               console.error(
-                `[Stripe Webhook] /api/buyer-accounts antwortete ${res.status} für ${guestEmail}`
+                `[Stripe Webhook] shop_purchase-Tracking warf (session=${session.id}):`,
+                err
               )
-              // 500 → Stripe wiederholt den Webhook; buyer-accounts + Entitlement-Upsert sind idempotent
+            )
+        }
+
+        // ── nonDecks: bestehender Account- + Entitlement-Flow ─────────────
+        // Account-Auflösung (guest → /api/buyer-accounts) NUR wenn es nonDeck-
+        // Produkte gibt. Bei deck-only-Kauf: KEIN Account, KEINE Entitlements.
+        if (nonDeckProductIds.length > 0) {
+          let userId: string | undefined = session.metadata?.user_id
+
+          // ── PROJ-21: Gast-Kauf — kein user_id, aber guest_email in den Metadaten ──
+          // Account über den internen PROJ-19-Endpunkt auflösen/anlegen (idempotent).
+          if (!userId) {
+            const guestEmail = session.metadata?.guest_email
+            if (!guestEmail) {
+              console.warn(
+                `[Stripe Webhook] checkout.session.completed session=${session.id} — weder user_id noch guest_email für nonDeck-Produkte, übersprungen`
+              )
+            } else {
+              const secret = process.env.INTERNAL_API_SECRET
+              if (!secret) {
+                console.error(
+                  "[Stripe Webhook] INTERNAL_API_SECRET fehlt — Käufer-Account kann nicht angelegt werden"
+                )
+                return NextResponse.json({ error: "Config error" }, { status: 500 })
+              }
+
+              const firstName = session.metadata?.guest_first_name?.trim() || "Kund:in"
+              const lastName = session.metadata?.guest_last_name?.trim() || "—"
+
+              try {
+                const res = await fetch(`${appUrl}/api/buyer-accounts`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-internal-api-secret": secret,
+                  },
+                  body: JSON.stringify({ email: guestEmail, firstName, lastName }),
+                })
+                if (!res.ok) {
+                  console.error(
+                    `[Stripe Webhook] /api/buyer-accounts antwortete ${res.status} für ${guestEmail}`
+                  )
+                  // 500 → Stripe wiederholt den Webhook; buyer-accounts + Entitlement-Upsert sind idempotent
+                  return NextResponse.json(
+                    { error: "Buyer account creation failed" },
+                    { status: 500 }
+                  )
+                }
+                const json = await res.json()
+                userId = json.userId
+              } catch (err) {
+                console.error("[Stripe Webhook] /api/buyer-accounts Aufruf fehlgeschlagen:", err)
+                return NextResponse.json(
+                  { error: "Buyer account creation failed" },
+                  { status: 500 }
+                )
+              }
+
+              console.log(
+                `[Stripe Webhook] Gast-Kauf → Account aufgelöst: ${guestEmail} → user=${userId}`
+              )
+            }
+          }
+
+          if (userId) {
+            // Pro nonDeck-Produkt im Warenkorb die Entitlements vergeben.
+            // Bei einem DB-Fehler 500 zurückgeben → Stripe wiederholt den Webhook;
+            // alle Upserts sind idempotent (ON CONFLICT DO NOTHING).
+            let hadError = false
+
+            for (const productId of nonDeckProductIds) {
+              // Load all content entries for this product
+              const { data: contents, error: contentsErr } = await supabase
+                .from("product_contents")
+                .select("content_type, content_id")
+                .eq("product_id", productId)
+
+              if (contentsErr) {
+                console.error(
+                  `[Stripe Webhook] Failed to load product_contents for product ${productId}:`,
+                  contentsErr
+                )
+                hadError = true
+                continue
+              }
+
+              if (!contents || contents.length === 0) {
+                console.warn(`[Stripe Webhook] No product_contents found for product ${productId}`)
+                continue
+              }
+
+              // Insert one entitlement per content item — idempotent via ON CONFLICT DO NOTHING
+              for (const c of contents) {
+                const { error: entErr } = await supabase
+                  .from("content_entitlements")
+                  .upsert(
+                    {
+                      user_id: userId,
+                      content_type: c.content_type,
+                      content_id: c.content_id,
+                      source: "purchase",
+                      valid_from: new Date().toISOString(),
+                      valid_until: null, // lifetime
+                    },
+                    { onConflict: "user_id,content_type,content_id,source", ignoreDuplicates: true }
+                  )
+
+                if (entErr) {
+                  console.error(
+                    `[Stripe Webhook] Failed to insert entitlement for user=${userId} content=${c.content_id}:`,
+                    entErr
+                  )
+                  hadError = true
+                } else {
+                  console.log(
+                    `[Stripe Webhook] Entitlement granted user=${userId} product=${productId} content_type=${c.content_type} content_id=${c.content_id}`
+                  )
+                }
+              }
+            }
+
+            // Bei Fehler 500 → Stripe wiederholt (Idempotenz schützt vor Doppel-Grants)
+            if (hadError) {
               return NextResponse.json(
-                { error: "Buyer account creation failed" },
+                { error: "Entitlement grant partially failed" },
                 { status: 500 }
               )
             }
-            const json = await res.json()
-            userId = json.userId
-          } catch (err) {
-            console.error("[Stripe Webhook] /api/buyer-accounts Aufruf fehlgeschlagen:", err)
-            return NextResponse.json(
-              { error: "Buyer account creation failed" },
-              { status: 500 }
-            )
+          }
+        }
+
+        // ── Decks: accountlose Kaufbestätigungs-Mail mit signierten Links ──
+        if (decks.length > 0) {
+          // Käufer-E-Mail ermitteln: guest_email ODER (eingeloggt) user_profiles.email.
+          let buyerEmail: string | undefined = session.metadata?.guest_email?.trim() || undefined
+          let buyerFirstName: string | undefined =
+            session.metadata?.guest_first_name?.trim() || undefined
+
+          if (!buyerEmail && session.metadata?.user_id) {
+            const { data: profile } = await supabase
+              .from("user_profiles")
+              .select("email, first_name")
+              .eq("id", session.metadata.user_id)
+              .maybeSingle()
+            buyerEmail = profile?.email ?? undefined
+            if (!buyerFirstName) buyerFirstName = profile?.first_name ?? undefined
           }
 
-          console.log(
-            `[Stripe Webhook] Gast-Kauf → Account aufgelöst: ${guestEmail} → user=${userId}`
-          )
-        }
-
-        if (!userId) break
-
-        console.log(`[Stripe Webhook] checkout.session.completed session=${session.id} user=${userId} product=${productId}`)
-
-        // Load all content entries for this product
-        const { data: contents, error: contentsErr } = await supabase
-          .from("product_contents")
-          .select("content_type, content_id")
-          .eq("product_id", productId)
-
-        if (contentsErr) {
-          console.error("[Stripe Webhook] Failed to load product_contents:", contentsErr)
-          break
-        }
-
-        if (!contents || contents.length === 0) {
-          console.warn(`[Stripe Webhook] No product_contents found for product ${productId}`)
-          break
-        }
-
-        // Insert one entitlement per content item — idempotent via ON CONFLICT DO NOTHING
-        for (const c of contents) {
-          const { error: entErr } = await supabase
-            .from("content_entitlements")
-            .upsert(
-              {
-                user_id: userId,
-                content_type: c.content_type,
-                content_id: c.content_id,
-                source: "purchase",
-                valid_from: new Date().toISOString(),
-                valid_until: null, // lifetime
-              },
-              { onConflict: "user_id,content_type,content_id,source", ignoreDuplicates: true }
-            )
-
-          if (entErr) {
-            console.error(
-              `[Stripe Webhook] Failed to insert entitlement for user=${userId} content=${c.content_id}:`,
-              entErr
+          if (!buyerEmail) {
+            // Ohne E-Mail kein Versand möglich — kein 500 (Decks brauchen keinen
+            // Account / keine DB-Mutation; der Kauf ist trotzdem gültig).
+            console.warn(
+              `[Stripe Webhook] Deck-Kauf ohne ermittelbare Käufer-E-Mail (session=${session.id}) — Mail übersprungen`
             )
           } else {
-            console.log(
-              `[Stripe Webhook] Entitlement granted user=${userId} content_type=${c.content_type} content_id=${c.content_id}`
-            )
+            const firstName = buyerFirstName || "Kund:in"
+            const deckLinks = decks.map((d) => ({
+              titel: d.titel,
+              url: `${appUrl}/karten/${d.slug}?t=${signDeckToken(d.slug)}`,
+            }))
+
+            const { subject, html } = renderDeckPurchaseEmail({
+              firstName,
+              decks: deckLinks,
+            })
+
+            // Fire-and-forget: ein fehlgeschlagener Mailversand darf den Webhook
+            // nicht in einen Retry zwingen (sonst Doppel-Grants bei nonDecks).
+            sendEmail({ to: buyerEmail, subject, html })
+              .then((r) => {
+                if (r.success) {
+                  console.log(
+                    `[Stripe Webhook] Deck-Kaufbestätigung gesendet an ${buyerEmail} (${decks.length} Deck(s))`
+                  )
+                } else {
+                  console.error(
+                    `[Stripe Webhook] Deck-Kaufbestätigung NICHT gesendet an ${buyerEmail}: ${r.error}`
+                  )
+                }
+              })
+              .catch((err) =>
+                console.error("[Stripe Webhook] Deck-Mail-Versand fehlgeschlagen:", err)
+              )
           }
         }
 
@@ -356,8 +523,16 @@ export async function POST(request: NextRequest) {
         const refundSession = sessions.data[0]
         if (!refundSession || refundSession.mode !== "payment") break
 
-        const refundProductId = refundSession.metadata?.product_id
-        if (!refundProductId) break
+        // Mehrartikel: product_ids (comma-separated). Rückwärtskompatibel: product_id.
+        const refundProductIds: string[] = refundSession.metadata?.product_ids
+          ? String(refundSession.metadata.product_ids)
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : refundSession.metadata?.product_id
+            ? [String(refundSession.metadata.product_id)]
+            : []
+        if (refundProductIds.length === 0) break
 
         // User auflösen — eingeloggter Kauf (user_id) oder Gast-Kauf (guest_email)
         let refundUserId: string | undefined = refundSession.metadata?.user_id
@@ -371,30 +546,32 @@ export async function POST(request: NextRequest) {
         }
         if (!refundUserId) break
 
-        // Kauf-Entitlements für dieses Produkt entziehen
-        const { data: refundContents } = await supabase
-          .from("product_contents")
-          .select("content_type, content_id")
-          .eq("product_id", refundProductId)
+        // Kauf-Entitlements für ALLE zurückerstatteten Produkte entziehen
+        for (const refundProductId of refundProductIds) {
+          const { data: refundContents } = await supabase
+            .from("product_contents")
+            .select("content_type, content_id")
+            .eq("product_id", refundProductId)
 
-        for (const c of refundContents ?? []) {
-          const { error: delErr } = await supabase
-            .from("content_entitlements")
-            .delete()
-            .eq("user_id", refundUserId)
-            .eq("content_type", c.content_type)
-            .eq("content_id", c.content_id)
-            .eq("source", "purchase")
+          for (const c of refundContents ?? []) {
+            const { error: delErr } = await supabase
+              .from("content_entitlements")
+              .delete()
+              .eq("user_id", refundUserId)
+              .eq("content_type", c.content_type)
+              .eq("content_id", c.content_id)
+              .eq("source", "purchase")
 
-          if (delErr) {
-            console.error(
-              `[Stripe Webhook] charge.refunded — Entitlement-Entzug fehlgeschlagen user=${refundUserId} content=${c.content_id}:`,
-              delErr
-            )
-          } else {
-            console.log(
-              `[Stripe Webhook] charge.refunded — Entitlement entzogen user=${refundUserId} content_id=${c.content_id}`
-            )
+            if (delErr) {
+              console.error(
+                `[Stripe Webhook] charge.refunded — Entitlement-Entzug fehlgeschlagen user=${refundUserId} content=${c.content_id}:`,
+                delErr
+              )
+            } else {
+              console.log(
+                `[Stripe Webhook] charge.refunded — Entitlement entzogen user=${refundUserId} product=${refundProductId} content_id=${c.content_id}`
+              )
+            }
           }
         }
 

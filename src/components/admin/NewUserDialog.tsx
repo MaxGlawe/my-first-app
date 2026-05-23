@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { randomUUID } from "@/lib/uuid"
 import {
   Dialog,
   DialogContent,
@@ -97,7 +98,7 @@ export function NewUserDialog({ onUserCreated }: NewUserDialogProps) {
 
       // For patients, generate invite link
       if (data.role === "patient") {
-        const token = crypto.randomUUID()
+        const token = randomUUID()
         const inviteUrl = `${window.location.origin}/invite/${token}`
 
         const { error: inviteError } = await supabase.from("invites").insert({

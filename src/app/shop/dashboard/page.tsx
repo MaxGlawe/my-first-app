@@ -157,7 +157,7 @@ export default function BuyerDashboardPage() {
               Hallo, {firstName}
             </h1>
             <p className="text-slate-500 mt-1 text-sm">
-              Hier findest du alle deine gekauften Kurse und Programme.
+              Hier findest du alle deine freigeschalteten Inhalte.
             </p>
           </div>
           <button
@@ -192,14 +192,14 @@ export default function BuyerDashboardPage() {
                 Noch keine Inhalte
               </p>
               <p className="text-slate-400 text-xs max-w-xs mx-auto mb-4">
-                Deine gekauften Kurse erscheinen hier, sobald dein Kauf
+                Deine gekauften Challenges erscheinen hier, sobald dein Kauf
                 verarbeitet wurde.
               </p>
               <Link
                 href="/shop/kurse"
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
               >
-                Kurse entdecken
+                Challenges entdecken
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -220,7 +220,7 @@ export default function BuyerDashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-800">
-                        {e.content_type === "course" ? "Kurs" : "Lernpfad"}
+                        {e.content_type === "course" ? "Inhalt" : "Challenge"}
                       </p>
                       <p className="text-xs text-slate-400">
                         Seit{" "}
@@ -252,7 +252,7 @@ export default function BuyerDashboardPage() {
               Praxis OS · Voll-App
             </p>
             <h2 className="text-lg font-bold text-white mb-1.5">
-              Mehr als ein Kurs — deine persönliche Therapie-Begleitung
+              Mehr als eine Challenge — deine persönliche Therapie-Begleitung
             </h2>
             <p className="text-sm text-slate-300 leading-relaxed mb-5">
               Individuell, professionell, auf deinen Körper zugeschnitten.

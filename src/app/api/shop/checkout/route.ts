@@ -1,14 +1,24 @@
 /**
  * POST /api/shop/checkout
  *
- * Creates a Stripe Checkout Session (mode 'payment') for a one-time course purchase.
+ * Creates a Stripe Checkout Session (mode 'payment') for one-time course purchases.
  * Uses inline price_data (no Stripe Price ID needed).
- * Metadata { user_id, product_id } is stored on the session for the webhook.
  *
- * Guards:
- *   - Product must exist and be active
- *   - User must not already own the content
- *   - User must not have subscription access (abo_inkludiert = true)
+ * Body (rückwärtskompatibel):
+ *   - { productSlug: string }  — Einzelkauf (Altverhalten)
+ *   - { slug: string }         — Einzelkauf (Alias)
+ *   - { slugs: string[] }      — Mehrartikel-Warenkorb
+ *
+ * Metadata:
+ *   - { user_id, product_ids: "<comma-joined product ids>" }  (neu, immer gesetzt)
+ *   - { user_id, product_id }                                  (zusätzlich bei Einzelkauf, Webhook-Kompat)
+ *
+ * Guards (pro Artikel):
+ *   - Produkt muss existieren und aktiv sein
+ *   - User darf den Inhalt nicht bereits besitzen
+ *   - Produkt darf nicht über das Abo verfügbar sein (abo_inkludiert = true + aktives Abo)
+ * Bereits besessene / im Abo enthaltene Artikel werden herausgefiltert.
+ * Bleibt nach dem Filter nichts übrig → 409.
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -18,9 +28,27 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { getStripe } from "@/lib/stripe"
 
-const CheckoutBodySchema = z.object({
-  productSlug: z.string().min(1).max(200),
-})
+const CheckoutBodySchema = z
+  .object({
+    productSlug: z.string().min(1).max(200).optional(),
+    slug: z.string().min(1).max(200).optional(),
+    slugs: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+  })
+  .refine((b) => b.productSlug || b.slug || (b.slugs && b.slugs.length > 0), {
+    message: "Es muss mindestens ein Produkt angegeben werden.",
+  })
+
+type LoadedProduct = {
+  id: string
+  slug: string
+  titel: string
+  preis: number
+  waehrung: string | null
+  abo_inkludiert: boolean
+  abo_rabatt_prozent: number | null
+  produkt_typ: string
+  status: string
+}
 
 export async function POST(request: NextRequest) {
   // ── Auth ────────────────────────────────────────────────────
@@ -54,63 +82,46 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { productSlug } = parsed.data
+  // Slug-Liste normalisieren (dedupliziert, Einzel- + Mehrartikel-Eingabe)
+  const requestedSlugs = Array.from(
+    new Set(
+      [
+        parsed.data.productSlug,
+        parsed.data.slug,
+        ...(parsed.data.slugs ?? []),
+      ].filter((s): s is string => typeof s === "string" && s.length > 0)
+    )
+  )
+
   const sc = createSupabaseServiceClient()
 
-  // ── Load product ─────────────────────────────────────────────
-  const { data: product, error: productError } = await sc
+  // ── Load products ────────────────────────────────────────────
+  const { data: products, error: productError } = await sc
     .from("products")
-    .select("id, slug, titel, preis, waehrung, abo_inkludiert, produkt_typ, status")
-    .eq("slug", productSlug)
-    .maybeSingle()
+    .select("id, slug, titel, preis, waehrung, abo_inkludiert, abo_rabatt_prozent, produkt_typ, status")
+    .in("slug", requestedSlugs)
 
   if (productError) {
     console.error("[POST /api/shop/checkout] DB error:", productError)
-    return NextResponse.json({ error: "Produkt konnte nicht geladen werden." }, { status: 500 })
+    return NextResponse.json({ error: "Produkte konnten nicht geladen werden." }, { status: 500 })
   }
 
-  if (!product || product.status !== "aktiv") {
+  const activeProducts = (products ?? []).filter(
+    (p): p is LoadedProduct => p.status === "aktiv"
+  )
+
+  if (activeProducts.length === 0) {
     return NextResponse.json({ error: "Produkt nicht gefunden." }, { status: 404 })
   }
 
-  // ── Load product contents ────────────────────────────────────
-  const { data: contents } = await sc
-    .from("product_contents")
-    .select("content_type, content_id")
-    .eq("product_id", product.id)
-
-  const contentIds = (contents ?? []).map((c) => c.content_id)
-
-  // ── Guard: not already purchased ────────────────────────────
-  if (contentIds.length > 0) {
-    const now = new Date()
-    const { data: ents } = await sc
-      .from("content_entitlements")
-      .select("content_id, valid_until")
-      .eq("user_id", user.id)
-      .eq("source", "purchase")
-      .in("content_id", contentIds)
-
-    const alreadyOwned = (ents ?? []).some((ent) => {
-      return !ent.valid_until || new Date(ent.valid_until) > now
-    })
-
-    if (alreadyOwned) {
-      return NextResponse.json(
-        { error: "Du besitzt dieses Produkt bereits." },
-        { status: 409 }
-      )
-    }
-  }
-
-  // ── Guard: not available via subscription ────────────────────
-  if (product.abo_inkludiert) {
+  // ── Abo-Status des Users einmalig ermitteln (für Abo-Filter + Masterclass-Rabatt) ──
+  let hasActiveSub = false
+  {
     const { data: patient } = await sc
       .from("patients")
       .select("id")
       .eq("user_id", user.id)
       .maybeSingle()
-
     if (patient) {
       const { data: sub } = await sc
         .from("patient_subscriptions")
@@ -118,14 +129,81 @@ export async function POST(request: NextRequest) {
         .eq("patient_id", patient.id)
         .in("status", ["trial", "active"])
         .maybeSingle()
-
-      if (sub) {
-        return NextResponse.json(
-          { error: "Dieses Produkt ist in deinem Abo bereits enthalten." },
-          { status: 409 }
-        )
-      }
+      hasActiveSub = !!sub
     }
+  }
+
+  const now = new Date()
+
+  // ── Pro Produkt: Besitz- und Abo-Filter, Preis bestimmen ─────
+  const lineItems: {
+    price_data: {
+      currency: string
+      unit_amount: number
+      product_data: { name: string }
+    }
+    quantity: number
+  }[] = []
+  const purchasableProductIds: string[] = []
+
+  for (const product of activeProducts) {
+    // Inhalte des Produkts laden (für Besitz-Check)
+    const { data: contents } = await sc
+      .from("product_contents")
+      .select("content_id")
+      .eq("product_id", product.id)
+    const contentIds = (contents ?? []).map((c) => c.content_id)
+
+    // Guard: bereits gekauft?
+    if (contentIds.length > 0) {
+      const { data: ents } = await sc
+        .from("content_entitlements")
+        .select("content_id, valid_until")
+        .eq("user_id", user.id)
+        .eq("source", "purchase")
+        .in("content_id", contentIds)
+
+      const alreadyOwned = (ents ?? []).some(
+        (ent) => !ent.valid_until || new Date(ent.valid_until) > now
+      )
+      if (alreadyOwned) continue // raus aus dem Warenkorb-Checkout
+    }
+
+    // Guard: im Abo enthalten?
+    if (product.abo_inkludiert && hasActiveSub) continue
+
+    // Effektiver Preis (Masterclass-Abo-Rabatt für Abonnenten)
+    let unitAmount = Math.round(product.preis * 100) // Stripe in Cent
+    if (
+      product.produkt_typ === "masterclass" &&
+      hasActiveSub &&
+      product.abo_rabatt_prozent
+    ) {
+      unitAmount = Math.round(unitAmount * (1 - product.abo_rabatt_prozent / 100))
+    }
+
+    lineItems.push({
+      price_data: {
+        currency: product.waehrung ?? "eur",
+        unit_amount: unitAmount,
+        product_data: { name: product.titel },
+      },
+      quantity: 1,
+    })
+    purchasableProductIds.push(product.id)
+  }
+
+  // Nach dem Filter nichts mehr übrig → klare Meldung
+  if (lineItems.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          activeProducts.length === 1
+            ? "Du besitzt dieses Produkt bereits oder es ist in deinem Abo enthalten."
+            : "Alle Artikel im Warenkorb besitzt du bereits oder sind in deinem Abo enthalten.",
+      },
+      { status: 409 }
+    )
   }
 
   // ── Fetch user email ─────────────────────────────────────────
@@ -137,68 +215,28 @@ export async function POST(request: NextRequest) {
 
   const customerEmail = profile?.email ?? user.email ?? undefined
 
-  // ── Determine effective price ────────────────────────────────
-  // For subscribers buying masterclasses with a discount
-  let unitAmount = Math.round(product.preis * 100) // Stripe uses cents
-
-  if (product.produkt_typ === "masterclass") {
-    // Check if subscriber to apply discount
-    const { data: patient } = await sc
-      .from("patients")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle()
-
-    if (patient) {
-      const { data: sub } = await sc
-        .from("patient_subscriptions")
-        .select("id")
-        .eq("patient_id", patient.id)
-        .in("status", ["trial", "active"])
-        .maybeSingle()
-
-      if (sub) {
-        // Re-fetch full product for abo_rabatt_prozent
-        const { data: fullProduct } = await sc
-          .from("products")
-          .select("abo_rabatt_prozent")
-          .eq("id", product.id)
-          .maybeSingle()
-
-        if (fullProduct?.abo_rabatt_prozent) {
-          unitAmount = Math.round(unitAmount * (1 - fullProduct.abo_rabatt_prozent / 100))
-        }
-      }
-    }
-  }
-
   // ── Create Stripe Checkout Session ──────────────────────────
   const stripe = getStripe()
   const origin = request.headers.get("origin") ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://wwwpraxis-os.com"
+
+  // Metadata: product_ids (neu, comma-joined) + product_id (Einzelkauf, Webhook-Kompat)
+  const metadata: Record<string, string> = {
+    user_id: user.id,
+    product_ids: purchasableProductIds.join(","),
+  }
+  if (purchasableProductIds.length === 1) {
+    metadata.product_id = purchasableProductIds[0]
+  }
 
   let session
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: customerEmail,
-      line_items: [
-        {
-          price_data: {
-            currency: product.waehrung ?? "eur",
-            unit_amount: unitAmount,
-            product_data: {
-              name: product.titel,
-            },
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       success_url: `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/shop`,
-      metadata: {
-        user_id: user.id,
-        product_id: product.id,
-      },
+      metadata,
     })
   } catch (err) {
     console.error("[POST /api/shop/checkout] Stripe error:", err)

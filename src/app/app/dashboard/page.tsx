@@ -304,7 +304,7 @@ export default function PatientDashboardPage() {
                 href="/app/kurse"
                 icon={<BookOpen className="h-5 w-5 text-teal-600" />}
                 iconBg="bg-teal-100"
-                title="Kurse"
+                title="Challenges"
                 subtitle="Weiterlernen"
               />
               <QuickLink
@@ -330,14 +330,14 @@ export default function PatientDashboardPage() {
               />
             </div>
 
-            {/* ── Kurs-Shop & Termine ────────────────────────────── */}
+            {/* ── Shop & Termine ─────────────────────────────────── */}
             <div className="animate-fade-in-up animation-delay-600">
               <LinkCard
                 href="/shop"
                 icon={<ShoppingBag className="h-5 w-5 text-emerald-600" />}
                 iconBg="bg-emerald-100"
-                title="Kurs-Shop"
-                subtitle="Weitere Kurse entdecken & freischalten"
+                title="Shop"
+                subtitle="Weitere Challenges entdecken & freischalten"
               />
             </div>
             <div className="animate-fade-in-up animation-delay-600">

@@ -17,6 +17,7 @@ import {
   GraduationCap,
   Play,
   Clock,
+  Trophy,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -119,6 +120,9 @@ interface ModuleItemProps {
   onReflectionChange: (v: string) => void
   onStartQuiz: () => void
   isSubmitting: boolean
+  /** Wenn gesetzt, rendert einen "Zertifikat ansehen"-Button im expanded
+   *  body. Der Parent setzt das nur für das abgeschlossene letzte Modul. */
+  onShowCertificate?: () => void
 }
 
 function ModuleItem({
@@ -139,6 +143,7 @@ function ModuleItem({
   onReflectionChange,
   onStartQuiz,
   isSubmitting,
+  onShowCertificate,
 }: ModuleItemProps) {
   const c = colorFor(colorKey)
 
@@ -221,7 +226,7 @@ function ModuleItem({
                     Aktuell
                   </Badge>
                 )}
-                {isLockedUntilTomorrow && isCurrent && (
+                {isLockedUntilTomorrow && isCurrent && !isCompleted && (
                   <Badge className="bg-amber-100 text-amber-700 border-0 h-4 px-1.5 text-[10px]">
                     Warte bis morgen
                   </Badge>
@@ -244,7 +249,7 @@ function ModuleItem({
           {/* Expanded content */}
           {isExpanded && (
             <div className="mt-4 border-t border-slate-100 pt-4 space-y-4">
-              {isLockedUntilTomorrow && isCurrent ? (
+              {isLockedUntilTomorrow && isCurrent && !isCompleted ? (
                 /* Locked until tomorrow — hide the lesson content, show only
                    the live countdown until the module unlocks. */
                 <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 text-center">
@@ -346,6 +351,20 @@ function ModuleItem({
                       Wissens-Check starten
                     </Button>
                   )}
+
+                  {/* Zertifikat — letztes Modul, abgeschlossen */}
+                  {onShowCertificate && (
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onShowCertificate()
+                      }}
+                      className={cn("w-full h-11 font-semibold rounded-xl text-white", c.btn, c.btnHover)}
+                    >
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Teilnahmezertifikat ansehen
+                    </Button>
+                  )}
                 </>
               )}
             </div>
@@ -369,6 +388,9 @@ export default function KursDetailPage() {
   const [showQuiz, setShowQuiz] = useState(false)
   const [showCertificate, setShowCertificate] = useState(false)
   const [completedAt, setCompletedAt] = useState<string | null>(null)
+  // Unterscheidet "frisch abgeschlossen → zurück zur Liste" von
+  // "Re-View aus der Modul-Übersicht → bleibt auf der Seite".
+  const [isFreshComplete, setIsFreshComplete] = useState(false)
 
   const c = colorFor(data?.path.color ?? "emerald")
 
@@ -436,6 +458,7 @@ export default function KursDetailPage() {
       setShowQuiz(false)
       if (pathCompleted) {
         setCompletedAt(new Date().toISOString())
+        setIsFreshComplete(true)
         setShowCertificate(true)
       } else {
         toast.success(`Modul ${activeLesson.day_number} abgeschlossen!`)
@@ -458,11 +481,11 @@ export default function KursDetailPage() {
   }
 
   async function handleAbandon() {
-    if (!confirm("Kurs wirklich abbrechen? Dein Fortschritt bleibt gespeichert.")) return
+    if (!confirm("Challenge wirklich abbrechen? Dein Fortschritt bleibt gespeichert.")) return
     setIsSubmitting(true)
     try {
       await abandon()
-      toast.success("Kurs abgebrochen.")
+      toast.success("Challenge abgebrochen.")
       router.push("/app/kurse")
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Abbruch fehlgeschlagen.")
@@ -492,11 +515,11 @@ export default function KursDetailPage() {
     return (
       <div className="max-w-lg mx-auto px-4 py-10">
         <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700 mb-4">
-          {error ?? "Kurs nicht gefunden."}
+          {error ?? "Challenge nicht gefunden."}
         </div>
         <Button variant="outline" onClick={() => router.push("/app/kurse")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurück zu Kursen
+          Zurück zu Challenges
         </Button>
       </div>
     )
@@ -523,13 +546,16 @@ export default function KursDetailPage() {
           subtitle={data.path.subtitle}
           icon={data.path.icon}
           color={data.path.color}
-          completedAt={completedAt}
+          completedAt={completedAt ?? data.enrollment?.completed_at ?? null}
           totalModules={totalDays}
           patientName={data.patient_name}
           certificateId={data.enrollment?.id ?? ""}
           onClose={() => {
             setShowCertificate(false)
-            router.push("/app/kurse")
+            if (isFreshComplete) {
+              setIsFreshComplete(false)
+              router.push("/app/kurse")
+            }
           }}
         />
       )}
@@ -561,7 +587,7 @@ export default function KursDetailPage() {
             className="relative z-10 flex items-center gap-1.5 text-white/70 hover:text-white text-xs font-medium mb-6 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Alle Kurse
+            Alle Challenges
           </button>
 
           {/* Course identity */}
@@ -571,7 +597,7 @@ export default function KursDetailPage() {
             </div>
             <div className="flex-1 min-w-0 pt-0.5">
               <p className="text-xs text-white/60 font-medium uppercase tracking-widest mb-1">
-                Kurs
+                Challenge
               </p>
               <h1 className="text-xl font-bold text-white leading-tight">{data.path.name}</h1>
               {data.path.subtitle && (
@@ -595,6 +621,15 @@ export default function KursDetailPage() {
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
+              {isCompleted && (
+                <Button
+                  onClick={() => setShowCertificate(true)}
+                  className="mt-4 bg-white text-slate-900 hover:bg-white/90 font-bold h-11 rounded-xl px-5 shadow-lg"
+                >
+                  <Trophy className="h-4 w-4 mr-2" />
+                  Teilnahmezertifikat ansehen
+                </Button>
+              )}
             </div>
           )}
 
@@ -623,7 +658,7 @@ export default function KursDetailPage() {
                 ) : (
                   <Sparkles className="h-4 w-4 mr-2" />
                 )}
-                Kurs starten
+                Challenge starten
               </Button>
             </div>
           )}
@@ -683,6 +718,9 @@ export default function KursDetailPage() {
                   !isDone &&
                   !isLockedUntilTomorrow
 
+                const isFinalCompleted =
+                  isDone && lesson.day_number === totalDays && isCompleted
+
                 return (
                   <ModuleItem
                     key={lesson.day_number}
@@ -703,6 +741,9 @@ export default function KursDetailPage() {
                     onReflectionChange={setReflection}
                     onStartQuiz={handleStartQuiz}
                     isSubmitting={isSubmitting}
+                    onShowCertificate={
+                      isFinalCompleted ? () => setShowCertificate(true) : undefined
+                    }
                   />
                 )
               })}
@@ -717,7 +758,7 @@ export default function KursDetailPage() {
                 disabled={isSubmitting}
                 className="text-xs text-slate-400 hover:text-red-500 transition-colors"
               >
-                Kurs abbrechen
+                Challenge abbrechen
               </button>
             </div>
           )}

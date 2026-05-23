@@ -1,12 +1,17 @@
 "use client"
 
 /**
- * PROJ-20: KurseMenu — das "Kurse"-Mega-Menü in der Shop-Taskleiste.
+ * PROJ-20: ShopMenu (Datei-Name historisch KurseMenu) — das "Challenges"-
+ * Mega-Menü in der Shop-Taskleiste.
  *
  * Sitzt zwischen "Shop" und dem Suchfeld. Öffnet bei Hover (Desktop) und Klick
- * (Touch / In-App), klappt nach unten auf und zeigt die Kurse nach Rubrik
- * gruppiert. Klick auf einen Kurs → seine eigene Seite (/shop/[slug]).
- * "Alle Kurse ansehen" → /shop/kurse.
+ * (Touch / In-App), klappt nach unten auf und zeigt alle Challenges als flache
+ * Liste mit echtem Cover-Thumbnail, Titel, Kurzbeschreibung und Preis. Bei vier
+ * Produkten ist eine Rubrik-Gruppierung Overkill — wenn der Katalog wächst
+ * und Programme/Masterclasses dazukommen, kann das Menü in drei Sektionen
+ * gruppiert werden (Challenges · Programme · Masterclasses). Klick auf ein
+ * Produkt → seine eigene Seite. "Alle Challenges ansehen" → /kurse/alle (oder
+ * /shop/kurse in der App).
  */
 
 import { useRef, useState, useEffect } from "react"
@@ -15,9 +20,11 @@ import { ChevronDown, ArrowRight, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { ShopProduct } from "@/components/shop/ProductCard"
 
-// Rubriken — Grundlage für Gruppierung & Filter (auch von /shop/kurse genutzt)
+// Rubriken — Grundlage für den Rubrik-Filter (auch von /shop/kurse und
+// /kurse/alle genutzt). Bewusst hier zentralisiert, damit Filter-Pills und
+// (zukünftig) Menü-Gruppierung dieselbe Quelle teilen.
 export const ANLIEGEN_LIST = [
-  { value: null, label: "Alle Kurse", icon: "✦" },
+  { value: null, label: "Alle", icon: "✦" },
   { value: "ruecken", label: "Rücken", icon: "🦴" },
   { value: "schmerz", label: "Schmerz", icon: "💆" },
   { value: "faszien", label: "Faszien", icon: "🔬" },
@@ -27,8 +34,7 @@ export const ANLIEGEN_LIST = [
   { value: "wohlbefinden", label: "Wohlbefinden", icon: "🌿" },
 ] as const
 
-const RUBRICS = ANLIEGEN_LIST.filter((r) => r.value !== null)
-
+// Fallback-Gradient, falls ein Produkt (noch) kein hero_bild hat.
 const SLUG_GRADIENTS: Record<string, string> = {
   "hydrations-boost": "from-cyan-400 to-teal-500",
   "ruecken-mobility": "from-emerald-400 to-cyan-500",
@@ -67,18 +73,6 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
     return () => document.removeEventListener("pointerdown", handler)
   }, [open])
 
-  // Gruppierung — jedes Produkt unter seiner ersten passenden Rubrik (keine Dopplungen)
-  const grouped = new Map<string, ShopProduct[]>()
-  for (const product of products) {
-    const rubric = RUBRICS.find((r) => product.anliegen?.includes(r.value as string))
-    const key = (rubric?.value as string) ?? "weitere"
-    const list = grouped.get(key) ?? []
-    list.push(product)
-    grouped.set(key, list)
-  }
-  const visibleRubrics = RUBRICS.filter((r) => grouped.has(r.value as string))
-  const weitere = grouped.get("weitere")
-
   return (
     <div
       ref={containerRef}
@@ -93,7 +87,7 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
         aria-haspopup="menu"
         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
       >
-        <span>Kurse</span>
+        <span>Challenges</span>
         <ChevronDown
           className={cn("h-4 w-4 transition-transform duration-200", open && "rotate-180")}
         />
@@ -102,16 +96,16 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
       {/* Mega-Panel — bleibt montiert für sauberen Ein-/Ausgang */}
       <div
         className={cn(
-          "absolute left-0 top-full pt-2 w-[560px] max-w-[92vw] origin-top transition-all duration-150",
+          "absolute left-0 top-full pt-2 w-[440px] max-w-[92vw] origin-top transition-all duration-150",
           open
             ? "opacity-100 scale-100 pointer-events-auto"
             : "opacity-0 scale-95 pointer-events-none"
         )}
       >
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-900/10 overflow-hidden">
-          <div className="p-4">
-            <p className="px-1 pb-3 text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
-              Kurse nach Rubrik
+          <div className="p-3">
+            <p className="px-2 pt-1 pb-2 text-[10px] font-bold tracking-[0.15em] text-slate-400 uppercase">
+              Unsere Challenges
             </p>
 
             {loading ? (
@@ -119,30 +113,19 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
             ) : products.length === 0 ? (
-              <p className="px-1 py-8 text-sm text-slate-400 text-center">
-                Kurse sind bald verfügbar.
+              <p className="px-2 py-8 text-sm text-slate-400 text-center">
+                Challenges sind bald verfügbar.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
-                {visibleRubrics.map((rubric) => (
-                  <RubricColumn
-                    key={rubric.value}
-                    icon={rubric.icon}
-                    label={rubric.label}
-                    products={grouped.get(rubric.value as string)!}
+              <div className="space-y-0.5">
+                {products.map((product) => (
+                  <CourseRow
+                    key={product.id}
+                    product={product}
                     onNavigate={() => setOpen(false)}
                     mode={mode}
                   />
                 ))}
-                {weitere && (
-                  <RubricColumn
-                    icon="✦"
-                    label="Weitere"
-                    products={weitere}
-                    onNavigate={() => setOpen(false)}
-                    mode={mode}
-                  />
-                )}
               </div>
             )}
           </div>
@@ -153,43 +136,10 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
             onClick={() => setOpen(false)}
             className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-100 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors"
           >
-            <span>Alle Kurse ansehen</span>
+            <span>Alle Challenges ansehen</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Rubrik-Spalte ─────────────────────────────────────────────────────────────
-
-interface RubricColumnProps {
-  icon: string
-  label: string
-  products: ShopProduct[]
-  onNavigate: () => void
-  mode: "app" | "website"
-}
-
-function RubricColumn({ icon, label, products, onNavigate, mode }: RubricColumnProps) {
-  return (
-    <div>
-      <div className="flex items-center gap-1.5 px-1 mb-1.5">
-        <span className="text-sm leading-none">{icon}</span>
-        <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-          {label}
-        </span>
-      </div>
-      <div className="space-y-0.5">
-        {products.map((product) => (
-          <CourseRow
-            key={product.id}
-            product={product}
-            onNavigate={onNavigate}
-            mode={mode}
-          />
-        ))}
       </div>
     </div>
   )
@@ -213,27 +163,52 @@ function CourseRow({
     <Link
       href={mode === "website" ? `/kurse/${product.slug}` : `/shop/${product.slug}`}
       onClick={onNavigate}
-      className="flex items-center gap-2.5 px-1.5 py-1.5 rounded-xl hover:bg-slate-50 transition-colors group"
+      className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors group"
     >
-      <div
-        className={cn(
-          "h-9 w-9 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center",
-          gradientFor(product.slug)
+      {/* Cover-Thumbnail — echtes hero_bild, Gradient als Fallback */}
+      <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0 bg-slate-100 ring-1 ring-slate-200/60">
+        {product.hero_bild ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={product.hero_bild}
+            alt=""
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div
+            className={cn(
+              "w-full h-full bg-gradient-to-br flex items-center justify-center",
+              gradientFor(product.slug)
+            )}
+          >
+            <span className="text-white text-base font-semibold select-none">
+              {product.titel.charAt(0)}
+            </span>
+          </div>
         )}
-      >
-        <span className="text-white text-sm font-semibold select-none">
-          {product.titel.charAt(0)}
-        </span>
       </div>
+
+      {/* Text */}
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+        <p className="text-sm font-semibold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
           {product.titel}
         </p>
-        <p className="text-xs text-slate-400">
-          {owned
-            ? "Freigeschaltet"
-            : `${price.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €`}
-        </p>
+        {product.kurzbeschreibung && (
+          <p className="text-xs text-slate-400 truncate mt-0.5">
+            {product.kurzbeschreibung}
+          </p>
+        )}
+      </div>
+
+      {/* Preis / Status */}
+      <div className="shrink-0 text-right pl-1">
+        {owned ? (
+          <span className="text-xs font-semibold text-emerald-600">Freigeschaltet</span>
+        ) : (
+          <span className="text-sm font-bold text-slate-900">
+            {price.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
+          </span>
+        )}
       </div>
     </Link>
   )

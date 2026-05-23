@@ -6,7 +6,7 @@
  * On pass (≥2/3) → calls onPass(). On fail → shows results + retry.
  */
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, XCircle, ArrowRight, RefreshCw, Trophy, Brain } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -57,6 +57,25 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
   const accent = ACCENT_MAP[color] ?? ACCENT_MAP.emerald
   const btnCls = BTN_MAP[color] ?? BTN_MAP.emerald
 
+  // Antworten pro Frage einmalig shufflen — sonst landen alle "correct"
+  // Antworten an derselben Position (Claude tendiert dazu, "B" oder "A"
+  // konsistent richtig zu setzen). Stabile Reihenfolge per useMemo, damit
+  // ein Retry NICHT neu shufflt.
+  const shuffledQuestions = useMemo(() => {
+    return questions.map((q) => {
+      const indices = q.options.map((_, i) => i)
+      for (let i = indices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[indices[i], indices[j]] = [indices[j], indices[i]]
+      }
+      return {
+        ...q,
+        options: indices.map((idx) => q.options[idx]),
+        correctIndex: indices.indexOf(q.correctIndex),
+      }
+    })
+  }, [questions])
+
   const [phase, setPhase] = useState<Phase>("intro")
   const [currentQ, setCurrentQ] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
@@ -71,7 +90,7 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
     if (selected === null) return
     const newAnswers = [...answers, selected]
 
-    if (currentQ < questions.length - 1) {
+    if (currentQ < shuffledQuestions.length - 1) {
       setAnswers(newAnswers)
       setCurrentQ((q) => q + 1)
       setSelected(null)
@@ -82,8 +101,8 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
   }
 
   // Pass = at least two-thirds correct (3 Fragen → 2, 6 → 4, 8 → 6)
-  const passThreshold = Math.max(1, Math.ceil((questions.length * 2) / 3))
-  const score = answers.filter((a, i) => a === questions[i].correctIndex).length
+  const passThreshold = Math.max(1, Math.ceil((shuffledQuestions.length * 2) / 3))
+  const score = answers.filter((a, i) => a === shuffledQuestions[i].correctIndex).length
   const passed = score >= passThreshold
 
   function handleRetry() {
@@ -93,8 +112,8 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
     setAnswers([])
   }
 
-  const q = questions[currentQ]
-  const progressPct = ((currentQ + (selected !== null ? 1 : 0)) / questions.length) * 100
+  const q = shuffledQuestions[currentQ]
+  const progressPct = ((currentQ + (selected !== null ? 1 : 0)) / shuffledQuestions.length) * 100
 
   // ── Intro ─────────────────────────────────────────────────────────────────
 
@@ -111,19 +130,18 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
           <p className="text-sm text-slate-500 text-center leading-relaxed max-w-xs mb-2">
             {isFinalExam ? (
               <>
-                Zum Abschluss von{" "}
-                <strong className="text-slate-700">{modulTitle}</strong> — ein Test
-                über den ganzen Kurs, {questions.length} Fragen.
+                Ein Test über die gesamte Challenge — {shuffledQuestions.length} Fragen.
+                Zeig nochmal, was hängen geblieben ist.
               </>
             ) : (
               <>
                 Bevor du <strong className="text-slate-700">{modulTitle}</strong>{" "}
-                abschließt, beantworte {questions.length} kurze Fragen.
+                abschließt, beantworte {shuffledQuestions.length} kurze Fragen.
               </>
             )}
           </p>
           <p className="text-xs text-slate-400 text-center mb-8">
-            Du brauchst mindestens {passThreshold} von {questions.length} Antworten richtig.
+            Du brauchst mindestens {passThreshold} von {shuffledQuestions.length} Antworten richtig.
           </p>
 
           <div className="w-full max-w-xs space-y-3">
@@ -172,17 +190,17 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
             {passed ? "Bestanden!" : "Nicht ganz…"}
           </h2>
           <p className={cn("text-lg font-bold mb-1", passed ? accent : "text-slate-500")}>
-            {score} / {questions.length} richtig
+            {score} / {shuffledQuestions.length} richtig
           </p>
           <p className="text-sm text-slate-400 text-center mb-8">
             {passed
               ? "Sehr gut — du kannst dieses Modul jetzt abschließen."
-              : "Du brauchst mindestens 2 richtige Antworten. Versuche es nochmal!"}
+              : `Du brauchst mindestens ${passThreshold} richtige Antworten. Versuche es nochmal!`}
           </p>
 
           {/* Per-question breakdown */}
           <div className="w-full max-w-sm space-y-3 mb-8">
-            {questions.map((question, i) => {
+            {shuffledQuestions.map((question, i) => {
               const userAnswer = answers[i]
               const isCorrect = userAnswer === question.correctIndex
               return (
@@ -225,11 +243,11 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
           <div className="w-full max-w-xs space-y-3">
             {passed ? (
               <Button
-                onClick={() => onPass(score, questions.length)}
+                onClick={() => onPass(score, shuffledQuestions.length)}
                 className={`w-full h-12 text-white font-semibold rounded-xl ${btnCls}`}
               >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
-                {isFinalExam ? "Kurs abschließen" : "Modul abschließen"}
+                {isFinalExam ? "Challenge abschließen" : "Modul abschließen"}
               </Button>
             ) : (
               <Button
@@ -262,13 +280,13 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
       <div className={`bg-gradient-to-r ${gradient} px-5 pt-12 pb-6`}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-white/80 uppercase tracking-widest">
-            Frage {currentQ + 1} von {questions.length}
+            Frage {currentQ + 1} von {shuffledQuestions.length}
           </span>
           <span className="text-xs text-white/70">{Math.round(progressPct)}% fertig</span>
         </div>
         {/* Progress dots */}
         <div className="flex items-center gap-2 mb-4">
-          {questions.map((_, i) => (
+          {shuffledQuestions.map((_, i) => (
             <div
               key={i}
               className={cn(
@@ -344,7 +362,7 @@ export function ModuleQuiz({ questions, modulTitle, color, isFinalExam = false, 
             selected !== null ? `${btnCls} shadow-md` : "bg-slate-200 text-slate-400 cursor-not-allowed"
           )}
         >
-          {currentQ < questions.length - 1 ? (
+          {currentQ < shuffledQuestions.length - 1 ? (
             <>
               Weiter
               <ArrowRight className="ml-2 h-4 w-4" />

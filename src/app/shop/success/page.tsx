@@ -23,6 +23,7 @@ import Link from "next/link"
 import { CheckCircle2, ArrowRight, BookOpen, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ShopHeader } from "@/components/shop/ShopHeader"
+import { useCart } from "@/lib/cart-context"
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ const STEPS = [
   },
   {
     icon: <Sparkles className="h-5 w-5 text-amber-500" />,
-    label: "Kurs wird freigeschaltet",
+    label: "Challenge wird freigeschaltet",
     delay: 900,
   },
   {
@@ -56,6 +57,12 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
   const [visibleSteps, setVisibleSteps] = useState(0)
+  const { clear } = useCart()
+
+  // Warenkorb nach erfolgreichem Kauf leeren
+  useEffect(() => {
+    clear()
+  }, [clear])
 
   // Animate steps in
   useEffect(() => {
@@ -83,8 +90,8 @@ function SuccessContent() {
           Vielen Dank für deinen Kauf!
         </h1>
         <p className="text-stone-500 text-lg leading-relaxed max-w-sm mx-auto">
-          Dein Kurs wird sofort freigeschaltet. Gehe jetzt zu{" "}
-          <em>Meine Kurse</em> und starte direkt.
+          Deine Challenge wird sofort freigeschaltet. Gehe jetzt zu{" "}
+          <em>Meine Challenges</em> und starte direkt.
         </p>
       </div>
 
@@ -115,7 +122,7 @@ function SuccessContent() {
           className="bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl h-12 text-base"
         >
           <Link href="/app/kurse">
-            Meine Kurse öffnen
+            Meine Challenges öffnen
             <ArrowRight className="h-4 w-4 ml-2" />
           </Link>
         </Button>
@@ -124,7 +131,7 @@ function SuccessContent() {
           variant="ghost"
           className="text-stone-500 hover:text-stone-800"
         >
-          <Link href="/shop">Weitere Kurse entdecken</Link>
+          <Link href="/shop">Weitere Challenges entdecken</Link>
         </Button>
       </div>
 

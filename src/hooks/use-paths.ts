@@ -54,7 +54,7 @@ export function usePaths(): UsePathsResult {
         }
       })
       .catch(() => {
-        if (!cancelled) setError("Netzwerkfehler beim Laden der Kurse.")
+        if (!cancelled) setError("Netzwerkfehler beim Laden.")
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)

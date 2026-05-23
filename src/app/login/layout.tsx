@@ -29,7 +29,7 @@ export default function LoginLayout({
         {/* Logo link back to landing */}
         <Link href="/" className="flex flex-col items-center gap-4 group">
           <img
-            src="/images/Physio Logo_ausgeschnitten.png"
+            src="/images/physio-logo.png"
             alt="Physiotherapie Glawe"
             className="h-36 w-36 sm:h-40 sm:w-40 rounded-3xl object-contain drop-shadow-2xl"
           />

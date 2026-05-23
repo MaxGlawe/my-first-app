@@ -19,7 +19,7 @@ export interface ShopProduct {
   titel: string
   kurzbeschreibung: string | null
   hero_bild: string | null
-  produkt_typ: "kurs" | "programm" | "masterclass"
+  produkt_typ: "challenge" | "programm" | "masterclass"
   anliegen: string[] | null
   preis: number
   waehrung: string
@@ -35,7 +35,7 @@ export interface ShopProduct {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const TYP_LABELS: Record<string, string> = {
-  kurs: "Kurs",
+  challenge: "Challenge",
   programm: "Programm",
   masterclass: "Masterclass",
 }

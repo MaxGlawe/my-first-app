@@ -28,7 +28,7 @@ export function LandingHeader() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 max-w-6xl">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
-              src="/images/Physio Logo_ausgeschnitten.png"
+              src="/images/physio-logo.png"
               alt="Physiotherapie Glawe — Logo"
               width={36}
               height={36}
@@ -50,7 +50,7 @@ export function LandingHeader() {
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
               { label: "Preise", href: "#preise" },
-              { label: "Kurse", href: "/kurse" },
+              { label: "Shop", href: "/kurse" },
               { label: "Für Unternehmen", href: "/unternehmen" },
             ].map((link) => (
               <a
@@ -108,7 +108,7 @@ export function LandingHeader() {
               { label: "Ablauf", href: "#ablauf" },
               { label: "Vorteile", href: "#vorteile" },
               { label: "Preise", href: "#preise" },
-              { label: "Kurse", href: "/kurse" },
+              { label: "Shop", href: "/kurse" },
               { label: "FAQ", href: "#faq" },
             ].map((link) => (
               <a

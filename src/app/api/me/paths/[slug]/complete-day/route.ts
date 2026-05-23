@@ -64,12 +64,12 @@ export async function POST(
     .eq("is_active", true)
     .maybeSingle()
   if (!path) {
-    return NextResponse.json({ error: "Kurs nicht gefunden." }, { status: 404 })
+    return NextResponse.json({ error: "Challenge nicht gefunden." }, { status: 404 })
   }
 
   if (body.day_number < 1 || body.day_number > path.duration_days) {
     return NextResponse.json(
-      { error: `Modul ${body.day_number} ist außerhalb des Kurs-Bereichs.` },
+      { error: `Modul ${body.day_number} ist außerhalb des Challenge-Bereichs.` },
       { status: 400 }
     )
   }
@@ -84,7 +84,7 @@ export async function POST(
 
   if (!enrollment) {
     return NextResponse.json(
-      { error: "Du bist nicht für diesen Kurs angemeldet." },
+      { error: "Du bist nicht für diese Challenge angemeldet." },
       { status: 400 }
     )
   }

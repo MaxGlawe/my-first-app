@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { getDeviceType, getBrowser, isBot } from "@/lib/device-detect"
+import { randomUUID } from "@/lib/uuid"
 
 const SESSION_KEY = "landing_session_id"
 
@@ -10,7 +11,7 @@ function getSessionId(): string {
   if (typeof window === "undefined") return ""
   let id = sessionStorage.getItem(SESSION_KEY)
   if (!id) {
-    id = crypto.randomUUID()
+    id = randomUUID()
     sessionStorage.setItem(SESSION_KEY, id)
   }
   return id

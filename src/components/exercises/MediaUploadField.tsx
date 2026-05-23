@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Image, Video, Upload, X, AlertCircle } from "lucide-react"
 import type { MediaType } from "@/types/exercise"
+import { randomUUID } from "@/lib/uuid"
 
 interface MediaUploadFieldProps {
   mediaUrl?: string | null
@@ -34,7 +35,7 @@ export function MediaUploadField({
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   // BUG-3: Generate a stable temp UUID for new exercises (no exerciseId yet)
-  const tempIdRef = useRef<string>(crypto.randomUUID())
+  const tempIdRef = useRef<string>(randomUUID())
   const effectiveExerciseId = exerciseId ?? tempIdRef.current
 
   const accept = activeTab === "image" ? "image/jpeg,image/png,image/webp" : "video/mp4,video/webm"
