@@ -8,6 +8,7 @@ import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { PaymentSetupGate } from "@/components/app/PaymentSetupGate"
 import { CheckInGate } from "@/components/app/CheckInGate"
 import { MilestonePopup } from "@/components/app/MilestonePopup"
+import { WhatsNewDialog } from "@/components/app/WhatsNewDialog"
 import { ClientErrorReporter } from "@/components/app/ClientErrorReporter"
 import { useStreak } from "@/hooks/use-streak"
 import { useBgfMembership } from "@/hooks/use-bgf-membership"
@@ -93,6 +94,9 @@ export default function PatientenAppLayout({
 
         {/* Achievement celebration popup */}
         <MilestoneOverlay />
+
+        {/* „Was ist neu" — Update-Meldung (einmal pro Release) */}
+        <WhatsNewDialog />
       </div>
     </ClientErrorReporter>
   )

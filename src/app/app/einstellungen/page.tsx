@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { InstallSection } from "@/components/pwa/InstallSection"
 import { BenachrichtigungsSection } from "@/components/pwa/BenachrichtigungsSection"
-import { ChevronLeft, Settings } from "lucide-react"
+import { ChevronLeft, ChevronRight, Settings, Sparkles } from "lucide-react"
 
 export default function EinstellungenPage() {
   return (
@@ -35,6 +35,21 @@ export default function EinstellungenPage() {
 
       {/* Push notification settings section */}
       <BenachrichtigungsSection />
+
+      {/* Was ist neu */}
+      <Link
+        href="/app/neuigkeiten"
+        className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors"
+      >
+        <span className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
+          <Sparkles className="h-5 w-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-slate-800 text-sm">Was ist neu</p>
+          <p className="text-xs text-slate-400">Neue Funktionen in Praxis OS</p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-slate-300 shrink-0" />
+      </Link>
 
       {/* Account */}
       <div className="pt-2">
