@@ -230,13 +230,21 @@ export async function POST(request: NextRequest) {
     metadata.product_id = purchasableProductIds[0]
   }
 
+  // Deck-only-Käufe sind accountlos → eigene Danke-Seite (kein "anmelden"-Wording)
+  const allDecks = activeProducts
+    .filter((p) => purchasableProductIds.includes(p.id))
+    .every((p) => p.produkt_typ === "deck")
+  const successUrl = allDecks
+    ? `${origin}/decks/erfolg`
+    : `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`
+
   let session
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: customerEmail,
       line_items: lineItems,
-      success_url: `${origin}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl,
       cancel_url: `${origin}/shop`,
       invoice_creation: { enabled: true },
       metadata,

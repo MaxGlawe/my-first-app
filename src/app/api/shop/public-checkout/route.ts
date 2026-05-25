@@ -49,6 +49,7 @@ type LoadedProduct = {
   preis: number
   waehrung: string | null
   abo_inkludiert: boolean
+  produkt_typ: string
   status: string
 }
 
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
   // ── Produkte laden ──────────────────────────────────────────────────────
   const { data: products, error: productError } = await sc
     .from("products")
-    .select("id, slug, titel, preis, waehrung, abo_inkludiert, status")
+    .select("id, slug, titel, preis, waehrung, abo_inkludiert, produkt_typ, status")
     .in("slug", requestedSlugs)
 
   if (productError) {
@@ -238,13 +239,21 @@ export async function POST(request: NextRequest) {
     metadata.product_id = purchasableProductIds[0]
   }
 
+  // Deck-only-Käufe sind accountlos → eigene Danke-Seite (kein "anmelden"-Wording)
+  const allDecks = activeProducts
+    .filter((p) => purchasableProductIds.includes(p.id))
+    .every((p) => p.produkt_typ === "deck")
+  const successUrl = allDecks
+    ? `${origin}/decks/erfolg`
+    : `${origin}/kurse/erfolg?session_id={CHECKOUT_SESSION_ID}`
+
   let session
   try {
     session = await stripe.checkout.sessions.create({
       mode: "payment",
       customer_email: email,
       line_items: lineItems,
-      success_url: `${origin}/kurse/erfolg?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: successUrl,
       cancel_url: cancelUrl,
       invoice_creation: { enabled: true },
       metadata,
