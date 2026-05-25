@@ -12,6 +12,13 @@ export const SUBSCRIPTION_PRICES = {
   yearly: 169.99,
 } as const
 
+/**
+ * Stripe-Steuersatz für Shop-Käufe: 19% USt (inklusive, Deutschland).
+ * Preise sind brutto („inkl. MwSt") — der inklusive Satz weist die USt auf der
+ * Rechnung aus, ohne den Endpreis zu verändern. Bestehender Satz im Stripe-Konto.
+ */
+export const UST_TAX_RATE_ID = "txr_1RY2VxEP81mhprbWWEXpF2TK"
+
 let stripeInstance: Stripe | null = null
 
 export function getStripe(): Stripe {

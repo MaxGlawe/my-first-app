@@ -28,7 +28,7 @@ import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { isDisposableEmail } from "@/lib/email-blocklist"
-import { getStripe } from "@/lib/stripe"
+import { getStripe, UST_TAX_RATE_ID } from "@/lib/stripe"
 
 const BodySchema = z
   .object({
@@ -152,6 +152,7 @@ export async function POST(request: NextRequest) {
       product_data: { name: string }
     }
     quantity: number
+    tax_rates: string[]
   }[] = []
   const purchasableProductIds: string[] = []
   let blockedByOwnership = false
@@ -197,6 +198,7 @@ export async function POST(request: NextRequest) {
         product_data: { name: product.titel },
       },
       quantity: 1,
+      tax_rates: [UST_TAX_RATE_ID],
     })
     purchasableProductIds.push(product.id)
   }
@@ -244,6 +246,7 @@ export async function POST(request: NextRequest) {
       line_items: lineItems,
       success_url: `${origin}/kurse/erfolg?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl,
+      invoice_creation: { enabled: true },
       metadata,
     })
   } catch (err) {
