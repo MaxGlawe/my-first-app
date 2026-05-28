@@ -38,7 +38,11 @@ export function HighlightChallenges({ mode = "website", limit = 4 }: HighlightCh
     )
   }
 
-  if (products.length === 0) {
+  // Masterclasses gehören NICHT ins Challenge-Highlight — sie stehen separat
+  // (eigene Premium-Sektion / eigener „Masterclasses"-Tab).
+  const challenges = products.filter((p) => p.produkt_typ !== "masterclass")
+
+  if (challenges.length === 0) {
     return (
       <div className="rounded-2xl bg-white border border-slate-200 p-10 text-center">
         <p className="text-sm text-slate-500">Challenges sind bald verfügbar.</p>
@@ -48,7 +52,7 @@ export function HighlightChallenges({ mode = "website", limit = 4 }: HighlightCh
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      {products.slice(0, limit).map((p, i) => (
+      {challenges.slice(0, limit).map((p, i) => (
         <ProductCard key={p.id} product={p} index={i} mode={mode} />
       ))}
     </div>

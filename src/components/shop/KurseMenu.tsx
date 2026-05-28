@@ -73,6 +73,9 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
     return () => document.removeEventListener("pointerdown", handler)
   }, [open])
 
+  // Masterclasses gehören nicht ins „Challenges"-Menü — separat platziert.
+  const challenges = products.filter((p) => p.produkt_typ !== "masterclass")
+
   return (
     <div
       ref={containerRef}
@@ -112,13 +115,13 @@ export function KurseMenu({ mode = "app" }: { mode?: "app" | "website" }) {
               <div className="flex items-center justify-center py-10 text-slate-300">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
-            ) : products.length === 0 ? (
+            ) : challenges.length === 0 ? (
               <p className="px-2 py-8 text-sm text-slate-400 text-center">
                 Challenges sind bald verfügbar.
               </p>
             ) : (
               <div className="space-y-0.5">
-                {products.map((product) => (
+                {challenges.map((product) => (
                   <CourseRow
                     key={product.id}
                     product={product}

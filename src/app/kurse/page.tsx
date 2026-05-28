@@ -11,6 +11,7 @@
 
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { ShopHeader } from "@/components/shop/ShopHeader"
 import { AppUpsell } from "@/components/shop/AppUpsell"
 import { Hero3DCarousel } from "@/components/shop/Hero3DCarousel"
@@ -180,6 +181,97 @@ export default function PublicKurseLandingPage() {
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* ── Premium-Masterclass — eigenständig, klar abgesetzt von den Challenges ── */}
+      <section className="border-t border-slate-100" style={{ backgroundColor: "#F8F5F0" }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-14 sm:py-20">
+          <div className="mb-7">
+            <span
+              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              style={{ color: "#2C3E2D" }}
+            >
+              Premium-Masterclass
+            </span>
+            <h2
+              className="mt-1.5 text-2xl sm:text-3xl font-bold"
+              style={{ color: "#0f172a" }}
+            >
+              Ein ganzes Programm — kein 21-Tage-Sprint
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-slate-500 max-w-xl">
+              Eine eigene Liga: vertont, interaktiv und in der Tiefe — separat von unseren
+              Challenges.
+            </p>
+          </div>
+
+          <Link
+            href="/kurse/chronischer-kreuzschmerz"
+            className="group grid lg:grid-cols-2 overflow-hidden rounded-3xl border bg-white transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-900/5"
+            style={{ borderColor: "#e7e1d6" }}
+          >
+            {/* Text */}
+            <div className="order-2 lg:order-1 p-8 sm:p-10 flex flex-col justify-center">
+              <p
+                className="text-xs font-medium uppercase tracking-[0.28em]"
+                style={{ color: "#2C3E2D" }}
+              >
+                Masterclass
+              </p>
+              <h3
+                className="mt-3 text-3xl sm:text-4xl leading-tight"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "#0f172a" }}
+              >
+                Chronischer Kreuzschmerz
+              </h3>
+              <p
+                className="mt-3 text-sm uppercase tracking-[0.18em]"
+                style={{ color: "#64748b" }}
+              >
+                Verstehen · Handeln · Bleiben · Wiederkommen
+              </p>
+              <p className="mt-5 text-base leading-relaxed" style={{ color: "#334155" }}>
+                27 vertonte Lektionen, ein interaktives Workbook und ein Bonus-Übungskartendeck
+                — dein strukturierter Weg im Umgang mit chronischem Kreuzschmerz, in deinem
+                Tempo.
+              </p>
+              <div className="mt-6 flex items-center gap-3">
+                <span
+                  className="text-2xl font-bold"
+                  style={{ fontFamily: "var(--font-display)", color: "#0f172a" }}
+                >
+                  399 €
+                </span>
+                <span className="text-base line-through" style={{ color: "#94a3b8" }}>
+                  499 €
+                </span>
+                <span
+                  className="inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em]"
+                  style={{ backgroundColor: "rgba(201,183,156,0.22)", color: "#2C3E2D" }}
+                >
+                  Launch-Aktion
+                </span>
+              </div>
+              <span
+                className="mt-7 inline-flex items-center gap-2 self-start rounded-xl px-5 h-12 font-semibold text-white"
+                style={{ backgroundColor: "#2C3E2D" }}
+              >
+                Zur Masterclass
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </div>
+            {/* Bild */}
+            <div className="order-1 lg:order-2 relative min-h-[240px] lg:min-h-[440px]">
+              <Image
+                src="/images/masterclass/chronischer-kreuzschmerz/ugc/01.jpg"
+                alt="Masterclass Chronischer Kreuzschmerz — Karten, Workbook und App"
+                fill
+                className="object-cover"
+                sizes="(min-width: 1024px) 32rem, 100vw"
+              />
+            </div>
+          </Link>
         </div>
       </section>
 
