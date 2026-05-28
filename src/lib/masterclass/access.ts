@@ -16,8 +16,9 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service";
 /** Slug des Shop-Produkts → Verkaufsseite /shop/<slug>. */
 export const MASTERCLASS_SLUG = "chronischer-kreuzschmerz";
 
-/** Verkaufsseite im Shop (Redirect-Ziel für Nicht-Käufer). */
-export const MASTERCLASS_SHOP_HREF = `/shop/${MASTERCLASS_SLUG}`;
+/** Öffentliche Verkaufsseite (Redirect-Ziel für Nicht-Käufer) — /kurse ist
+ *  öffentlich erreichbar, /shop/* liegt hinter dem Login. */
+export const MASTERCLASS_SHOP_HREF = `/kurse/${MASTERCLASS_SLUG}`;
 
 /** content_entitlements / product_contents Diskriminator. */
 export const MASTERCLASS_CONTENT_TYPE = "masterclass";

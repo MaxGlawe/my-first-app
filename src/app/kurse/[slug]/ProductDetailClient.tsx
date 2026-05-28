@@ -31,6 +31,8 @@ import { ShopHeader } from "@/components/shop/ShopHeader"
 import { TrustRow } from "@/components/shop/TrustRow"
 import { AppUpsell } from "@/components/shop/AppUpsell"
 import { ProductReviews, ProductReviewsSummary } from "@/components/shop/ProductReviews"
+import { MasterclassSalesLayout } from "@/components/shop/MasterclassSalesLayout"
+import { MASTERCLASS_SLUG } from "@/lib/masterclass/access"
 import { cn } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
@@ -48,6 +50,7 @@ interface Product {
   produkt_typ: "challenge" | "programm" | "masterclass"
   anliegen: string[] | null
   preis: number
+  preis_regulaer?: number | null
   waehrung: string
   abo_inkludiert: boolean
   abo_rabatt_prozent: number | null
@@ -462,6 +465,19 @@ export function ProductDetailClient() {
   }
 
   const { product, contents } = data
+
+  // ── Bespoke Premium-Verkaufslayout für die Masterclass (öffentliche Seite) ──
+  // Greift nur für das Masterclass-Produkt. Alle anderen Produkte behalten das
+  // generische Challenge-Rendering.
+  if (product.produkt_typ === "masterclass" || product.slug === MASTERCLASS_SLUG) {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: "#F8F5F0" }}>
+        <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Kurse" />
+        <MasterclassSalesLayout product={product} />
+      </div>
+    )
+  }
+
   const primaryPath = contents?.[0]?.path ?? null
   const lessons = contents?.[0]?.lessons ?? []
   const durationDays = primaryPath?.duration_days ?? 21
