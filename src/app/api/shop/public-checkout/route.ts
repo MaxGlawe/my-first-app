@@ -256,6 +256,10 @@ export async function POST(request: NextRequest) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       invoice_creation: { enabled: true },
+      // Stripe-native Promo-Codes (shop-weit, im Stripe-Dashboard gepflegt).
+      allow_promotion_codes: true,
+      // Kein payment_method_types gesetzt → Stripe zeigt automatisch alle im
+      // Dashboard aktivierten Methoden (inkl. Klarna-Ratenkauf).
       metadata,
     })
   } catch (err) {

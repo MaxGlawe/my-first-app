@@ -52,11 +52,12 @@ const UPDATES: ShopUpdate[] = [
     href: "/shop/kurse",
   },
   {
-    tag: "In Kürze",
-    tagColor: "bg-slate-100 text-slate-600",
-    icon: <GraduationCap className="h-5 w-5 text-slate-500" />,
-    title: "Masterclasses",
-    text: "Intensive Workshops zu spezifischen Themen — mehr Tiefe, mit exklusivem Abo-Rabatt.",
+    tag: "Neu im Shop",
+    tagColor: "bg-emerald-50 text-emerald-700",
+    icon: <GraduationCap className="h-5 w-5 text-emerald-600" />,
+    title: "Masterclass · Chronischer Kreuzschmerz",
+    text: "27 vertonte Lektionen, interaktives Workbook und ein Bonus-Übungskartendeck — dein strukturierter Weg im Umgang mit chronischem Kreuzschmerz.",
+    href: "/shop/chronischer-kreuzschmerz",
   },
   {
     tag: "In Kürze",

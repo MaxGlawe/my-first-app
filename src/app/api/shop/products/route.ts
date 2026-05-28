@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   // ── Fetch active products ──────────────────────────────────
   let query = sc
     .from("products")
-    .select("id, slug, titel, kurzbeschreibung, hero_bild, produkt_typ, anliegen, preis, waehrung, abo_inkludiert, abo_rabatt_prozent, sortierung")
+    .select("id, slug, titel, kurzbeschreibung, hero_bild, produkt_typ, anliegen, preis, preis_regulaer, waehrung, abo_inkludiert, abo_rabatt_prozent, sortierung")
     .eq("status", "aktiv")
     .order("sortierung", { ascending: true })
 

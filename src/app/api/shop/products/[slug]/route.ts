@@ -146,6 +146,8 @@ export async function GET(
   return NextResponse.json({
     product: {
       ...product,
+      // Regulärer Streichpreis (z. B. Launch-Aktion) — nullable, allgemein.
+      preis_regulaer: product.preis_regulaer ?? null,
       zugriff_status: zugriffStatus,
       effektiver_preis: effektiverPreis,
       hat_aktives_abo: hasActiveSub,

@@ -588,3 +588,163 @@
     }
   }
 }
+
+/* ── Masterclass-Workbook: Live-Auswertungs-Einblendung ──────────────── */
+@keyframes wb-result-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="wb-result-in"] { animation: none !important; }
+}
+
+/* ── Masterclass-Workbook: Druck / Als PDF speichern ─────────────────── */
+/* Druck-Variante der Notiz-/Reflexionsfelder am Bildschirm verstecken. */
+@media screen {
+  .wb-print-only { display: none !important; }
+}
+@media print {
+  /* Workbook druckt farbecht (Auswertung, Toggles, Tönungen). */
+  .wb-root {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #fff !important;
+    color: #111827 !important;
+    /* eigene Typo behalten (globale Druckregel setzt Georgia auf body). */
+    font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  }
+
+  /* Sichtbarkeit Screen-/Druck-Varianten. */
+  .wb-root .wb-screen-only { display: none !important; }
+  .wb-print-only { display: block !important; }
+
+  /* Reine Interaktions-/Navigations-Elemente ausblenden. */
+  .wb-root .wb-no-print { display: none !important; }
+
+  /* Karten-Köpfe wieder einblenden — die globale Druckregel blendet
+     ALLE <header> aus, die Red-Flag-Gruppen tragen ihren Titel aber im
+     <header>. Nur die in Karten, nicht die Topbar (direktes Kind von main). */
+  .wb-root .wb-card header { display: flex !important; }
+
+  /* Scroll-Reveals immer voll sichtbar drucken. */
+  .wb-root .wb-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* Vertiefungs-Accordions vollständig aufgeklappt drucken. */
+  .wb-root .wb-vertiefung-body { grid-template-rows: 1fr !important; }
+
+  /* Selbstcheck einspaltig, Auswertung in den Lesefluss (nicht sticky). */
+  .wb-root .wb-check-grid { display: block !important; }
+  .wb-root .wb-check-grid > * + * { margin-top: 1.75rem !important; }
+  .wb-root .wb-sticky { position: static !important; }
+
+  /* Dunkle Deko-Flächen (Vignette, Übungs-Trenner) tintenschonend hell. */
+  .wb-root .wb-dark {
+    background: #fff !important;
+    background-image: none !important;
+    color: #111827 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  .wb-root .wb-dark * { color: #1f2937 !important; }
+
+  /* Saubere Seitenumbrüche. */
+  .wb-root .wb-card,
+  .wb-root figure { break-inside: avoid; }
+  .wb-root h1, .wb-root h2, .wb-root h3 { break-after: avoid; }
+
+  /* Schreiblinien für leere Notizfelder (zum Ausfüllen mit der Hand). */
+  .wb-print-line {
+    display: block;
+    border-bottom: 1px solid #cbd5e1;
+    height: 1.7rem;
+  }
+}
+
+/* ── Masterclass-Kartendeck: Lightbox-Animationen ────────────────────── */
+@keyframes kd-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes kd-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="kd-fade-in"],
+  [style*="kd-card-in"] { animation: none !important; }
+}
+
+/* ── Masterclass-Kartendeck: Druck / Als PDF speichern ───────────────── */
+/* Druck-Kopf am Bildschirm verstecken. */
+@media screen {
+  .kd-print-only { display: none !important; }
+}
+@media print {
+  /* Deck druckt farbecht (Cover-Verläufe, Karten-Illustrationen). */
+  .kd-root {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #fff !important;
+    color: #111827 !important;
+    font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  }
+
+  /* Druck-Kopf einblenden, Topbar/Hero-Buttons/Lightbox ausblenden. */
+  .kd-print-only { display: block !important; }
+  .kd-root .kd-no-print { display: none !important; }
+
+  /* Schneide-Layout: 2 Karten pro Reihe, randscharf, nichts zerschneiden. */
+  .kd-root .kd-feature-grid,
+  .kd-root .kd-card { break-inside: avoid; }
+
+  .kd-root .grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6mm !important;
+  }
+
+  /* Karten im Druck: Hochformat, dünner Rahmen, kein Schatten/Transition. */
+  .kd-root .kd-card button {
+    transform: none !important;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+  }
+  .kd-root .kd-card img {
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 2 / 3 !important;
+    object-fit: cover !important;
+  }
+
+  /* Sektions-Überschriften sauber bei der Gruppe halten. */
+  .kd-root h1, .kd-root h2 { break-after: avoid; }
+
+  /* Bühne weiß, Sand-Aura weg. */
+  .kd-root [aria-hidden="true"] { display: none !important; }
+}
+
+/* ── Masterclass-Verkaufsseite: durchlaufende UGC-Leiste ──────────────── */
+/* Track = zwei identische Hälften; -50 % verschiebt exakt eine Hälfte → nahtlos. */
+@keyframes ugc-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ugc-marquee-track {
+  animation: ugc-marquee 80s linear infinite;
+  will-change: transform;
+}
+/* Bei Hover/Fokus sanft anhalten, damit man hinschauen kann. */
+.ugc-marquee:hover .ugc-marquee-track,
+.ugc-marquee:focus-within .ugc-marquee-track {
+  animation-play-state: paused;
+}
+/* Bewegungs-empfindliche Nutzer: nicht animieren, dafür frei scrollbar. */
+@media (prefers-reduced-motion: reduce) {
+  .ugc-marquee { overflow-x: auto; }
+  .ugc-marquee-track { animation: none; }
+}

@@ -340,6 +340,11 @@ export async function POST(request: NextRequest) {
               const firstName = session.metadata?.guest_first_name?.trim() || "Kund:in"
               const lastName = session.metadata?.guest_last_name?.trim() || "—"
 
+              // Masterclass im Warenkorb? → buyer-accounts wählt die Premium-Mail.
+              const masterclassProduct = (purchasedProducts ?? []).find(
+                (p) => p.produkt_typ === "masterclass"
+              )
+
               try {
                 const res = await fetch(`${appUrl}/api/buyer-accounts`, {
                   method: "POST",
@@ -347,7 +352,20 @@ export async function POST(request: NextRequest) {
                     "Content-Type": "application/json",
                     "x-internal-api-secret": secret,
                   },
-                  body: JSON.stringify({ email: guestEmail, firstName, lastName }),
+                  body: JSON.stringify({
+                    email: guestEmail,
+                    firstName,
+                    lastName,
+                    ...(masterclassProduct
+                      ? {
+                          product: {
+                            produkt_typ: "masterclass",
+                            slug: masterclassProduct.slug,
+                            titel: masterclassProduct.titel,
+                          },
+                        }
+                      : {}),
+                  }),
                 })
                 if (!res.ok) {
                   console.error(

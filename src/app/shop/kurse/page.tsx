@@ -91,6 +91,16 @@ function ShopKurse() {
 
   const hasActiveFilter = favOnly || !!selectedAnliegen || searchQuery.trim().length > 0
 
+  // Zähl-Label passt sich dem aktiven Tab an (Challenge ↔ Masterclass).
+  const itemNoun = (n: number) =>
+    selectedTyp === "masterclass"
+      ? n === 1
+        ? "Masterclass"
+        : "Masterclasses"
+      : n === 1
+        ? "Challenge"
+        : "Challenges"
+
   const clearAll = () => {
     setSelectedAnliegen(null)
     setSearchQuery("")
@@ -114,12 +124,18 @@ function ShopKurse() {
             Praxis OS · Shop
           </span>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1.5">
-            {favOnly ? "Deine Favoriten" : "Alle Challenges"}
+            {favOnly
+              ? "Deine Favoriten"
+              : selectedTyp === "masterclass"
+                ? "Masterclasses"
+                : "Alle Challenges"}
           </h1>
           <p className="text-slate-500 mt-1 text-sm">
             {favOnly
               ? `${favCount} ${favCount === 1 ? "Challenge" : "Challenges"} gemerkt`
-              : "Von Physiotherapeuten entwickelte 21-Tage-Challenges — einmal kaufen, lebenslang behalten."}
+              : selectedTyp === "masterclass"
+                ? "Tiefere, geführte Masterclasses von Praxis OS — einmal kaufen, lebenslang behalten."
+                : "Von Physiotherapeuten entwickelte 21-Tage-Challenges — einmal kaufen, lebenslang behalten."}
           </p>
         </div>
 
@@ -217,10 +233,13 @@ function ShopKurse() {
                   <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <span className="text-3xl">🎓</span>
                   </div>
-                  <p className="text-slate-800 font-bold text-lg mb-1">Masterclasses — in Kürze</p>
+                  <p className="text-slate-800 font-bold text-lg mb-1">
+                    {searchQuery.trim()
+                      ? `Keine Treffer für „${searchQuery.trim()}“`
+                      : "Keine Masterclasses verfügbar"}
+                  </p>
                   <p className="text-slate-500 text-sm max-w-sm mx-auto">
-                    Tiefere, geführte Programme von Praxis OS. Wir arbeiten daran — bald hier
-                    verfügbar.
+                    Tiefere, geführte Programme von Praxis OS — schau gleich noch einmal vorbei.
                   </p>
                   <button
                     onClick={() => setSelectedTyp("challenge")}
@@ -260,8 +279,7 @@ function ShopKurse() {
               <>
                 <div className="flex items-center justify-between gap-4">
                   <p className="text-sm text-slate-500">
-                    {visibleProducts.length}{" "}
-                    {visibleProducts.length === 1 ? "Challenge" : "Challenges"}
+                    {visibleProducts.length} {itemNoun(visibleProducts.length)}
                     {hasActiveFilter ? " gefunden" : " verfügbar"}
                   </p>
                   {hasActiveFilter && !favOnly && (

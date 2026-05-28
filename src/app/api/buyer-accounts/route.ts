@@ -25,6 +25,7 @@ import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
+import { renderMasterclassWelcomeEmail } from "@/lib/masterclass/purchase-email"
 import { escapeHtml } from "@/lib/html-escape"
 import crypto from "crypto"
 
@@ -36,6 +37,14 @@ const createBuyerSchema = z.object({
   email: z.string().email("Ungültige E-Mail-Adresse."),
   firstName: z.string().min(1).max(100).trim(),
   lastName: z.string().min(1).max(100).trim(),
+  // Optionaler Produkt-Kontext (vom Stripe-Webhook) → wählt die Willkommens-Mail.
+  product: z
+    .object({
+      produkt_typ: z.string(),
+      slug: z.string(),
+      titel: z.string(),
+    })
+    .optional(),
 })
 
 // ──────────────────────────────────────────────────
@@ -89,7 +98,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { email, firstName, lastName } = parseResult.data
+  const { email, firstName, lastName, product } = parseResult.data
   const supabase = createSupabaseServiceClient()
 
   // ── Check for an existing account with this email ─────────────────
@@ -194,6 +203,20 @@ export async function POST(request: NextRequest) {
 
   // ── Welcome email (fire-and-forget) ──────────────────────────────
   const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
+
+  if (product?.produkt_typ === "masterclass") {
+    // Premium-Willkommens-Mail im Masterclass-Look (statt der generischen).
+    const { subject, html } = renderMasterclassWelcomeEmail({
+      firstName,
+      email,
+      tempPassword,
+      loginUrl: `${appUrl}/login`,
+      masterclassUrl: `${appUrl}/masterclass/${product.slug}`,
+    })
+    sendEmail({ to: email, subject, html }).catch((err) =>
+      console.error("[buyer-accounts] Masterclass welcome email failed:", err)
+    )
+  } else {
   sendEmail({
     to: email,
     subject: "Dein Zugang zu Praxis OS — Kurse & Inhalte",
@@ -255,6 +278,7 @@ export async function POST(request: NextRequest) {
 </html>
     `,
   }).catch((err) => console.error("[buyer-accounts] Welcome email failed:", err))
+  }
 
   console.log(`[AUDIT] New externer_kaeufer account created: email=${email} userId=${userId} ip=${ip}`)
 

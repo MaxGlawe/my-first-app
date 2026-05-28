@@ -22,6 +22,7 @@ export interface ShopProduct {
   produkt_typ: "challenge" | "programm" | "masterclass"
   anliegen: string[] | null
   preis: number
+  preis_regulaer?: number | null
   waehrung: string
   abo_inkludiert: boolean
   abo_rabatt_prozent: number | null
@@ -94,6 +95,7 @@ export function ProductCard({ product, index = 0, className, mode = "app" }: Pro
     produkt_typ,
     anliegen,
     preis,
+    preis_regulaer,
     besitz,
     abo_access,
     effektiver_preis,
@@ -104,6 +106,14 @@ export function ProductCard({ product, index = 0, className, mode = "app" }: Pro
 
   const displayPrice = effektiver_preis ?? preis
   const isDiscounted = effektiver_preis !== undefined && effektiver_preis < preis
+  // Regulärer Streichpreis (z. B. Launch-Aktion) — nur wenn kein Abo-Rabatt
+  // bereits einen Streichpreis anzeigt und der reguläre Preis höher liegt.
+  const launchStrike =
+    !isDiscounted &&
+    typeof preis_regulaer === "number" &&
+    preis_regulaer > displayPrice
+      ? preis_regulaer
+      : null
   const freigeschaltet = besitz || abo_access
 
   return (
@@ -221,6 +231,11 @@ export function ProductCard({ product, index = 0, className, mode = "app" }: Pro
                 {isDiscounted && (
                   <span className="text-sm text-slate-400 line-through">
                     {preis.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
+                  </span>
+                )}
+                {launchStrike !== null && (
+                  <span className="text-sm text-slate-400 line-through">
+                    {launchStrike.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
                   </span>
                 )}
               </>
