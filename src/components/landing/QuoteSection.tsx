@@ -4,6 +4,17 @@ import { useRef, useEffect, useState } from "react"
 import Image from "next/image"
 import { ScrollReveal } from "./ScrollReveal"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
+
 const SIGNATURE_PATH = [
   // M
   "M8 55 L14 12 L26 40 L38 12 L44 55",
@@ -65,7 +76,8 @@ function SignatureSVG() {
     <svg
       ref={svgRef}
       viewBox="0 0 280 70"
-      className="h-14 w-auto text-slate-800"
+      className="h-14 w-auto"
+      style={{ color: INK }}
       aria-label="Unterschrift Max Glawe"
     >
       <path
@@ -96,14 +108,25 @@ function FounderImage() {
   const [imgError, setImgError] = useState(false)
 
   return (
-    <div className="h-60 w-48 sm:h-80 sm:w-64 md:h-[22rem] md:w-72 lg:h-96 lg:w-80 rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/10 ring-1 ring-slate-100 relative">
+    <div
+      className="h-60 w-48 sm:h-80 sm:w-64 md:h-[22rem] md:w-72 lg:h-96 lg:w-80 rounded-3xl overflow-hidden ring-1 ring-[#e7e1d6] relative"
+      style={{ boxShadow: "0 28px 56px rgba(15,23,42,0.10)" }}
+    >
       {imgError ? (
-        <div className="h-full w-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-          <span className="text-5xl font-bold text-slate-300 select-none">MG</span>
+        <div
+          className="h-full w-full flex items-center justify-center"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(44,62,45,0.10) 0%, rgba(201,183,156,0.18) 100%)",
+          }}
+        >
+          <span className="text-5xl select-none" style={{ ...serif, color: GREEN }}>
+            MG
+          </span>
         </div>
       ) : (
         <Image
-          src="/images/maxglawe.webp"
+          src="/images/masterclass/chronischer-kreuzschmerz/max-portrait.jpg"
           alt="Max Glawe — Heilpraktiker für Physiotherapie und Gründer von Praxis OS"
           fill
           className="object-cover object-top"
@@ -117,7 +140,10 @@ function FounderImage() {
 
 export function QuoteSection() {
   return (
-    <section className="py-24 sm:py-32 bg-[#faf9f7] relative overflow-hidden">
+    <section
+      className="py-24 sm:py-32 relative overflow-hidden"
+      style={{ backgroundColor: PAPER }}
+    >
       {/* Smart line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
         <div className="smart-line h-12" />
@@ -132,28 +158,37 @@ export function QuoteSection() {
               <div className="relative">
                 <FounderImage />
                 {/* Decorative accent */}
-                <div className="absolute -bottom-3 -right-3 h-24 w-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 -z-10" />
+                <div
+                  className="absolute -bottom-3 -right-3 h-24 w-24 rounded-2xl -z-10"
+                  style={{ backgroundColor: SAND }}
+                />
               </div>
             </div>
 
             {/* Quote content */}
             <div className="flex-1 text-center lg:text-left">
               {/* Decorative quote mark */}
-              <span className="text-5xl sm:text-7xl lg:text-8xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent leading-none select-none block mb-4">
+              <span
+                className="text-5xl sm:text-7xl lg:text-8xl leading-none select-none block mb-4"
+                style={{ ...serif, color: GREEN }}
+              >
                 &ldquo;
               </span>
 
-              <blockquote className="text-lg sm:text-xl md:text-2xl lg:text-[1.7rem] font-light text-slate-800 leading-relaxed italic tracking-tight">
+              <blockquote
+                className="text-lg sm:text-xl md:text-2xl lg:text-[1.7rem] font-light leading-relaxed italic tracking-tight"
+                style={{ color: BODY }}
+              >
                 Niemand heilt auf einer Behandlungsbank. Der Körper heilt durch
                 Bewegung — aktiv, bewusst, jeden Tag.
-                <span className="not-italic font-semibold text-slate-900">
+                <span className="not-italic font-semibold" style={{ color: INK }}>
                   {" "}
                   20&nbsp;Minuten pro Woche reichen nicht.
                 </span>{" "}
                 Echte Heilung beginnt nicht im Wartezimmer —
-                <span className="not-italic font-semibold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+                <span className="not-italic font-semibold" style={{ color: GREEN }}>
                   {" "}
-                  sondern in Ihrer Bewegung.
+                  sondern in deiner Bewegung.
                 </span>
               </blockquote>
 
@@ -162,10 +197,10 @@ export function QuoteSection() {
                 <SignatureSVG />
 
                 <div>
-                  <p className="text-base font-semibold text-slate-900">
+                  <p className="text-base font-semibold" style={{ color: INK }}>
                     Max Glawe
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm" style={{ color: MUTED }}>
                     Heilpraktiker für Physiotherapie — Gründer Praxis&nbsp;OS
                   </p>
                 </div>

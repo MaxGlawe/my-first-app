@@ -131,7 +131,7 @@ const comparison = [
   { feature: "Therapeuten-Betreuung bei Bedarf", hansefit: false, bkk: false, praxis: true },
   { feature: "HR-Dashboard mit KPIs", hansefit: false, bkk: false, praxis: true },
   { feature: "§3 Nr. 34 EStG Konformität", hansefit: true, bkk: true, praxis: true },
-  { feature: "ZPP-Zertifizierung", hansefit: false, bkk: true, praxis: true },
+  { feature: "ZPP-Kurskonzepte (optional, zubuchbar)", hansefit: false, bkk: true, praxis: true },
   { feature: "Messbare Ergebnisse", hansefit: false, bkk: false, praxis: true },
 ]
 

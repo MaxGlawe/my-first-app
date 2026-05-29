@@ -15,6 +15,7 @@ import { CredentialsSection } from "@/components/landing/CredentialsSection"
 import { ResultsSection } from "@/components/landing/ResultsSection"
 import { QuoteSection } from "@/components/landing/QuoteSection"
 import { PricingSection } from "@/components/landing/PricingSection"
+import { ShopShowcaseSection } from "@/components/landing/ShopShowcaseSection"
 import { FaqSection } from "@/components/landing/FaqSection"
 import { TrustSection } from "@/components/landing/TrustSection"
 import { CtaSection } from "@/components/landing/CtaSection"
@@ -61,6 +62,7 @@ export default function LandingPage() {
       <LandingHeader />
       <main className="flex-1">
         <HeroSection />
+        <ShopShowcaseSection />
         <DeviceShowcase />
         <UniqueSection />
         <FeaturesShowcase />

@@ -18,5 +18,5 @@ export default function KartenLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="min-h-screen bg-slate-50">{children}</div>
+  return <div className="min-h-screen" style={{ backgroundColor: "#F8F5F0" }}>{children}</div>
 }

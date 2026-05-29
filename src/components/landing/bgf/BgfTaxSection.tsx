@@ -7,16 +7,16 @@ const cards = [
   {
     icon: FileText,
     badge: "§3 Nr. 34 EStG",
-    title: "600€/MA/Jahr steuerfrei",
+    title: "Bis 600 €/MA steuerfrei",
     description:
-      "Arbeitgeberleistungen zur Gesundheitsförderung sind bis zu 600€ pro Mitarbeitendem und Jahr steuerbefreit. Das bedeutet: Kein Lohnsteuerabzug, keine Sozialabgaben.",
+      "Für zertifizierte Präventionskurse können Arbeitgeber bis zu 600 € pro Mitarbeitendem und Jahr steuer- und sozialabgabenfrei leisten. Voraussetzung ist die Zertifizierung der Maßnahme nach §20/§20b SGB V — die wir über unsere zubuchbaren Kurskonzepte abbilden.",
     example: {
-      label: "Rechenbeispiel (100 MA):",
+      label: "Wofür der Vorteil gilt:",
       items: [
-        "Jahreskosten: 46.800€ (39€ × 12 × 100)",
-        "Steuervorteil: 18.000€ (600€ × 30% × 100)",
-        "Effektive Kosten: 28.800€/Jahr",
-        "= 24€/MA/Monat netto",
+        "Zertifizierte Präventionskurse (zubuchbar)",
+        "Bis 600 € je MA/Jahr steuer- & abgabenfrei",
+        "Nicht automatisch auf die Software-Lizenz",
+        "Nachweise stellen wir bereit",
       ],
     },
     color: "landing-accent",
@@ -25,17 +25,17 @@ const cards = [
   },
   {
     icon: Heart,
-    badge: "§20b SGB V",
+    badge: "§20 SGB V",
     title: "Krankenkassen-Förderung",
     description:
-      "Betriebliche Gesundheitsförderung wird von gesetzlichen Krankenkassen (BKK, GKV) kofinanziert. Sprechen Sie uns an — wir unterstützen bei der Antragsstellung.",
+      "Zertifizierte Präventionskurse werden von gesetzlichen Krankenkassen bezuschusst. Wir liefern die Nachweise für die Antragstellung — die Förderhöhe legt die jeweilige Kasse fest.",
     example: {
       label: "Förderung möglich:",
       items: [
-        "BKK/GKV zahlen bis zu 50% der Kosten",
-        "Antrag über Unternehmen oder Krankenkasse",
-        "Kombination mit §3 Nr. 34 möglich",
-        "Wir helfen beim Antragsverfahren",
+        "Zuschuss für zertifizierte Kurse",
+        "Antrag über MA oder Krankenkasse",
+        "Kombinierbar mit §3 Nr. 34 EStG",
+        "Wir unterstützen mit Unterlagen",
       ],
     },
     color: "landing-highlight",
@@ -44,17 +44,17 @@ const cards = [
   },
   {
     icon: Award,
-    badge: "ZPP-Zertifizierung",
-    title: "Zertifizierte Prävention",
+    badge: "ZPP-Kursleiter",
+    title: "Zertifizierte Kurskonzepte",
     description:
-      "Unsere Maßnahmen sind nach §20 SGB V (Zentrale Prüfstelle Prävention) zertifiziert. Das ist Voraussetzung für Krankenkassen-Förderung und erhöht das Mitarbeiter-Vertrauen.",
+      "Max Glawe ist als Kursleiter bei der ZPP registriert. Auf Wunsch erstellen wir zertifizierte Präventionskurse — per Live-Stream oder vor Ort, individuell nach Absprache.",
     example: {
-      label: "ZPP-Status:",
+      label: "Optional zubuchbar:",
       items: [
-        "Offizielle ZPP-Zertifizierung",
-        "Qualitätssicherung nach §20 SGB V",
-        "Evidenzbasierte Methoden",
-        "Anerkannt von allen GKV",
+        "ZPP-registrierte Kursleitung",
+        "Live-Stream oder vor Ort",
+        "Individuell nach Gespräch & Angebot",
+        "Nachweise für Förderung inklusive",
       ],
     },
     color: "landing-accent-warm",
@@ -79,11 +79,13 @@ export function BgfTaxSection() {
             Förderung & Steuer
           </span>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-landing-fg tracking-tight">
-            Bis zu{" "}
-            <span className="text-landing-accent">100% förderfähig</span>
+            Steuerlich gefördert —{" "}
+            <span className="text-landing-accent">richtig aufgesetzt</span>
           </h2>
           <p className="mt-4 text-lg text-landing-fg-muted max-w-2xl mx-auto">
-            Nutzen Sie alle verfügbaren Steuervorteile und Krankenkassen-Förderungen.
+            Mit zertifizierten Präventionskursen nutzen Sie §3 Nr. 34 EStG und
+            Krankenkassen-Förderung. Details klären Sie mit Ihrem Steuerberater —
+            wir liefern die Nachweise.
           </p>
         </motion.div>
 

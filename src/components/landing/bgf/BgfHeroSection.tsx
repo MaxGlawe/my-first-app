@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Shield, CheckCircle2, Star } from "lucide-react"
+import { ArrowRight, Shield, CheckCircle2, Stethoscope, MessageCircle } from "lucide-react"
 import { motion, useScroll, useTransform } from "framer-motion"
 
 function AnimatedKpiCounter({
@@ -64,7 +64,7 @@ function AnimatedKpiCounter({
   )
 }
 
-function DashboardMockup() {
+function TherapistCockpit() {
   return (
     <motion.div
       className="relative w-full max-w-lg mx-auto"
@@ -76,7 +76,7 @@ function DashboardMockup() {
       {/* Glow */}
       <div className="absolute inset-0 bg-landing-accent/10 blur-3xl rounded-3xl scale-110" />
 
-      {/* Dashboard card */}
+      {/* Cockpit card */}
       <div className="relative rounded-2xl border border-landing-border bg-white shadow-2xl overflow-hidden">
         {/* Header bar */}
         <div className="bg-landing-fg px-5 py-3.5 flex items-center gap-3">
@@ -85,56 +85,55 @@ function DashboardMockup() {
             <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
             <div className="w-3 h-3 rounded-full bg-green-400/60" />
           </div>
-          <span className="text-white/60 text-xs font-mono ml-2">Praxis OS — HR Dashboard</span>
+          <span className="text-white/60 text-xs font-mono ml-2">Praxis OS — Ihr Therapeut</span>
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Therapist row */}
+          <div className="flex items-center gap-3 rounded-xl bg-landing-bg p-3 border border-landing-border/50">
+            <div className="w-10 h-10 rounded-full bg-landing-accent/15 flex items-center justify-center flex-shrink-0">
+              <Stethoscope className="h-5 w-5 text-landing-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-landing-fg truncate">Max Glawe</p>
+              <p className="text-[11px] text-landing-fg-subtle">Heilpraktiker · Ihr fester Ansprechpartner</p>
+            </div>
+            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-landing-accent">
+              <span className="w-2 h-2 rounded-full bg-landing-accent animate-pulse" />
+              Online
+            </span>
+          </div>
+
           {/* KPI row */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Teilnahme", value: "87%", icon: "📈", color: "text-landing-accent" },
-              { label: "Schmerz ↓", value: "-34%", icon: "💪", color: "text-emerald-600" },
-              { label: "Zufrieden", value: "4.8★", icon: "⭐", color: "text-landing-accent-warm" },
+              { label: "Betreut", value: "87%", color: "text-landing-accent" },
+              { label: "Beschwerden ↓", value: "-34%", color: "text-emerald-600" },
+              { label: "Zufrieden", value: "4.8★", color: "text-landing-accent-warm" },
             ].map((kpi) => (
               <div key={kpi.label} className="rounded-xl bg-landing-bg p-3 text-center border border-landing-border/50">
-                <div className="text-base mb-1">{kpi.icon}</div>
                 <div className={`text-lg font-bold font-display ${kpi.color}`}>{kpi.value}</div>
                 <div className="text-[10px] text-landing-fg-subtle">{kpi.label}</div>
               </div>
             ))}
           </div>
 
-          {/* Mini chart */}
-          <div className="rounded-xl bg-landing-bg p-4 border border-landing-border/50">
-            <div className="text-xs text-landing-fg-subtle mb-3 font-medium">Beschwerden-Verlauf (Monat)</div>
-            <div className="flex items-end gap-1.5 h-16">
-              {[85, 78, 72, 68, 61, 55, 52, 48, 45, 42, 38, 35].map((h, i) => (
-                <motion.div
-                  key={i}
-                  className="flex-1 rounded-t-sm bg-landing-accent/20"
-                  style={{ height: `${h}%` }}
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ delay: 0.8 + i * 0.05, duration: 0.4 }}
-                >
-                  <div
-                    className="w-full h-full rounded-t-sm"
-                    style={{
-                      background: `linear-gradient(to top, #2D6A4F${Math.round((1 - i / 12) * 255).toString(16).padStart(2, '0')}, #2D6A4F40)`,
-                    }}
-                  />
-                </motion.div>
-              ))}
+          {/* Chat snippet */}
+          <div className="rounded-xl bg-landing-bg p-4 border border-landing-border/50 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-xs text-landing-fg-subtle mb-1">
+              <MessageCircle className="h-3.5 w-3.5 text-landing-accent" />
+              <span className="font-medium">Therapeuten-Draht</span>
             </div>
-          </div>
-
-          {/* Status row */}
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-landing-fg-subtle">
-              <span className="w-2 h-2 rounded-full bg-landing-accent animate-pulse" />
-              Live-Daten
-            </span>
-            <span className="text-landing-fg-subtle">Letzte Aktualisierung: gerade eben</span>
+            <div className="flex justify-end">
+              <span className="text-[11px] bg-landing-accent text-white rounded-2xl rounded-br-sm px-3 py-1.5 max-w-[80%]">
+                Mein Rücken zwickt seit gestern beim Sitzen.
+              </span>
+            </div>
+            <div className="flex justify-start">
+              <span className="text-[11px] bg-white border border-landing-border text-landing-fg rounded-2xl rounded-bl-sm px-3 py-1.5 max-w-[85%]">
+                Ich habe Ihnen eine 3-Minuten-Routine freigeschaltet. Schauen wir morgen drauf. 💪
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -145,7 +144,7 @@ function DashboardMockup() {
         animate={{ y: [0, -4, 0] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
       >
-        DSGVO-konform
+        Echter Mensch
       </motion.div>
     </motion.div>
   )
@@ -204,11 +203,7 @@ export function BgfHeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
             >
-              <motion.div
-                className="h-2 w-2 rounded-full bg-landing-accent"
-                animate={{ scale: [1, 1.4, 1], opacity: [1, 0.6, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
+              <Stethoscope className="h-3.5 w-3.5 text-landing-accent" />
               <span className="text-sm text-landing-accent font-semibold tracking-wide">
                 Betriebliche Gesundheitsförderung
               </span>
@@ -221,13 +216,9 @@ export function BgfHeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.7 }}
             >
-              Die Gesundheit Ihrer{" "}
-              <span className="text-landing-accent">Mitarbeitenden.</span>
+              Ihr Therapeut.
               <br />
-              <span className="relative inline-block mt-1">
-                Messbar. Digital.{" "}
-                <span className="text-landing-accent-warm">Steuerfrei.</span>
-              </span>
+              <span className="text-landing-accent">Für Ihr ganzes Team.</span>
             </motion.h1>
 
             {/* Subline */}
@@ -237,9 +228,11 @@ export function BgfHeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.7 }}
             >
-              Betriebliche Gesundheitsförderung mit persönlicher Betreuung,
-              KI-Pausen-Fits und messbaren Ergebnissen —{" "}
-              <span className="font-semibold text-landing-fg">ab 19€/MA/Monat.</span>
+              Ein echter Physiotherapeut kümmert sich um die Gesundheit Ihrer
+              Mitarbeitenden — begleitet durch eine smarte App.{" "}
+              <span className="font-semibold text-landing-fg">
+                Messbar weniger Ausfall, fittere Teams, steuerlich gefördert.
+              </span>
             </motion.p>
 
             {/* CTAs */}
@@ -249,7 +242,7 @@ export function BgfHeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
             >
-              <Link href="/anfrage">
+              <Link href="/unternehmen/kontakt">
                 <motion.div whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.98 }}>
                   <Button
                     size="lg"
@@ -267,7 +260,7 @@ export function BgfHeroSection() {
                     size="lg"
                     className="text-base px-8 h-12 rounded-full border-landing-border text-landing-fg-muted hover:bg-landing-accent/5 hover:text-landing-accent hover:border-landing-accent/30 bg-transparent"
                   >
-                    ROI berechnen
+                    Was kostet uns Krankheit?
                   </Button>
                 </a>
               </motion.div>
@@ -282,8 +275,8 @@ export function BgfHeroSection() {
             >
               {[
                 { icon: Shield, label: "DSGVO-konform" },
-                { icon: CheckCircle2, label: "ZPP-zertifiziert" },
-                { icon: Star, label: "600€/MA steuerfrei" },
+                { icon: CheckCircle2, label: "ZPP-registrierte Kursleitung" },
+                { icon: Stethoscope, label: "Echte Therapeuten" },
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
@@ -296,11 +289,11 @@ export function BgfHeroSection() {
             </motion.div>
           </div>
 
-          {/* Right: Dashboard mockup */}
+          {/* Right: Therapist cockpit */}
           <div className="hidden lg:block">
-            <DashboardMockup />
+            <TherapistCockpit />
 
-            {/* KPI counters below mockup */}
+            {/* KPI counters below cockpit */}
             <motion.div
               className="mt-6 grid grid-cols-3 gap-4 rounded-2xl bg-landing-bg border border-landing-border p-5"
               initial={{ opacity: 0, y: 20 }}
@@ -308,8 +301,8 @@ export function BgfHeroSection() {
               transition={{ delay: 1.0, duration: 0.6 }}
             >
               <AnimatedKpiCounter value={87} suffix="%" label="Teilnahmequote" delay={1200} />
-              <AnimatedKpiCounter value={34} suffix="%" label="Schmerzreduktion" delay={1400} />
-              <AnimatedKpiCounter value={48} suffix="★" label="Zufriedenheit" delay={1600} />
+              <AnimatedKpiCounter value={34} suffix="%" label="Beschwerden ↓" delay={1400} />
+              <AnimatedKpiCounter value={35} suffix="%" label="weniger Fehltage" delay={1600} />
             </motion.div>
           </div>
         </div>

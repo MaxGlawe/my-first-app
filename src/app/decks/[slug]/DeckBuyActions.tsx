@@ -31,6 +31,14 @@ import { useCart } from "@/lib/cart-context"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { toast } from "sonner"
 
+// ── Premium-Markenwelt (Masterclass-Format) ──────────────────────────────────
+
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 interface DeckBuyActionsProps {
@@ -137,16 +145,19 @@ export function DeckBuyActions({
       onClick={handleAddToCart}
       className={cn(
         "w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors",
-        inCart
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-          : "border-slate-200 text-slate-600 hover:bg-slate-50"
+        inCart ? "hover:opacity-90" : "hover:bg-black/[0.03]"
       )}
+      style={
+        inCart
+          ? { borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.08)", color: GREEN }
+          : { borderColor: LINE, color: MUTED }
+      }
     >
       {inCart ? (
         <>
           <CheckCircle2 className="h-4 w-4" />
           Im Warenkorb
-          <span className="text-[11px] text-emerald-600 font-normal">· entfernen</span>
+          <span className="text-[11px] font-normal" style={{ color: GREEN }}>· entfernen</span>
         </>
       ) : (
         <>
@@ -164,7 +175,8 @@ export function DeckBuyActions({
         <Button
           onClick={handleBuyLoggedIn}
           disabled={isCheckingOut}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl h-12 text-base"
+          className="w-full text-white font-semibold rounded-xl h-12 text-base hover:opacity-90"
+          style={{ backgroundColor: GREEN }}
         >
           {isCheckingOut ? (
             <>
@@ -193,7 +205,8 @@ export function DeckBuyActions({
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="Vorname"
             aria-label="Vorname"
-            className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+            style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
           />
           <input
             type="text"
@@ -202,7 +215,8 @@ export function DeckBuyActions({
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Nachname"
             aria-label="Nachname"
-            className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+            style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
           />
         </div>
         <input
@@ -212,12 +226,14 @@ export function DeckBuyActions({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Deine E-Mail-Adresse"
           aria-label="E-Mail-Adresse"
-          className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+          className="w-full h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+          style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
         />
         <Button
           type="submit"
           disabled={isCheckingOut}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl h-12 text-base"
+          className="w-full text-white font-semibold rounded-xl h-12 text-base hover:opacity-90"
+          style={{ backgroundColor: GREEN }}
         >
           {isCheckingOut ? (
             <>
@@ -233,9 +249,12 @@ export function DeckBuyActions({
       {cartButton}
 
       {/* Hinweis: Zugang per E-Mail */}
-      <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-3">
-        <Mail className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-        <p className="text-xs text-emerald-800 leading-relaxed">
+      <div
+        className="flex items-start gap-2 rounded-xl px-3.5 py-3"
+        style={{ backgroundColor: "rgba(44,62,45,0.05)" }}
+      >
+        <Mail className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
+        <p className="text-xs leading-relaxed" style={{ color: INK }}>
           Nach dem Kauf bekommst du automatisch deinen Zugang per E-Mail — kein
           Account-Anlegen vorher nötig.
         </p>
@@ -262,12 +281,12 @@ export function DeckViewTracker({ slug }: { slug: string }) {
 function TrustNote() {
   return (
     <div className="space-y-2 pt-1">
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <ShieldCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+      <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
         <span>Sichere Zahlung via Stripe — Kreditkarte, SEPA, Sofort</span>
       </div>
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+      <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
         <span>Sofortiger Zugang nach Zahlungsbestätigung</span>
       </div>
     </div>

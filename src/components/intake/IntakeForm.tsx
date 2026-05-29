@@ -13,6 +13,16 @@ import { IntakeProgress } from "./IntakeProgress"
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react"
 import Link from "next/link"
 
+// Premium-Markenwelt (Masterclass-Format)
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const PAPER = "#F8F5F0"
+const LINE = "#e7e1d6"
+
+const inputStyle = { backgroundColor: PAPER, borderColor: LINE } as const
+
 const BESCHWERDE_BEREICHE = [
   { value: "ruecken", label: "Rücken / Wirbelsäule" },
   { value: "nacken_schulter", label: "Nacken & Schulter" },
@@ -102,23 +112,23 @@ export function IntakeForm() {
 
   function validateStep(): boolean {
     if (step === 1) {
-      if (!data.vorname.trim()) { setError("Bitte geben Sie Ihren Vornamen ein."); return false }
-      if (!data.nachname.trim()) { setError("Bitte geben Sie Ihren Nachnamen ein."); return false }
-      if (!data.email.includes("@")) { setError("Bitte geben Sie eine gültige E-Mail-Adresse ein."); return false }
-      if (data.telefon.length < 5) { setError("Bitte geben Sie Ihre Telefonnummer ein."); return false }
+      if (!data.vorname.trim()) { setError("Bitte gib deinen Vornamen ein."); return false }
+      if (!data.nachname.trim()) { setError("Bitte gib deinen Nachnamen ein."); return false }
+      if (!data.email.includes("@")) { setError("Bitte gib eine gültige E-Mail-Adresse ein."); return false }
+      if (data.telefon.length < 5) { setError("Bitte gib deine Telefonnummer ein."); return false }
     }
     if (step === 2) {
-      if (!data.beschwerde_bereich) { setError("Bitte wählen Sie einen Bereich."); return false }
-      if (data.beschwerde_freitext.length < 10) { setError("Bitte beschreiben Sie Ihre Beschwerden genauer (min. 10 Zeichen)."); return false }
+      if (!data.beschwerde_bereich) { setError("Bitte wähle einen Bereich."); return false }
+      if (data.beschwerde_freitext.length < 10) { setError("Bitte beschreibe deine Beschwerden genauer (min. 10 Zeichen)."); return false }
     }
     if (step === 3) {
-      if (!data.symptom_dauer) { setError("Bitte wählen Sie die Dauer Ihrer Beschwerden."); return false }
-      if (data.vorherige_behandlung.length === 0) { setError("Bitte wählen Sie mindestens eine Option."); return false }
+      if (!data.symptom_dauer) { setError("Bitte wähle die Dauer deiner Beschwerden."); return false }
+      if (data.vorherige_behandlung.length === 0) { setError("Bitte wähle mindestens eine Option."); return false }
     }
     if (step === 4) {
-      if (!data.datenschutz_akzeptiert) { setError("Bitte akzeptieren Sie die Datenschutzerklärung."); return false }
-      if (!data.agb_akzeptiert) { setError("Bitte akzeptieren Sie die AGB."); return false }
-      if (!data.heilpraktiker_info) { setError("Bitte bestätigen Sie den Hinweis zur Behandlung."); return false }
+      if (!data.datenschutz_akzeptiert) { setError("Bitte akzeptiere die Datenschutzerklärung."); return false }
+      if (!data.agb_akzeptiert) { setError("Bitte akzeptiere die AGB."); return false }
+      if (!data.heilpraktiker_info) { setError("Bitte bestätige den Hinweis zur Behandlung."); return false }
     }
     return true
   }
@@ -154,7 +164,7 @@ export function IntakeForm() {
       trackConversion("anfrage_submitted", { bereich: data.beschwerde_bereich })
       router.push("/danke")
     } catch {
-      setError("Netzwerkfehler. Bitte versuchen Sie es erneut.")
+      setError("Netzwerkfehler. Bitte versuche es erneut.")
     } finally {
       setSubmitting(false)
     }
@@ -193,25 +203,25 @@ export function IntakeForm() {
       {/* Step 1: Kontakt */}
       {step === 1 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 mb-1">Ihre Kontaktdaten</h2>
-          <p className="text-sm text-slate-500 mb-4">Damit wir Sie erreichen können.</p>
+          <h2 className="text-xl mb-1" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Deine Kontaktdaten</h2>
+          <p className="text-sm mb-4" style={{ color: MUTED }}>Damit wir dich erreichen können.</p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="vorname">Vorname *</Label>
-              <Input id="vorname" value={data.vorname} onChange={(e) => update({ vorname: e.target.value })} />
+              <Input id="vorname" value={data.vorname} onChange={(e) => update({ vorname: e.target.value })} style={inputStyle} className="focus-visible:ring-[#2C3E2D]" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="nachname">Nachname *</Label>
-              <Input id="nachname" value={data.nachname} onChange={(e) => update({ nachname: e.target.value })} />
+              <Input id="nachname" value={data.nachname} onChange={(e) => update({ nachname: e.target.value })} style={inputStyle} className="focus-visible:ring-[#2C3E2D]" />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email">E-Mail *</Label>
-            <Input id="email" type="email" value={data.email} onChange={(e) => update({ email: e.target.value })} />
+            <Input id="email" type="email" value={data.email} onChange={(e) => update({ email: e.target.value })} style={inputStyle} className="focus-visible:ring-[#2C3E2D]" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="telefon">Telefon *</Label>
-            <Input id="telefon" type="tel" value={data.telefon} onChange={(e) => update({ telefon: e.target.value })} />
+            <Input id="telefon" type="tel" value={data.telefon} onChange={(e) => update({ telefon: e.target.value })} style={inputStyle} className="focus-visible:ring-[#2C3E2D]" />
           </div>
         </div>
       )}
@@ -219,35 +229,41 @@ export function IntakeForm() {
       {/* Step 2: Beschwerden */}
       {step === 2 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 mb-1">Ihre Beschwerden</h2>
-          <p className="text-sm text-slate-500 mb-4">Wo haben Sie Probleme?</p>
+          <h2 className="text-xl mb-1" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Deine Beschwerden</h2>
+          <p className="text-sm mb-4" style={{ color: MUTED }}>Wo hast du Probleme?</p>
           <div className="space-y-1.5">
             <Label>Bereich *</Label>
             <div className="grid grid-cols-2 gap-2">
-              {BESCHWERDE_BEREICHE.map((b) => (
-                <button
-                  key={b.value}
-                  type="button"
-                  onClick={() => update({ beschwerde_bereich: b.value })}
-                  className={`rounded-lg border px-3 py-2.5 text-sm text-left transition-colors ${
-                    data.beschwerde_bereich === b.value
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
-                      : "border-slate-200 hover:border-slate-300 text-slate-600"
-                  }`}
-                >
-                  {b.label}
-                </button>
-              ))}
+              {BESCHWERDE_BEREICHE.map((b) => {
+                const selected = data.beschwerde_bereich === b.value
+                return (
+                  <button
+                    key={b.value}
+                    type="button"
+                    onClick={() => update({ beschwerde_bereich: b.value })}
+                    className="rounded-lg border px-3 py-2.5 text-sm text-left transition-colors"
+                    style={
+                      selected
+                        ? { borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.10)", color: GREEN, fontWeight: 500 }
+                        : { borderColor: LINE, color: BODY }
+                    }
+                  >
+                    {b.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="freitext">Beschreibung *</Label>
             <Textarea
               id="freitext"
-              placeholder="Beschreiben Sie Ihre Beschwerden in eigenen Worten..."
+              placeholder="Beschreibe deine Beschwerden in eigenen Worten..."
               rows={4}
               value={data.beschwerde_freitext}
               onChange={(e) => update({ beschwerde_freitext: e.target.value })}
+              style={inputStyle}
+              className="focus-visible:ring-[#2C3E2D]"
             />
           </div>
         </div>
@@ -256,54 +272,64 @@ export function IntakeForm() {
       {/* Step 3: Vorgeschichte */}
       {step === 3 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 mb-1">Vorgeschichte</h2>
-          <p className="text-sm text-slate-500 mb-4">Wie lange bestehen die Beschwerden?</p>
+          <h2 className="text-xl mb-1" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Vorgeschichte</h2>
+          <p className="text-sm mb-4" style={{ color: MUTED }}>Wie lange bestehen die Beschwerden?</p>
           <div className="space-y-1.5">
             <Label>Dauer der Beschwerden *</Label>
             <div className="space-y-2">
-              {SYMPTOM_DAUER_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => update({ symptom_dauer: opt.value })}
-                  className={`w-full rounded-lg border px-3 py-2.5 text-sm text-left transition-colors ${
-                    data.symptom_dauer === opt.value
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
-                      : "border-slate-200 hover:border-slate-300 text-slate-600"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {SYMPTOM_DAUER_OPTIONS.map((opt) => {
+                const selected = data.symptom_dauer === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => update({ symptom_dauer: opt.value })}
+                    className="w-full rounded-lg border px-3 py-2.5 text-sm text-left transition-colors"
+                    style={
+                      selected
+                        ? { borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.10)", color: GREEN, fontWeight: 500 }
+                        : { borderColor: LINE, color: BODY }
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>Bisherige Behandlung *</Label>
             <div className="grid grid-cols-2 gap-2">
-              {VORBEHANDLUNG_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => toggleBehandlung(opt.value)}
-                  className={`rounded-lg border px-3 py-2.5 text-sm text-left transition-colors ${
-                    data.vorherige_behandlung.includes(opt.value)
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-700 font-medium"
-                      : "border-slate-200 hover:border-slate-300 text-slate-600"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {VORBEHANDLUNG_OPTIONS.map((opt) => {
+                const selected = data.vorherige_behandlung.includes(opt.value)
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleBehandlung(opt.value)}
+                    className="rounded-lg border px-3 py-2.5 text-sm text-left transition-colors"
+                    style={
+                      selected
+                        ? { borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.10)", color: GREEN, fontWeight: 500 }
+                        : { borderColor: LINE, color: BODY }
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="details">Details (optional)</Label>
             <Textarea
               id="details"
-              placeholder="Was hat Ihnen geholfen? Was nicht?"
+              placeholder="Was hat dir geholfen? Was nicht?"
               rows={3}
               value={data.vorherige_behandlung_details}
               onChange={(e) => update({ vorherige_behandlung_details: e.target.value })}
+              style={inputStyle}
+              className="focus-visible:ring-[#2C3E2D]"
             />
           </div>
         </div>
@@ -312,14 +338,17 @@ export function IntakeForm() {
       {/* Step 4: Consent */}
       {step === 4 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 mb-1">Fast geschafft!</h2>
-          <p className="text-sm text-slate-500 mb-4">Bitte bestätigen Sie die folgenden Punkte.</p>
+          <h2 className="text-xl mb-1" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Fast geschafft!</h2>
+          <p className="text-sm mb-4" style={{ color: MUTED }}>Bitte bestätige die folgenden Punkte.</p>
 
-          <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3 mb-5">
-            <p className="text-sm text-emerald-800 leading-relaxed">
-              <span className="font-medium">Hinweis:</span> Unsere Leistungen sind Privatleistungen
+          <div
+            className="rounded-lg border px-4 py-3 mb-5"
+            style={{ backgroundColor: "rgba(44,62,45,0.06)", borderColor: LINE }}
+          >
+            <p className="text-sm leading-relaxed" style={{ color: BODY }}>
+              <span className="font-medium" style={{ color: INK }}>Hinweis:</span> Unsere Leistungen sind Privatleistungen
               (Heilpraktiker für Physiotherapie). Die genauen Kosten besprechen wir transparent
-              im kostenlosen Erstgespräch — Ihre Anfrage ist unverbindlich.
+              im kostenlosen Erstgespräch — deine Anfrage ist unverbindlich.
             </p>
           </div>
 
@@ -330,9 +359,9 @@ export function IntakeForm() {
                 onCheckedChange={(v) => update({ datenschutz_akzeptiert: v === true })}
                 className="mt-0.5"
               />
-              <span className="text-sm text-slate-600 leading-relaxed">
+              <span className="text-sm leading-relaxed" style={{ color: BODY }}>
                 Ich habe die{" "}
-                <Link href="/datenschutz" target="_blank" className="underline text-emerald-600">
+                <Link href="/datenschutz" target="_blank" className="underline" style={{ color: GREEN }}>
                   Datenschutzerklärung
                 </Link>{" "}
                 gelesen und stimme der Verarbeitung meiner Daten zu. *
@@ -344,9 +373,9 @@ export function IntakeForm() {
                 onCheckedChange={(v) => update({ agb_akzeptiert: v === true })}
                 className="mt-0.5"
               />
-              <span className="text-sm text-slate-600 leading-relaxed">
+              <span className="text-sm leading-relaxed" style={{ color: BODY }}>
                 Ich akzeptiere die{" "}
-                <Link href="/agb" target="_blank" className="underline text-emerald-600">
+                <Link href="/agb" target="_blank" className="underline" style={{ color: GREEN }}>
                   Allgemeinen Geschäftsbedingungen
                 </Link>
                 . *
@@ -358,7 +387,7 @@ export function IntakeForm() {
                 onCheckedChange={(v) => update({ heilpraktiker_info: v === true })}
                 className="mt-0.5"
               />
-              <span className="text-sm text-slate-600 leading-relaxed">
+              <span className="text-sm leading-relaxed" style={{ color: BODY }}>
                 Ich verstehe, dass die Behandlung durch einen Heilpraktiker für Physiotherapie
                 erfolgt und nicht durch einen Arzt. *
               </span>
@@ -370,7 +399,7 @@ export function IntakeForm() {
       {/* Navigation */}
       <div className="flex items-center justify-between mt-8">
         {step > 1 ? (
-          <Button type="button" variant="ghost" onClick={goBack}>
+          <Button type="button" variant="ghost" onClick={goBack} style={{ color: GREEN }}>
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Zurück
           </Button>
@@ -379,7 +408,7 @@ export function IntakeForm() {
         )}
 
         {step < 4 ? (
-          <Button type="button" onClick={goNext} className="bg-emerald-600 hover:bg-emerald-700">
+          <Button type="button" onClick={goNext} className="rounded-xl text-white hover:opacity-90" style={{ backgroundColor: GREEN }}>
             Weiter
             <ArrowRight className="ml-1.5 h-4 w-4" />
           </Button>
@@ -388,7 +417,8 @@ export function IntakeForm() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="bg-emerald-600 hover:bg-emerald-700"
+            className="rounded-xl text-white hover:opacity-90"
+            style={{ backgroundColor: GREEN }}
           >
             {submitting ? (
               <>

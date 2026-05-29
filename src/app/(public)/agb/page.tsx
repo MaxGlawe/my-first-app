@@ -1,6 +1,14 @@
 import { Metadata } from "next"
 import Link from "next/link"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 export const metadata: Metadata = {
   title: "AGB",
   description: "Allgemeine Geschäftsbedingungen der Physiotherapie Glawe für Online-Physiotherapie und Heilpraktiker-Behandlungen per Video über Praxis OS.",
@@ -9,22 +17,23 @@ export const metadata: Metadata = {
 
 export default function AgbPage() {
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <Link
           href="/"
-          className="text-sm text-emerald-600 hover:text-emerald-700 font-medium mb-8 inline-block"
+          className="text-sm font-medium mb-8 inline-block hover:opacity-80"
+          style={{ color: GREEN }}
         >
           &larr; Zurück zur Startseite
         </Link>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Allgemeine Geschäftsbedingungen</h1>
-        <p className="text-sm text-slate-400 mb-10">Physiotherapie Glawe — Praxis OS</p>
+        <h1 className="text-3xl mb-2" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Allgemeine Geschäftsbedingungen</h1>
+        <p className="text-sm mb-10" style={{ color: MUTED }}>Physiotherapie Glawe — Praxis OS</p>
 
-        <div className="space-y-10 text-sm leading-relaxed text-slate-600">
+        <div className="space-y-10 text-sm leading-relaxed" style={{ color: BODY }}>
           {/* § 1 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 1 Geltungsbereich</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 1 Geltungsbereich</h2>
             <p>
               (1) Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Verträge
               zwischen der Physiotherapie Glawe, betrieben von Max Glawe, Heilpraktiker für Physiotherapie
@@ -45,7 +54,7 @@ export default function AgbPage() {
 
           {/* § 2 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 2 Leistungsbeschreibung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 2 Leistungsbeschreibung</h2>
             <p>(1) Der Anbieter erbringt folgende Leistungen:</p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>Physiotherapeutische Ersteinschätzung und Befunderhebung per Video</li>
@@ -57,8 +66,8 @@ export default function AgbPage() {
               <li>Bei Buchung eines Reha-Programms: strukturierte Betreuung über den vereinbarten Zeitraum</li>
             </ul>
             <p className="mt-3">
-              (2) Die <span className="font-medium text-slate-700">Video-Konsultationen</span> werden über die
-              Plattform <span className="font-medium text-slate-700">Doctolib GmbH</span> durchgeführt. Der Patient
+              (2) Die <span className="font-medium" style={{ color: INK }}>Video-Konsultationen</span> werden über die
+              Plattform <span className="font-medium" style={{ color: INK }}>Doctolib GmbH</span> durchgeführt. Der Patient
               erhält vor jedem Termin einen individuellen Zugangslink. Die Videogespräche sind Ende-zu-Ende
               verschlüsselt. Für die Nutzung von Doctolib gelten ergänzend die Nutzungsbedingungen und
               Datenschutzbestimmungen von Doctolib.
@@ -70,7 +79,7 @@ export default function AgbPage() {
             <p className="mt-2">
               (4) Der Anbieter behandelt als Heilpraktiker für Physiotherapie. Die Behandlung umfasst
               die eigenständige Befunderhebung, Diagnosestellung und physiotherapeutische Behandlung.
-              Die Leistungen <span className="font-medium text-slate-700">ersetzen keine ärztliche Untersuchung,
+              Die Leistungen <span className="font-medium" style={{ color: INK }}>ersetzen keine ärztliche Untersuchung,
               Diagnose oder Behandlung</span>. Bei Verdacht auf schwerwiegende Erkrankungen wird der Anbieter
               den Patienten an einen Arzt verweisen.
             </p>
@@ -78,7 +87,7 @@ export default function AgbPage() {
 
           {/* § 3 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 3 Vertragsschluss</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 3 Vertragsschluss</h2>
             <p>
               (1) Die Darstellung der Leistungen auf der Website stellt kein rechtlich bindendes Angebot dar,
               sondern eine unverbindliche Aufforderung an den Patienten, eine Anfrage zu stellen.
@@ -101,7 +110,7 @@ export default function AgbPage() {
 
           {/* § 4 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 4 Preise und Zahlung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 4 Preise und Zahlung</h2>
             <p>
               (1) Es gelten die zum Zeitpunkt des Vertragsschlusses auf der Website ausgewiesenen Preise.
               Alle Preise verstehen sich als Endpreise. Gemäß § 4 Nr. 14 UStG sind Heilpraktiker-Leistungen
@@ -118,7 +127,7 @@ export default function AgbPage() {
               seiner Krankenversicherung eingereicht werden kann.
             </p>
             <p className="mt-2">
-              (4) <span className="font-medium text-slate-700">Erstattung durch Versicherungen:</span> Der Anbieter
+              (4) <span className="font-medium" style={{ color: INK }}>Erstattung durch Versicherungen:</span> Der Anbieter
               weist darauf hin, dass die Erstattungsfähigkeit der Behandlungskosten vom jeweiligen
               Versicherungstarif des Patienten abhängt. Der Anbieter übernimmt keine Gewähr für die
               Erstattung durch die Krankenversicherung des Patienten. Es obliegt dem Patienten, die
@@ -132,21 +141,21 @@ export default function AgbPage() {
 
           {/* § 5 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 5 Termine und Absageregelung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 5 Termine und Absageregelung</h2>
             <p>
               (1) Termine für Video-Konsultationen werden über Doctolib oder per Absprache mit dem
               Anbieter vereinbart.
             </p>
             <p className="mt-2">
-              (2) <span className="font-medium text-slate-700">Absagefrist:</span> Vereinbarte Termine können
-              bis <span className="font-medium text-slate-700">24 Stunden vor dem geplanten Termin</span> kostenfrei
+              (2) <span className="font-medium" style={{ color: INK }}>Absagefrist:</span> Vereinbarte Termine können
+              bis <span className="font-medium" style={{ color: INK }}>24 Stunden vor dem geplanten Termin</span> kostenfrei
               abgesagt oder verschoben werden. Die Absage hat über Doctolib, per E-Mail oder per
               Chat-Nachricht in der App zu erfolgen.
             </p>
             <p className="mt-2">
               (3) Bei Absagen, die weniger als 24 Stunden vor dem Termin erfolgen, oder bei
               Nichterscheinen zum Termin, ist der Anbieter berechtigt, den{" "}
-              <span className="font-medium text-slate-700">vollen Sitzungspreis</span> in Rechnung zu stellen.
+              <span className="font-medium" style={{ color: INK }}>vollen Sitzungspreis</span> in Rechnung zu stellen.
               Dies gilt nicht, wenn der Patient die verspätete Absage nicht zu vertreten hat
               (z. B. akuter Notfall mit Nachweis).
             </p>
@@ -159,7 +168,7 @@ export default function AgbPage() {
 
           {/* § 6 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 6 Mitwirkungspflichten des Patienten</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 6 Mitwirkungspflichten des Patienten</h2>
             <p>(1) Der Patient ist verpflichtet:</p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>Wahrheitsgemäße und vollständige Angaben zu seinem Gesundheitszustand zu machen</li>
@@ -181,9 +190,9 @@ export default function AgbPage() {
 
           {/* § 7 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 7 Therapeutische Hinweise und Haftungsbeschränkung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 7 Therapeutische Hinweise und Haftungsbeschränkung</h2>
             <p>
-              (1) <span className="font-medium text-slate-700">Keine Erfolgsgarantie:</span> Der Anbieter schuldet
+              (1) <span className="font-medium" style={{ color: INK }}>Keine Erfolgsgarantie:</span> Der Anbieter schuldet
               eine fachgerechte Behandlung, jedoch keinen bestimmten Behandlungserfolg. Der Heilungsverlauf
               ist von vielen individuellen Faktoren abhängig, die außerhalb des Einflussbereichs des
               Anbieters liegen (z. B. Compliance, Vorerkrankungen, Lebensumstände).
@@ -218,7 +227,7 @@ export default function AgbPage() {
 
           {/* § 8 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 8 Geistiges Eigentum</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 8 Geistiges Eigentum</h2>
             <p>
               (1) Alle über Praxis OS bereitgestellten Inhalte — insbesondere Trainingspläne,
               Übungsanleitungen, Übungsvideos, Wissens-Lektionen, therapeutische Dokumentationen
@@ -244,14 +253,14 @@ export default function AgbPage() {
 
           {/* § 9 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 9 Datenschutz</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 9 Datenschutz</h2>
             <p>
               (1) Der Anbieter verarbeitet personenbezogene Daten des Patienten gemäß der
               Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG).
             </p>
             <p className="mt-2">
-              (2) Ausführliche Informationen zur Datenverarbeitung finden Sie in unserer{" "}
-              <Link href="/datenschutz" className="text-emerald-600 hover:underline font-medium">
+              (2) Ausführliche Informationen zur Datenverarbeitung findest du in unserer{" "}
+              <Link href="/datenschutz" className="hover:underline font-medium" style={{ color: GREEN }}>
                 Datenschutzerklärung
               </Link>.
             </p>
@@ -270,27 +279,27 @@ export default function AgbPage() {
 
           {/* § 10 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 10 Widerrufsrecht</h2>
-            <div className="p-5 bg-white rounded-xl border-2 border-slate-200">
-              <p className="font-semibold text-slate-800 mb-3">Widerrufsbelehrung</p>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 10 Widerrufsrecht</h2>
+            <div className="p-5 bg-white rounded-xl border-2" style={{ borderColor: LINE }}>
+              <p className="font-semibold mb-3" style={{ color: INK }}>Widerrufsbelehrung</p>
               <p>
-                <span className="font-medium text-slate-700">Widerrufsrecht:</span> Sie haben das Recht, binnen
+                <span className="font-medium" style={{ color: INK }}>Widerrufsrecht:</span> Du hast das Recht, binnen
                 vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt
                 vierzehn Tage ab dem Tag des Vertragsschlusses.
               </p>
               <p className="mt-2">
-                Um Ihr Widerrufsrecht auszuüben, müssen Sie uns mittels einer eindeutigen Erklärung
-                (z. B. per E-Mail an physiotherapieglawe@gmx.de) über Ihren Entschluss, diesen Vertrag
+                Um dein Widerrufsrecht auszuüben, musst du uns mittels einer eindeutigen Erklärung
+                (z. B. per E-Mail an physiotherapieglawe@gmx.de) über deinen Entschluss, diesen Vertrag
                 zu widerrufen, informieren.
               </p>
               <p className="mt-2">
-                <span className="font-medium text-slate-700">Folgen des Widerrufs:</span> Wenn Sie diesen Vertrag
-                widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und
-                spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren
+                <span className="font-medium" style={{ color: INK }}>Folgen des Widerrufs:</span> Wenn du diesen Vertrag
+                widerrufst, haben wir dir alle Zahlungen, die wir von dir erhalten haben, unverzüglich und
+                spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über deinen
                 Widerruf bei uns eingegangen ist.
               </p>
-              <p className="mt-3 p-3 bg-slate-50 rounded-lg">
-                <span className="font-medium text-slate-700">Vorzeitiges Erlöschen des Widerrufsrechts:</span>{" "}
+              <p className="mt-3 p-3 rounded-lg" style={{ backgroundColor: PAPER }}>
+                <span className="font-medium" style={{ color: INK }}>Vorzeitiges Erlöschen des Widerrufsrechts:</span>{" "}
                 Das Widerrufsrecht erlischt vorzeitig, wenn der Anbieter die Dienstleistung vollständig erbracht
                 hat und mit der Ausführung der Dienstleistung erst begonnen hat, nachdem der Patient seine
                 ausdrückliche Zustimmung gegeben und gleichzeitig seine Kenntnis davon bestätigt hat, dass er
@@ -301,19 +310,19 @@ export default function AgbPage() {
 
           {/* § 11 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 11 Vertragsdauer und Kündigung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 11 Vertragsdauer und Kündigung</h2>
             <p>
-              (1) <span className="font-medium text-slate-700">Einzelsitzungen:</span> Der Vertrag über eine
+              (1) <span className="font-medium" style={{ color: INK }}>Einzelsitzungen:</span> Der Vertrag über eine
               Einzelsitzung endet mit Erbringung der vereinbarten Leistung.
             </p>
             <p className="mt-2">
-              (2) <span className="font-medium text-slate-700">Reha-Programme:</span> Reha-Programme haben eine
+              (2) <span className="font-medium" style={{ color: INK }}>Reha-Programme:</span> Reha-Programme haben eine
               feste Laufzeit gemäß dem individuellen Behandlungsvertrag. Eine ordentliche Kündigung ist
               während der Laufzeit nicht möglich. Das Recht zur außerordentlichen Kündigung aus wichtigem
               Grund bleibt unberührt.
             </p>
             <p className="mt-2">
-              (3) <span className="font-medium text-slate-700">App-Zugang:</span> Der Zugang zur Patienten-App
+              (3) <span className="font-medium" style={{ color: INK }}>App-Zugang:</span> Der Zugang zur Patienten-App
               besteht für die Dauer der aktiven Behandlung. Nach Beendigung der Behandlung bleibt der
               Zugang noch für 30 Tage bestehen, damit der Patient seine Daten exportieren kann. Danach
               wird der Account deaktiviert.
@@ -337,7 +346,7 @@ export default function AgbPage() {
 
           {/* § 12 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 12 Verfügbarkeit der Plattform</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 12 Verfügbarkeit der Plattform</h2>
             <p>
               (1) Der Anbieter bemüht sich um eine möglichst hohe Verfügbarkeit der Plattform Praxis OS.
               Eine Verfügbarkeit von 100 % kann technisch nicht gewährleistet werden. Insbesondere Wartung,
@@ -356,7 +365,7 @@ export default function AgbPage() {
 
           {/* § 13 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 13 Höhere Gewalt</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 13 Höhere Gewalt</h2>
             <p>
               Im Falle höherer Gewalt (z. B. Naturkatastrophen, Pandemien, behördliche Anordnungen,
               Stromausfälle, großflächige Internetausfälle) ist der Anbieter von der Leistungspflicht
@@ -367,7 +376,7 @@ export default function AgbPage() {
 
           {/* § 14 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 14 Änderungen der AGB</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 14 Änderungen der AGB</h2>
             <p>
               (1) Der Anbieter behält sich vor, diese AGB mit Wirkung für die Zukunft zu ändern. Der
               Patient wird über Änderungen mindestens 14 Tage vor Inkrafttreten per E-Mail informiert.
@@ -385,7 +394,7 @@ export default function AgbPage() {
 
           {/* § 15 */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">§ 15 Schlussbestimmungen</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 15 Schlussbestimmungen</h2>
             <p>
               (1) Es gilt das Recht der Bundesrepublik Deutschland unter Ausschluss des
               UN-Kaufrechts (CISG).
@@ -410,7 +419,7 @@ export default function AgbPage() {
             </p>
           </section>
 
-          <div className="pt-6 border-t border-slate-200 text-xs text-slate-400">
+          <div className="pt-6 border-t text-xs" style={{ borderColor: LINE, color: MUTED }}>
             <p>Stand: März 2026</p>
           </div>
         </div>

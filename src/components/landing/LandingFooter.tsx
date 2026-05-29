@@ -1,9 +1,17 @@
 import Link from "next/link"
 import Image from "next/image"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 export function LandingFooter() {
   return (
-    <footer className="bg-slate-900 border-t border-slate-800">
+    <footer className="border-t" style={{ backgroundColor: PAPER, borderColor: LINE }}>
       <div className="container mx-auto px-4 py-12 sm:py-16 max-w-6xl">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand */}
@@ -17,15 +25,15 @@ export function LandingFooter() {
                 className="rounded-xl object-contain"
               />
               <div className="flex flex-col">
-                <span className="font-semibold text-[15px] leading-tight text-white">
+                <span className="font-semibold text-[15px] leading-tight" style={{ color: INK }}>
                   Praxis OS
                 </span>
-                <span className="text-[10px] text-slate-500 leading-tight">
+                <span className="text-[10px] leading-tight" style={{ color: MUTED }}>
                   by Physiotherapie Glawe
                 </span>
               </div>
             </div>
-            <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
+            <p className="text-sm leading-relaxed max-w-sm" style={{ color: BODY }}>
               Professionelle Online-Physiotherapie. Heilpraktiker-Behandlung per
               Video, individuelle Trainingspläne und persönliche Betreuung —
               alles in einer App.
@@ -34,7 +42,7 @@ export function LandingFooter() {
 
           {/* Produkt */}
           <div>
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: INK }}>
               Produkt
             </h3>
             <ul className="space-y-2.5">
@@ -50,7 +58,8 @@ export function LandingFooter() {
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-sm text-slate-500 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: MUTED }}
                   >
                     {l.label}
                   </Link>
@@ -61,7 +70,7 @@ export function LandingFooter() {
 
           {/* Behandlung */}
           <div>
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: INK }}>
               Behandlung
             </h3>
             <ul className="space-y-2.5">
@@ -70,12 +79,13 @@ export function LandingFooter() {
                 { label: "Rückenschmerzen", href: "/beschwerden/rueckenschmerzen" },
                 { label: "Knieschmerzen", href: "/beschwerden/knieschmerzen" },
                 { label: "Schulterschmerzen", href: "/beschwerden/schulterschmerzen" },
-                { label: "Physiotherapie in Ihrer Stadt", href: "/online-physiotherapie" },
+                { label: "Physiotherapie in deiner Stadt", href: "/online-physiotherapie" },
               ].map((l) => (
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-sm text-slate-500 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: MUTED }}
                   >
                     {l.label}
                   </Link>
@@ -86,7 +96,7 @@ export function LandingFooter() {
 
           {/* Rechtliches */}
           <div>
-            <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: INK }}>
               Rechtliches
             </h3>
             <ul className="space-y-2.5">
@@ -98,7 +108,8 @@ export function LandingFooter() {
                 <li key={l.label}>
                   <Link
                     href={l.href}
-                    className="text-sm text-slate-500 hover:text-white transition-colors"
+                    className="text-sm transition-colors hover:opacity-80"
+                    style={{ color: MUTED }}
                   >
                     {l.label}
                   </Link>
@@ -109,14 +120,22 @@ export function LandingFooter() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-slate-500">
-            &copy; {new Date().getFullYear()} Physiotherapie Glawe. Alle Rechte
-            vorbehalten.
-          </p>
+        <div
+          className="mt-12 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3"
+          style={{ borderColor: LINE }}
+        >
+          <div className="text-center sm:text-left">
+            <p className="text-xs font-medium" style={{ color: BODY }}>
+              Praxis OS — ein Produkt der Physiotherapie Glawe.
+            </p>
+            <p className="text-xs mt-1" style={{ color: MUTED }}>
+              &copy; {new Date().getFullYear()} Physiotherapie Glawe. Alle Rechte
+              vorbehalten.
+            </p>
+          </div>
           <div className="flex items-center gap-1.5">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-dot-pulse" />
-            <span className="text-xs text-slate-500">
+            <div className="h-2 w-2 rounded-full animate-dot-pulse" style={{ backgroundColor: GREEN }} />
+            <span className="text-xs" style={{ color: MUTED }}>
               Alle Systeme verfügbar
             </span>
           </div>

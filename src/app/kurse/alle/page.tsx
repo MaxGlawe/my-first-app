@@ -17,7 +17,13 @@ import { TrustRow } from "@/components/shop/TrustRow"
 import { AppUpsell } from "@/components/shop/AppUpsell"
 import { useFavorites } from "@/hooks/use-favorites"
 import { Heart, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const GREEN = "#2C3E2D"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
 
 // ── Page (Suspense-Wrapper für useSearchParams) ──────────────────────────────
 
@@ -31,7 +37,7 @@ export default function PublicKurseAllePage() {
 
 function KurseFallback() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Übersicht" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -100,7 +106,7 @@ function PublicKurseAlle() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <ShopHeader
         mode="website"
         showBack
@@ -113,13 +119,19 @@ function PublicKurseAlle() {
       <section className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-7">
         {/* Kopf */}
         <div className="animate-fade-in-up">
-          <span className="text-xs font-semibold text-emerald-600 uppercase tracking-[0.2em]">
+          <span
+            className="text-xs font-semibold uppercase tracking-[0.2em]"
+            style={{ color: GREEN }}
+          >
             Praxis OS · Shop
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1.5">
+          <h1
+            className="text-2xl sm:text-3xl mt-1.5"
+            style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+          >
             {favOnly ? "Deine Favoriten" : "Alle Challenges"}
           </h1>
-          <p className="text-slate-500 mt-1 text-sm">
+          <p className="mt-1 text-sm" style={{ color: MUTED }}>
             {favOnly
               ? `${favCount} ${favCount === 1 ? "Challenge" : "Challenges"} gemerkt`
               : "Von Physiotherapeuten entwickelte 21-Tage-Challenges — einmal kaufen, lebenslang behalten."}
@@ -131,7 +143,10 @@ function PublicKurseAlle() {
 
         {/* Produkttyp-Schalter */}
         {!favOnly && (
-          <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 text-sm font-medium">
+          <div
+            className="inline-flex rounded-full border bg-white p-1 text-sm font-medium"
+            style={{ borderColor: LINE }}
+          >
             {(
               [
                 ["challenge", "Challenges"],
@@ -141,12 +156,12 @@ function PublicKurseAlle() {
               <button
                 key={val}
                 onClick={() => setSelectedTyp(val)}
-                className={cn(
-                  "rounded-full px-4 py-1.5 transition-all",
+                className="rounded-full px-4 py-1.5 transition-all"
+                style={
                   selectedTyp === val
-                    ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/25"
-                    : "text-slate-600 hover:text-emerald-700"
-                )}
+                    ? { backgroundColor: GREEN, color: "#ffffff" }
+                    : { color: MUTED }
+                }
               >
                 {label}
               </button>
@@ -158,7 +173,8 @@ function PublicKurseAlle() {
         {favOnly && (
           <button
             onClick={() => router.replace("/kurse/alle")}
-            className="flex items-center gap-1.5 text-sm font-semibold text-emerald-700 hover:text-emerald-800 transition-colors"
+            className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80"
+            style={{ color: GREEN }}
           >
             <X className="h-4 w-4" />
             Alle Challenges anzeigen
@@ -177,12 +193,12 @@ function PublicKurseAlle() {
                 <button
                   key={item.label}
                   onClick={() => setSelectedAnliegen(item.value)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 border transition-all duration-200",
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap shrink-0 border transition-all duration-200 hover:opacity-90"
+                  style={
                     isActive
-                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm shadow-emerald-600/25"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700"
-                  )}
+                      ? { backgroundColor: GREEN, color: "#ffffff", borderColor: GREEN }
+                      : { backgroundColor: "#ffffff", color: MUTED, borderColor: LINE }
+                  }
                 >
                   <span className="text-base leading-none">{item.icon}</span>
                   <span>{item.label}</span>
@@ -220,27 +236,39 @@ function PublicKurseAlle() {
             {visibleProducts.length === 0 ? (
               selectedTyp === "masterclass" ? (
                 <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    style={{ backgroundColor: "rgba(44,62,45,0.10)" }}
+                  >
                     <span className="text-3xl">🎓</span>
                   </div>
-                  <p className="text-slate-800 font-bold text-lg mb-1">Masterclasses — in Kürze</p>
-                  <p className="text-slate-500 text-sm max-w-sm mx-auto">
+                  <p
+                    className="text-lg mb-1"
+                    style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+                  >
+                    Masterclasses — in Kürze
+                  </p>
+                  <p className="text-sm max-w-sm mx-auto" style={{ color: MUTED }}>
                     Tiefere, geführte Programme von Praxis OS. Wir arbeiten daran — bald hier
                     verfügbar.
                   </p>
                   <button
                     onClick={() => setSelectedTyp("challenge")}
-                    className="text-sm text-emerald-600 font-semibold underline underline-offset-2 mt-3"
+                    className="text-sm font-semibold underline underline-offset-2 mt-3"
+                    style={{ color: GREEN }}
                   >
                     Challenges ansehen
                   </button>
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    style={{ backgroundColor: "rgba(44,62,45,0.08)" }}
+                  >
                     <span className="text-2xl">{favOnly ? "🤍" : "🔍"}</span>
                   </div>
-                  <p className="text-slate-600 font-semibold mb-1">
+                  <p className="font-semibold mb-1" style={{ color: INK }}>
                     {favOnly
                       ? "Noch keine Favoriten gemerkt"
                       : searchQuery.trim()
@@ -250,7 +278,8 @@ function PublicKurseAlle() {
                   {hasActiveFilter && (
                     <button
                       onClick={clearAll}
-                      className="text-sm text-emerald-600 font-semibold underline underline-offset-2 mt-1"
+                      className="text-sm font-semibold underline underline-offset-2 mt-1"
+                      style={{ color: GREEN }}
                     >
                       Alle Challenges anzeigen
                     </button>
@@ -260,7 +289,7 @@ function PublicKurseAlle() {
             ) : (
               <>
                 <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm" style={{ color: MUTED }}>
                     {visibleProducts.length}{" "}
                     {visibleProducts.length === 1 ? "Challenge" : "Challenges"}
                     {hasActiveFilter ? " gefunden" : " verfügbar"}
@@ -268,7 +297,8 @@ function PublicKurseAlle() {
                   {hasActiveFilter && !favOnly && (
                     <button
                       onClick={clearAll}
-                      className="flex items-center gap-1 text-sm font-medium text-slate-400 hover:text-slate-700 transition-colors"
+                      className="flex items-center gap-1 text-sm font-medium transition-colors hover:opacity-80"
+                      style={{ color: MUTED }}
                     >
                       <X className="h-3.5 w-3.5" />
                       Filter zurücksetzen
@@ -295,9 +325,9 @@ function PublicKurseAlle() {
         {!isLoading && !error && <AppUpsell />}
       </section>
 
-      <footer className="border-t border-slate-200 mt-12 py-8">
+      <footer className="border-t mt-12 py-8" style={{ borderColor: LINE }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: MUTED }}>
             © {new Date().getFullYear()} Praxis OS · Alle Preise inkl. MwSt. ·
             Lebenslanger Zugriff nach Einmalkauf
           </p>

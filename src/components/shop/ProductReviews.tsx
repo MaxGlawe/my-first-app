@@ -19,8 +19,16 @@ import { useCallback, useEffect, useState } from "react"
 import { Star, Loader2, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -67,15 +75,16 @@ function Stars({ value, size = "sm" }: { value: number; size?: "sm" | "md" }) {
   const cls = size === "md" ? "h-5 w-5" : "h-4 w-4"
   return (
     <div className="flex gap-0.5" aria-hidden>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Star
-          key={i}
-          className={cn(
-            cls,
-            i < Math.round(value) ? "fill-amber-400 text-amber-400" : "text-slate-300"
-          )}
-        />
-      ))}
+      {Array.from({ length: 5 }).map((_, i) => {
+        const filled = i < Math.round(value)
+        return (
+          <Star
+            key={i}
+            className={cls}
+            style={filled ? { fill: SAND, color: SAND } : { color: LINE }}
+          />
+        )
+      })}
     </div>
   )
 }
@@ -86,7 +95,11 @@ export function ProductReviewsSummary({ slug }: { slug: string }) {
   const { data, isLoading } = useReviews(slug)
 
   if (isLoading) {
-    return <span className="text-sm text-slate-400">Bewertungen werden geladen…</span>
+    return (
+      <span className="text-sm" style={{ color: MUTED }}>
+        Bewertungen werden geladen…
+      </span>
+    )
   }
 
   const { average, count } = data?.aggregate ?? { average: 0, count: 0 }
@@ -95,7 +108,9 @@ export function ProductReviewsSummary({ slug }: { slug: string }) {
     return (
       <div className="flex items-center gap-2">
         <Stars value={0} />
-        <span className="text-sm text-slate-400">Noch keine Bewertungen</span>
+        <span className="text-sm" style={{ color: MUTED }}>
+          Noch keine Bewertungen
+        </span>
       </div>
     )
   }
@@ -103,8 +118,8 @@ export function ProductReviewsSummary({ slug }: { slug: string }) {
   return (
     <div className="flex items-center gap-2">
       <Stars value={average} />
-      <span className="text-sm text-slate-600">
-        <span className="font-semibold text-slate-800">
+      <span className="text-sm" style={{ color: BODY }}>
+        <span className="font-semibold" style={{ color: INK }}>
           {average.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
         </span>{" "}
         · {count} {count === 1 ? "Bewertung" : "Bewertungen"}
@@ -144,10 +159,8 @@ function RatingPicker({
             className="p-0.5 disabled:cursor-not-allowed"
           >
             <Star
-              className={cn(
-                "h-7 w-7 transition-colors",
-                active ? "fill-amber-400 text-amber-400" : "text-slate-300"
-              )}
+              className="h-7 w-7 transition-colors"
+              style={active ? { fill: SAND, color: SAND } : { color: LINE }}
             />
           </button>
         )
@@ -198,12 +211,17 @@ function ReviewForm({ slug, onSubmitted }: { slug: string; onSubmitted: () => vo
 
   if (done) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <div
+        className="rounded-2xl border p-5"
+        style={{ borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.05)" }}
+      >
         <div className="flex items-start gap-2.5">
-          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" style={{ color: GREEN }} />
           <div>
-            <p className="font-semibold text-emerald-900">Danke für deine Bewertung!</p>
-            <p className="mt-0.5 text-sm text-emerald-700">
+            <p className="font-semibold" style={{ color: INK }}>
+              Danke für deine Bewertung!
+            </p>
+            <p className="mt-0.5 text-sm" style={{ color: BODY }}>
               Sie erscheint, sobald sie geprüft und freigegeben wurde.
             </p>
           </div>
@@ -215,23 +233,31 @@ function ReviewForm({ slug, onSubmitted }: { slug: string; onSubmitted: () => vo
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm"
+      className="rounded-2xl border bg-white p-5 sm:p-6 space-y-4 shadow-sm"
+      style={{ borderColor: LINE }}
     >
       <div>
-        <h3 className="text-base font-semibold text-slate-900">Deine Bewertung</h3>
-        <p className="mt-0.5 text-sm text-slate-500">
+        <h3
+          className="text-base"
+          style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+        >
+          Deine Bewertung
+        </h3>
+        <p className="mt-0.5 text-sm" style={{ color: MUTED }}>
           Teile deine Erfahrung — sichtbar nach kurzer Prüfung.
         </p>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-slate-700">Sterne</label>
+        <label className="text-sm font-medium" style={{ color: BODY }}>
+          Sterne
+        </label>
         <RatingPicker value={rating} onChange={setRating} disabled={isSubmitting} />
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="review-titel" className="text-sm font-medium text-slate-700">
-          Titel <span className="font-normal text-slate-400">(optional)</span>
+        <label htmlFor="review-titel" className="text-sm font-medium" style={{ color: BODY }}>
+          Titel <span className="font-normal" style={{ color: MUTED }}>(optional)</span>
         </label>
         <input
           id="review-titel"
@@ -240,12 +266,13 @@ function ReviewForm({ slug, onSubmitted }: { slug: string; onSubmitted: () => vo
           maxLength={120}
           onChange={(e) => setTitel(e.target.value)}
           placeholder="Kurz auf den Punkt"
-          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-500/10"
+          className="h-11 w-full rounded-xl border px-4 text-sm outline-none transition-all focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+          style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
         />
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="review-body" className="text-sm font-medium text-slate-700">
+        <label htmlFor="review-body" className="text-sm font-medium" style={{ color: BODY }}>
           Deine Erfahrung
         </label>
         <Textarea
@@ -254,15 +281,19 @@ function ReviewForm({ slug, onSubmitted }: { slug: string; onSubmitted: () => vo
           maxLength={2000}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Was hat dir geholfen? Wie bist du vorgegangen?"
-          className="min-h-[110px] rounded-xl border-slate-200 bg-slate-50 focus-visible:ring-emerald-500/20"
+          className="min-h-[110px] rounded-xl focus-visible:ring-[#2C3E2D]/20"
+          style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
         />
-        <p className="text-right text-xs text-slate-400">{body.length} / 2000</p>
+        <p className="text-right text-xs" style={{ color: MUTED }}>
+          {body.length} / 2000
+        </p>
       </div>
 
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="h-11 w-full rounded-xl bg-emerald-600 font-semibold text-white hover:bg-emerald-700"
+        className="h-11 w-full rounded-xl font-semibold text-white hover:opacity-90"
+        style={{ backgroundColor: GREEN }}
       >
         {isSubmitting ? (
           <>
@@ -281,22 +312,27 @@ function ReviewForm({ slug, onSubmitted }: { slug: string; onSubmitted: () => vo
 
 function ReviewCard({ review }: { review: ReviewItem }) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white p-5">
+    <div className="rounded-2xl border bg-white p-5" style={{ borderColor: LINE }}>
       <div className="flex items-center justify-between gap-3">
         <Stars value={review.rating} />
-        <span className="text-xs text-slate-400">
+        <span className="text-xs" style={{ color: MUTED }}>
           {new Date(review.created_at).toLocaleDateString("de-DE")}
         </span>
       </div>
       {review.titel && (
-        <p className="mt-3 text-sm font-semibold text-slate-900">{review.titel}</p>
+        <p className="mt-3 text-sm font-semibold" style={{ color: INK }}>
+          {review.titel}
+        </p>
       )}
       {review.body && (
-        <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+        <p
+          className="mt-1.5 whitespace-pre-line text-sm leading-relaxed"
+          style={{ color: BODY }}
+        >
           {review.body}
         </p>
       )}
-      <p className="mt-2.5 text-xs font-medium text-slate-400">
+      <p className="mt-2.5 text-xs font-medium" style={{ color: MUTED }}>
         {review.autor_name?.trim() || "Verifizierter Käufer"}
       </p>
     </div>
@@ -325,11 +361,16 @@ export function ProductReviews({ slug, isLoggedIn, canReview }: ProductReviewsPr
   return (
     <section className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-slate-900">Bewertungen</h2>
+        <h2
+          className="text-base"
+          style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+        >
+          Bewertungen
+        </h2>
         {count > 0 && (
           <div className="flex items-center gap-2">
             <Stars value={average} />
-            <span className="text-sm text-slate-500">
+            <span className="text-sm" style={{ color: MUTED }}>
               {average.toLocaleString("de-DE", {
                 minimumFractionDigits: 1,
                 maximumFractionDigits: 1,
@@ -344,9 +385,16 @@ export function ProductReviews({ slug, isLoggedIn, canReview }: ProductReviewsPr
       {canReview ? (
         <ReviewForm slug={slug} onSubmitted={reload} />
       ) : !isLoggedIn ? (
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+        <div
+          className="rounded-2xl border p-4 text-sm"
+          style={{ borderColor: LINE, backgroundColor: PAPER, color: MUTED }}
+        >
           Du hast dieses Produkt gekauft?{" "}
-          <a href="/login" className="font-medium text-emerald-700 underline underline-offset-2">
+          <a
+            href="/login"
+            className="font-medium underline underline-offset-2"
+            style={{ color: GREEN }}
+          >
             Melde dich an
           </a>
           , um es zu bewerten.
@@ -355,11 +403,18 @@ export function ProductReviews({ slug, isLoggedIn, canReview }: ProductReviewsPr
 
       {/* Liste */}
       {isLoading ? (
-        <p className="text-sm text-slate-400">Bewertungen werden geladen…</p>
+        <p className="text-sm" style={{ color: MUTED }}>
+          Bewertungen werden geladen…
+        </p>
       ) : reviews.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center">
-          <Stars value={0} />
-          <p className="mt-3 text-sm text-slate-500">
+        <div
+          className="rounded-2xl border border-dashed p-8 text-center"
+          style={{ borderColor: LINE }}
+        >
+          <div className="flex justify-center">
+            <Stars value={0} />
+          </div>
+          <p className="mt-3 text-sm" style={{ color: MUTED }}>
             Noch keine Bewertungen — sei der oder die Erste.
           </p>
         </div>

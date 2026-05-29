@@ -1,33 +1,36 @@
 import type { Metadata } from "next"
-import { BgfHeroSection } from "@/components/landing-bgf/BgfHeroSection"
-import { BgfProblemSection } from "@/components/landing-bgf/BgfProblemSection"
-import { BgfSolutionSection } from "@/components/landing-bgf/BgfSolutionSection"
-import { BgfFeaturesSection } from "@/components/landing-bgf/BgfFeaturesSection"
-import { BgfRoiSection } from "@/components/landing-bgf/BgfRoiSection"
-import { BgfPricingSection } from "@/components/landing-bgf/BgfPricingSection"
-import { BgfTestimonialSection } from "@/components/landing-bgf/BgfTestimonialSection"
-import { BgfFaqSection } from "@/components/landing-bgf/BgfFaqSection"
-import { BgfCtaSection } from "@/components/landing-bgf/BgfCtaSection"
+import { BgfHeroSection } from "@/components/landing/bgf/BgfHeroSection"
+import { BgfProblemSection } from "@/components/landing/bgf/BgfProblemSection"
+import { BgfRoiCalculator } from "@/components/landing/bgf/BgfRoiCalculator"
+import { BgfTherapeutSection } from "@/components/landing/bgf/BgfTherapeutSection"
+import { BgfJourneySection } from "@/components/landing/bgf/BgfJourneySection"
+import { BgfTaxSection } from "@/components/landing/bgf/BgfTaxSection"
+import { BgfPricingSection } from "@/components/landing/bgf/BgfPricingSection"
+import { BgfCredentialsSection } from "@/components/landing/bgf/BgfCredentialsSection"
+import { BgfFaqSection } from "@/components/landing/bgf/BgfFaqSection"
+import { BgfCtaSection } from "@/components/landing/bgf/BgfCtaSection"
 
 export const metadata: Metadata = {
-  title: "Betriebliche Gesundheitsförderung (BGF) | Praxis OS — Für Unternehmen",
+  title: "Ihr Therapeut für Ihr Unternehmen | Praxis OS — Betriebliche Gesundheitsförderung",
   description:
-    "Digitale betriebliche Gesundheitsförderung für Ihr Unternehmen. KI-gestützte Pausen-Fit Sessions, Ergonomie-Beratung und messbare Ergebnisse — ab 29€/Mitarbeiter/Monat.",
+    "Ein echter Physiotherapeut kümmert sich um die Gesundheit Ihrer Mitarbeitenden — begleitet durch eine smarte App. Weniger Ausfall, fittere Teams, steuerlich gefördert über zertifizierte Präventionskurse. Jetzt Kosten berechnen.",
   keywords: [
     "Betriebliche Gesundheitsförderung",
     "BGF",
+    "Therapeut für Unternehmen",
     "Betriebliches Gesundheitsmanagement",
     "BGM",
     "Mitarbeitergesundheit",
-    "Pausen-Fit",
-    "Ergonomie Arbeitsplatz",
-    "Gesundheit am Arbeitsplatz",
+    "Physiotherapie Unternehmen",
+    "Rückenschmerzen Mitarbeiter",
+    "Präsentismus Kosten",
     "Fehlzeiten reduzieren",
-    "BGF digital",
+    "§3 Nr. 34 EStG",
   ],
   openGraph: {
-    title: "Betriebliche Gesundheitsförderung — Praxis OS für Unternehmen",
-    description: "Digitale BGF-Plattform: KI-gestützte Bewegungsprogramme, Ergonomie-Tipps und messbare ROI für Ihr Unternehmen.",
+    title: "Ihr Therapeut für Ihr Unternehmen — Praxis OS",
+    description:
+      "Ein echter Physiotherapeut für Ihr ganzes Team. Messbar weniger Ausfall, fittere Mitarbeitende, steuerlich gefördert.",
     type: "website",
     locale: "de_DE",
   },
@@ -38,11 +41,12 @@ export default function UnternehmenPage() {
     <>
       <BgfHeroSection />
       <BgfProblemSection />
-      <BgfSolutionSection />
-      <BgfFeaturesSection />
-      <BgfRoiSection />
+      <BgfRoiCalculator />
+      <BgfTherapeutSection />
+      <BgfJourneySection />
+      <BgfTaxSection />
       <BgfPricingSection />
-      <BgfTestimonialSection />
+      <BgfCredentialsSection />
       <BgfFaqSection />
       <BgfCtaSection />
     </>

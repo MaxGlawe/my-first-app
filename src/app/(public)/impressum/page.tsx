@@ -2,6 +2,14 @@ import { Metadata } from "next"
 import Link from "next/link"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 export const metadata: Metadata = {
   title: "Impressum",
   description: "Impressum der Physiotherapie Glawe — Praxis OS. Angaben gemäß § 5 DDG.",
@@ -31,23 +39,24 @@ export default async function ImpressumPage() {
   const zulassung = praxis?.zulassungsnummer ?? null
 
   return (
-    <div className="min-h-screen bg-[#faf9f7]">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <Link
           href="/"
-          className="text-sm text-emerald-600 hover:text-emerald-700 font-medium mb-8 inline-block"
+          className="text-sm font-medium mb-8 inline-block hover:opacity-80"
+          style={{ color: GREEN }}
         >
           &larr; Zurück zur Startseite
         </Link>
 
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">Impressum</h1>
-        <p className="text-sm text-slate-400 mb-10">Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)</p>
+        <h1 className="text-3xl mb-2" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>Impressum</h1>
+        <p className="text-sm mb-10" style={{ color: MUTED }}>Angaben gemäß § 5 DDG (Digitale-Dienste-Gesetz)</p>
 
-        <div className="space-y-10 text-sm leading-relaxed text-slate-600">
+        <div className="space-y-10 text-sm leading-relaxed" style={{ color: BODY }}>
           {/* 1. Diensteanbieter */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">1. Diensteanbieter</h2>
-            <p className="font-medium text-slate-700">
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>1. Diensteanbieter</h2>
+            <p className="font-medium" style={{ color: INK }}>
               {name}<br />
               {inhaber}<br />
               Heilpraktiker für Physiotherapie (sektoraler Heilpraktiker)
@@ -59,28 +68,28 @@ export default async function ImpressumPage() {
 
           {/* 2. Kontakt */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">2. Kontakt</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>2. Kontakt</h2>
             <p>
-              {email && <>E-Mail: <a href={`mailto:${email}`} className="text-emerald-600 hover:underline">{email}</a><br /></>}
+              {email && <>E-Mail: <a href={`mailto:${email}`} className="hover:underline" style={{ color: GREEN }}>{email}</a><br /></>}
               {telefon && <>Telefon: {telefon}<br /></>}
-              Website: <a href={website} className="text-emerald-600 hover:underline">{website}</a>
+              Website: <a href={website} className="hover:underline" style={{ color: GREEN }}>{website}</a>
             </p>
-            <p className="mt-2 text-slate-500">
-              Bitte bevorzugen Sie die Kontaktaufnahme per E-Mail. Telefonische Erreichbarkeit kann
+            <p className="mt-2" style={{ color: MUTED }}>
+              Bitte bevorzuge die Kontaktaufnahme per E-Mail. Telefonische Erreichbarkeit kann
               aufgrund laufender Behandlungen eingeschränkt sein.
             </p>
           </section>
 
           {/* 3. Berufsbezeichnung */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">3. Berufsbezeichnung und berufsrechtliche Regelungen</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>3. Berufsbezeichnung und berufsrechtliche Regelungen</h2>
             <p>
-              <span className="font-medium text-slate-700">Berufsbezeichnung:</span> Heilpraktiker beschränkt auf das Gebiet der
+              <span className="font-medium" style={{ color: INK }}>Berufsbezeichnung:</span> Heilpraktiker beschränkt auf das Gebiet der
               Physiotherapie (sektoraler Heilpraktiker)
             </p>
             {zulassung && (
               <p className="mt-1">
-                <span className="font-medium text-slate-700">Erlaubnisurkunde-Nr.:</span> {zulassung}
+                <span className="font-medium" style={{ color: INK }}>Erlaubnisurkunde-Nr.:</span> {zulassung}
               </p>
             )}
             <p className="mt-2">
@@ -88,45 +97,45 @@ export default async function ImpressumPage() {
               berufsmäßigen Ausübung der Heilkunde ohne ärztliche Bestallung, beschränkt auf das Gebiet der
               Physiotherapie, wurde gemäß § 1 Abs. 1 des Heilpraktikergesetzes (HeilprG) erteilt.
             </p>
-            <div className="mt-3 p-4 bg-white rounded-xl border border-slate-200">
-              <p className="font-medium text-slate-700 mb-1">Zuständige Aufsichtsbehörde:</p>
+            <div className="mt-3 p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
+              <p className="font-medium mb-1" style={{ color: INK }}>Zuständige Aufsichtsbehörde:</p>
               <p>Gesundheitsamt des jeweiligen Landkreises bzw. der kreisfreien Stadt am Sitz des Praxisinhabers.</p>
-              <p className="mt-2 font-medium text-slate-700 mb-1">Berufsrechtliche Regelungen:</p>
+              <p className="mt-2 font-medium mb-1" style={{ color: INK }}>Berufsrechtliche Regelungen:</p>
               <ul className="list-disc list-inside space-y-1 mt-1">
                 <li>Heilpraktikergesetz (HeilprG)</li>
                 <li>Erste Durchführungsverordnung zum Heilpraktikergesetz (1. DVO-HeilprG)</li>
                 <li>Berufsordnung für Heilpraktiker</li>
               </ul>
-              <p className="mt-2 text-xs text-slate-400">
-                Einsehbar unter: <a href="https://www.gesetze-im-internet.de/heilprg/" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">gesetze-im-internet.de</a>
+              <p className="mt-2 text-xs" style={{ color: MUTED }}>
+                Einsehbar unter: <a href="https://www.gesetze-im-internet.de/heilprg/" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: GREEN }}>gesetze-im-internet.de</a>
               </p>
             </div>
           </section>
 
           {/* 4. Plattform für Videokonsultationen */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">4. Plattform für Videokonsultationen</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>4. Plattform für Videokonsultationen</h2>
             <p>
               Die Video-Konsultationen im Rahmen der Online-Physiotherapie werden über die Plattform
-              <span className="font-medium text-slate-700"> Doctolib </span> durchgeführt.
+              <span className="font-medium" style={{ color: INK }}> Doctolib </span> durchgeführt.
             </p>
-            <div className="mt-3 p-4 bg-white rounded-xl border border-slate-200">
-              <p className="font-medium text-slate-700">Doctolib GmbH</p>
+            <div className="mt-3 p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
+              <p className="font-medium" style={{ color: INK }}>Doctolib GmbH</p>
               <p>Mehringdamm 51, 10961 Berlin, Deutschland</p>
               <p className="mt-1">
-                Website: <a href="https://www.doctolib.de" target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline">www.doctolib.de</a>
+                Website: <a href="https://www.doctolib.de" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: GREEN }}>www.doctolib.de</a>
               </p>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs" style={{ color: MUTED }}>
                 Doctolib ist ein nach EU-Recht zertifizierter Anbieter für Telemedizin-Dienste. Die
                 Videokonsultationen sind Ende-zu-Ende verschlüsselt und DSGVO-konform. Weitere
-                Informationen entnehmen Sie der Datenschutzerklärung von Doctolib.
+                Informationen entnimmst du der Datenschutzerklärung von Doctolib.
               </p>
             </div>
           </section>
 
           {/* 5. Online-Plattform Praxis OS */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">5. Online-Plattform Praxis OS</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>5. Online-Plattform Praxis OS</h2>
             <p>
               „Praxis OS" ist die begleitende Web-Applikation (Progressive Web App) der Physiotherapie Glawe
               zur Bereitstellung von Trainingsplänen, Wissens-Lektionen, Befindlichkeits-Tracking und
@@ -137,7 +146,7 @@ export default async function ImpressumPage() {
 
           {/* 6. Umsatzsteuer */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">6. Umsatzsteuer</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>6. Umsatzsteuer</h2>
             <p>
               Heilpraktiker-Leistungen sind gemäß § 4 Nr. 14 UStG von der Umsatzsteuer befreit.
               Die Rechnungsstellung erfolgt daher ohne Ausweis von Umsatzsteuer.
@@ -146,7 +155,7 @@ export default async function ImpressumPage() {
 
           {/* 7. Berufshaftpflicht */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">7. Berufshaftpflichtversicherung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>7. Berufshaftpflichtversicherung</h2>
             <p>
               Es besteht eine Berufshaftpflichtversicherung für die ausgeübte Tätigkeit als
               Heilpraktiker für Physiotherapie.
@@ -155,7 +164,7 @@ export default async function ImpressumPage() {
 
           {/* 8. Haftungshinweis — Inhalte */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">8. Haftung für Inhalte</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>8. Haftung für Inhalte</h2>
             <p>
               Die Inhalte dieser Website wurden mit größter Sorgfalt erstellt. Für die Richtigkeit,
               Vollständigkeit und Aktualität der Inhalte übernehmen wir jedoch keine Gewähr. Als
@@ -174,7 +183,7 @@ export default async function ImpressumPage() {
 
           {/* 9. Haftung — Links */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">9. Haftung für Links</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>9. Haftung für Links</h2>
             <p>
               Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen
               Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen.
@@ -189,7 +198,7 @@ export default async function ImpressumPage() {
 
           {/* 10. Urheberrecht */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">10. Urheberrecht</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>10. Urheberrecht</h2>
             <p>
               Die durch den Betreiber dieser Seiten erstellten Inhalte und Werke unterliegen dem
               deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der
@@ -205,14 +214,15 @@ export default async function ImpressumPage() {
 
           {/* 11. Streitschlichtung */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">11. Online-Streitbeilegung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>11. Online-Streitbeilegung</h2>
             <p>
               Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{" "}
               <a
                 href="https://ec.europa.eu/consumers/odr/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-600 hover:underline"
+                className="hover:underline"
+                style={{ color: GREEN }}
               >
                 ec.europa.eu/consumers/odr
               </a>
@@ -225,18 +235,18 @@ export default async function ImpressumPage() {
 
           {/* 12. Hinweis zu Gesundheitsinformationen */}
           <section>
-            <h2 className="text-lg font-semibold text-slate-800 mb-3">12. Hinweis zu Gesundheitsinformationen</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>12. Hinweis zu Gesundheitsinformationen</h2>
             <p>
               Die auf dieser Website bereitgestellten Informationen zu Beschwerdebildern und
               Behandlungsmethoden dienen ausschließlich der allgemeinen Information. Sie ersetzen
               keine ärztliche Beratung, Diagnose oder Behandlung. Bei akuten oder schwerwiegenden
-              Beschwerden konsultieren Sie bitte einen Arzt. Die Inhalte werden nach bestem Wissen
+              Beschwerden konsultiere bitte einen Arzt. Die Inhalte werden nach bestem Wissen
               und auf Grundlage aktueller wissenschaftlicher Erkenntnisse erstellt, erheben jedoch
               keinen Anspruch auf Vollständigkeit.
             </p>
           </section>
 
-          <div className="pt-6 border-t border-slate-200 text-xs text-slate-400">
+          <div className="pt-6 border-t text-xs" style={{ borderColor: LINE, color: MUTED }}>
             <p>Stand: März 2026</p>
           </div>
         </div>

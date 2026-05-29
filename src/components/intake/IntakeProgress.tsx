@@ -1,5 +1,10 @@
 "use client"
 
+// Premium-Markenwelt (Masterclass-Format)
+const GREEN = "#2C3E2D"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
+
 const STEPS = ["Kontakt", "Beschwerden", "Vorgeschichte", "Absenden"]
 
 interface IntakeProgressProps {
@@ -17,29 +22,32 @@ export function IntakeProgress({ currentStep }: IntakeProgressProps) {
           <div key={label} className="flex items-center gap-2">
             <div className="flex flex-col items-center">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
+                className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors"
+                style={
                   isCompleted
-                    ? "bg-emerald-600 text-white"
+                    ? { backgroundColor: GREEN, color: "#ffffff" }
                     : isActive
-                    ? "bg-emerald-100 text-emerald-700 ring-2 ring-emerald-600"
-                    : "bg-slate-100 text-slate-400"
-                }`}
+                    ? {
+                        backgroundColor: "rgba(44,62,45,0.10)",
+                        color: GREEN,
+                        boxShadow: `0 0 0 2px ${GREEN}`,
+                      }
+                    : { backgroundColor: "#F8F5F0", color: MUTED }
+                }
               >
                 {isCompleted ? "✓" : stepNum}
               </div>
               <span
-                className={`text-[10px] mt-1 ${
-                  isActive ? "text-emerald-700 font-medium" : "text-slate-400"
-                }`}
+                className="text-[10px] mt-1"
+                style={isActive ? { color: GREEN, fontWeight: 500 } : { color: MUTED }}
               >
                 {label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
               <div
-                className={`h-0.5 w-6 sm:w-10 mt-[-12px] ${
-                  isCompleted ? "bg-emerald-600" : "bg-slate-200"
-                }`}
+                className="h-0.5 w-6 sm:w-10 mt-[-12px]"
+                style={{ backgroundColor: isCompleted ? GREEN : LINE }}
               />
             )}
           </div>

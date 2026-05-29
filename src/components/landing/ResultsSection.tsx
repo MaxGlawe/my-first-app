@@ -3,6 +3,15 @@
 import { ScrollReveal } from "./ScrollReveal"
 import { TrendingDown, Star, Clock, UserCheck } from "lucide-react"
 
+// Premium-Markenwelt (Masterclass-Format)
+const INK = "#0f172a"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
+
 const stats = [
   {
     icon: TrendingDown,
@@ -22,7 +31,7 @@ const stats = [
   {
     icon: UserCheck,
     stat: "100%",
-    label: "persönlich — ein Therapeut, Ihr Therapeut",
+    label: "persönlich — ein Therapeut, dein Therapeut",
   },
 ]
 
@@ -51,10 +60,15 @@ export function ResultsSection() {
   return (
     <section
       id="ergebnisse"
-      className="py-24 sm:py-32 bg-slate-900 relative overflow-hidden"
+      className="py-24 sm:py-32 relative overflow-hidden"
+      style={{ backgroundColor: "#ffffff" }}
     >
-      {/* Glow */}
-      <div className="absolute bottom-0 right-0 h-[400px] w-[400px] bg-teal-500/5 blur-[120px] rounded-full" />
+      {/* Sand-Aura */}
+      <div
+        aria-hidden
+        className="absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(201,183,156,0.18) 0%, transparent 70%)" }}
+      />
 
       {/* Smart line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
@@ -64,36 +78,56 @@ export function ResultsSection() {
 
       <div className="relative container mx-auto px-4 max-w-6xl">
         <ScrollReveal className="text-center mb-16">
-          <span className="text-sm font-medium text-emerald-400 uppercase tracking-wider">
+          <span
+            className="text-sm font-medium uppercase tracking-wider"
+            style={{ color: GREEN }}
+          >
             Ergebnisse
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
-            Ergebnisse, die{" "}
-            <span className="bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-              für sich sprechen
-            </span>
+          <h2
+            className="mt-3 text-3xl sm:text-4xl lg:text-5xl tracking-tight"
+            style={{ ...serif, color: INK }}
+          >
+            Ergebnisse, die <span style={{ color: GREEN }}>für sich sprechen</span>
           </h2>
         </ScrollReveal>
 
         {/* Stats Bar */}
         <ScrollReveal>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
-            {stats.map((item) => (
-              <div
-                key={item.stat}
-                className="rounded-2xl glass p-5 sm:p-6 text-center"
-              >
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
-                  <item.icon className="h-5 w-5 text-emerald-400" />
+            {stats.map((item) => {
+              const isRating = item.icon === Star
+              return (
+                <div
+                  key={item.stat}
+                  className="rounded-2xl border bg-white p-5 sm:p-6 text-center"
+                  style={{ borderColor: LINE }}
+                >
+                  <div
+                    className="h-10 w-10 rounded-xl flex items-center justify-center mx-auto mb-3"
+                    style={{
+                      backgroundColor: isRating
+                        ? "rgba(201,183,156,0.22)"
+                        : "rgba(44,62,45,0.1)",
+                    }}
+                  >
+                    <item.icon
+                      className="h-5 w-5"
+                      style={{ color: isRating ? SAND : GREEN }}
+                    />
+                  </div>
+                  <span
+                    className="text-3xl sm:text-4xl"
+                    style={{ ...serif, color: INK }}
+                  >
+                    {item.stat}
+                  </span>
+                  <p className="text-xs sm:text-sm mt-1.5" style={{ color: MUTED }}>
+                    {item.label}
+                  </p>
                 </div>
-                <span className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">
-                  {item.stat}
-                </span>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
-                  {item.label}
-                </p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </ScrollReveal>
 
@@ -101,21 +135,29 @@ export function ResultsSection() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 reveal-stagger">
           {cases.map((c) => (
             <ScrollReveal key={c.initial}>
-              <div className="rounded-2xl glass p-5 hover:bg-white/[0.06] transition-all duration-500 h-full">
+              <div
+                className="rounded-2xl border bg-white p-5 transition-all duration-500 hover:shadow-lg h-full"
+                style={{ borderColor: LINE }}
+              >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-emerald-400">
+                  <div
+                    className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: "rgba(44,62,45,0.1)" }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: GREEN }}>
                       {c.initial}
                     </span>
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">
+                    <p className="text-sm font-semibold" style={{ color: INK }}>
                       {c.profile}
                     </p>
-                    <p className="text-xs text-slate-500">{c.complaint}</p>
+                    <p className="text-xs" style={{ color: MUTED }}>
+                      {c.complaint}
+                    </p>
                   </div>
                 </div>
-                <p className="text-sm font-medium text-emerald-400">
+                <p className="text-sm font-medium" style={{ color: GREEN }}>
                   {c.result}
                 </p>
               </div>
@@ -125,7 +167,7 @@ export function ResultsSection() {
 
         {/* Disclaimer */}
         <ScrollReveal>
-          <p className="text-center text-xs text-slate-500 mt-6">
+          <p className="text-center text-xs mt-6" style={{ color: MUTED }}>
             Anonymisierte Daten der Physiotherapie Glawe. Individuelle
             Ergebnisse können variieren.
           </p>

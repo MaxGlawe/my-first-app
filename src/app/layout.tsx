@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next"
-import { Inter, Space_Grotesk } from "next/font/google"
+import { Inter, Space_Grotesk, Source_Serif_4 } from "next/font/google"
 import "./globals.css"
 
 const inter = Inter({
@@ -13,6 +13,15 @@ const spaceGrotesk = Space_Grotesk({
   display: "swap",
   variable: "--font-display",
   weight: ["400", "500", "600", "700"],
+})
+
+// Editorial-Serif (Masterclass-Welt) — global verfügbar als var(--font-serif).
+// Additiv: ändert NICHT --font-display (App/OS bleiben auf Space Grotesk).
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-serif",
+  weight: ["400", "600", "700"],
 })
 
 export const metadata: Metadata = {
@@ -68,7 +77,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="de" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang="de" className={`${inter.variable} ${spaceGrotesk.variable} ${sourceSerif.variable}`}>
       <head>
         <link rel="preconnect" href="https://duacypqeyfymdqostguw.supabase.co" />
         <link rel="dns-prefetch" href="https://duacypqeyfymdqostguw.supabase.co" />

@@ -1,64 +1,101 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Shield, Lock, Clock } from "lucide-react"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
+
+// Realistisches Handy-Mockup (Dynamic Island, schmaler Tinten-Rahmen, 9:16).
+function PhoneMock({
+  src,
+  alt,
+  className,
+  priority,
+}: {
+  src: string
+  alt: string
+  className?: string
+  priority?: boolean
+}) {
+  return (
+    <div className={className}>
+      <div
+        className="relative rounded-[2.3rem] p-1.5"
+        style={{ backgroundColor: INK, boxShadow: "0 28px 56px rgba(15,23,42,0.28)" }}
+      >
+        <div className="absolute left-1/2 top-2 z-10 h-3.5 w-12 -translate-x-1/2 rounded-full bg-black" />
+        <div className="relative aspect-[9/16] w-full overflow-hidden rounded-[1.9rem] bg-white">
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            priority={priority}
+            sizes="14rem"
+            className="object-cover object-top"
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-slate-900">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 animate-gradient" />
-
-      {/* Glow orbs */}
-      <div className="absolute top-1/4 left-1/4 h-[500px] w-[500px] rounded-full bg-emerald-500/8 blur-[120px] animate-float" />
-      <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-teal-500/6 blur-[100px] animate-float-delayed" />
-
-      {/* Dot grid pattern */}
+    <section className="relative overflow-hidden" style={{ backgroundColor: PAPER }}>
+      {/* Sand-Aura */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(255,255,255,1) 1px, transparent 0)",
-          backgroundSize: "40px 40px",
-        }}
+        aria-hidden
+        className="pointer-events-none absolute -top-24 right-0 h-[440px] w-[440px] rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(201,183,156,0.28) 0%, transparent 70%)" }}
       />
 
-      <div className="relative container mx-auto px-4 pt-24 sm:pt-32 pb-16 sm:pb-20 max-w-6xl">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <div className="animate-fade-in-up inline-flex items-center gap-2 rounded-full glass px-5 py-2 mb-10">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 animate-dot-pulse" />
-            <span className="text-sm text-emerald-300/90">
-              Heilpraktiker für Physiotherapie — Digitale Praxis
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-28 sm:pt-36 lg:grid-cols-2 lg:gap-16">
+        {/* Text */}
+        <div>
+          <div
+            className="animate-fade-in-up inline-flex items-center gap-2 rounded-full border px-4 py-1.5"
+            style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)" }}
+          >
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GREEN }} />
+            <span
+              className="text-[11px] font-medium uppercase tracking-[0.18em]"
+              style={{ color: GREEN }}
+            >
+              Heilpraktiker für Physiotherapie · Digitale Praxis
             </span>
           </div>
 
-          {/* Headline */}
-          <h1 className="animate-fade-in-up animation-delay-150 text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold tracking-tight text-white leading-[1.05]">
-            Ihre Therapie.
-            <br />
-            <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
-              Digital. Persönlich.
-            </span>
-            <br />
-            Premium.
+          <h1
+            className="animate-fade-in-up animation-delay-150 mt-7 text-4xl leading-[1.05] sm:text-5xl md:text-6xl"
+            style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+          >
+            Dein Physiotherapeut für die Hosentasche.
           </h1>
 
-          {/* Subtitle */}
-          <p className="animate-fade-in-up animation-delay-300 mt-8 text-lg sm:text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto">
-            Professionelle Physiotherapie per Video-Termin. Individuelle
-            Trainingspläne in der App. Ihr Therapeut — jederzeit erreichbar.
+          <p
+            className="animate-fade-in-up animation-delay-300 mt-6 max-w-xl text-lg leading-relaxed"
+            style={{ color: "#334155" }}
+          >
+            Echte Physiotherapie per Video-Termin, dein persönlicher Trainingsplan in der App
+            und dein Therapeut — jederzeit erreichbar. Verstehen, üben, dranbleiben.
           </p>
 
-          {/* CTAs */}
-          <div className="animate-fade-in-up animation-delay-450 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="animate-fade-in-up animation-delay-450 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Link href="/anfrage">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white text-base px-8 h-13 rounded-full shadow-xl shadow-emerald-500/20 transition-all hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 animate-glow-pulse"
+                className="h-12 rounded-xl px-7 text-base font-semibold text-white hover:opacity-90"
+                style={{ backgroundColor: GREEN }}
               >
-                Jetzt starten
+                Video-Analyse buchen · 69 €
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -66,31 +103,45 @@ export function HeroSection() {
               <Button
                 variant="outline"
                 size="lg"
-                className="text-base px-8 h-13 rounded-full border-slate-600 text-slate-300 hover:bg-white/5 hover:text-white hover:border-slate-500 bg-transparent"
+                className="h-12 rounded-xl px-7 text-base font-medium hover:bg-black/[0.03]"
+                style={{ borderColor: SAND, color: GREEN, backgroundColor: "transparent" }}
               >
                 So funktioniert&apos;s
               </Button>
             </a>
           </div>
 
-          {/* Trust badges */}
-          <div className="animate-fade-in-up animation-delay-600 mt-10 sm:mt-16 flex flex-wrap items-center justify-center gap-4 sm:gap-8 lg:gap-12">
+          <div className="animate-fade-in-up animation-delay-600 mt-9 flex flex-wrap items-center gap-x-7 gap-y-3">
             {[
               { icon: Shield, label: "Heilpraktiker-Zulassung" },
               { icon: Lock, label: "DSGVO-konform" },
               { icon: Clock, label: "Jederzeit erreichbar" },
             ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2">
-                <item.icon className="h-4 w-4 text-emerald-400/70" />
-                <span className="text-sm text-slate-500">{item.label}</span>
+              <div key={item.label} className="flex items-center gap-2 text-sm" style={{ color: MUTED }}>
+                <item.icon className="h-4 w-4" style={{ color: GREEN }} />
+                <span>{item.label}</span>
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Bottom gradient fade to next section */}
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#faf9f7] to-transparent" />
+        {/* Echte App — Handy-Mockups */}
+        <div className="animate-fade-in-up animation-delay-300 relative mx-auto h-[470px] w-full max-w-[420px] sm:h-[560px]">
+          {/* hinteres Handy: Trainingsmodus */}
+          <PhoneMock
+            src="/images/app/training.png"
+            alt="Praxis-OS-App — Trainingsmodus"
+            className="absolute right-1 top-2 w-36 rotate-6 sm:w-44"
+          />
+          {/* vorderes Handy: Dashboard */}
+          <PhoneMock
+            src="/images/app/dashboard.png"
+            alt="Praxis-OS-App — Dashboard"
+            priority
+            className="absolute bottom-0 left-1 w-44 -rotate-3 sm:w-52"
+          />
+        </div>
+      </div>
     </section>
   )
 }

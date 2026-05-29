@@ -15,6 +15,8 @@
  *
  * Diese Route ist in supabase-middleware.ts als publicRoute eingetragen und
  * via layout.tsx auf robots:noindex gesetzt (token-spezifische URLs).
+ *
+ * Premium-Markenwelt (Paper/Ink/Green/Sand, Serif-Headlines).
  */
 
 import { ShieldAlert, Lock, Layers, CheckCircle2 } from "lucide-react"
@@ -23,6 +25,16 @@ import Link from "next/link"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyDeckToken } from "@/lib/deck-token"
 import { PrintButton } from "./PrintButton"
+
+// ── Premium-Markenwelt (Masterclass-Format) ──────────────────────────────────
+
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 // ── Bild-Pfade ────────────────────────────────────────────────────────────────
 
@@ -72,23 +84,30 @@ async function loadDeck(slug: string): Promise<DeckProduct | null> {
 function UngueltigerLink() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-16">
-      <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
-        <div className="mx-auto mb-5 h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-          <Lock className="h-6 w-6 text-slate-400" />
+      <div
+        className="max-w-md w-full bg-white border rounded-2xl shadow-sm p-8 text-center"
+        style={{ borderColor: LINE }}
+      >
+        <div
+          className="mx-auto mb-5 h-14 w-14 rounded-2xl flex items-center justify-center"
+          style={{ backgroundColor: "rgba(44,62,45,0.1)" }}
+        >
+          <Lock className="h-6 w-6" style={{ color: GREEN }} />
         </div>
-        <h1 className="text-xl font-bold text-slate-900 mb-2">
+        <h1 className="text-xl mb-2" style={{ ...serif, color: INK }}>
           Link ungültig oder abgelaufen
         </h1>
-        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+        <p className="text-sm leading-relaxed mb-6" style={{ color: MUTED }}>
           Dieser Karten-Link konnte nicht überprüft werden. Bitte öffne den Link
           direkt aus deiner Kaufbestätigungs-E-Mail — dort findest du immer den
           aktuellen, gültigen Zugang zu deinen Bewegungskarten.
         </p>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-xs leading-relaxed" style={{ color: MUTED }}>
           Du findest deine E-Mail nicht mehr? Schreib uns an{" "}
           <a
             href="mailto:physiotherapieglawe@gmx.de"
-            className="text-emerald-600 font-medium hover:underline"
+            className="font-medium hover:underline"
+            style={{ color: GREEN }}
           >
             physiotherapieglawe@gmx.de
           </a>{" "}
@@ -151,30 +170,36 @@ export default async function KartenPage({
         {/* ── Kopf ───────────────────────────────────────────────────────────── */}
         <header className="no-print mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <span
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+              style={{ color: GREEN, backgroundColor: "rgba(44,62,45,0.1)" }}
+            >
               <Layers className="h-3.5 w-3.5" />
               Bewegungskarten
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
+          <h1 className="text-2xl sm:text-3xl leading-snug" style={{ ...serif, color: INK }}>
             {deck.titel}
           </h1>
 
           {deck.kurzbeschreibung && (
-            <p className="mt-2 text-base text-slate-500 leading-relaxed">
+            <p className="mt-2 text-base leading-relaxed" style={{ color: MUTED }}>
               {deck.kurzbeschreibung}
             </p>
           )}
 
           {/* Besitz-/Zugang-Hinweis */}
-          <div className="mt-5 flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3.5">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+          <div
+            className="mt-5 flex items-start gap-3 rounded-2xl border px-4 py-3.5"
+            style={{ backgroundColor: "rgba(44,62,45,0.05)", borderColor: GREEN }}
+          >
+            <CheckCircle2 className="h-5 w-5 mt-0.5 shrink-0" style={{ color: GREEN }} />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">
+              <p className="text-sm font-semibold" style={{ color: INK }}>
                 Dein Zugang ist freigeschaltet
               </p>
-              <p className="text-sm text-emerald-800 leading-relaxed mt-0.5">
+              <p className="text-sm leading-relaxed mt-0.5" style={{ color: "#334155" }}>
                 Alle Karten sind unten in voller Größe für dich da. Kein Konto
                 nötig — leg dir diesen Link als Lesezeichen an, dann hast du deine
                 Karten jederzeit griffbereit.
@@ -199,7 +224,7 @@ export default async function KartenPage({
         {/* ── Aktionen ───────────────────────────────────────────────────────── */}
         <div className="no-print mb-8 flex flex-wrap items-center gap-3">
           <PrintButton />
-          <span className="text-xs text-slate-400">
+          <span className="text-xs" style={{ color: MUTED }}>
             {cards.length} Karten · Tipp: ausdrucken fürs Handschuhfach
           </span>
         </div>
@@ -209,9 +234,13 @@ export default async function KartenPage({
           {cards.map((card, i) => (
             <figure
               key={card.src}
-              className="print-card relative rounded-2xl overflow-hidden bg-white border border-slate-200 shadow-sm"
+              className="print-card relative rounded-2xl overflow-hidden bg-white border shadow-sm"
+              style={{ borderColor: LINE }}
             >
-              <span className="print-card-badge no-print absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-sm">
+              <span
+                className="print-card-badge no-print absolute top-3 left-3 z-10 bg-white/90 backdrop-blur-sm text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-sm"
+                style={{ color: GREEN }}
+              >
                 {card.badge}
               </span>
               <Image
@@ -228,11 +257,11 @@ export default async function KartenPage({
         </div>
 
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
-        <footer className="no-print border-t border-slate-200 mt-12 pt-8 text-center">
-          <p className="text-xs text-slate-400">
+        <footer className="no-print border-t mt-12 pt-8 text-center" style={{ borderColor: LINE }}>
+          <p className="text-xs" style={{ color: MUTED }}>
             © {new Date().getFullYear()} Physiotherapie Glawe — Praxis OS
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs" style={{ color: MUTED }}>
             <Link href="/impressum" className="hover:underline">
               Impressum
             </Link>{" "}

@@ -8,6 +8,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 const faqCategories = [
   {
     category: "Über Online-Therapie",
@@ -20,12 +28,12 @@ const faqCategories = [
       {
         question: "Für welche Beschwerden eignet sich Online-Therapie?",
         answer:
-          "Online-Therapie eignet sich besonders gut für: Rückenschmerzen (LWS, BWS, HWS), Schulter- und Nackenbeschwerden, Kniebeschwerden, Rehabilitaton nach Operationen, Prävention und Haltungskorrektur. Nicht geeignet ist sie für akute Notfälle, frische Frakturen oder Beschwerden, die eine manuelle Untersuchung vor Ort erfordern. In der Ersteinschätzung (30 Min., 69€) klären wir gemeinsam, ob Online-Therapie für Sie der richtige Weg ist.",
+          "Online-Therapie eignet sich besonders gut für: Rückenschmerzen (LWS, BWS, HWS), Schulter- und Nackenbeschwerden, Kniebeschwerden, Rehabilitaton nach Operationen, Prävention und Haltungskorrektur. Nicht geeignet ist sie für akute Notfälle, frische Frakturen oder Beschwerden, die eine manuelle Untersuchung vor Ort erfordern. In der Ersteinschätzung (30 Min., 69€) klären wir gemeinsam, ob Online-Therapie für dich der richtige Weg ist.",
       },
       {
         question: "Was brauche ich technisch?",
         answer:
-          "Nicht viel: Ein Smartphone, Tablet oder Computer mit Kamera, eine stabile Internetverbindung und ca. 2×2 Meter Platz zum Üben. Für die Übungen benötigen Sie keine speziellen Geräte — wir arbeiten vorrangig mit Ihrem eigenen Körpergewicht und Alltagsgegenständen. Falls ein Hilfsmittel sinnvoll ist, besprechen wir das individuell.",
+          "Nicht viel: Ein Smartphone, Tablet oder Computer mit Kamera, eine stabile Internetverbindung und ca. 2×2 Meter Platz zum Üben. Für die Übungen benötigst du keine speziellen Geräte — wir arbeiten vorrangig mit deinem eigenen Körpergewicht und Alltagsgegenständen. Falls ein Hilfsmittel sinnvoll ist, besprechen wir das individuell.",
       },
     ],
   },
@@ -35,12 +43,12 @@ const faqCategories = [
       {
         question: "Übernimmt meine Krankenkasse die Kosten?",
         answer:
-          "Ja, in vielen Fällen. Private Krankenversicherungen (PKV) erstatten Heilpraktiker-Leistungen in der Regel vollständig oder anteilig — je nach Tarif. Auch Heilpraktiker-Zusatzversicherungen (schon ab ca. 15€/Monat) decken unsere Behandlungen ab — ideal für gesetzlich Versicherte. In der Ersteinschätzung prüfen wir gerne Ihre individuelle Erstattungssituation.",
+          "Ja, in vielen Fällen. Private Krankenversicherungen (PKV) erstatten Heilpraktiker-Leistungen in der Regel vollständig oder anteilig — je nach Tarif. Auch Heilpraktiker-Zusatzversicherungen (schon ab ca. 15€/Monat) decken unsere Behandlungen ab — ideal für gesetzlich Versicherte. In der Ersteinschätzung prüfen wir gerne deine individuelle Erstattungssituation.",
       },
       {
         question: "Brauche ich eine ärztliche Verordnung?",
         answer:
-          "Nein. Als Heilpraktiker für Physiotherapie sind wir berechtigt, eigenständig Diagnosen zu stellen und zu behandeln — ohne dass Sie vorher zum Arzt müssen. Das spart Ihnen Zeit und Wartezeit. Sie können direkt bei uns anfragen und sofort starten.",
+          "Nein. Als Heilpraktiker für Physiotherapie sind wir berechtigt, eigenständig Diagnosen zu stellen und zu behandeln — ohne dass du vorher zum Arzt musst. Das spart dir Zeit und Wartezeit. Du kannst direkt bei uns anfragen und sofort starten.",
       },
     ],
   },
@@ -50,18 +58,18 @@ const faqCategories = [
       {
         question: "Wie persönlich ist die Betreuung?",
         answer:
-          "Sehr persönlich. Sie haben einen festen Therapeuten, der Sie über den gesamten Behandlungszeitraum begleitet — kein Wechsel, kein Weiterreichen. Wir nehmen bewusst nur eine begrenzte Anzahl an Patienten gleichzeitig an, damit jeder die Aufmerksamkeit bekommt, die er verdient. Per Chat sind wir auch zwischen den Sitzungen erreichbar.",
+          "Sehr persönlich. Du hast einen festen Therapeuten, der dich über den gesamten Behandlungszeitraum begleitet — kein Wechsel, kein Weiterreichen. Wir nehmen bewusst nur eine begrenzte Anzahl an Patienten gleichzeitig an, damit jeder die Aufmerksamkeit bekommt, die er verdient. Per Chat sind wir auch zwischen den Sitzungen erreichbar.",
       },
       {
         question: "Was ist, wenn mir die Therapie nicht hilft?",
         answer:
-          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für Ihre Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir Ihnen offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir Sie und finden gemeinsam eine Lösung. Die Betreuungspauschale (16,99€/Monat) ist jederzeit kündbar — Sie gehen also kein Risiko ein.",
+          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für deine Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir dir offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir dich und finden gemeinsam eine Lösung. Die Betreuungspauschale (16,99€/Monat) ist jederzeit kündbar — du gehst also kein Risiko ein.",
       },
       {
         question:
           "Was wenn ich mal keine Zeit zum Trainieren habe?",
         answer:
-          "Das passiert — und ist kein Problem. Ihr Trainingsplan passt sich Ihrem Leben an, nicht umgekehrt. Wenn es eine stressige Woche ist, reduzieren wir den Umfang. Wenn Sie verreisen, passen wir die Übungen an. Das Ziel ist eine nachhaltige Routine, keine Perfektion. Ihr Therapeut begleitet Sie flexibel durch Höhen und Tiefen.",
+          "Das passiert — und ist kein Problem. Dein Trainingsplan passt sich deinem Leben an, nicht umgekehrt. Wenn es eine stressige Woche ist, reduzieren wir den Umfang. Wenn du verreist, passen wir die Übungen an. Das Ziel ist eine nachhaltige Routine, keine Perfektion. Dein Therapeut begleitet dich flexibel durch Höhen und Tiefen.",
       },
     ],
   },
@@ -71,7 +79,8 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="py-24 sm:py-32 bg-[#faf9f7] relative overflow-hidden"
+      className="py-24 sm:py-32 relative overflow-hidden"
+      style={{ backgroundColor: PAPER }}
     >
       {/* Smart line */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
@@ -81,16 +90,16 @@ export function FaqSection() {
 
       <div className="container mx-auto px-4 max-w-6xl">
         <ScrollReveal className="text-center mb-16">
-          <span className="text-sm font-medium text-emerald-600 uppercase tracking-wider">
+          <span className="text-sm font-medium uppercase tracking-wider" style={{ color: GREEN }}>
             FAQ
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight">
-            Noch{" "}
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
-              Fragen?
-            </span>
+          <h2
+            className="mt-3 text-3xl sm:text-4xl lg:text-5xl tracking-tight"
+            style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+          >
+            Noch Fragen?
           </h2>
-          <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
+          <p className="mt-4 text-lg max-w-2xl mx-auto" style={{ color: MUTED }}>
             Die häufigsten Fragen — ehrlich und ausführlich beantwortet.
           </p>
         </ScrollReveal>
@@ -102,20 +111,21 @@ export function FaqSection() {
             <div className="sticky top-24 space-y-6">
               {faqCategories.map((cat) => (
                 <div key={cat.category}>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold" style={{ color: INK }}>
                     {cat.category}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs mt-0.5" style={{ color: MUTED }}>
                     {cat.items.length} Fragen
                   </p>
                 </div>
               ))}
-              <div className="pt-4 border-t border-slate-200">
-                <p className="text-xs text-slate-400">
-                  Weitere Fragen? Stellen Sie eine{" "}
+              <div className="pt-4 border-t" style={{ borderColor: LINE }}>
+                <p className="text-xs" style={{ color: MUTED }}>
+                  Weitere Fragen? Stelle eine{" "}
                   <a
                     href="/anfrage"
-                    className="text-emerald-600 hover:text-emerald-700 font-medium"
+                    className="font-medium hover:opacity-80"
+                    style={{ color: GREEN }}
                   >
                     Anfrage
                   </a>
@@ -129,7 +139,10 @@ export function FaqSection() {
           <div>
             {faqCategories.map((cat) => (
               <div key={cat.category} className="mb-8 last:mb-0">
-                <h3 className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-4">
+                <h3
+                  className="text-xs font-semibold uppercase tracking-wider mb-4"
+                  style={{ color: GREEN }}
+                >
                   {cat.category}
                 </h3>
                 <Accordion type="single" collapsible className="space-y-2">
@@ -137,12 +150,19 @@ export function FaqSection() {
                     <AccordionItem
                       key={idx}
                       value={`${cat.category}-${idx}`}
-                      className="rounded-2xl border border-slate-200 bg-white px-6 data-[state=open]:shadow-lg data-[state=open]:shadow-slate-900/5 transition-shadow"
+                      className="rounded-2xl border bg-white px-6 data-[state=open]:shadow-lg data-[state=open]:shadow-slate-900/5 transition-shadow"
+                      style={{ borderColor: LINE }}
                     >
-                      <AccordionTrigger className="text-left text-base font-semibold text-slate-900 hover:no-underline py-5">
+                      <AccordionTrigger
+                        className="text-left text-base font-semibold hover:no-underline py-5"
+                        style={{ color: INK }}
+                      >
                         {item.question}
                       </AccordionTrigger>
-                      <AccordionContent className="text-sm text-slate-500 leading-relaxed pb-5">
+                      <AccordionContent
+                        className="text-sm leading-relaxed pb-5"
+                        style={{ color: BODY }}
+                      >
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>

@@ -11,7 +11,8 @@
  *     Gast       → Name+E-Mail-Formular → POST /api/shop/public-checkout
  *                  { slugs, firstName, lastName, email }
  *
- * Stil wie der restliche Shop: emerald, rounded-2xl, premium, du-Form, deutsch.
+ * Stil wie der restliche Shop (Masterclass-Format): warmes Papier, Tinte,
+ * Anthrazit-Grün, Sand · ruhig, klar, premium, du-Form, deutsch.
  */
 
 import { useEffect, useState, type FormEvent } from "react"
@@ -22,6 +23,14 @@ import { useCart } from "@/lib/cart-context"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
+
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -157,9 +166,10 @@ export function CartDrawer() {
         onClick={close}
         aria-label="Warenkorb schließen"
         className={cn(
-          "absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300",
+          "absolute inset-0 backdrop-blur-sm transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0"
         )}
+        style={{ backgroundColor: "rgba(15,23,42,0.40)" }}
       />
 
       {/* Drawer */}
@@ -172,13 +182,19 @@ export function CartDrawer() {
         )}
       >
         {/* Kopf */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          style={{ borderColor: LINE }}
+        >
           <div className="flex items-center gap-2.5">
-            <ShoppingBag className="h-5 w-5 text-emerald-600" />
-            <h2 className="text-base font-bold text-slate-900">
+            <ShoppingBag className="h-5 w-5" style={{ color: GREEN }} />
+            <h2
+              className="text-base"
+              style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+            >
               Warenkorb
               {count > 0 && (
-                <span className="ml-2 text-sm font-medium text-slate-400">
+                <span className="ml-2 text-sm font-medium" style={{ color: MUTED }}>
                   {count} {count === 1 ? "Artikel" : "Artikel"}
                 </span>
               )}
@@ -188,7 +204,8 @@ export function CartDrawer() {
             type="button"
             onClick={close}
             aria-label="Schließen"
-            className="h-9 w-9 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 transition-colors"
+            className="h-9 w-9 flex items-center justify-center rounded-full transition-colors hover:bg-black/[0.04]"
+            style={{ color: MUTED }}
           >
             <X className="h-5 w-5" />
           </button>
@@ -198,19 +215,28 @@ export function CartDrawer() {
         {count === 0 ? (
           // ── Leerzustand ────────────────────────────────────────────────
           <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-slate-100 flex items-center justify-center">
-              <ShoppingBag className="h-7 w-7 text-slate-300" />
+            <div
+              className="h-16 w-16 rounded-2xl flex items-center justify-center"
+              style={{ backgroundColor: PAPER }}
+            >
+              <ShoppingBag className="h-7 w-7" style={{ color: SAND }} />
             </div>
             <div>
-              <p className="font-semibold text-slate-800">Dein Warenkorb ist leer</p>
-              <p className="text-sm text-slate-400 mt-1 max-w-xs">
+              <p
+                className="text-base"
+                style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+              >
+                Dein Warenkorb ist leer
+              </p>
+              <p className="text-sm mt-1 max-w-xs" style={{ color: MUTED }}>
                 Füge Challenges hinzu und kaufe mehrere auf einmal.
               </p>
             </div>
             <Button
               onClick={close}
               variant="outline"
-              className="rounded-xl mt-1"
+              className="rounded-xl mt-1 hover:bg-black/[0.03]"
+              style={{ borderColor: SAND, color: GREEN, backgroundColor: "transparent" }}
             >
               Weiter stöbern
             </Button>
@@ -222,9 +248,13 @@ export function CartDrawer() {
               {items.map((item) => (
                 <div
                   key={item.slug}
-                  className="flex items-center gap-3 p-2.5 rounded-2xl border border-slate-100 bg-white"
+                  className="flex items-center gap-3 p-2.5 rounded-2xl border bg-white"
+                  style={{ borderColor: LINE }}
                 >
-                  <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 ring-1 ring-slate-200/60">
+                  <div
+                    className="h-16 w-16 rounded-xl overflow-hidden shrink-0"
+                    style={{ backgroundColor: PAPER }}
+                  >
                     {item.hero_bild ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -233,18 +263,31 @@ export function CartDrawer() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center">
-                        <span className="text-white/90 text-xl font-light select-none">
+                      <div
+                        className="w-full h-full flex items-center justify-center"
+                        style={{ backgroundColor: SAND }}
+                      >
+                        <span
+                          className="text-xl select-none"
+                          style={{
+                            fontFamily: "var(--font-serif)",
+                            fontWeight: 600,
+                            color: "rgba(255,255,255,0.92)",
+                          }}
+                        >
                           {item.titel.charAt(0)}
                         </span>
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800 leading-snug line-clamp-2">
+                    <p
+                      className="text-sm leading-snug line-clamp-2"
+                      style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+                    >
                       {item.titel}
                     </p>
-                    <p className="text-sm font-bold text-slate-900 mt-1">
+                    <p className="text-sm font-bold mt-1" style={{ color: INK }}>
                       {item.preis.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
                     </p>
                   </div>
@@ -252,7 +295,8 @@ export function CartDrawer() {
                     type="button"
                     onClick={() => remove(item.slug)}
                     aria-label={`${item.titel} entfernen`}
-                    className="h-9 w-9 flex items-center justify-center rounded-full text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors shrink-0"
+                    className="h-9 w-9 flex items-center justify-center rounded-full transition-colors shrink-0 hover:text-rose-600 hover:bg-rose-50"
+                    style={{ color: MUTED }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -261,14 +305,22 @@ export function CartDrawer() {
             </div>
 
             {/* Fuß: Summe + Checkout */}
-            <div className="border-t border-slate-100 p-5 space-y-4 shrink-0 bg-white">
+            <div
+              className="border-t p-5 space-y-4 shrink-0 bg-white"
+              style={{ borderColor: LINE }}
+            >
               <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium text-slate-500">Gesamt</span>
-                <span className="text-2xl font-bold text-slate-900">
+                <span className="text-sm font-medium" style={{ color: MUTED }}>
+                  Gesamt
+                </span>
+                <span
+                  className="text-2xl"
+                  style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+                >
                   {total.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
                 </span>
               </div>
-              <p className="text-xs text-slate-400 -mt-2">
+              <p className="text-xs -mt-2" style={{ color: MUTED }}>
                 Einmalig · Lebenslanger Zugriff · inkl. MwSt.
               </p>
 
@@ -283,7 +335,8 @@ export function CartDrawer() {
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder="Vorname"
                       aria-label="Vorname"
-                      className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+                      className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+                      style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
                     />
                     <input
                       type="text"
@@ -292,7 +345,8 @@ export function CartDrawer() {
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder="Nachname"
                       aria-label="Nachname"
-                      className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+                      className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+                      style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
                     />
                   </div>
                   <input
@@ -302,11 +356,15 @@ export function CartDrawer() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Deine E-Mail-Adresse"
                     aria-label="E-Mail-Adresse"
-                    className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+                    className="w-full h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+                    style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
                   />
-                  <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2.5">
-                    <Mail className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                    <p className="text-xs text-emerald-800 leading-relaxed">
+                  <div
+                    className="flex items-start gap-2 rounded-xl px-3 py-2.5"
+                    style={{ backgroundColor: "rgba(44,62,45,0.05)" }}
+                  >
+                    <Mail className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
+                    <p className="text-xs leading-relaxed" style={{ color: INK }}>
                       Nach dem Kauf bekommst du deinen Zugang per E-Mail — kein
                       Account-Anlegen vorher nötig.
                     </p>
@@ -314,7 +372,8 @@ export function CartDrawer() {
                   <Button
                     type="submit"
                     disabled={isCheckingOut}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl h-12 text-base"
+                    className="w-full text-white font-semibold rounded-xl h-12 text-base hover:opacity-90"
+                    style={{ backgroundColor: GREEN }}
                   >
                     {isCheckingOut ? (
                       <>
@@ -331,7 +390,8 @@ export function CartDrawer() {
                   <button
                     type="button"
                     onClick={() => setShowGuestForm(false)}
-                    className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors pt-1"
+                    className="w-full text-xs transition-colors pt-1 hover:opacity-80"
+                    style={{ color: MUTED }}
                   >
                     Zurück zum Warenkorb
                   </button>
@@ -342,7 +402,8 @@ export function CartDrawer() {
                   <Button
                     onClick={handleCheckoutClick}
                     disabled={isCheckingOut || isLoggedIn === null}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl h-12 text-base"
+                    className="w-full text-white font-semibold rounded-xl h-12 text-base hover:opacity-90"
+                    style={{ backgroundColor: GREEN }}
                   >
                     {isCheckingOut || isLoggedIn === null ? (
                       <>
@@ -356,7 +417,10 @@ export function CartDrawer() {
                       </>
                     )}
                   </Button>
-                  <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
+                  <div
+                    className="flex items-center justify-center gap-2 text-xs"
+                    style={{ color: MUTED }}
+                  >
                     <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                     <span>Sichere Zahlung via Stripe</span>
                   </div>

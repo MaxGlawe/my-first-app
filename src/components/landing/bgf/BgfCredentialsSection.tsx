@@ -23,10 +23,10 @@ const credentials = [
   },
   {
     icon: Award,
-    title: "ZPP-Zertifizierung",
-    subtitle: "§20 SGB V",
+    title: "ZPP-registrierte Kursleitung",
+    subtitle: "Prävention",
     description:
-      "Registriert bei der Zentralen Prüfstelle Prävention. Maßnahmen anerkannt von allen gesetzlichen Krankenkassen.",
+      "Max Glawe ist als Kursleiter bei der Zentralen Prüfstelle Prävention (ZPP) registriert. Auf Wunsch erstellen wir zertifizierte Präventionskurs-Konzepte — per Live-Stream oder vor Ort, individuell nach Absprache.",
     gradient: "from-landing-accent-warm/10 to-landing-accent-warm/5",
     iconBg: "bg-landing-accent-warm/10",
     iconColor: "text-landing-accent-warm",

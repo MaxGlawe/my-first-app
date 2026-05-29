@@ -33,10 +33,21 @@ import { AppUpsell } from "@/components/shop/AppUpsell"
 import { ProductReviews, ProductReviewsSummary } from "@/components/shop/ProductReviews"
 import { MasterclassSalesLayout } from "@/components/shop/MasterclassSalesLayout"
 import { MASTERCLASS_SLUG } from "@/lib/masterclass/access"
-import { cn } from "@/lib/utils"
 import { useCart } from "@/lib/cart-context"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { toast } from "sonner"
+
+// ── Premium-Markenwelt (Masterclass-Format) ────────────────────────────────────
+
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -100,16 +111,9 @@ const ANLIEGEN_LABELS: Record<string, string> = {
   "chronische-beschwerden": "Chronische Beschwerden",
 }
 
-const SLUG_GRADIENTS: Record<string, string> = {
-  "hydrations-boost": "from-cyan-400 via-sky-400 to-teal-500",
-  "ruecken-mobility": "from-emerald-400 via-teal-400 to-cyan-500",
-  "schmerz-tagebuch-routine": "from-rose-400 via-pink-400 to-rose-500",
-  "faszien-tiefenarbeit": "from-indigo-400 via-violet-400 to-purple-500",
-}
-
-function getGradient(slug: string): string {
-  return SLUG_GRADIENTS[slug] ?? "from-slate-400 to-slate-500"
-}
+// Warmes Sand-Papier-Verlauf-Placeholder im Markenstil (kein bunter Verlauf mehr).
+const PLACEHOLDER_BG =
+  "linear-gradient(135deg, rgba(201,183,156,0.22) 0%, rgba(201,183,156,0.07) 55%, rgba(248,245,240,0.95) 100%)"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -148,17 +152,23 @@ function GuestCtaBlock({ product }: { product: Product }) {
   // Eingeloggter Besucher mit Zugang (Randfall — Website ist öffentlich)
   if (zugriff_status === "besitz" || zugriff_status === "im_abo") {
     return (
-      <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-6 space-y-3">
+      <div
+        className="rounded-2xl border p-6 space-y-3"
+        style={{ borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.05)" }}
+      >
         <div className="flex items-center gap-2.5">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-          <p className="font-semibold text-emerald-900">Du hast bereits Zugang</p>
+          <CheckCircle2 className="h-5 w-5" style={{ color: GREEN }} />
+          <p className="font-semibold" style={{ color: INK }}>
+            Du hast bereits Zugang
+          </p>
         </div>
-        <p className="text-sm text-emerald-700">
+        <p className="text-sm" style={{ color: MUTED }}>
           Diese Challenge ist in deinem Konto verfügbar.
         </p>
         <Button
           asChild
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl h-11"
+          className="w-full text-white font-semibold rounded-xl h-11 hover:opacity-90"
+          style={{ backgroundColor: GREEN }}
         >
           <Link href="/login">Zum Login</Link>
         </Button>
@@ -199,40 +209,49 @@ function GuestCtaBlock({ product }: { product: Product }) {
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-5 shadow-sm">
+    <div
+      className="rounded-2xl bg-white border p-6 space-y-5 shadow-sm"
+      style={{ borderColor: LINE }}
+    >
       {/* Hinweis: Abo-Mitglieder bekommen alles gratis */}
       <Link
         href="/login"
-        className="flex items-start gap-2.5 rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-3 hover:bg-emerald-100/70 transition-colors group"
+        className="flex items-start gap-2.5 rounded-xl px-3.5 py-3 transition-colors group hover:opacity-90"
+        style={{ backgroundColor: "rgba(44,62,45,0.05)" }}
       >
-        <Sparkles className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+        <Sparkles className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-emerald-900 leading-snug">
+          <p className="text-xs font-semibold leading-snug" style={{ color: INK }}>
             Schon Praxis-OS-Mitglied?
           </p>
-          <p className="text-xs text-emerald-700 leading-relaxed mt-0.5">
+          <p className="text-xs leading-relaxed mt-0.5" style={{ color: MUTED }}>
             Mit deinem Abo ist diese Challenge automatisch enthalten — anmelden statt kaufen.
           </p>
         </div>
-        <ArrowRight className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        <ArrowRight
+          className="h-4 w-4 mt-0.5 shrink-0 group-hover:translate-x-0.5 transition-transform"
+          style={{ color: GREEN }}
+        />
       </Link>
 
       {/* Preis */}
       <div>
         <div className="flex items-baseline gap-3 mb-1">
-          <span className="text-3xl font-bold text-slate-900">
+          <span className="text-3xl" style={{ ...serif, color: INK }}>
             {effektiver_preis.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
           </span>
           {isDiscounted && (
-            <span className="text-lg text-slate-400 line-through">
+            <span className="text-lg line-through" style={{ color: MUTED }}>
               {preis.toLocaleString("de-DE", { minimumFractionDigits: 0 })} €
             </span>
           )}
         </div>
         {isDiscounted && abo_rabatt_prozent ? (
-          <p className="text-sm text-slate-500">Exklusiver Preis für Abo-Mitglieder</p>
+          <p className="text-sm" style={{ color: MUTED }}>
+            Exklusiver Preis für Abo-Mitglieder
+          </p>
         ) : (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm" style={{ color: MUTED }}>
             Einmalig · Lebenslanger Zugriff · inkl. MwSt.
           </p>
         )}
@@ -248,7 +267,8 @@ function GuestCtaBlock({ product }: { product: Product }) {
             onChange={(e) => setFirstName(e.target.value)}
             placeholder="Vorname"
             aria-label="Vorname"
-            className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+            style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
           />
           <input
             type="text"
@@ -257,7 +277,8 @@ function GuestCtaBlock({ product }: { product: Product }) {
             onChange={(e) => setLastName(e.target.value)}
             placeholder="Nachname"
             aria-label="Nachname"
-            className="h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+            className="h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+            style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
           />
         </div>
         <input
@@ -267,12 +288,14 @@ function GuestCtaBlock({ product }: { product: Product }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Deine E-Mail-Adresse"
           aria-label="E-Mail-Adresse"
-          className="w-full h-11 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all duration-200 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-500/10"
+          className="w-full h-11 px-4 rounded-xl border text-sm outline-none transition-all duration-200 focus:bg-white focus:ring-4 focus:ring-[#2C3E2D]/15 focus:border-[#2C3E2D]/40"
+          style={{ backgroundColor: PAPER, borderColor: LINE, color: INK }}
         />
         <Button
           type="submit"
           disabled={isCheckingOut}
-          className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl h-12 text-base"
+          className="w-full text-white font-semibold rounded-xl h-12 text-base hover:opacity-90"
+          style={{ backgroundColor: GREEN }}
         >
           {isCheckingOut ? (
             <>
@@ -289,18 +312,20 @@ function GuestCtaBlock({ product }: { product: Product }) {
       <button
         type="button"
         onClick={handleAddToCart}
-        className={cn(
-          "w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors",
+        className="w-full h-11 rounded-xl border text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:bg-black/[0.03]"
+        style={
           inCart
-            ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-            : "border-slate-200 text-slate-600 hover:bg-slate-50"
-        )}
+            ? { borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.05)", color: GREEN }
+            : { borderColor: LINE, color: BODY }
+        }
       >
         {inCart ? (
           <>
             <CheckCircle2 className="h-4 w-4" />
             Im Warenkorb
-            <span className="text-[11px] text-emerald-600 font-normal">· entfernen</span>
+            <span className="text-[11px] font-normal" style={{ color: GREEN }}>
+              · entfernen
+            </span>
           </>
         ) : (
           <>
@@ -311,9 +336,12 @@ function GuestCtaBlock({ product }: { product: Product }) {
       </button>
 
       {/* Hinweis: Zugang per E-Mail */}
-      <div className="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3.5 py-3">
-        <Mail className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-        <p className="text-xs text-emerald-800 leading-relaxed">
+      <div
+        className="flex items-start gap-2 rounded-xl px-3.5 py-3"
+        style={{ backgroundColor: "rgba(44,62,45,0.05)" }}
+      >
+        <Mail className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
+        <p className="text-xs leading-relaxed" style={{ color: INK }}>
           Nach dem Kauf bekommst du automatisch deinen Zugang per E-Mail — kein
           Account-Anlegen vorher nötig.
         </p>
@@ -321,12 +349,12 @@ function GuestCtaBlock({ product }: { product: Product }) {
 
       {/* Trust */}
       <div className="space-y-2">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <ShieldCheck className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
           <span>Sichere Zahlung via Stripe — Kreditkarte, SEPA, Sofort</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <CheckCircle2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           <span>Sofortiger Zugang nach Zahlungsbestätigung</span>
         </div>
       </div>
@@ -347,14 +375,18 @@ function LessonList({ lessons }: { lessons: Lesson[] }) {
       {shown.map((lesson) => (
         <div
           key={lesson.day_number}
-          className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-slate-50 border border-slate-100"
+          className="flex items-center gap-3 py-2.5 px-3 rounded-xl border"
+          style={{ backgroundColor: PAPER, borderColor: LINE }}
         >
-          <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-slate-500">
+          <div
+            className="w-7 h-7 rounded-lg bg-white border flex items-center justify-center shrink-0"
+            style={{ borderColor: LINE }}
+          >
+            <span className="text-xs font-semibold" style={{ color: GREEN }}>
               {lesson.day_number}
             </span>
           </div>
-          <span className="text-sm text-slate-700 leading-snug flex-1">
+          <span className="text-sm leading-snug flex-1" style={{ color: BODY }}>
             {lesson.title}
           </span>
         </div>
@@ -363,7 +395,8 @@ function LessonList({ lessons }: { lessons: Lesson[] }) {
       {hasMore && (
         <button
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition-colors pt-1 pl-1"
+          className="flex items-center gap-1.5 text-sm transition-colors pt-1 pl-1 hover:opacity-80"
+          style={{ color: GREEN }}
         >
           {expanded ? (
             <>
@@ -421,7 +454,7 @@ export function ProductDetailClient() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
         <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -444,19 +477,24 @@ export function ProductDetailClient() {
   // ── Error / Not found ────────────────────────────────────────────────────
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
         <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-20 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <Lock className="h-7 w-7 text-slate-400" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-800 mb-2">
+          <h2 className="text-xl mb-2" style={{ ...serif, color: INK }}>
             Challenge nicht gefunden
           </h2>
-          <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+          <p className="mb-6 max-w-sm mx-auto" style={{ color: MUTED }}>
             {error ?? "Diese Challenge existiert nicht oder ist nicht mehr verfügbar."}
           </p>
-          <Button asChild variant="outline" className="rounded-xl">
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-xl hover:bg-black/[0.03]"
+            style={{ borderColor: SAND, color: GREEN }}
+          >
             <Link href="/kurse">Zu allen Challenges</Link>
           </Button>
         </div>
@@ -483,7 +521,7 @@ export function ProductDetailClient() {
   const durationDays = primaryPath?.duration_days ?? 21
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <ShopHeader mode="website" showBack backHref="/kurse" backLabel="Alle Challenges" />
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -493,7 +531,10 @@ export function ProductDetailClient() {
           <div className="lg:col-span-2 space-y-8">
 
             {/* Hero-Bild / Platzhalter */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 animate-fade-in-up">
+            <div
+              className="relative aspect-square rounded-2xl overflow-hidden border bg-white animate-fade-in-up"
+              style={{ borderColor: LINE }}
+            >
               {product.hero_bild ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -503,12 +544,13 @@ export function ProductDetailClient() {
                 />
               ) : (
                 <div
-                  className={cn(
-                    "w-full h-full bg-gradient-to-br flex items-center justify-center",
-                    getGradient(product.slug)
-                  )}
+                  className="w-full h-full flex items-center justify-center"
+                  style={{ background: PLACEHOLDER_BG }}
                 >
-                  <span className="text-white/80 text-7xl font-light select-none drop-shadow-sm">
+                  <span
+                    className="text-7xl select-none"
+                    style={{ ...serif, color: GREEN, opacity: 0.5 }}
+                  >
                     {product.titel.charAt(0)}
                   </span>
                 </div>
@@ -522,7 +564,8 @@ export function ProductDetailClient() {
                   {product.anliegen.map((a) => (
                     <span
                       key={a}
-                      className="text-xs font-medium text-slate-500 border border-slate-200 bg-white px-2.5 py-1 rounded-full"
+                      className="text-xs font-medium px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: "rgba(44,62,45,0.1)", color: GREEN }}
                     >
                       {ANLIEGEN_LABELS[a] ?? a}
                     </span>
@@ -530,12 +573,12 @@ export function ProductDetailClient() {
                 </div>
               )}
 
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
+              <h1 className="text-2xl sm:text-3xl leading-snug" style={{ ...serif, color: INK }}>
                 {product.titel}
               </h1>
 
               {product.kurzbeschreibung && (
-                <p className="text-lg text-slate-500 leading-relaxed">
+                <p className="text-lg leading-relaxed" style={{ color: MUTED }}>
                   {product.kurzbeschreibung}
                 </p>
               )}
@@ -544,18 +587,18 @@ export function ProductDetailClient() {
               <ProductReviewsSummary slug={product.slug} />
 
               <div className="flex flex-wrap gap-4 pt-1">
-                <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                  <Calendar className="h-4 w-4 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: MUTED }}>
+                  <Calendar className="h-4 w-4" style={{ color: GREEN }} />
                   <span>{durationDays} Tage</span>
                 </div>
                 {lessons.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                    <BookOpen className="h-4 w-4 text-slate-400" />
+                  <div className="flex items-center gap-1.5 text-sm" style={{ color: MUTED }}>
+                    <BookOpen className="h-4 w-4" style={{ color: GREEN }} />
                     <span>{lessons.length} Module</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5 text-sm text-slate-500">
-                  <Clock className="h-4 w-4 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-sm" style={{ color: MUTED }}>
+                  <Clock className="h-4 w-4" style={{ color: GREEN }} />
                   <span>Ca. 15–20 Min. täglich</span>
                 </div>
               </div>
@@ -570,10 +613,10 @@ export function ProductDetailClient() {
             {/* Beschreibung */}
             {product.beschreibung && (
               <div className="space-y-3">
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base" style={{ ...serif, color: INK }}>
                   Über diese Challenge
                 </h2>
-                <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                <p className="leading-relaxed whitespace-pre-line" style={{ color: BODY }}>
                   {product.beschreibung}
                 </p>
               </div>
@@ -582,7 +625,7 @@ export function ProductDetailClient() {
             {/* Modul-Übersicht */}
             {lessons.length > 0 && (
               <div className="space-y-4">
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base" style={{ ...serif, color: INK }}>
                   Challenge-Inhalte — {durationDays} Module
                 </h2>
                 <LessonList lessons={lessons} />
@@ -590,8 +633,11 @@ export function ProductDetailClient() {
             )}
 
             {/* Das ist enthalten */}
-            <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-4">
-              <h2 className="text-base font-semibold text-slate-900">
+            <div
+              className="rounded-2xl bg-white border p-6 space-y-4"
+              style={{ borderColor: LINE }}
+            >
+              <h2 className="text-base" style={{ ...serif, color: INK }}>
                 Das ist enthalten
               </h2>
               <ul className="space-y-2.5">
@@ -604,8 +650,10 @@ export function ProductDetailClient() {
                   "Lebenslanger Zugriff nach Einmalkauf",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm text-slate-600">{item}</span>
+                    <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
+                    <span className="text-sm" style={{ color: BODY }}>
+                      {item}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -632,9 +680,9 @@ export function ProductDetailClient() {
         </div>
       </div>
 
-      <footer className="border-t border-slate-200 mt-12 py-8">
+      <footer className="border-t mt-12 py-8" style={{ borderColor: LINE }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: MUTED }}>
             © {new Date().getFullYear()} Praxis OS · Alle Preise inkl. MwSt.
           </p>
         </div>

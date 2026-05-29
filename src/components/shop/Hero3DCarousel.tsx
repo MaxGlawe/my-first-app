@@ -95,10 +95,8 @@ export function Hero3DCarousel({
     // nicht eintreten, aber sicherheitshalber abgefangen.
     return (
       <div
-        className={cn(
-          "relative aspect-square rounded-3xl bg-slate-800/50 ring-1 ring-white/10",
-          className
-        )}
+        className={cn("relative aspect-square rounded-3xl ring-1", className)}
+        style={{ backgroundColor: "rgba(201,183,156,0.12)", boxShadow: "inset 0 0 0 1px #e7e1d6" }}
       />
     )
   }
@@ -110,9 +108,10 @@ export function Hero3DCarousel({
       onMouseLeave={handleLeave}
       onMouseEnter={() => setPaused(true)}
       className={cn(
-        "relative aspect-square rounded-3xl overflow-hidden ring-1 ring-white/10 shadow-2xl shadow-emerald-900/40 transition-transform duration-200 ease-out will-change-transform",
+        "relative aspect-square rounded-3xl overflow-hidden transition-transform duration-200 ease-out will-change-transform",
         className
       )}
+      style={{ boxShadow: "0 28px 56px rgba(15,23,42,0.18)", outline: "1px solid #e7e1d6", outlineOffset: "-1px" }}
     >
       {images.map((src, i) => (
         // eslint-disable-next-line @next/next/no-img-element

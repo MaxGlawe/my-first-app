@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { ArrowRight, Phone, Mail } from "lucide-react"
+import { ArrowRight, MessageSquare, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
@@ -52,7 +52,7 @@ export function BgfCtaSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
-            <Link href="/anfrage">
+            <Link href="/unternehmen/kontakt">
               <motion.div whileHover={{ scale: 1.04, y: -3 }} whileTap={{ scale: 0.97 }}>
                 <Button
                   size="lg"
@@ -67,13 +67,13 @@ export function BgfCtaSection() {
 
           {/* Contact alternatives */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-white/50 text-sm">
-            <a
-              href="tel:+49000000000"
+            <Link
+              href="/unternehmen/kontakt"
               className="flex items-center gap-2 hover:text-white/80 transition-colors"
             >
-              <Phone className="h-4 w-4" />
-              Direkt anrufen
-            </a>
+              <MessageSquare className="h-4 w-4" />
+              Zum Kontaktformular
+            </Link>
             <span className="hidden sm:block w-1 h-1 rounded-full bg-white/20" />
             <a
               href="mailto:physiotherapieglawe@gmx.de"

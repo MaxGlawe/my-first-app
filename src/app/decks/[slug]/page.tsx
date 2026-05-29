@@ -14,6 +14,8 @@
  *     die URLs nicht im HTML finden).
  *
  * Kauf-Buttons + Freischalt-CTA sind kleine Client-Inseln (DeckBuyActions).
+ *
+ * Premium-Markenwelt (Paper/Ink/Green/Sand, Serif-Headlines).
  */
 
 import type { Metadata } from "next"
@@ -33,6 +35,17 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { hasContentAccess } from "@/lib/content-access"
 import { DeckBuyActions, DeckViewTracker } from "./DeckBuyActions"
+
+// ── Premium-Markenwelt (Masterclass-Format) ──────────────────────────────────
+
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 // ── Bild-Pfade ────────────────────────────────────────────────────────────────
 
@@ -112,7 +125,10 @@ function GalerieKarte({
   priority?: boolean
 }) {
   return (
-    <div className="group relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm">
+    <div
+      className="group relative aspect-[4/5] rounded-2xl overflow-hidden border shadow-sm"
+      style={{ backgroundColor: PAPER, borderColor: LINE }}
+    >
       <Image
         src={src}
         alt={alt}
@@ -123,7 +139,10 @@ function GalerieKarte({
       />
       {badge && (
         <div className="absolute top-2.5 left-2.5">
-          <span className="bg-white/90 backdrop-blur-sm text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-sm">
+          <span
+            className="bg-white/90 backdrop-blur-sm text-[11px] font-semibold px-2.5 py-1 rounded-lg shadow-sm"
+            style={{ color: GREEN }}
+          >
             {badge}
           </span>
         </div>
@@ -135,7 +154,10 @@ function GalerieKarte({
 /** Gesperrte Milchglas-Kachel — rendert NICHT die echte Karten-URL. */
 function GesperrteKachel({ blurSrc, nummer }: { blurSrc: string; nummer: number }) {
   return (
-    <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
+    <div
+      className="relative aspect-[4/5] rounded-2xl overflow-hidden border"
+      style={{ backgroundColor: PAPER, borderColor: LINE }}
+    >
       {/* Platzhalter = stark verblurrtes Cover, NICHT die echte Karte */}
       <Image
         src={blurSrc}
@@ -148,11 +170,14 @@ function GesperrteKachel({ blurSrc, nummer }: { blurSrc: string; nummer: number 
       {/* Weiße Milchglas-Überlagerung */}
       <div className="absolute inset-0 bg-white/55" />
       {/* Schloss + Kartennummer */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-slate-400">
-        <div className="h-10 w-10 rounded-full bg-white/80 border border-slate-200 flex items-center justify-center shadow-sm">
-          <Lock className="h-4 w-4 text-slate-500" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ color: MUTED }}>
+        <div
+          className="h-10 w-10 rounded-full bg-white/80 border flex items-center justify-center shadow-sm"
+          style={{ borderColor: LINE }}
+        >
+          <Lock className="h-4 w-4" style={{ color: GREEN }} />
         </div>
-        <span className="text-xs font-semibold text-slate-500">Karte {nummer}</span>
+        <span className="text-xs font-semibold" style={{ color: MUTED }}>Karte {nummer}</span>
       </div>
     </div>
   )
@@ -201,7 +226,7 @@ export default async function DeckDetailPage({
   )
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       {/* Conversion: Produktansicht für alle Besucher (auch Besitzer) */}
       <DeckViewTracker slug={deck.slug} />
       <ShopHeader mode="website" showBack backHref="/decks" backLabel="Alle Bewegungskarten" />
@@ -214,7 +239,10 @@ export default async function DeckDetailPage({
 
             {/* Hero-Galerie: shop-1 groß + shop-2 daneben */}
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div className="col-span-2 relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm animate-fade-in-up">
+              <div
+                className="col-span-2 relative aspect-[4/5] rounded-2xl overflow-hidden border shadow-sm animate-fade-in-up"
+                style={{ backgroundColor: PAPER, borderColor: LINE }}
+              >
                 <Image
                   src={heroPrimary}
                   alt={deck.titel}
@@ -224,7 +252,10 @@ export default async function DeckDetailPage({
                   className="object-cover"
                 />
               </div>
-              <div className="col-span-1 relative aspect-[4/5] rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 shadow-sm animate-fade-in-up animation-delay-150">
+              <div
+                className="col-span-1 relative aspect-[4/5] rounded-2xl overflow-hidden border shadow-sm animate-fade-in-up animation-delay-150"
+                style={{ backgroundColor: PAPER, borderColor: LINE }}
+              >
                 <Image
                   src={heroSecondary}
                   alt={`${deck.titel} — Rückseite`}
@@ -238,18 +269,21 @@ export default async function DeckDetailPage({
             {/* Titel + Kurzbeschreibung */}
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 px-2.5 py-1 rounded-full">
+                <span
+                  className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                  style={{ color: GREEN, backgroundColor: "rgba(44,62,45,0.1)" }}
+                >
                   <Layers className="h-3.5 w-3.5" />
                   Bewegungskarten
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-snug">
+              <h1 className="text-2xl sm:text-3xl leading-snug" style={{ ...serif, color: INK }}>
                 {deck.titel}
               </h1>
 
               {deck.kurzbeschreibung && (
-                <p className="text-lg text-slate-500 leading-relaxed">
+                <p className="text-lg leading-relaxed" style={{ color: MUTED }}>
                   {deck.kurzbeschreibung}
                 </p>
               )}
@@ -270,10 +304,10 @@ export default async function DeckDetailPage({
             {/* Beschreibung */}
             {deck.beschreibung && (
               <div className="space-y-3">
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base" style={{ ...serif, color: INK }}>
                   Über diese Bewegungskarten
                 </h2>
-                <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                <p className="leading-relaxed whitespace-pre-line" style={{ color: "#334155" }}>
                   {deck.beschreibung}
                 </p>
               </div>
@@ -282,10 +316,10 @@ export default async function DeckDetailPage({
             {/* ── Karten-Galerie (GEGATET) ──────────────────────────────── */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-900">
+                <h2 className="text-base" style={{ ...serif, color: INK }}>
                   Die Karten im Deck
                 </h2>
-                <span className="text-xs font-medium text-slate-400">
+                <span className="text-xs font-medium" style={{ color: MUTED }}>
                   {FREIE_KARTEN.length - 1 + GESPERRTE_KARTEN.length} Bewegungs-Karten + Sicherheitskarte
                 </span>
               </div>
@@ -347,10 +381,13 @@ export default async function DeckDetailPage({
 
               {/* Besitzer: Druck-Tipp ───────────────────────────────────── */}
               {besitzt && (
-                <div className="flex items-start gap-2.5 rounded-2xl bg-slate-100 border border-slate-200 px-4 py-3.5">
-                  <Printer className="h-4 w-4 text-slate-500 mt-0.5 shrink-0" />
-                  <p className="text-sm text-slate-600 leading-relaxed">
-                    <span className="font-semibold text-slate-700">Tipp:</span> Karten
+                <div
+                  className="flex items-start gap-2.5 rounded-2xl border px-4 py-3.5"
+                  style={{ backgroundColor: "rgba(44,62,45,0.05)", borderColor: LINE }}
+                >
+                  <Printer className="h-4 w-4 mt-0.5 shrink-0" style={{ color: GREEN }} />
+                  <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>
+                    <span className="font-semibold" style={{ color: INK }}>Tipp:</span> Karten
                     ausdrucken fürs Handschuhfach — so hast du sie unterwegs ohne
                     Handy griffbereit.
                   </p>
@@ -359,18 +396,28 @@ export default async function DeckDetailPage({
 
               {/* Nicht-Besitzer: Freischalt-Block ────────────────────────── */}
               {!besitzt && (
-                <div className="rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-6 text-white relative overflow-hidden">
-                  <div className="absolute -top-8 -right-8 h-32 w-32 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />
+                <div
+                  className="rounded-2xl p-6 relative overflow-hidden"
+                  style={{ backgroundColor: GREEN, color: PAPER }}
+                >
+                  <div
+                    aria-hidden
+                    className="absolute -top-8 -right-8 h-32 w-32 rounded-full pointer-events-none"
+                    style={{ background: "radial-gradient(circle, rgba(201,183,156,0.30) 0%, transparent 70%)" }}
+                  />
                   <div className="relative space-y-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="h-5 w-5 text-emerald-400" />
+                      <div
+                        className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: "rgba(248,245,240,0.12)" }}
+                      >
+                        <Sparkles className="h-5 w-5" style={{ color: SAND }} />
                       </div>
                       <div>
-                        <p className="font-semibold text-white">
+                        <p className="font-semibold" style={{ color: PAPER }}>
                           Noch {GESPERRTE_KARTEN.length} Karten — schalte das komplette Deck mit dem Kauf frei
                         </p>
-                        <p className="text-sm text-slate-300 mt-0.5">
+                        <p className="text-sm mt-0.5" style={{ color: "rgba(248,245,240,0.8)" }}>
                           Cover, Sicherheitskarte und Karte 1 siehst du gratis. Der
                           Kauf schaltet alle {GESPERRTE_KARTEN.length} weiteren
                           Karten dauerhaft frei.
@@ -404,9 +451,9 @@ export default async function DeckDetailPage({
         </div>
       </div>
 
-      <footer className="border-t border-slate-200 mt-12 py-8">
+      <footer className="border-t mt-12 py-8" style={{ borderColor: LINE }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: MUTED }}>
             © {new Date().getFullYear()} Praxis OS · Alle Preise inkl. MwSt.
           </p>
         </div>
@@ -428,17 +475,23 @@ function SidebarBlock({
 }) {
   if (besitzt) {
     return (
-      <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-6 space-y-3">
+      <div
+        className="rounded-2xl border p-6 space-y-3"
+        style={{ borderColor: GREEN, backgroundColor: "rgba(44,62,45,0.05)" }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: "rgba(44,62,45,0.1)" }}
+          >
+            <CheckCircle2 className="h-5 w-5" style={{ color: GREEN }} />
           </div>
           <div>
-            <p className="font-semibold text-emerald-900">✓ Du besitzt diese Bewegungskarten</p>
-            <p className="text-sm text-emerald-700">Lebenslanger Zugriff · freigeschaltet</p>
+            <p className="font-semibold" style={{ color: INK }}>✓ Du besitzt diese Bewegungskarten</p>
+            <p className="text-sm" style={{ color: MUTED }}>Lebenslanger Zugriff · freigeschaltet</p>
           </div>
         </div>
-        <p className="text-sm text-emerald-700 leading-relaxed">
+        <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>
           Alle Karten sind oben in voller Größe für dich freigeschaltet.
         </p>
       </div>
@@ -446,12 +499,12 @@ function SidebarBlock({
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 p-6 space-y-5 shadow-sm">
+    <div className="rounded-2xl bg-white border p-6 space-y-5 shadow-sm" style={{ borderColor: LINE }}>
       <div>
         <div className="flex items-baseline gap-3 mb-1">
-          <span className="text-3xl font-bold text-slate-900">{preisFmt} €</span>
+          <span className="text-3xl font-bold" style={{ color: INK }}>{preisFmt} €</span>
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm" style={{ color: MUTED }}>
           Einmalig · Lebenslanger Zugriff · inkl. MwSt.
         </p>
       </div>

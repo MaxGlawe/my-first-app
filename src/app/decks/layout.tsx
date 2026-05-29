@@ -27,7 +27,7 @@ export default function DecksLayout({
 }) {
   return (
     <CartProvider>
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen" style={{ backgroundColor: "#F8F5F0" }}>
         {children}
         <CartDrawer />
         <Toaster position="bottom-center" />

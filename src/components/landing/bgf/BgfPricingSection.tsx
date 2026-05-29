@@ -7,49 +7,48 @@ import Link from "next/link"
 
 const tiers = [
   {
-    name: "Basic",
-    price: "19",
+    name: "Prävention",
+    price: "29",
     unit: "€/MA/Monat",
-    description: "Ideal für den Einstieg in betriebliche Gesundheitsförderung.",
+    description: "Tägliche Begleitung für alle Mitarbeitenden — der gesunde Einstieg.",
     features: [
-      "Pausen-Fit (KI-Routinen)",
-      "Persönliche Gesundheitsanalyse",
-      "Ampel-System",
-      "HR-Dashboard (Basis-KPIs)",
-      "E-Mail Support",
+      "Tägliche Pausen-Fit-Routinen (KI)",
+      "Persönliche Gesundheits-Ist-Analyse",
+      "Ampel-System für kritische Fälle",
+      "HR-Dashboard (Basis-KPIs, anonym)",
+      "E-Mail-Support",
     ],
-    notIncluded: ["Therapeuten-Betreuung", "Quartals-Reports", "Abteilungs-Vergleich"],
+    notIncluded: ["Therapeuten-Draht (Chat)", "Quartals-Reports", "Dedizierter Therapeut"],
     featured: false,
   },
   {
-    name: "Pro",
+    name: "Therapeut bei Bedarf",
     price: "39",
     unit: "€/MA/Monat",
-    description: "Vollumfängliche BGF mit persönlicher Therapeuten-Betreuung und vollem Reporting.",
+    description: "Ihr Team erreicht jederzeit einen echten Therapeuten — mit vollem Reporting.",
     features: [
-      "Alles aus Basic",
-      "Therapeuten-Betreuung bei Bedarf",
-      "Vollständiges HR-Dashboard",
-      "Quartals-Reports (PDF)",
-      "Abteilungs-Vergleich",
-      "Prioritäts-Support",
-      "Onboarding-Workshop",
+      "Alles aus Prävention",
+      "Therapeuten-Draht: Chat bei Bedarf",
+      "Individuelle Übungspläne vom Therapeuten",
+      "Vollständiges HR-Dashboard & Abteilungs-Vergleich",
+      "Quartals-Reports (PDF) mit Empfehlungen",
+      "Prioritäts-Support & Onboarding-Workshop",
     ],
     notIncluded: [],
     featured: true,
   },
   {
-    name: "Enterprise",
+    name: "Dedizierter Therapeut",
     price: "59",
     unit: "€/MA/Monat",
-    description: "Für große Unternehmen mit komplexen Anforderungen und dedizierten Services.",
+    description: "Ein fester, persönlicher Therapeut als Ansprechpartner für Ihr Unternehmen.",
     features: [
-      "Alles aus Pro",
-      "Dedizierter Account Manager",
-      "Custom Integrationen (HR-System)",
-      "Multi-Standort Management",
-      "SLA 99.9% Verfügbarkeit",
-      "DSGVO-Auftragsverarbeitungsvertrag",
+      "Alles aus „Therapeut bei Bedarf“",
+      "Fester, namentlicher Therapeut für Ihr Team",
+      "Video-Konsultationen & Haltungsanalyse",
+      "Sonderkonditionen für Einzelleistungen",
+      "Multi-Standort-Management",
+      "DSGVO-Auftragsverarbeitungsvertrag (AVV)",
     ],
     notIncluded: [],
     featured: false,
@@ -72,12 +71,12 @@ export function BgfPricingSection() {
             Preise
           </span>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-landing-fg tracking-tight">
-            Transparent.{" "}
-            <span className="text-landing-accent">Fair.</span>{" "}
-            Skalierbar.
+            So nah, wie Sie es{" "}
+            <span className="text-landing-accent">brauchen.</span>
           </h2>
           <p className="mt-4 text-lg text-landing-fg-muted max-w-2xl mx-auto">
-            Alle Tarife beinhalten §3 Nr. 34 EStG-Konformität und DSGVO-konformes Hosting.
+            Drei Stufen — nach gewünschter Therapeuten-Nähe. DSGVO-konform gehostet;
+            Steuervorteile nach §3 Nr. 34 EStG über zubuchbare zertifizierte Kurse.
           </p>
         </motion.div>
 
@@ -131,7 +130,7 @@ export function BgfPricingSection() {
                 ))}
               </ul>
 
-              <Link href="/anfrage">
+              <Link href={`/unternehmen/kontakt?modell=${encodeURIComponent(`${tier.name} (${tier.price} €)`)}`}>
                 <Button
                   className={`w-full rounded-full ${
                     tier.featured
@@ -166,7 +165,7 @@ export function BgfPricingSection() {
             Starten Sie mit 10–20 Mitarbeitenden, ohne Risiko und ohne Verpflichtung.
             Nach 30 Tagen entscheiden Sie.
           </p>
-          <Link href="/anfrage">
+          <Link href="/unternehmen/kontakt">
             <Button
               size="lg"
               className="bg-landing-accent hover:bg-landing-accent-hover text-white rounded-full px-8 shadow-lg shadow-landing-accent/25"

@@ -17,6 +17,17 @@ import {
   Activity,
 } from "lucide-react"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const BODY = "#334155"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const LINE = "#e7e1d6"
+
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
+
 interface Props {
   params: Promise<{ stadt: string }>
 }
@@ -56,23 +67,23 @@ function getHeroText(city: string, variant: number) {
   const templates = [
     {
       title: `Online Physiotherapie in ${city}`,
-      subtitle: `Sie suchen professionelle Physiotherapie in ${city}? Mit Praxis OS erhalten Sie individuelle Behandlung per Video — bequem von zu Hause, ohne Wartezeit und ohne Anfahrt.`,
+      subtitle: `Du suchst professionelle Physiotherapie in ${city}? Mit Praxis OS erhältst du individuelle Behandlung per Video — bequem von zu Hause, ohne Wartezeit und ohne Anfahrt.`,
     },
     {
       title: `Physiotherapie ${city} — jetzt online`,
-      subtitle: `Lange Wartezeiten auf einen Physiotherapie-Termin in ${city}? Das muss nicht sein. Unsere zertifizierten Therapeuten behandeln Sie per Video — flexibel, persönlich und effektiv.`,
+      subtitle: `Lange Wartezeiten auf einen Physiotherapie-Termin in ${city}? Das muss nicht sein. Unsere zertifizierten Therapeuten behandeln dich per Video — flexibel, persönlich und effektiv.`,
     },
     {
-      title: `Ihr Physiotherapeut in ${city} — per Video`,
-      subtitle: `Professionelle physiotherapeutische Betreuung für Patienten aus ${city} und Umgebung. Online-Termine innerhalb von 24 Stunden, individuelle Trainingspläne und persönlicher Chat mit Ihrem Therapeuten.`,
+      title: `Dein Physiotherapeut in ${city} — per Video`,
+      subtitle: `Professionelle physiotherapeutische Betreuung für Patienten aus ${city} und Umgebung. Online-Termine innerhalb von 24 Stunden, individuelle Trainingspläne und persönlicher Chat mit deinem Therapeuten.`,
     },
     {
       title: `Physiotherapie von zu Hause — ${city}`,
-      subtitle: `Ob Rückenschmerzen, Kniebeschwerden oder Reha nach einer OP: Unsere Online-Physiotherapie bringt professionelle Behandlung direkt zu Ihnen nach ${city}. Ganz ohne Praxisbesuch.`,
+      subtitle: `Ob Rückenschmerzen, Kniebeschwerden oder Reha nach einer OP: Unsere Online-Physiotherapie bringt professionelle Behandlung direkt zu dir nach ${city}. Ganz ohne Praxisbesuch.`,
     },
     {
       title: `${city}: Physiotherapie neu gedacht`,
-      subtitle: `Erleben Sie moderne Physiotherapie in ${city} — digital, individuell und evidenzbasiert. Per Video-Sitzung mit Ihrem persönlichen Therapeuten, ergänzt durch einen maßgeschneiderten Trainingsplan.`,
+      subtitle: `Erlebe moderne Physiotherapie in ${city} — digital, individuell und evidenzbasiert. Per Video-Sitzung mit deinem persönlichen Therapeuten, ergänzt durch einen maßgeschneiderten Trainingsplan.`,
     },
   ]
   return templates[variant % templates.length]
@@ -84,7 +95,7 @@ function getAdvantages(city: string, variant: number) {
       `Keine Wartezeit — Termine in ${city} oft innerhalb von 24 Stunden`,
       "Behandlung bequem von zu Hause per Video",
       "Individueller Trainingsplan mit Übungsvideos",
-      "Persönlicher Chat mit Ihrem Therapeuten zwischen den Sitzungen",
+      "Persönlicher Chat mit deinem Therapeuten zwischen den Sitzungen",
       "Flexible Terminwahl — auch abends und am Wochenende",
       "Keine Anfahrt, kein Stau, kein Parkplatzsuchen",
     ],
@@ -93,7 +104,7 @@ function getAdvantages(city: string, variant: number) {
       `Speziell für Patienten aus ${city} und Umgebung`,
       "Evidenzbasierte Behandlungsmethoden",
       "Tägliches Befindlichkeits-Tracking per App",
-      "Trainingspläne, die sich Ihrem Fortschritt anpassen",
+      "Trainingspläne, die sich deinem Fortschritt anpassen",
       "Ersteinschätzung bereits ab 69 €",
     ],
     [
@@ -101,7 +112,7 @@ function getAdvantages(city: string, variant: number) {
       "HD-Video-Sitzungen mit persönlichem Therapeuten",
       "Übungen mit Videoanleitung zum Nachmachen",
       "Fortschrittskontrolle und Anpassung des Trainingsplans",
-      "DSGVO-konforme Plattform — Ihre Daten sind sicher",
+      "DSGVO-konforme Plattform — deine Daten sind sicher",
       "Keine Verordnung vom Arzt notwendig",
     ],
     [
@@ -109,14 +120,14 @@ function getAdvantages(city: string, variant: number) {
       `Ideal für berufstätige Patienten in ${city}`,
       "Persönliche Betreuung wie in der Praxis vor Ort",
       "Wissenschaftlich fundierte Übungsprogramme",
-      "Direkter Draht zu Ihrem Therapeuten per Chat",
+      "Direkter Draht zu deinem Therapeuten per Chat",
       "Transparente Preise ohne versteckte Kosten",
     ],
     [
       `Online-Physiotherapie auf höchstem Niveau in ${city}`,
-      "Maßgeschneiderte Therapiepläne für Ihre Beschwerden",
+      "Maßgeschneiderte Therapiepläne für deine Beschwerden",
       "Video-Sitzungen in HD-Qualität",
-      "Lernmodule zu Ihrem Krankheitsbild inklusive",
+      "Lernmodule zu deinem Krankheitsbild inklusive",
       "Regelmäßige Fortschrittsmessung und Zielanpassung",
       "Einfache Terminbuchung über die App",
     ],
@@ -127,34 +138,34 @@ function getAdvantages(city: string, variant: number) {
 function getProcessSteps(city: string, variant: number) {
   const sets = [
     [
-      { title: "Anfrage stellen", desc: `Stellen Sie Ihre Anfrage online. Beschreiben Sie kurz Ihre Beschwerden — wir melden uns innerhalb von 24 Stunden bei Ihnen.` },
-      { title: "Ersteinschätzung per Video", desc: `In einem persönlichen Video-Gespräch lernen wir Ihre Situation kennen, führen eine ausführliche Anamnese durch und besprechen Ihre Ziele.` },
-      { title: "Ihr Trainingsplan", desc: `Sie erhalten einen individuellen Trainingsplan mit Video-Anleitungen, den Sie flexibel in Ihren Alltag in ${city} integrieren können.` },
-      { title: "Begleitung & Anpassung", desc: `Über unsere App bleiben wir in Kontakt. Wir passen Ihren Plan regelmäßig an Ihren Fortschritt an.` },
+      { title: "Anfrage stellen", desc: `Stelle deine Anfrage online. Beschreibe kurz deine Beschwerden — wir melden uns innerhalb von 24 Stunden bei dir.` },
+      { title: "Ersteinschätzung per Video", desc: `In einem persönlichen Video-Gespräch lernen wir deine Situation kennen, führen eine ausführliche Anamnese durch und besprechen deine Ziele.` },
+      { title: "Dein Trainingsplan", desc: `Du erhältst einen individuellen Trainingsplan mit Video-Anleitungen, den du flexibel in deinen Alltag in ${city} integrieren kannst.` },
+      { title: "Begleitung & Anpassung", desc: `Über unsere App bleiben wir in Kontakt. Wir passen deinen Plan regelmäßig an deinen Fortschritt an.` },
     ],
     [
-      { title: "Anfrage stellen", desc: `Füllen Sie unser kurzes Formular aus. Wir prüfen, ob Online-Physiotherapie für Ihr Anliegen geeignet ist.` },
-      { title: "Termin buchen", desc: `Wählen Sie einen passenden Termin für Ihre Ersteinschätzung. Wir bieten flexible Zeiten, auch abends.` },
-      { title: "Behandlung starten", desc: `In der ersten Video-Sitzung erstellen wir gemeinsam Ihren Behandlungsplan mit konkreten Übungen und Zielen.` },
-      { title: "Dranbleiben", desc: `Mit täglichem Tracking, Chat-Support und regelmäßigen Follow-ups begleiten wir Sie auf Ihrem Weg in ${city}.` },
+      { title: "Anfrage stellen", desc: `Fülle unser kurzes Formular aus. Wir prüfen, ob Online-Physiotherapie für dein Anliegen geeignet ist.` },
+      { title: "Termin buchen", desc: `Wähle einen passenden Termin für deine Ersteinschätzung. Wir bieten flexible Zeiten, auch abends.` },
+      { title: "Behandlung starten", desc: `In der ersten Video-Sitzung erstellen wir gemeinsam deinen Behandlungsplan mit konkreten Übungen und Zielen.` },
+      { title: "Dranbleiben", desc: `Mit täglichem Tracking, Chat-Support und regelmäßigen Follow-ups begleiten wir dich auf deinem Weg in ${city}.` },
     ],
     [
-      { title: "Beschwerden schildern", desc: `Erzählen Sie uns in wenigen Sätzen, was Sie belastet. Die Anfrage verpflichtet Sie zu nichts.` },
-      { title: "Kennenlernen", desc: `Ihr Therapeut meldet sich persönlich bei Ihnen und bespricht mit Ihnen den weiteren Ablauf per Video.` },
-      { title: "Therapie & Training", desc: `Sie erhalten Ihre Behandlung per Video plus einen Trainingsplan, den Sie eigenständig in ${city} durchführen.` },
-      { title: "Erfolge messen", desc: `Gemeinsam verfolgen wir Ihren Fortschritt und passen die Therapie bei Bedarf an.` },
+      { title: "Beschwerden schildern", desc: `Erzähl uns in wenigen Sätzen, was dich belastet. Die Anfrage verpflichtet dich zu nichts.` },
+      { title: "Kennenlernen", desc: `Dein Therapeut meldet sich persönlich bei dir und bespricht mit dir den weiteren Ablauf per Video.` },
+      { title: "Therapie & Training", desc: `Du erhältst deine Behandlung per Video plus einen Trainingsplan, den du eigenständig in ${city} durchführst.` },
+      { title: "Erfolge messen", desc: `Gemeinsam verfolgen wir deinen Fortschritt und passen die Therapie bei Bedarf an.` },
     ],
     [
-      { title: "Online-Anfrage", desc: `Starten Sie mit einer Anfrage. Kein Rezept nötig — als Heilpraktiker für Physiotherapie behandeln wir auch ohne ärztliche Verordnung.` },
-      { title: "Video-Befund", desc: `In einer ausführlichen Video-Sitzung untersuchen wir Ihre Beschwerden und erstellen einen individuellen Befund.` },
-      { title: "Aktiv werden", desc: `Mit Ihrem persönlichen Trainingsplan und Video-Übungen starten Sie Ihre Therapie — wann und wo es Ihnen in ${city} passt.` },
-      { title: "Langfristig gesund", desc: `Regelmäßige Video-Kontrollen und ein angepasster Plan sorgen dafür, dass Sie nachhaltig schmerzfrei bleiben.` },
+      { title: "Online-Anfrage", desc: `Starte mit einer Anfrage. Kein Rezept nötig — als Heilpraktiker für Physiotherapie behandeln wir auch ohne ärztliche Verordnung.` },
+      { title: "Video-Befund", desc: `In einer ausführlichen Video-Sitzung untersuchen wir deine Beschwerden und erstellen einen individuellen Befund.` },
+      { title: "Aktiv werden", desc: `Mit deinem persönlichen Trainingsplan und Video-Übungen startest du deine Therapie — wann und wo es dir in ${city} passt.` },
+      { title: "Langfristig gesund", desc: `Regelmäßige Video-Kontrollen und ein angepasster Plan sorgen dafür, dass du nachhaltig schmerzfrei bleibst.` },
     ],
     [
-      { title: "Kontakt aufnehmen", desc: `Über unser Formular erreichen Sie uns in weniger als 2 Minuten. Wir antworten innerhalb eines Werktags.` },
-      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir Ihnen am besten helfen können — ab 69 €.` },
-      { title: "Therapieplan erhalten", desc: `Basierend auf Ihrer Untersuchung erhalten Sie einen evidenzbasierten Trainingsplan für Ihre Beschwerden.` },
-      { title: "Fortlaufende Betreuung", desc: `Ihr Therapeut begleitet Sie per Video und Chat — als wären Sie direkt in der Praxis in ${city}.` },
+      { title: "Kontakt aufnehmen", desc: `Über unser Formular erreichst du uns in weniger als 2 Minuten. Wir antworten innerhalb eines Werktags.` },
+      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir dir am besten helfen können — ab 69 €.` },
+      { title: "Therapieplan erhalten", desc: `Basierend auf deiner Untersuchung erhältst du einen evidenzbasierten Trainingsplan für deine Beschwerden.` },
+      { title: "Fortlaufende Betreuung", desc: `Dein Therapeut begleitet dich per Video und Chat — als wärst du direkt in der Praxis in ${city}.` },
     ],
   ]
   return sets[variant % sets.length]
@@ -164,37 +175,37 @@ function getFaq(city: string, variant: number) {
   const baseFaq = [
     {
       q: `Brauche ich eine Verordnung für Online-Physiotherapie in ${city}?`,
-      a: `Nein, als Heilpraktiker für Physiotherapie können wir Sie auch ohne ärztliche Verordnung behandeln. Sie können direkt eine Anfrage stellen und wir melden uns bei Ihnen.`,
+      a: `Nein, als Heilpraktiker für Physiotherapie können wir dich auch ohne ärztliche Verordnung behandeln. Du kannst direkt eine Anfrage stellen und wir melden uns bei dir.`,
     },
     {
       q: `Wie läuft eine Online-Physiotherapie-Sitzung ab?`,
-      a: `Die Sitzung findet per Video statt. Ihr Therapeut führt eine Untersuchung durch, zeigt Ihnen Übungen und erstellt einen individuellen Trainingsplan. Zwischen den Sitzungen bleiben Sie per Chat in Kontakt.`,
+      a: `Die Sitzung findet per Video statt. Dein Therapeut führt eine Untersuchung durch, zeigt dir Übungen und erstellt einen individuellen Trainingsplan. Zwischen den Sitzungen bleibst du per Chat in Kontakt.`,
     },
     {
       q: `Was kostet Online-Physiotherapie?`,
-      a: `Die Ersteinschätzung beginnt ab 69 €. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf Ihren Bedürfnissen.`,
+      a: `Die Ersteinschätzung beginnt ab 69 €. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf deinen Bedürfnissen.`,
     },
   ]
 
   const extraFaq = [
     [
       { q: `Ist Online-Physiotherapie genauso effektiv wie in einer Praxis in ${city}?`, a: `Studien zeigen, dass Online-Physiotherapie bei vielen Beschwerden gleichwertige Ergebnisse erzielt wie die Behandlung vor Ort. Besonders bei muskuloskelettalen Beschwerden, Rückenschmerzen und Reha nach OPs ist die Wirksamkeit wissenschaftlich belegt.` },
-      { q: `Was brauche ich für eine Video-Sitzung?`, a: `Sie brauchen lediglich ein Smartphone, Tablet oder einen Computer mit Kamera und Internetverbindung. Unsere Plattform funktioniert direkt im Browser — keine Installation nötig.` },
+      { q: `Was brauche ich für eine Video-Sitzung?`, a: `Du brauchst lediglich ein Smartphone, Tablet oder einen Computer mit Kamera und Internetverbindung. Unsere Plattform funktioniert direkt im Browser — keine Installation nötig.` },
     ],
     [
-      { q: `Wie schnell bekomme ich einen Termin in ${city}?`, a: `In der Regel können wir Ihnen innerhalb von 24 Stunden nach Ihrer Anfrage einen Termin anbieten. Wir bieten auch Abend- und Wochenendtermine an.` },
-      { q: `Kann ich die Übungen auch unterwegs machen?`, a: `Ja, alle Übungen in Ihrem Trainingsplan haben Video-Anleitungen, die Sie jederzeit über unsere App abrufen können — zu Hause, im Büro oder unterwegs.` },
+      { q: `Wie schnell bekomme ich einen Termin in ${city}?`, a: `In der Regel können wir dir innerhalb von 24 Stunden nach deiner Anfrage einen Termin anbieten. Wir bieten auch Abend- und Wochenendtermine an.` },
+      { q: `Kann ich die Übungen auch unterwegs machen?`, a: `Ja, alle Übungen in deinem Trainingsplan haben Video-Anleitungen, die du jederzeit über unsere App abrufen kannst — zu Hause, im Büro oder unterwegs.` },
     ],
     [
-      { q: `Werden die Kosten von der Krankenkasse übernommen?`, a: `Als Heilpraktiker-Leistung werden die Kosten in der Regel nicht von gesetzlichen Krankenkassen übernommen. Private Krankenversicherungen und Zusatzversicherungen erstatten die Behandlung häufig. Wir stellen Ihnen eine Rechnung aus, die Sie einreichen können.` },
-      { q: `Wie oft finden die Video-Sitzungen statt?`, a: `Die Frequenz richtet sich nach Ihren Beschwerden und Ihrem Therapieplan. Typischerweise starten wir mit wöchentlichen Sitzungen und reduzieren die Frequenz im Verlauf.` },
+      { q: `Werden die Kosten von der Krankenkasse übernommen?`, a: `Als Heilpraktiker-Leistung werden die Kosten in der Regel nicht von gesetzlichen Krankenkassen übernommen. Private Krankenversicherungen und Zusatzversicherungen erstatten die Behandlung häufig. Wir stellen dir eine Rechnung aus, die du einreichen kannst.` },
+      { q: `Wie oft finden die Video-Sitzungen statt?`, a: `Die Frequenz richtet sich nach deinen Beschwerden und deinem Therapieplan. Typischerweise starten wir mit wöchentlichen Sitzungen und reduzieren die Frequenz im Verlauf.` },
     ],
     [
-      { q: `Behandeln Sie auch akute Schmerzen per Video?`, a: `Ja, bei vielen akuten Beschwerden können wir Ihnen per Video-Sitzung schnell weiterhelfen. Bei Verdacht auf schwerwiegende Verletzungen empfehlen wir jedoch den Besuch eines Arztes.` },
-      { q: `Kann ich meinen Therapeuten wechseln?`, a: `Selbstverständlich. Wenn die Chemie nicht stimmt, können Sie jederzeit einen anderen Therapeuten anfragen. Ihre Zufriedenheit steht an erster Stelle.` },
+      { q: `Behandelt ihr auch akute Schmerzen per Video?`, a: `Ja, bei vielen akuten Beschwerden können wir dir per Video-Sitzung schnell weiterhelfen. Bei Verdacht auf schwerwiegende Verletzungen empfehlen wir jedoch den Besuch eines Arztes.` },
+      { q: `Kann ich meinen Therapeuten wechseln?`, a: `Selbstverständlich. Wenn die Chemie nicht stimmt, kannst du jederzeit einen anderen Therapeuten anfragen. Deine Zufriedenheit steht an erster Stelle.` },
     ],
     [
-      { q: `Gibt es eine Mindestlaufzeit?`, a: `Nein, es gibt keine Mindestlaufzeit. Sie können die Zusammenarbeit jederzeit beenden. Wir empfehlen jedoch mindestens 4-6 Wochen, um nachhaltige Ergebnisse zu erzielen.` },
+      { q: `Gibt es eine Mindestlaufzeit?`, a: `Nein, es gibt keine Mindestlaufzeit. Du kannst die Zusammenarbeit jederzeit beenden. Wir empfehlen jedoch mindestens 4-6 Wochen, um nachhaltige Ergebnisse zu erzielen.` },
       { q: `Sind meine Daten sicher?`, a: `Absolut. Unsere Plattform ist DSGVO-konform und wird auf EU-Servern gehostet. Alle Daten werden verschlüsselt übertragen und gespeichert. Wir nehmen Datenschutz sehr ernst.` },
     ],
   ]
@@ -254,7 +265,7 @@ export default async function StadtPage({ params }: Props) {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#faf9f7" }}>
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -265,41 +276,54 @@ export default async function StadtPage({ params }: Props) {
       />
 
       {/* Hero — Premium */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.15),transparent)]" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-teal-500/5 rounded-full blur-3xl" />
+      <div className="relative overflow-hidden" style={{ backgroundColor: PAPER }}>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 right-0 h-96 w-96 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(201,183,156,0.28) 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(201,183,156,0.18) 0%, transparent 70%)" }}
+        />
 
         <div className="relative py-24 md:py-28 px-4">
           <div className="container mx-auto max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-8">
-              <MapPin className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm text-emerald-300 font-medium">
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-8"
+              style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)" }}
+            >
+              <MapPin className="h-4 w-4" style={{ color: GREEN }} />
+              <span className="text-sm font-medium" style={{ color: GREEN }}>
                 {city.name}, {city.region} — {LAND_NAMEN[city.land]}
               </span>
             </div>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-5 leading-tight">
+            <h1
+              className="text-3xl md:text-4xl lg:text-5xl mb-5 leading-tight"
+              style={{ ...serif, color: INK }}
+            >
               {hero.title}
             </h1>
-            <p className="text-lg text-slate-300/90 leading-relaxed max-w-2xl">
+            <p className="text-lg leading-relaxed max-w-2xl" style={{ color: BODY }}>
               {hero.subtitle}
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
               <Link
                 href="/anfrage"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-600 transition-all shadow-lg shadow-emerald-500/25"
+                className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
+                style={{ backgroundColor: GREEN }}
               >
                 Jetzt Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm text-slate-400 sm:self-center">ab 69 €</span>
+              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ab 69 €</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Trust Bar */}
-      <div className="border-b border-slate-200/60 bg-white">
+      <div className="border-b bg-white" style={{ borderColor: LINE }}>
         <div className="container mx-auto max-w-3xl px-4 py-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -309,8 +333,8 @@ export default async function StadtPage({ params }: Props) {
               { icon: Star, label: "Evidenzbasiert" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 justify-center">
-                <item.icon className="h-4 w-4 text-emerald-600" />
-                <span className="text-xs font-medium text-slate-600">{item.label}</span>
+                <item.icon className="h-4 w-4" style={{ color: GREEN }} />
+                <span className="text-xs font-medium" style={{ color: BODY }}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -321,8 +345,8 @@ export default async function StadtPage({ params }: Props) {
         {/* Advantages — Premium cards with subtle gradient */}
         <section>
           <div className="mb-8">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Ihre Vorteile</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: GREEN }}>Deine Vorteile</span>
+            <h2 className="text-2xl md:text-3xl mt-2" style={{ ...serif, color: INK }}>
               Warum Patienten in {city.name} uns wählen
             </h2>
           </div>
@@ -330,12 +354,16 @@ export default async function StadtPage({ params }: Props) {
             {advantages.map((adv, i) => (
               <div
                 key={i}
-                className="group flex items-start gap-3 rounded-2xl bg-white border border-slate-200/60 p-5 hover:shadow-md hover:border-emerald-200/60 transition-all"
+                className="group flex items-start gap-3 rounded-2xl bg-white border p-5 hover:shadow-md transition-all"
+                style={{ borderColor: LINE }}
               >
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <div
+                  className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "rgba(44,62,45,0.10)" }}
+                >
+                  <CheckCircle2 className="h-4 w-4" style={{ color: GREEN }} />
                 </div>
-                <span className="text-sm text-slate-700 leading-relaxed">{adv}</span>
+                <span className="text-sm leading-relaxed" style={{ color: BODY }}>{adv}</span>
               </div>
             ))}
           </div>
@@ -344,8 +372,8 @@ export default async function StadtPage({ params }: Props) {
         {/* How it works — Premium steps with connecting line */}
         <section>
           <div className="mb-8">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">In 4 Schritten</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: GREEN }}>In 4 Schritten</span>
+            <h2 className="text-2xl md:text-3xl mt-2" style={{ ...serif, color: INK }}>
               So funktioniert&apos;s
             </h2>
           </div>
@@ -353,29 +381,27 @@ export default async function StadtPage({ params }: Props) {
             {steps.map((step, i) => {
               const icons = [ClipboardList, Video, Activity, MessageCircle]
               const Icon = icons[i % icons.length]
-              const gradients = [
-                "from-emerald-500 to-teal-500",
-                "from-teal-500 to-cyan-500",
-                "from-emerald-600 to-emerald-500",
-                "from-teal-600 to-emerald-500",
-              ]
               return (
                 <div
                   key={i}
-                  className="group rounded-2xl bg-white border border-slate-200/60 shadow-sm hover:shadow-md transition-all p-6"
+                  className="group rounded-2xl bg-white border shadow-sm hover:shadow-md transition-all p-6"
+                  style={{ borderColor: LINE }}
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className={`h-11 w-11 rounded-xl bg-gradient-to-br ${gradients[i]} flex items-center justify-center shadow-sm`}>
+                    <div
+                      className="h-11 w-11 rounded-xl flex items-center justify-center shadow-sm"
+                      style={{ backgroundColor: GREEN }}
+                    >
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: MUTED }}>
                         Schritt {i + 1}
                       </p>
-                      <p className="text-sm font-bold text-slate-800">{step.title}</p>
+                      <p className="text-sm font-bold" style={{ color: INK }}>{step.title}</p>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-600 leading-relaxed">{step.desc}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{step.desc}</p>
                 </div>
               )
             })}
@@ -385,8 +411,8 @@ export default async function StadtPage({ params }: Props) {
         {/* Beschwerden we treat — Premium grid */}
         <section>
           <div className="mb-8">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Beschwerdebilder</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: GREEN }}>Beschwerdebilder</span>
+            <h2 className="text-2xl md:text-3xl mt-2" style={{ ...serif, color: INK }}>
               Beschwerden, die wir in {city.name} behandeln
             </h2>
           </div>
@@ -395,24 +421,29 @@ export default async function StadtPage({ params }: Props) {
               <Link
                 key={b.slug}
                 href={`/beschwerden/${b.slug}`}
-                className="group flex items-center justify-between rounded-2xl bg-white border border-slate-200/60 p-5 hover:border-emerald-200 hover:shadow-md transition-all"
+                className="group flex items-center justify-between rounded-2xl bg-white border p-5 hover:shadow-md transition-all"
+                style={{ borderColor: LINE }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center shrink-0">
-                    <Activity className="h-4 w-4 text-emerald-600" />
+                  <div
+                    className="h-9 w-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: "rgba(44,62,45,0.10)" }}
+                  >
+                    <Activity className="h-4 w-4" style={{ color: GREEN }} />
                   </div>
-                  <span className="text-sm font-semibold text-slate-700 group-hover:text-emerald-700 transition-colors">
+                  <span className="text-sm font-semibold transition-colors" style={{ color: BODY }}>
                     {b.name}
                   </span>
                 </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-all" style={{ color: SAND }} />
               </Link>
             ))}
           </div>
           <div className="mt-5 text-center">
             <Link
               href="/beschwerden"
-              className="text-sm text-emerald-600 hover:text-emerald-700 font-semibold inline-flex items-center gap-1.5"
+              className="text-sm font-semibold inline-flex items-center gap-1.5 hover:opacity-90"
+              style={{ color: GREEN }}
             >
               Alle Beschwerdebilder ansehen <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -420,23 +451,23 @@ export default async function StadtPage({ params }: Props) {
         </section>
 
         {/* Why online — Premium card with gradient accent */}
-        <section className="relative rounded-3xl bg-white border border-slate-200/60 shadow-sm overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+        <section className="relative rounded-3xl bg-white border shadow-sm overflow-hidden" style={{ borderColor: LINE }}>
+          <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: GREEN }} />
           <div className="p-8 md:p-10">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">Gut zu wissen</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mt-2 mb-6">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: GREEN }}>Gut zu wissen</span>
+            <h2 className="text-2xl md:text-3xl mt-2 mb-6" style={{ ...serif, color: INK }}>
               Warum Online-Physiotherapie in {city.name}?
             </h2>
-            <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
+            <div className="space-y-4 text-sm leading-relaxed" style={{ color: MUTED }}>
               <p>
                 Die Suche nach einem Physiotherapie-Termin in {city.name} kann frustrierend sein:
                 Lange Wartelisten, ungünstige Zeiten und weite Anfahrtswege. Mit Online-Physiotherapie
                 gehören diese Probleme der Vergangenheit an.
               </p>
               <p>
-                Unsere zertifizierten Therapeuten behandeln Sie per hochauflösender Video-Sitzung —
-                genauso persönlich und individuell wie in einer Praxis vor Ort. Der Unterschied: Sie
-                sparen sich die Anfahrt und bekommen schneller einen Termin.
+                Unsere zertifizierten Therapeuten behandeln dich per hochauflösender Video-Sitzung —
+                genauso persönlich und individuell wie in einer Praxis vor Ort. Der Unterschied: Du
+                sparst dir die Anfahrt und bekommst schneller einen Termin.
               </p>
               <p>
                 Zahlreiche Studien belegen, dass Online-Physiotherapie bei muskuloskelettalen
@@ -451,8 +482,8 @@ export default async function StadtPage({ params }: Props) {
         {/* FAQ — Premium accordion */}
         <section>
           <div className="mb-8">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-600">FAQ</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mt-2">
+            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: GREEN }}>FAQ</span>
+            <h2 className="text-2xl md:text-3xl mt-2" style={{ ...serif, color: INK }}>
               Häufige Fragen zur Physiotherapie in {city.name}
             </h2>
           </div>
@@ -460,16 +491,20 @@ export default async function StadtPage({ params }: Props) {
             {faq.map((f, i) => (
               <details
                 key={i}
-                className="group rounded-2xl bg-white border border-slate-200/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                className="group rounded-2xl bg-white border shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+                style={{ borderColor: LINE }}
               >
-                <summary className="flex items-center justify-between cursor-pointer p-5 md:p-6 text-sm font-semibold text-slate-800 hover:text-emerald-700 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                <summary className="flex items-center justify-between cursor-pointer p-5 md:p-6 text-sm font-semibold transition-colors list-none [&::-webkit-details-marker]:hidden" style={{ color: INK }}>
                   {f.q}
-                  <div className="h-7 w-7 rounded-lg bg-slate-100 group-open:bg-emerald-100 flex items-center justify-center shrink-0 ml-4 transition-colors">
-                    <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-open:text-emerald-600 group-open:rotate-90 transition-all" />
+                  <div
+                    className="h-7 w-7 rounded-lg flex items-center justify-center shrink-0 ml-4 transition-colors group-open:bg-[rgba(44,62,45,0.10)]"
+                    style={{ backgroundColor: PAPER }}
+                  >
+                    <ArrowRight className="h-3.5 w-3.5 group-open:rotate-90 transition-all" style={{ color: GREEN }} />
                   </div>
                 </summary>
                 <div className="px-5 pb-5 md:px-6 md:pb-6">
-                  <p className="text-sm text-slate-600 leading-relaxed">{f.a}</p>
+                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{f.a}</p>
                 </div>
               </details>
             ))}
@@ -483,20 +518,24 @@ export default async function StadtPage({ params }: Props) {
         />
 
         {/* CTA — Premium */}
-        <section className="relative rounded-3xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-emerald-500 to-teal-500" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.15),transparent)]" />
+        <section className="relative rounded-3xl overflow-hidden border" style={{ backgroundColor: GREEN, borderColor: GREEN }}>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{ background: "radial-gradient(circle at top left, rgba(201,183,156,0.18), transparent)" }}
+          />
           <div className="relative p-10 md:p-14 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+            <h2 className="text-2xl md:text-3xl text-white mb-4" style={serif}>
               Physiotherapie in {city.name} — jetzt starten
             </h2>
-            <p className="text-emerald-50/90 mb-8 max-w-lg mx-auto leading-relaxed">
-              Stellen Sie Ihre Anfrage und erhalten Sie innerhalb von
+            <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
+              Stelle deine Anfrage und erhalte innerhalb von
               24 Stunden eine persönliche Rückmeldung von unserem Therapeuten.
             </p>
             <Link
               href="/anfrage"
-              className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-emerald-700 font-semibold rounded-xl hover:bg-emerald-50 transition-colors shadow-lg shadow-emerald-700/20"
+              className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
+              style={{ color: GREEN }}
             >
               Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
             </Link>
@@ -506,7 +545,7 @@ export default async function StadtPage({ params }: Props) {
         {/* Nearby cities */}
         {nearbyCities.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold text-slate-700 mb-4">
+            <h2 className="text-lg font-semibold mb-4" style={{ color: INK }}>
               Weitere Städte in {city.region}
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -514,9 +553,10 @@ export default async function StadtPage({ params }: Props) {
                 <Link
                   key={other.slug}
                   href={`/online-physiotherapie/${other.slug}`}
-                  className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-slate-200/60 text-sm text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition-all"
+                  className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border text-sm transition-all hover:opacity-90"
+                  style={{ borderColor: LINE, color: BODY }}
                 >
-                  <MapPin className="h-3 w-3 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                  <MapPin className="h-3 w-3" style={{ color: GREEN }} />
                   {other.name}
                 </Link>
               ))}
@@ -528,7 +568,8 @@ export default async function StadtPage({ params }: Props) {
         <div className="text-center">
           <Link
             href="/online-physiotherapie"
-            className="text-sm text-slate-500 hover:text-emerald-600 font-medium inline-flex items-center gap-1"
+            className="text-sm font-medium inline-flex items-center gap-1 hover:opacity-90"
+            style={{ color: MUTED }}
           >
             Alle Standorte ansehen <ArrowRight className="h-3 w-3" />
           </Link>

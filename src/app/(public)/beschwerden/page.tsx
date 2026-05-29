@@ -3,6 +3,14 @@ import Link from "next/link"
 import { BESCHWERDEN } from "@/lib/beschwerden"
 import { ArrowRight, Activity, Sparkles } from "lucide-react"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
+const MUTED = "#64748b"
+const LINE = "#e7e1d6"
+
 export const metadata: Metadata = {
   title: "Beschwerdebilder | Online Physiotherapie",
   description:
@@ -18,28 +26,41 @@ export const metadata: Metadata = {
 
 export default function BeschwerdenHubPage() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#faf9f7" }}>
+    <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
       {/* Hero — Premium */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(16,185,129,0.15),transparent)]" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-teal-500/5 rounded-full blur-3xl" />
+      <div className="relative overflow-hidden" style={{ backgroundColor: PAPER }}>
+        {/* Sand-Aura */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 right-0 h-[440px] w-[440px] rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(201,183,156,0.28) 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 rounded-full"
+          style={{ background: "radial-gradient(circle, rgba(201,183,156,0.18) 0%, transparent 70%)" }}
+        />
 
         <div className="relative py-24 md:py-32 px-4">
           <div className="container mx-auto max-w-4xl text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 mb-8">
-              <Activity className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm text-emerald-300 font-medium">Alle Beschwerdebilder</span>
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-8"
+              style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)" }}
+            >
+              <Activity className="h-4 w-4" style={{ color: GREEN }} />
+              <span className="text-sm font-medium" style={{ color: GREEN }}>Alle Beschwerdebilder</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1
+              className="text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight"
+              style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
+            >
               Welche Beschwerden
               <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+              <span style={{ color: GREEN }}>
                 behandeln wir?
               </span>
             </h1>
-            <p className="text-lg md:text-xl text-slate-300/90 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style={{ color: "#334155" }}>
               Von Rückenschmerzen bis Arthrose — wir behandeln eine Vielzahl von
               Beschwerden per Video-Physiotherapie. Professionell, individuell und
               ohne Wartezeit.
@@ -55,20 +76,24 @@ export default function BeschwerdenHubPage() {
             <Link
               key={b.slug}
               href={`/beschwerden/${b.slug}`}
-              className="group block rounded-2xl bg-white border border-slate-200/60 shadow-sm hover:shadow-lg hover:border-emerald-200/60 transition-all p-6"
+              className="group block rounded-2xl bg-white border shadow-sm hover:shadow-lg transition-all p-6"
+              style={{ borderColor: LINE }}
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center shrink-0 group-hover:from-emerald-100 group-hover:to-teal-100 transition-colors">
-                  <Activity className="h-5 w-5 text-emerald-600" />
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "rgba(44,62,45,0.10)" }}
+                >
+                  <Activity className="h-5 w-5" style={{ color: GREEN }} />
                 </div>
-                <h2 className="text-base font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                <h2 className="text-base font-bold" style={{ color: INK }}>
                   {b.name}
                 </h2>
               </div>
-              <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+              <p className="text-sm line-clamp-2 leading-relaxed" style={{ color: MUTED }}>
                 {b.heroSubtitle}
               </p>
-              <div className="flex items-center gap-1.5 mt-4 text-sm font-semibold text-emerald-600">
+              <div className="flex items-center gap-1.5 mt-4 text-sm font-semibold" style={{ color: GREEN }}>
                 Mehr erfahren
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -78,21 +103,28 @@ export default function BeschwerdenHubPage() {
 
         {/* CTA — Premium */}
         <div className="mt-20 text-center">
-          <div className="relative rounded-3xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-emerald-500 to-teal-500" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.15),transparent)]" />
+          <div className="relative rounded-3xl overflow-hidden" style={{ backgroundColor: GREEN }}>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{ background: "radial-gradient(circle at top left, rgba(201,183,156,0.18), transparent)" }}
+            />
             <div className="relative p-10 md:p-16">
-              <Sparkles className="h-8 w-8 text-emerald-100 mx-auto mb-4" />
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                Ihr Beschwerdebild ist nicht dabei?
+              <Sparkles className="h-8 w-8 mx-auto mb-4" style={{ color: SAND }} />
+              <h2
+                className="text-2xl md:text-3xl mb-4 text-white"
+                style={{ fontFamily: "var(--font-serif)", fontWeight: 600 }}
+              >
+                Dein Beschwerdebild ist nicht dabei?
               </h2>
-              <p className="text-emerald-50/90 mb-8 max-w-lg mx-auto leading-relaxed">
+              <p className="text-white/80 mb-8 max-w-lg mx-auto leading-relaxed">
                 Wir behandeln viele weitere Beschwerden per Online-Physiotherapie.
-                Stellen Sie eine Anfrage und wir beraten Sie persönlich.
+                Stelle eine Anfrage und wir beraten dich persönlich.
               </p>
               <Link
                 href="/anfrage"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-emerald-700 font-semibold rounded-xl hover:bg-emerald-50 transition-colors shadow-lg shadow-emerald-700/20"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
+                style={{ color: GREEN }}
               >
                 Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
               </Link>

@@ -3,6 +3,13 @@
 import { ScrollReveal } from "./ScrollReveal"
 import { Shield, Clock, BarChart3 } from "lucide-react"
 
+// Premium-Markenwelt (Masterclass-Format)
+const PAPER = "#F8F5F0"
+const INK = "#0f172a"
+const MUTED = "#64748b"
+const GREEN = "#2C3E2D"
+const LINE = "#e7e1d6"
+
 const usps = [
   {
     icon: Shield,
@@ -14,56 +21,64 @@ const usps = [
     icon: Clock,
     title: "Immer erreichbar",
     description:
-      "Kein Wartezimmer, keine Wartezeiten. Per Chat, Video oder App — Ihr Therapeut ist immer nur eine Nachricht entfernt.",
+      "Kein Wartezimmer, keine Wartezeiten. Per Chat, Video oder App — dein Therapeut ist immer nur eine Nachricht entfernt.",
   },
   {
     icon: BarChart3,
     title: "Evidenzbasiert",
     description:
-      "Wissenschaftlich fundierte Methoden. Messbare Fortschritte durch tägliches Tracking. Keine Standard-Programme — nur für Sie.",
+      "Wissenschaftlich fundierte Methoden. Messbare Fortschritte durch tägliches Tracking. Keine Standard-Programme — nur für dich.",
   },
 ]
 
 export function UniqueSection() {
   return (
-    <section className="relative py-24 sm:py-32 bg-slate-900 overflow-hidden">
-      {/* Subtle glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-[400px] w-[600px] bg-emerald-500/5 blur-[120px] rounded-full" />
+    <section className="relative overflow-hidden py-24 sm:py-32" style={{ backgroundColor: PAPER }}>
+      {/* Sand-Aura */}
+      <div
+        aria-hidden
+        className="absolute left-1/2 top-0 h-[400px] w-[600px] -translate-x-1/2 rounded-full"
+        style={{ background: "radial-gradient(circle, rgba(201,183,156,0.22) 0%, transparent 70%)" }}
+      />
 
       {/* Connecting smart line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
+      <div className="absolute left-1/2 top-0 flex -translate-x-1/2 flex-col items-center">
         <div className="smart-line-dot animate-dot-pulse" />
         <div className="smart-line h-12" />
       </div>
 
-      <div className="relative container mx-auto px-4 max-w-6xl">
-        <ScrollReveal className="text-center mb-16">
-          <span className="text-sm font-medium text-emerald-400 uppercase tracking-wider">
+      <div className="relative container mx-auto max-w-6xl px-4">
+        <ScrollReveal className="mb-16 text-center">
+          <span className="text-sm font-medium uppercase tracking-wider" style={{ color: GREEN }}>
             Was uns einzigartig macht
           </span>
-          <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">
+          <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>
             Nicht irgendeine App.
             <br />
-            <span className="text-slate-400">Ihre persönliche Praxis.</span>
+            <span style={{ color: MUTED }}>Deine persönliche Praxis.</span>
           </h2>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 reveal-stagger">
+        <div className="reveal-stagger grid grid-cols-1 gap-6 md:grid-cols-3 lg:gap-8">
           {usps.map((usp) => (
             <ScrollReveal key={usp.title}>
-              <div className="group relative rounded-2xl glass p-6 sm:p-8 hover:bg-white/[0.06] transition-all duration-500">
-                {/* Icon with glow */}
+              <div
+                className="group relative rounded-2xl border bg-white p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-lg sm:p-8"
+                style={{ borderColor: LINE }}
+              >
                 <div className="relative mb-6">
-                  <div className="absolute inset-0 h-14 w-14 rounded-xl bg-emerald-500/20 blur-xl group-hover:bg-emerald-500/30 transition-all" />
-                  <div className="relative h-14 w-14 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-xl"
+                    style={{ backgroundColor: GREEN }}
+                  >
                     <usp.icon className="h-7 w-7 text-white" />
                   </div>
                 </div>
 
-                <h3 className="text-xl font-bold text-white mb-3">
+                <h3 className="mb-3 text-xl" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>
                   {usp.title}
                 </h3>
-                <p className="text-slate-400 leading-relaxed">
+                <p className="leading-relaxed" style={{ color: MUTED }}>
                   {usp.description}
                 </p>
               </div>

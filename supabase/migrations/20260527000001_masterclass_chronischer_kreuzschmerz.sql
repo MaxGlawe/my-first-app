@@ -31,7 +31,7 @@ VALUES (
   'Masterclass · Chronischer Kreuzschmerz',
   '27 vertonte Lektionen, interaktives Workbook und ein Bonus-Übungskartendeck — dein strukturierter Weg im Umgang mit chronischem Kreuzschmerz, in deinem Tempo.',
   'Die Masterclass Chronischer Kreuzschmerz bringt das, was Patienten in der Praxis bekommen, strukturiert und ortsunabhängig zu dir: 27 vertonte Lektionen in sechs Sektionen (Verstehen, Handeln, Bleiben, Wiederkommen), ein interaktives Workbook zum Mitmachen und Ausdrucken sowie ein Bonus-Übungskartendeck für unterwegs. Schritt für Schritt vom Verstehen deines Schmerzes bis zu den Werkzeugen für deinen Alltag.',
-  '/images/masterclass/chronischer-kreuzschmerz/kartendeck/00-cover.png',
+  '/images/masterclass/chronischer-kreuzschmerz/cover.jpg',
   'masterclass',
   ARRAY['ruecken', 'schmerz', 'chronische-beschwerden'],
   399.00,

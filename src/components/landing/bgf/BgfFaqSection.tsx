@@ -10,6 +10,11 @@ import {
 
 const faqs = [
   {
+    question: "Ist das wirklich ein echter Therapeut — oder nur eine App?",
+    answer:
+      "Ein echter, staatlich geprüfter Therapeut. Hinter Praxis OS steht eine Physiotherapie- und Heilpraktiker-Praxis. Die App ist das Werkzeug, mit dem ein Therapeut viele Mitarbeitende gleichzeitig betreuen kann — Analyse, individuelle Pläne, Chat bei Beschwerden und Quartals-Auswertung übernimmt ein Mensch, nicht ein Algorithmus. Im Tarif „Dedizierter Therapeut“ haben Sie sogar einen festen, namentlichen Ansprechpartner für Ihr Unternehmen.",
+  },
+  {
     question: "Wie läuft ein Pilot-Programm ab?",
     answer:
       "Nach Ihrer Anfrage vereinbaren wir einen kostenlosen 30-Minuten-Call. Danach erhalten Sie einen Zugang für 10–20 Mitarbeitende für 30 Tage — vollkommen kostenlos und unverbindlich. Wir begleiten das Pilot-Programm aktiv und liefern nach Abschluss einen detaillierten Ergebnisbericht. Erst danach entscheiden Sie, ob und wie Sie weitermachen möchten.",
@@ -35,9 +40,9 @@ const faqs = [
       "Das Ampel-System erkennt kritische Schmerzwerte automatisch. Bei 'Rot' wird der Mitarbeitende aktiv zur Kontaktaufnahme mit unserem Therapeuten aufgefordert. HR sieht lediglich, dass ein anonymer Fall eine therapeutische Betreuung erhalten hat — keine Identität, keine Details. Unser Therapeut nimmt ggf. direkten Kontakt auf und bietet eine Video-Konsultation an.",
   },
   {
-    question: "Können wir das steuerlich absetzen?",
+    question: "Wie sieht es mit Steuervorteil und Krankenkassen-Förderung aus?",
     answer:
-      "Ja. Unsere Leistungen qualifizieren für §3 Nr. 34 EStG (600€/MA/Jahr steuerbefreit) und sind nach §20 SGB V zertifiziert (Krankenkassen-Förderung möglich). Wir stellen alle notwendigen Nachweise für Ihr Finanzamt oder Ihre Krankenkasse zur Verfügung. Details klären Sie bitte mit Ihrem Steuerberater — wir unterstützen mit Dokumenten.",
+      "Hier sind wir bewusst transparent: Die Software-Lizenz selbst ist keine ZPP-zertifizierte Maßnahme. Den Steuervorteil nach §3 Nr. 34 EStG (bis 600 €/MA/Jahr steuer- und abgabenfrei) sowie eine Krankenkassen-Förderung nutzen Sie über unsere zubuchbaren, zertifizierten Präventionskurse — per Live-Stream oder vor Ort. Max Glawe ist als Kursleiter bei der ZPP registriert. Die nötigen Nachweise stellen wir bereit — die steuerliche Behandlung klären Sie bitte mit Ihrem Steuerberater.",
   },
 ]
 
