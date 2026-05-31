@@ -1,15 +1,15 @@
 /**
  * PROJ-23 / Phase 4: GET /api/cron/schmerzcheck-drip
  *
- * Sends the D1–D4 nurture drip. Intended to run ~daily (Supabase pg_cron or an
+ * Sends the D1–D5 nurture drip. Intended to run ~daily (Supabase pg_cron or an
  * external scheduler). Per lead it sends at most ONE due, unsent, eligible step
  * per run (no burst). Schedule offsets after check completion: D1 +1d, D2 +3d,
- * D3 +5d, D4 +7d.
+ * D3 +5d, D4 +7d, D5 +10d.
  *
  * Exclusions (spec §7.3):
  *   - red-flag leads are never enrolled (they have no completed result)
  *   - unsubscribed addresses are suppressed
- *   - soft-flag / needs_physician_assessment leads skip D3 (the Video-Analyse pitch)
+ *   - soft-flag / needs_physician_assessment leads skip D3 AND D5 (booking pitches)
  *
  * Security: CRON_SECRET via `Authorization: Bearer` or `x-cron-secret`.
  */
@@ -18,10 +18,9 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createLeadToken } from "@/lib/lead-jwt"
 import { renderDripEmail } from "@/lib/schmerzcheck/emails"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
-import { VIDEO_ANALYSE_URL } from "@/lib/schmerzcheck/recommendations"
 
 const DAY = 86_400_000
-const OFFSET_DAYS = [1, 3, 5, 7] // D1..D4 after completed_at
+const OFFSET_DAYS = [1, 3, 5, 7, 10] // D1..D5 after completed_at
 const MAX_PER_RUN = 100
 
 export async function GET(req: NextRequest) {
@@ -78,7 +77,7 @@ export async function GET(req: NextRequest) {
     .from("schmerzcheck_email_events")
     .select("lead_id, email_code")
     .eq("event_type", "sent")
-    .in("email_code", ["D1", "D2", "D3", "D4"])
+    .in("email_code", ["D1", "D2", "D3", "D4", "D5"])
     .in("lead_id", leadIds)
   const sentByLead = new Map<string, Set<number>>()
   for (const e of events ?? []) {
@@ -102,12 +101,12 @@ export async function GET(req: NextRequest) {
     const alreadySent = sentByLead.get(lead.id) ?? new Set<number>()
 
     // earliest due, unsent, eligible step
-    let step: 1 | 2 | 3 | 4 | null = null
-    for (let s = 1; s <= 4; s++) {
+    let step: 1 | 2 | 3 | 4 | 5 | null = null
+    for (let s = 1; s <= 5; s++) {
       if (alreadySent.has(s)) continue
-      if (s === 3 && soft) continue // skip Video-Analyse pitch for soft-flag
+      if ((s === 3 || s === 5) && soft) continue // skip Video-Analyse pitches for soft-flag
       if (now < completedAt + OFFSET_DAYS[s - 1] * DAY) break // not due yet
-      step = s as 1 | 2 | 3 | 4
+      step = s as 1 | 2 | 3 | 4 | 5
       break
     }
     if (!step) continue
@@ -118,7 +117,7 @@ export async function GET(req: NextRequest) {
       step,
       firstName: lead.first_name,
       reportUrl: `${baseUrl}/check/result?t=${encodeURIComponent(token)}`,
-      bookingUrl: VIDEO_ANALYSE_URL,
+      token,
       baseUrl,
       unsubscribeUrl: `${baseUrl}/api/email/unsubscribe?u=${encodeURIComponent(token)}`,
       softFlag: soft,

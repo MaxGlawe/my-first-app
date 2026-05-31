@@ -20,6 +20,24 @@ export const VIDEO_ANALYSE_URL =
   process.env.SCHMERZCHECK_VIDEO_ANALYSE_URL ||
   "https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os&utm_source=schmerzcheck&utm_medium=report&utm_campaign=video-analyse"
 
+/**
+ * Build a Video-Analyse booking URL with per-touchpoint UTM tagging so we can
+ * attribute bookings to the exact source (report page, PDF, or a specific drip
+ * email). Overrides utm_medium/utm_content on the base URL; keeps the rest.
+ */
+export function buildBookingUrl(opts: { medium: string; content?: string }): string {
+  try {
+    const url = new URL(VIDEO_ANALYSE_URL)
+    url.searchParams.set("utm_source", "schmerzcheck")
+    url.searchParams.set("utm_medium", opts.medium)
+    url.searchParams.set("utm_campaign", "video-analyse")
+    if (opts.content) url.searchParams.set("utm_content", opts.content)
+    return url.toString()
+  } catch {
+    return VIDEO_ANALYSE_URL
+  }
+}
+
 export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
   needs_physician_assessment: {
     text: "Wir empfehlen dir, deine Beschwerden zeitnah ärztlich abklären zu lassen, bevor du mit Bewegungs-Routinen startest.",

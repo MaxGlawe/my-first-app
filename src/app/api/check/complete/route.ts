@@ -105,7 +105,14 @@ export async function POST(request: NextRequest) {
         to: lead.email,
         toName: lead.first_name,
         subject: "Dein persönlicher Schmerz-Report — von Max Glawe",
-        html: renderT2ReportEmail({ firstName: lead.first_name, reportUrl, baseUrl, unsubscribeUrl }),
+        html: renderT2ReportEmail({
+          firstName: lead.first_name,
+          reportUrl,
+          baseUrl,
+          unsubscribeUrl,
+          token: body.t,
+          softFlag: result.soft_flag,
+        }),
         attachments: [{ filename: "schmerz-report.pdf", content: Buffer.from(pdf) }],
       })
       await supabase.from("schmerzcheck_email_events").insert({

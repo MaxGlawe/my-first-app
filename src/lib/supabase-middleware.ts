@@ -46,6 +46,8 @@ export async function updateSession(request: NextRequest) {
   // PROJ-23: Schmerzcheck-Funnel — öffentliche Lead-Capture (POST) + Double-Opt-in-Confirm (GET)
   const isSchmerzcheckLeadApi = pathname === '/api/leads/schmerzcheck' && request.method === 'POST'
   const isSchmerzcheckConfirmApi = pathname === '/api/leads/schmerzcheck/confirm' && request.method === 'GET'
+  // PROJ-23: getrackter Buchungs-Klick-Redirect aus Mails (öffentlich, loggt + leitet weiter)
+  const isSchmerzcheckGoApi = pathname === '/api/schmerzcheck/go' && request.method === 'GET'
   // PROJ-23 Phase 2: Schmerzcheck-Assessment-API (token-gated im Handler selbst)
   const isCheckApi = pathname.startsWith('/api/check/') && (request.method === 'GET' || request.method === 'POST')
   // PROJ-23 Phase 4: 1-Klick-Unsubscribe (token-gated im Handler selbst)
@@ -73,7 +75,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
