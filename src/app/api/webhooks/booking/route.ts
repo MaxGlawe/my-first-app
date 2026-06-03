@@ -21,6 +21,28 @@ import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
+import { sendMetaEvent } from "@/lib/meta-capi"
+
+/** Schmerzcheck-Lead bucht → Drip stoppen + Meta-Purchase (69 €) feuern. */
+function convertSchmerzcheckLead(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  email: string | null | undefined
+): void {
+  if (!email) return
+  void stopSchmerzcheckDrip(supabase, email)
+    .then((leadId) => {
+      if (!leadId) return
+      return sendMetaEvent({
+        eventName: "Purchase",
+        email,
+        eventId: `purchase_${leadId}`,
+        value: 69,
+        currency: "EUR",
+        eventSourceUrl: "https://wwwpraxis-os.com/schmerzcheck",
+      })
+    })
+    .catch(() => {})
+}
 
 // ----------------------------------------------------------------
 // Rate limiting (DB-based — works across all serverless instances)
@@ -254,8 +276,8 @@ async function handlePatientCreated(
 
   const data = normalizePatientPayload(parsed.data)
 
-  // PROJ-23: Schmerzcheck-Lead bucht (Konversion) → Drip stoppen (fire-and-forget)
-  void stopSchmerzcheckDrip(supabase, data.email).catch(() => {})
+  // PROJ-23: Schmerzcheck-Lead bucht (Konversion) → Drip stoppen + Meta-Purchase
+  convertSchmerzcheckLead(supabase, data.email)
 
   // 1. Check for existing patient by email (duplicate detection)
   //    Two separate .eq() queries — avoids raw string interpolation in .or()
@@ -474,9 +496,9 @@ async function handleAppointmentEvent(
     return { status: "error", errorMessage: "Termin konnte nicht gespeichert werden." }
   }
 
-  // PROJ-23: gebuchter Termin → Schmerzcheck-Drip für diesen Patienten stoppen
+  // PROJ-23: gebuchter Termin → Schmerzcheck-Drip stoppen + Meta-Purchase
   if (data.status === "scheduled") {
-    void stopSchmerzcheckDrip(supabase, patient.email).catch(() => {})
+    convertSchmerzcheckLead(supabase, patient.email)
   }
 
   return { status: "success" }

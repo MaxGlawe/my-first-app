@@ -1,9 +1,10 @@
 /**
  * PROJ-23: Meta Conversions API (server-side event mirroring).
  *
- * Mirrors the browser Pixel `Lead` event server-side so conversions are still
- * counted under iOS 14.5+ / ad-blocker conditions. Send the SAME event_id from
- * the browser Pixel and from here so Meta deduplicates them.
+ * Mirrors browser Pixel events server-side so conversions are still counted
+ * under iOS 14.5+ / ad-blocker conditions. For events that also fire in the
+ * browser (e.g. Lead), send the SAME event_id from both sides so Meta
+ * deduplicates them.
  *
  * Config (server-only):
  *   META_PIXEL_ID        (falls back to NEXT_PUBLIC_META_PIXEL_ID)
@@ -24,9 +25,11 @@ function hashEmail(email: string): string {
   return sha256(email.trim().toLowerCase())
 }
 
-interface LeadEventInput {
+interface MetaEventInput {
+  /** e.g. "Lead", "CompleteRegistration", "Purchase". */
+  eventName: string
   email: string
-  /** Dedup key — must match the browser Pixel's eventID for the same action. */
+  /** Dedup key — match the browser Pixel's eventID when the event fires both sides. */
   eventId: string
   eventSourceUrl?: string
   clientIp?: string | null
@@ -37,18 +40,24 @@ interface LeadEventInput {
   fbp?: string | null
   /** Raw fbclid from the URL — used to synthesise _fbc when the cookie is absent. */
   fbclid?: string | null
+  /** Purchase value (e.g. 69) — adds custom_data { value, currency }. */
+  value?: number
+  /** ISO currency (e.g. "EUR") — required when value is set. */
+  currency?: string
+  /** Defaults to "website". */
+  actionSource?: string
 }
 
 /**
- * Send a `Lead` event to the Conversions API. Fails soft (logs + returns false)
- * when unconfigured or on error — never blocks the lead-capture response.
+ * Send one event to the Conversions API. Fails soft (logs + returns false) when
+ * unconfigured or on error — never blocks the caller.
  */
-export async function sendMetaLeadEvent(input: LeadEventInput): Promise<boolean> {
+export async function sendMetaEvent(input: MetaEventInput): Promise<boolean> {
   const pixelId = process.env.META_PIXEL_ID || process.env.NEXT_PUBLIC_META_PIXEL_ID
   const token = process.env.META_CAPI_TOKEN
 
   if (!pixelId || !token) {
-    console.warn("[Meta CAPI] META_PIXEL_ID / META_CAPI_TOKEN not set — skipping Lead event")
+    console.warn(`[Meta CAPI] META_PIXEL_ID / META_CAPI_TOKEN not set — skipping ${input.eventName} event`)
     return false
   }
 
@@ -66,18 +75,19 @@ export async function sendMetaLeadEvent(input: LeadEventInput): Promise<boolean>
   if (fbc) userData.fbc = fbc
   if (input.fbp) userData.fbp = input.fbp
 
-  const body: Record<string, unknown> = {
-    data: [
-      {
-        event_name: "Lead",
-        event_time: Math.floor(Date.now() / 1000),
-        event_id: input.eventId,
-        action_source: "website",
-        event_source_url: input.eventSourceUrl,
-        user_data: userData,
-      },
-    ],
+  const event: Record<string, unknown> = {
+    event_name: input.eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: input.eventId,
+    action_source: input.actionSource || "website",
+    user_data: userData,
   }
+  if (input.eventSourceUrl) event.event_source_url = input.eventSourceUrl
+  if (typeof input.value === "number") {
+    event.custom_data = { value: input.value, currency: input.currency || "EUR" }
+  }
+
+  const body: Record<string, unknown> = { data: [event] }
   if (process.env.META_CAPI_TEST_EVENT_CODE) {
     body.test_event_code = process.env.META_CAPI_TEST_EVENT_CODE
   }
@@ -93,12 +103,19 @@ export async function sendMetaLeadEvent(input: LeadEventInput): Promise<boolean>
     )
     if (!res.ok) {
       const text = await res.text().catch(() => "")
-      console.error(`[Meta CAPI] Lead event failed (${res.status}):`, text)
+      console.error(`[Meta CAPI] ${input.eventName} event failed (${res.status}):`, text)
       return false
     }
     return true
   } catch (err) {
-    console.error("[Meta CAPI] Lead event error:", err instanceof Error ? err.message : err)
+    console.error(`[Meta CAPI] ${input.eventName} event error:`, err instanceof Error ? err.message : err)
     return false
   }
+}
+
+type LeadEventInput = Omit<MetaEventInput, "eventName" | "value" | "currency" | "actionSource">
+
+/** Send a `Lead` event (mirrors the browser Pixel `Lead` with shared event_id). */
+export async function sendMetaLeadEvent(input: LeadEventInput): Promise<boolean> {
+  return sendMetaEvent({ ...input, eventName: "Lead" })
 }

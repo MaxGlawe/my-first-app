@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Cormorant_Garamond } from "next/font/google"
+import { MetaPixel } from "@/components/schmerzcheck/MetaPixel"
 
 /**
  * PROJ-23 / Phase 2: Schmerzcheck assessment layout.
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 export default function CheckLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${cormorant.variable} sc-paper-bg min-h-screen text-[#0f172a]`}>
+      <MetaPixel />
       {children}
     </div>
   )

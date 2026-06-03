@@ -11,7 +11,6 @@ import type { AmpelBand } from "@/lib/schmerzcheck/ampel"
 import { SpineDiagram } from "@/components/schmerzcheck/SpineDiagram"
 import { Barometer, BAND_DOT } from "@/components/schmerzcheck/Barometer"
 import { ReportCta } from "@/components/schmerzcheck/check/ReportCta"
-import { MetaPixel } from "@/components/schmerzcheck/MetaPixel"
 
 /**
  * PROJ-23 / Report v2: /check/result?t=<token> — premium, doctor-ready report
@@ -95,7 +94,6 @@ export default async function CheckResultPage({
 
   return (
     <div className="mx-auto max-w-[780px] px-5 pb-20 pt-8">
-      <MetaPixel />
 
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">

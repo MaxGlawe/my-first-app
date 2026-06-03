@@ -82,15 +82,15 @@ export async function stopSchmerzcheckDrip(
   supabase: ServiceClient,
   email: string | null | undefined,
   reason = "booked"
-): Promise<void> {
-  if (!email) return
+): Promise<string | null> {
+  if (!email) return null
   const { data: lead } = await supabase
     .from("schmerzcheck_leads")
     .select("id, email_hash")
     .eq("email", email.trim().toLowerCase())
     .eq("source", "schmerzcheck_landing")
     .maybeSingle()
-  if (!lead?.email_hash) return
+  if (!lead?.email_hash) return null
 
   await supabase
     .from("schmerzcheck_unsubscribes")
@@ -109,4 +109,7 @@ export async function stopSchmerzcheckDrip(
       .update({ booked_at: new Date().toISOString() })
       .eq("id", lead.id)
   }
+
+  // Lead-ID zurückgeben, damit der Aufrufer ein Purchase-Event feuern kann.
+  return lead.id as string
 }

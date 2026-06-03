@@ -17,6 +17,7 @@ import { buildReportView } from "@/lib/schmerzcheck/report"
 import { generateReportPdf } from "@/lib/schmerzcheck/report-pdf"
 import { renderT2ReportEmail } from "@/lib/schmerzcheck/emails"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
+import { sendMetaEvent } from "@/lib/meta-capi"
 
 const completeSchema = z.object({ t: z.string() })
 
@@ -92,6 +93,20 @@ export async function POST(request: NextRequest) {
   }
 
   await supabase.from("schmerzcheck_leads").update({ status: "check_completed" }).eq("id", leadId)
+
+  // Meta CAPI: CompleteRegistration (server-side; deterministic event_id avoids
+  // double-counting on report revisits). Fires for every completed check.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null
+  void sendMetaEvent({
+    eventName: "CompleteRegistration",
+    email: lead.email,
+    eventId: `cr_${leadId}`,
+    eventSourceUrl: `${baseUrl}/check/result`,
+    clientIp: ip,
+    userAgent: request.headers.get("user-agent"),
+    fbp: request.cookies.get("_fbp")?.value ?? null,
+    fbc: request.cookies.get("_fbc")?.value ?? null,
+  }).catch(() => {})
 
   // T2: deliver the report (web link + PDF attachment). Fire-and-forget so a
   // mail/PDF hiccup never blocks the completion response.
