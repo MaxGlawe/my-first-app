@@ -334,8 +334,14 @@ export default async function CheckResultPage({
 
       {/* Section 6 — Authority */}
       <div className="mt-10 grid items-center gap-6 rounded-3xl border border-slate-200 bg-white p-7 text-center sm:grid-cols-[120px_1fr] sm:gap-8 sm:text-left">
-        <div className="mx-auto flex h-[120px] w-[120px] items-center justify-center rounded-full border border-slate-200 bg-gradient-to-br from-emerald-100 to-[#fbfaf6] [font-family:var(--font-cormorant)] text-[44px] font-medium italic text-emerald-800">
-          M
+        <div className="relative mx-auto h-[120px] w-[120px] overflow-hidden rounded-full border border-slate-200">
+          <Image
+            src="/images/masterclass/chronischer-kreuzschmerz/max-portrait.jpg"
+            alt="Max Glawe — Heilpraktiker für Physiotherapie"
+            fill
+            sizes="120px"
+            className="object-cover object-top"
+          />
         </div>
         <div>
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Hinter dem Schmerzcheck</div>

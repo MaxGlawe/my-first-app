@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { LeadForm } from "@/components/schmerzcheck/LeadForm"
 import { MetaPixel } from "@/components/schmerzcheck/MetaPixel"
 import { HeroVisual } from "@/components/schmerzcheck/HeroVisual"
@@ -215,8 +216,14 @@ export default function SchmerzcheckLandingPage() {
 
         {/* Authority */}
         <div className="mt-10 grid items-center gap-10 rounded-3xl border border-slate-200 bg-white p-9 text-center sm:grid-cols-[200px_1fr] sm:gap-12 sm:p-14 sm:text-left">
-          <div className="mx-auto flex h-[200px] w-[200px] items-center justify-center rounded-full border border-slate-200 bg-gradient-to-br from-emerald-100 to-[#fbfaf6] [font-family:var(--font-cormorant)] text-[64px] font-medium italic text-emerald-800">
-            M
+          <div className="relative mx-auto h-[200px] w-[200px] overflow-hidden rounded-full border border-slate-200">
+            <Image
+              src="/images/masterclass/chronischer-kreuzschmerz/max-portrait.jpg"
+              alt="Max Glawe — Heilpraktiker für Physiotherapie"
+              fill
+              sizes="200px"
+              className="object-cover object-top"
+            />
           </div>
           <div>
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">
