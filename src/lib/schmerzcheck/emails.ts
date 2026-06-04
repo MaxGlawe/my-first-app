@@ -229,6 +229,50 @@ export function renderT3RedFlagEmail({ firstName, baseUrl }: T3Args): string {
   })
 }
 
+// ── Check-Reminder R1–R2 (Lead bestätigt, Check nicht abgeschlossen) ─────────
+// Nur an consent_status=confirmed-Leads (DOI gegeben), die awaiting_check /
+// check_started sind. Holt Abschlüsse zurück. Sanft, transaktional gehalten.
+
+export interface ReminderArgs {
+  step: 1 | 2
+  firstName: string
+  /** Resume/Start the check (token-gated /check/start). */
+  checkUrl: string
+  baseUrl: string
+  unsubscribeUrl: string
+}
+
+export function renderReminderEmail(args: ReminderArgs): { subject: string; html: string } {
+  const name = escapeHtml(args.firstName)
+  const hi = `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>`
+  const opts = { unsubscribeUrl: args.unsubscribeUrl }
+  let subject = ""
+  let inner = ""
+
+  if (args.step === 1) {
+    subject = "Dein Schmerzcheck wartet noch auf dich"
+    inner =
+      heading("Nur 5 Minuten bis zu deinem Report.") +
+      hi +
+      para("du hast deinen Schmerzcheck begonnen, aber noch nicht abgeschlossen — schade, denn dein persönlicher Report liegt schon bereit.") +
+      para("Es sind nur 15 kurze Fragen, rund 5 Minuten. Danach bekommst du sofort deine persönliche Standortbestimmung.") +
+      `<div style="margin:6px 0 0;">${ctaButton("Schmerzcheck jetzt abschließen", args.checkUrl)}</div>` +
+      `<div style="margin-top:18px;">${signoff()}</div>`
+  } else {
+    subject = "5 Minuten, die du dir wert bist"
+    inner =
+      heading("Dein Report ist nur einen Schritt entfernt.") +
+      hi +
+      para("manchmal kommt der Alltag dazwischen — völlig normal. Dein Schmerzcheck steht aber weiterhin für dich bereit.") +
+      para("Nimm dir kurz die 5 Minuten. Du bekommst eine ehrliche Einordnung, wo du gerade stehst — ohne Floskeln.") +
+      `<div style="margin:6px 0 0;">${ctaButton("Jetzt abschließen", args.checkUrl)}</div>` +
+      para("Falls der Check für dich gerade nicht passt, ignoriere diese Mail einfach — wir melden uns dann nicht weiter dazu.") +
+      `<div style="margin-top:6px;">${signoff()}</div>`
+  }
+
+  return { subject, html: shell(inner, args.baseUrl, opts) }
+}
+
 // ── Drip sequence D1–D5 ──────────────────────────────────────────────────────
 // Moderate push: D1/D2 educate + plant the analyse seed (soft bridge), D3 sells,
 // D4 last-call, D5 handles objections. Soft-flag leads NEVER get a booking CTA
