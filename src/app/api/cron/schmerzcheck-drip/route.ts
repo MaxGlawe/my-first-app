@@ -3,8 +3,8 @@
  *
  * Runs ~daily (Supabase pg_cron). Two passes, ONE due step per lead per run:
  *
- *  1) Nurture drip (status=check_completed): D1 +1d, D2 +3d, D3 +5d, D4 +7d,
- *     D5 +10d after completed_at. soft-flag skips D3 + D5 (booking pitches).
+ *  1) Nurture drip (status=check_completed): D1 +1d, D2 +2d, D3 +3d, D4 +5d,
+ *     D5 +7d after completed_at. soft-flag skips D3 + D5 (booking pitches).
  *  2) Check reminder (consent confirmed, status=awaiting_check/check_started):
  *     R1 +1d, R2 +3d after consent_confirmed_at — wins back abandoned checks.
  *     Only confirmed leads (DOI given); pending leads are never re-mailed.
@@ -19,7 +19,7 @@ import { renderDripEmail, renderReminderEmail } from "@/lib/schmerzcheck/emails"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 
 const DAY = 86_400_000
-const OFFSET_DAYS = [1, 3, 5, 7, 10] // D1..D5 after completed_at
+const OFFSET_DAYS = [1, 2, 3, 5, 7] // D1..D5 after completed_at (verdichtet für mehr Buchungen)
 const REMINDER_OFFSET_DAYS = [1, 3] // R1..R2 after consent_confirmed_at
 const MAX_PER_RUN = 100
 
