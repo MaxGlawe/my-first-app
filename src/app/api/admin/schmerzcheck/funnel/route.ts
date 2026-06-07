@@ -50,9 +50,18 @@ export async function GET() {
     .limit(50000)
   const { data: recent } = await service
     .from("schmerzcheck_leads")
-    .select("first_name, email, status, consent_status, created_at")
+    .select("id, first_name, email, status, consent_status, utm_source, booked_at, created_at")
     .order("created_at", { ascending: false })
-    .limit(25)
+    .limit(500)
+  // Ergebnis-Kategorie je Lead (für mehr Einblick in der Leads-Tabelle)
+  const recentIds = (recent ?? []).map((r) => r.id as string)
+  const { data: recentResults } = await service
+    .from("schmerzcheck_results")
+    .select("lead_id, result_category")
+    .eq("status", "completed")
+    .in("lead_id", recentIds.length ? recentIds : ["_none_"])
+  const catByLead = Object.fromEntries((recentResults ?? []).map((r) => [r.lead_id, r.result_category]))
+  const recentEnriched = (recent ?? []).map((r) => ({ ...r, category: catByLead[r.id as string] ?? null }))
 
   const tally = <T extends string>(rows: { [k: string]: unknown }[], key: string): Record<string, number> => {
     const out: Record<string, number> = {}
@@ -100,6 +109,6 @@ export async function GET() {
     results: { total: completed, byCategory, bySeverity },
     emails: { sent: emailSent, unsubscribed },
     devices: byDevice,
-    recent: recent ?? [],
+    recent: recentEnriched,
   })
 }

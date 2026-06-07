@@ -1,8 +1,15 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select"
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table"
 import {
   Users,
   Send,
@@ -11,6 +18,8 @@ import {
   FileDown,
   CalendarCheck,
   AlertTriangle,
+  Search,
+  CheckCircle2,
 } from "lucide-react"
 
 interface FunnelData {
@@ -32,7 +41,17 @@ interface FunnelData {
   results: { total: number; byCategory: Record<string, number>; bySeverity: Record<string, number> }
   emails: { sent: Record<string, number>; unsubscribed: number }
   devices: Record<string, number>
-  recent: { first_name: string; email: string; status: string; consent_status: string; created_at: string }[]
+  recent: {
+    id: string
+    first_name: string
+    email: string
+    status: string
+    consent_status: string
+    utm_source: string | null
+    booked_at: string | null
+    category: string | null
+    created_at: string
+  }[]
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -57,6 +76,9 @@ const EMAIL_LABELS: Record<string, string> = {
   D2: "Drip 2",
   D3: "Drip 3",
   D4: "Drip 4",
+  D5: "Drip 5",
+  R1: "Reminder 1",
+  R2: "Reminder 2",
 }
 const STATUS_LABELS: Record<string, string> = {
   awaiting_check: "Wartet auf Check",
@@ -71,6 +93,18 @@ const pct = (n: number, base: number) => (base > 0 ? Math.round((n / base) * 100
 export function SchmerzcheckFunnelTab() {
   const [data, setData] = useState<FunnelData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [q, setQ] = useState("")
+  const [statusFilter, setStatusFilter] = useState("alle")
+
+  const filteredLeads = useMemo(() => {
+    const list = data?.recent ?? []
+    const needle = q.trim().toLowerCase()
+    return list.filter((r) => {
+      if (statusFilter !== "alle" && r.status !== statusFilter) return false
+      if (needle && !`${r.first_name ?? ""} ${r.email ?? ""}`.toLowerCase().includes(needle)) return false
+      return true
+    })
+  }, [data, q, statusFilter])
 
   useEffect(() => {
     fetch("/api/admin/schmerzcheck/funnel")
@@ -201,27 +235,84 @@ export function SchmerzcheckFunnelTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Letzte Leads</CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-lg">Leads</CardTitle>
+              <CardDescription>
+                {filteredLeads.length} von {data.recent.length}{" "}
+                {data.recent.length === 1 ? "Lead" : "Leads"}
+                {data.recent.length >= 500 ? " (neueste 500)" : ""}
+              </CardDescription>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Name oder E-Mail…"
+                  className="h-9 w-full pl-8 sm:w-56"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-9 w-full sm:w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="alle">Alle Status</SelectItem>
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {data.recent.length === 0 ? (
-            <p className="py-4 text-center text-sm text-muted-foreground">Noch keine Leads.</p>
+          {filteredLeads.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Keine Leads für diese Auswahl.</p>
           ) : (
-            <div className="space-y-2">
-              {data.recent.map((r, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 text-sm">
-                  <div className="min-w-0 truncate">
-                    <span className="font-medium">{r.first_name || "—"}</span>{" "}
-                    <span className="text-muted-foreground">{r.email}</span>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant="outline">{STATUS_LABELS[r.status] ?? r.status}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(r.created_at).toLocaleDateString("de-DE")}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="max-h-[520px] overflow-auto rounded-md border">
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-background">
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>E-Mail</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Quelle</TableHead>
+                    <TableHead>Ergebnis</TableHead>
+                    <TableHead className="text-center">Gebucht</TableHead>
+                    <TableHead className="text-right">Datum</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLeads.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.first_name || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground">{r.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{STATUS_LABELS[r.status] ?? r.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{r.utm_source?.trim() ? r.utm_source : "(direkt)"}</TableCell>
+                      <TableCell className="text-sm">
+                        {r.category ? CATEGORY_LABELS[r.category] ?? r.category : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {r.booked_at ? (
+                          <CheckCircle2 className="mx-auto h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right text-xs text-muted-foreground">
+                        {new Date(r.created_at).toLocaleDateString("de-DE")}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
