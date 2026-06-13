@@ -89,14 +89,6 @@ function ctaButton(label: string, href: string): string {
     </a>`
 }
 
-/** Subtle, secondary (ghost) link — used for the soft analyse bridge. */
-function secondaryCta(label: string, href: string): string {
-  return `
-    <a href="${href}" style="display:inline-block;border:1px solid ${C.green};color:${C.green};text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:10px;">
-      ${label} →
-    </a>`
-}
-
 function priceNote(): string {
   return `<p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 12px;">69 € Erstanalyse · anschließend optionale Betreuung 16,99 €/Monat · monatlich kündbar</p>`
 }
@@ -171,7 +163,8 @@ export function renderT2ReportEmail({ firstName, reportUrl, baseUrl, unsubscribe
         konkret dran ist, schaut sich ein Therapeut in einer Video-Analyse deine Bewegung an —
         30 Minuten, persönlich.
       </p>
-      <div style="margin:0 0 4px;">${secondaryCta("Was die Video-Analyse bringt", bookingGo(baseUrl, token!, "T2"))}</div>
+      <div style="margin:0 0 4px;">${ctaButton("Video-Analyse buchen (69 €)", bookingGo(baseUrl, token!, "T2"))}</div>
+      <p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 0;">30 Min. per Video · fachliche Einordnung deiner Antworten · monatlich kündbar</p>
     </div>`
     : ""
   const inner = `
@@ -295,20 +288,24 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
   const opts = { unsubscribeUrl: args.unsubscribeUrl }
   const book = (code: string) => bookingGo(args.baseUrl, args.token, code)
 
-  // Soft bridge to the analyse (used in D1/D2, never for soft-flag).
+  // Booking bridge to the analyse (used in D1, never for soft-flag).
+  // Solid button + price note — the earlier ghost link barely got clicked.
   const softBridge = (code: string) =>
     args.softFlag
       ? ""
-      : `<p style="font-size:14px;line-height:1.6;color:${C.muted};margin:18px 0 8px;">
-           Du willst nicht allein herumprobieren? Ein Therapeut ordnet deine Standortbestimmung in einer kurzen Video-Analyse ein.
-         </p>
-         <div style="margin:0 0 4px;">${secondaryCta("Video-Analyse ansehen", book(code))}</div>`
+      : `<div style="margin:22px 0 0;padding-top:18px;border-top:1px solid ${C.line};">
+           <p style="font-size:15px;line-height:1.6;color:${C.body};margin:0 0 12px;">
+             Du willst nicht allein herumprobieren? In einer 30-minütigen Video-Analyse ordnet ein Therapeut deine Standortbestimmung ein und zeigt dir konkret deinen nächsten Schritt.
+           </p>
+           <div style="margin:0 0 4px;">${ctaButton("Jetzt Analyse-Gespräch buchen", book(code))}</div>
+           ${priceNote()}
+         </div>`
 
   let subject = ""
   let inner = ""
 
   if (args.step === 1) {
-    subject = "Warum dein Körper Bewegung anders versteht, als du denkst"
+    subject = "Schmerz ist nicht gleich Schaden — was das für dich heißt"
     inner =
       heading("Schmerz ist nicht gleich Schaden.") +
       hi +
@@ -319,7 +316,7 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
       softBridge("D1") +
       `<div style="margin-top:18px;">${signoff()}</div>`
   } else if (args.step === 2) {
-    subject = "Was deine Bewegungs-Standortbestimmung aussagt"
+    subject = "Erkennst du dich in diesem Muster wieder?"
     const lead2 =
       heading("Erkennst du dich wieder?") +
       hi +
@@ -340,7 +337,7 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
         signoff()
     }
   } else if (args.step === 3) {
-    subject = "Buch dir 30 Minuten Klarheit — deine gezielte Analyse"
+    subject = "30 Minuten, die dir wochenlanges Ausprobieren ersparen"
     inner =
       heading("30 Minuten, die Klarheit bringen.") +
       hi +
@@ -366,7 +363,7 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
         para("Wenn du magst, antworte einfach auf diese Mail — wir helfen dir, den passenden nächsten Schritt zu finden.") +
         signoff()
     } else {
-      subject = "Der direkteste Weg zu Klarheit — dein Analyse-Gespräch"
+      subject = "Du hast hingeschaut — jetzt fehlt nur noch ein Schritt"
       inner =
         heading("Jetzt fehlt nur noch der Blick von außen.") +
         hi +
@@ -379,7 +376,7 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
     }
   } else {
     // D5 — objection handling + strongest booking push. Cron skips this for soft-flag leads.
-    subject = "Drei ehrliche Antworten — und dein nächster Schritt"
+    subject = "„Lohnt sich das für mich?\" — drei ehrliche Antworten"
     inner =
       heading("„Lohnt sich das für mich?“") +
       hi +

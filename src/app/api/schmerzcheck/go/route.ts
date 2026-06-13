@@ -12,14 +12,17 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyLeadToken } from "@/lib/lead-jwt"
 import { buildBookingUrl } from "@/lib/schmerzcheck/recommendations"
 
-// Email codes we attribute a booking click to.
-const ALLOWED = new Set(["T2", "D1", "D2", "D3", "D4", "D5"])
+// Touchpoints we attribute a booking click to. Beyond the drip emails, REPORT
+// and PDF cover the on-report and PDF booking CTAs (hottest touchpoint).
+const ALLOWED = new Set(["T2", "D1", "D2", "D3", "D4", "D5", "REPORT", "PDF"])
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)
   const token = url.searchParams.get("u")
   const code = (url.searchParams.get("e") || "").toUpperCase()
   const emailCode = ALLOWED.has(code) ? code : "drip"
+  // Per-touchpoint UTM medium (e.g. "report", "email"); defaults to email.
+  const medium = (url.searchParams.get("m") || "email").slice(0, 30)
 
   const leadId = verifyLeadToken(token)
   if (leadId) {
@@ -36,6 +39,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const dest = buildBookingUrl({ medium: "email", content: emailCode.toLowerCase() })
+  const dest = buildBookingUrl({ medium, content: emailCode.toLowerCase() })
   return NextResponse.redirect(dest, 302)
 }

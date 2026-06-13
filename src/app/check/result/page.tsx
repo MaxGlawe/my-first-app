@@ -6,7 +6,6 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyLeadToken } from "@/lib/lead-jwt"
 import { loadAnswers } from "@/lib/schmerzcheck/check-store"
 import { buildReportView, type SchmerzResult } from "@/lib/schmerzcheck/report"
-import { VIDEO_ANALYSE_URL } from "@/lib/schmerzcheck/recommendations"
 import type { AmpelBand } from "@/lib/schmerzcheck/ampel"
 import { SpineDiagram } from "@/components/schmerzcheck/SpineDiagram"
 import { Barometer, BAND_DOT } from "@/components/schmerzcheck/Barometer"
@@ -91,6 +90,10 @@ export default async function CheckResultPage({
   const strat = STRATEGY[ampel.overall]
   const unlocked = Boolean(lead.booked_at) // Karten voll freigeschaltet nach Buchung
   const FREE_CARDS = 2 // so viele Karten sind ohne Buchung sichtbar
+  // Tracked booking link — logs a "REPORT" click in schmerzcheck_email_events
+  // via /api/schmerzcheck/go, then 302s to the booking calendar (preselected).
+  const bookingHref = `/api/schmerzcheck/go?e=report&m=report&u=${encodeURIComponent(t ?? "")}`
+  const isBookingCategory = view.recommendation.ctaType === "booking"
 
   return (
     <div className="mx-auto max-w-[780px] px-5 pb-20 pt-8">
@@ -148,6 +151,36 @@ export default async function CheckResultPage({
         Heilbehandlung im Sinne des Heilmittelwerbegesetzes. Wenn du dir unsicher bist oder
         Beschwerden sich verschlechtern: bitte lass dich ärztlich abklären.
       </div>
+
+      {/* Primärer Buchungs-CTA — hoch platziert, nur für buchungs-berechtigte
+          Bänder (chronisch/akut-schwer). Soft-Flag/„ärztlich abklären" wird hier
+          bewusst NICHT angesprochen (HWG-/Sicherheits-Logik via ctaType). */}
+      {isBookingCategory && (
+        <div className="mt-6 rounded-3xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-50 to-[#fbfaf6] p-6 sm:p-8">
+          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+            Dein empfohlener nächster Schritt
+          </span>
+          <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-slate-900 sm:text-[26px]">
+            Lass deine Standortbestimmung von einem Therapeuten einordnen.
+          </h2>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-700">
+            In einer 30-minütigen Video-Analyse schaut sich ein Therapeut deine Bewegung an,
+            geht deine Antworten durch und zeigt dir die 2–3 Punkte, auf die es bei{" "}
+            <em>dir</em> zuerst ankommt — per Video, ohne Praxisbesuch.
+          </p>
+          <div className="mt-5">
+            <ReportCta
+              href={bookingHref}
+              label="Video-Analyse buchen (69 €)"
+              variant="booking"
+              band={ampel.overall}
+            />
+          </div>
+          <p className="mt-3 text-[12px] text-slate-500">
+            69 € Erstanalyse · anschließend optionale Betreuung 16,99 €/Monat · monatlich kündbar
+          </p>
+        </div>
+      )}
 
       {/* Section 1 — Standortbestimmung */}
       <Section eyebrow="01 · Deine Standortbestimmung" title="Wo du gerade stehst">
@@ -257,7 +290,7 @@ export default async function CheckResultPage({
               deinen Bereich.
             </p>
             <ReportCta
-              href={VIDEO_ANALYSE_URL}
+              href={bookingHref}
               label="Video-Analyse buchen & alle Karten freischalten"
               variant="booking"
               band={ampel.overall}
@@ -284,7 +317,7 @@ export default async function CheckResultPage({
           <p className="text-[16px] leading-relaxed text-slate-800">{view.recommendation.text}</p>
           <div className="mt-5">
             <ReportCta
-              href={view.recommendationHref}
+              href={isBookingCategory ? bookingHref : view.recommendationHref}
               label={view.recommendation.ctaLabel}
               variant={view.recommendation.ctaType}
               band={ampel.overall}
