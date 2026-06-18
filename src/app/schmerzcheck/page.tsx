@@ -75,7 +75,7 @@ const STACK_CARDS = [
   {
     tag: "Bonus",
     title: "Mobility-Karten für deinen Bereich",
-    desc: "Erste Übungs-Karten direkt im Report zum Loslegen — die komplette 12-teilige Ganzkörper-Routine schaltest du mit deiner Video-Analyse frei.",
+    desc: "Erste Übungs-Karten direkt im Report zum Loslegen — die komplette 12-teilige Ganzkörper-Routine schaltest du frei, sobald du mit deinem Physiotherapeuten startest.",
     visual: <KnowledgeCardsVisual />,
   },
 ]
