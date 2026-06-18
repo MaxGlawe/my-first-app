@@ -14,7 +14,7 @@ import { buildBookingUrl } from "@/lib/schmerzcheck/recommendations"
 
 // Touchpoints we attribute a booking click to. Beyond the drip emails, REPORT
 // and PDF cover the on-report and PDF booking CTAs (hottest touchpoint).
-const ALLOWED = new Set(["T2", "D1", "D2", "D3", "D4", "D5", "REPORT", "PDF"])
+const ALLOWED = new Set(["T2", "D1", "D2", "D3", "D4", "D5", "REPORT", "PDF", "W1"])
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url)

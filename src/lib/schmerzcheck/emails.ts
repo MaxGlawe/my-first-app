@@ -394,3 +394,35 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
 
   return { subject, html: shell(inner, args.baseUrl, opts) }
 }
+
+// ── W1 — Win-back / Re-Engagement ────────────────────────────────────────────
+// Einmalig, frühestens ~14 Tage nach Check-Abschluss (deutlich nach D5). Holt
+// alte Nicht-Käufer mit der neuen Positionierung zurück ("wir haben es
+// überarbeitet"). Der Cron sendet NUR an buchungs-berechtigte Leads (kein
+// soft-flag) und nie während eines laufenden Drips.
+
+export interface WinbackArgs {
+  firstName: string
+  reportUrl: string
+  token: string
+  baseUrl: string
+  unsubscribeUrl: string
+}
+
+export function renderWinbackEmail(args: WinbackArgs): { subject: string; html: string } {
+  const name = escapeHtml(args.firstName)
+  const hi = `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>`
+  const subject = "Ich muss nochmal was klarstellen (wegen deinem Schmerzcheck)"
+  const inner =
+    heading("Ich habe nochmal an dich gedacht.") +
+    hi +
+    para("vor einer Weile hast du deinen Schmerzcheck gemacht — und danach ein paar Mails von mir bekommen, in denen es um eine „Video-Analyse“ ging. Ehrlich gesagt war das missverständlich. Ich habe unser Angebot inzwischen klarer gemacht und wollte mich nochmal persönlich bei dir melden.") +
+    para("Worum es eigentlich geht: Du bekommst keinen einmaligen Call, sondern <strong style=\"color:" + C.ink + "\">deinen eigenen Physiotherapeuten</strong> — er schaut sich deine Beschwerden an, gibt dir einen Plan und bleibt danach an deiner Seite. Direkt auf deinem Handy, ohne Praxisbesuch.") +
+    para("Der Start ist eine persönliche Erstanalyse — und <strong style=\"color:" + C.ink + "\">dein erster Monat Begleitung ist geschenkt.</strong>") +
+    `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", bookingGo(args.baseUrl, args.token, "W1"))}</div>` +
+    priceNote() +
+    reportSecondaryLink(args.reportUrl) +
+    para("Wenn das gerade nicht zu dir passt, ist das völlig in Ordnung — dann hörst du dazu nichts mehr von mir.") +
+    signoff()
+  return { subject, html: shell(inner, args.baseUrl, { unsubscribeUrl: args.unsubscribeUrl }) }
+}

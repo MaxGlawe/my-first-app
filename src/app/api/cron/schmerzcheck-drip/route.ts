@@ -1,7 +1,7 @@
 /**
  * PROJ-23 / Phase 4: GET /api/cron/schmerzcheck-drip
  *
- * Runs ~daily (Supabase pg_cron). Two passes, ONE due step per lead per run:
+ * Runs ~daily (Supabase pg_cron). Three passes, ONE due step per lead per run:
  *
  *  1) Nurture drip (status=check_completed): D1 +1d, D2 +2d, D3 +3d, D4 +5d,
  *     D5 +7d after completed_at. soft-flag skips D3 + D5 (booking pitches).
@@ -9,18 +9,23 @@
  *     R1 +1d, R2 +3d after consent_confirmed_at — wins back abandoned checks.
  *     Only confirmed leads (DOI given); pending leads are never re-mailed.
  *
+ *  3) Win-back W1 (check_completed, not booked): once, >=9d after completed_at
+ *     (well after D5) — re-engages old non-buyers with the new positioning.
+ *     soft-flag excluded (no booking pitch).
+ *
  * Exclusions: red-flag leads aren't enrolled; unsubscribed/booked are suppressed.
  * Security: CRON_SECRET via `Authorization: Bearer` or `x-cron-secret`.
  */
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createLeadToken } from "@/lib/lead-jwt"
-import { renderDripEmail, renderReminderEmail } from "@/lib/schmerzcheck/emails"
+import { renderDripEmail, renderReminderEmail, renderWinbackEmail } from "@/lib/schmerzcheck/emails"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 
 const DAY = 86_400_000
 const OFFSET_DAYS = [1, 2, 3, 5, 7] // D1..D5 after completed_at (verdichtet für mehr Buchungen)
 const REMINDER_OFFSET_DAYS = [1, 3] // R1..R2 after consent_confirmed_at
+const WINBACK_DELAY_DAYS = 9 // W1 frühestens 9 Tage nach completed_at (= 2 Tage nach D5, kein Back-to-Back)
 const MAX_PER_RUN = 100
 
 type SC = ReturnType<typeof createSupabaseServiceClient>
@@ -191,6 +196,67 @@ export async function GET(req: NextRequest) {
       await supabase.from("schmerzcheck_email_events").insert({
         lead_id: lead.id,
         email_code: `R${rStep}`,
+        event_type: res.success ? "sent" : "failed",
+        metadata: res.success ? { messageId: res.messageId } : { error: res.error },
+      })
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PASS 3 — Win-back W1 (Drip durch, nicht gebucht → neue Positionierung)
+  // Einmalig pro Lead, frühestens WINBACK_DELAY_DAYS nach completed_at (also
+  // deutlich nach D5/+7d → nie während eines laufenden Drips). Nur buchungs-
+  // berechtigte Leads: soft-flag/„ärztlich abklären" wird ausgeschlossen.
+  // ─────────────────────────────────────────────────────────────────────────
+  const { data: wLeads } = await supabase
+    .from("schmerzcheck_leads")
+    .select("id, email, first_name, email_hash")
+    .eq("status", "check_completed")
+    .eq("consent_status", "confirmed")
+    .is("booked_at", null)
+    .limit(1000)
+
+  if (wLeads && wLeads.length) {
+    const wIds = wLeads.map((l) => l.id)
+    const wSuppressed = await loadSuppressed(supabase, wLeads.map((l) => l.email_hash).filter(Boolean) as string[])
+
+    const { data: wResults } = await supabase
+      .from("schmerzcheck_results")
+      .select("lead_id, completed_at, result_category, soft_flag")
+      .eq("status", "completed")
+      .in("lead_id", wIds)
+    const wResultByLead = new Map((wResults ?? []).map((r) => [r.lead_id, r]))
+    const wSentByLead = await loadSentSteps(supabase, ["W1"], wIds) // "W1" → step 1
+
+    for (const lead of wLeads) {
+      if (sent >= MAX_PER_RUN) break
+      if (wSuppressed.has(lead.email_hash)) continue
+      const result = wResultByLead.get(lead.id)
+      if (!result) continue
+
+      const soft = result.soft_flag === true || result.result_category === "needs_physician_assessment"
+      if (soft) continue // HWG: kein Buchungs-Pitch für soft-flag/Arzt-Empfehlung
+      if ((wSentByLead.get(lead.id) ?? new Set<number>()).has(1)) continue // W1 schon raus
+      const completedAt = new Date(result.completed_at).getTime()
+      if (now < completedAt + WINBACK_DELAY_DAYS * DAY) continue // Cooldown nach Drip
+
+      processed++
+      const token = createLeadToken(lead.id)
+      const { subject, html } = renderWinbackEmail({
+        firstName: lead.first_name,
+        reportUrl: `${baseUrl}/check/result?t=${encodeURIComponent(token)}`,
+        token,
+        baseUrl,
+        unsubscribeUrl: `${baseUrl}/api/email/unsubscribe?u=${encodeURIComponent(token)}`,
+      })
+
+      const res = await sendSchmerzcheckEmail({ to: lead.email, toName: lead.first_name, subject, html })
+      if (res.success) sent++
+      else failed++
+
+      await supabase.from("schmerzcheck_email_events").insert({
+        lead_id: lead.id,
+        email_code: "W1",
         event_type: res.success ? "sent" : "failed",
         metadata: res.success ? { messageId: res.messageId } : { error: res.error },
       })
