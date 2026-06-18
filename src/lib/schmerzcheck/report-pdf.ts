@@ -300,7 +300,7 @@ export function generateReportPdf(view: ReportView, dateStr: string, baseUrl: st
   para(view.recommendation.text, 11, INK)
   if (view.recommendation.ctaType === "booking") {
     linkButton(view.recommendation.ctaLabel, view.recommendationHref)
-    para("69 € Erstanalyse · anschließend Betreuung 16,99 €/Monat · monatlich kündbar", 8, SLATE_LIGHT)
+    para("69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar", 8, SLATE_LIGHT)
   } else if (view.recommendation.ctaType === "info") {
     linkButton(view.recommendation.ctaLabel, `${baseUrl}/anfrage`)
   } else {

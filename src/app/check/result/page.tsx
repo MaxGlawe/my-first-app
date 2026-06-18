@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell, Lock } from "lucide-react"
+import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell, Lock, Gift } from "lucide-react"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyLeadToken } from "@/lib/lead-jwt"
 import { loadAnswers } from "@/lib/schmerzcheck/check-store"
@@ -161,23 +161,26 @@ export default async function CheckResultPage({
             Dein empfohlener nächster Schritt
           </span>
           <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-slate-900 sm:text-[26px]">
-            Lass deine Standortbestimmung von einem Therapeuten einordnen.
+            Mach das nicht allein — hol dir deinen eigenen Physiotherapeuten.
           </h2>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-700">
-            In einer 30-minütigen Video-Analyse schaut sich ein Therapeut deine Bewegung an,
-            geht deine Antworten durch und zeigt dir die 2–3 Punkte, auf die es bei{" "}
-            <em>dir</em> zuerst ankommt — per Video, ohne Praxisbesuch.
+            Dein eigener Physiotherapeut schaut sich deine Bewegung an, ordnet deine Antworten
+            ein und gibt dir einen Plan — und bleibt danach an deiner Seite, statt dich allein
+            weitermachen zu lassen. Direkt auf deinem Handy, ohne Praxisbesuch.
           </p>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600/10 px-3.5 py-1.5 text-[13px] font-semibold text-emerald-800">
+            <Gift className="h-4 w-4" /> Dein 1. Monat Begleitung ist geschenkt
+          </div>
           <div className="mt-5">
             <ReportCta
               href={bookingHref}
-              label="Video-Analyse buchen (69 €)"
+              label="Mit deinem Physiotherapeuten starten"
               variant="booking"
               band={ampel.overall}
             />
           </div>
           <p className="mt-3 text-[12px] text-slate-500">
-            69 € Erstanalyse · anschließend optionale Betreuung 16,99 €/Monat · monatlich kündbar
+            69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
           </p>
         </div>
       )}
@@ -231,7 +234,7 @@ export default async function CheckResultPage({
         <p className="mb-5 text-[14px] text-slate-500">
           {unlocked
             ? "Deine tägliche Mobility von Kopf bis Fuß — alle 12 Karten freigeschaltet. Tipp eine Karte an, um sie groß anzusehen oder zu speichern."
-            : "Deine tägliche Mobility von Kopf bis Fuß. Die ersten beiden Karten sind frei — die übrigen 10 schaltest du mit deiner Video-Analyse frei."}
+            : "Deine tägliche Mobility von Kopf bis Fuß. Die ersten beiden Karten sind frei — die übrigen 10 schaltest du frei, sobald du mit deinem Physiotherapeuten startest."}
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {MOBILITY_CARDS.map((c, i) => {
@@ -258,7 +261,7 @@ export default async function CheckResultPage({
             return (
               <div
                 key={c.n}
-                aria-label="Gesperrte Karte — mit Video-Analyse freischalten"
+                aria-label="Gesperrte Karte — schaltet sich mit deinem Physiotherapeuten frei"
                 className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]"
               >
                 <Image
@@ -285,18 +288,18 @@ export default async function CheckResultPage({
               <Lock className="h-4 w-4" /> 10 weitere Karten gesperrt
             </div>
             <p className="mx-auto mb-4 max-w-md text-[14.5px] leading-relaxed text-slate-700">
-              Deine komplette Ganzkörper-Routine wartet hinter dem Milchglas. Mit deiner{" "}
-              <strong>Video-Analyse</strong> schalten sich alle 12 Karten frei — abgestimmt auf
-              deinen Bereich.
+              Deine komplette Ganzkörper-Routine wartet hinter dem Milchglas. Sobald du mit
+              deinem <strong>eigenen Physiotherapeuten</strong> startest, schalten sich alle 12
+              Karten frei — abgestimmt auf deinen Bereich.
             </p>
             <ReportCta
               href={bookingHref}
-              label="Video-Analyse buchen & alle Karten freischalten"
+              label="Mit deinem Physiotherapeuten starten"
               variant="booking"
               band={ampel.overall}
             />
             <p className="mt-3 text-[12px] text-slate-400">
-              69 € Erstanalyse · anschließend Betreuung 16,99 €/Monat · monatlich kündbar
+              69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
             </p>
             <p className="mt-2 text-[11px] text-slate-400">
               Nach deiner Buchung lädst du diese Seite einmal neu — dann sind alle Karten offen.
@@ -325,7 +328,7 @@ export default async function CheckResultPage({
           </div>
           {view.recommendation.ctaType === "booking" && (
             <p className="mt-3 text-[12px] text-slate-400">
-              69 € Erstanalyse · anschließend Betreuung 16,99 €/Monat · monatlich kündbar
+              69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
             </p>
           )}
         </div>
@@ -338,12 +341,13 @@ export default async function CheckResultPage({
           Praxis OS — dein Therapeut für die Hosentasche.
         </h2>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-300">
-          Der Report ist dein Startpunkt. In der Praxis-OS-App geht es individuell weiter — mit
-          einem echten Physiotherapeuten an deiner Seite, statt allein zu raten.
+          Der Report ist dein Startpunkt. Mit deinem eigenen Physiotherapeuten geht es individuell
+          weiter — er begleitet dich über die App, statt dich allein raten zu lassen.
+          <strong className="text-white"> Dein erster Monat Begleitung ist geschenkt.</strong>
         </p>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: Video, t: "Video-Analyse", d: "Ein Therapeut schaut sich deine Bewegung an und ordnet sie ein." },
+            { icon: Video, t: "Persönliche Erstanalyse", d: "Dein Physiotherapeut schaut sich deine Bewegung an, ordnet sie ein und gibt dir einen Plan." },
             { icon: Dumbbell, t: "Individuelle Pläne", d: "Trainingspläne, die zu dir passen — nicht von der Stange." },
             { icon: MessageCircle, t: "Direkter Chat", d: "Deine Fragen, direkt an deinen Therapeuten." },
           ].map((f) => (

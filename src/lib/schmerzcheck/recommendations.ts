@@ -45,13 +45,13 @@ export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
     ctaType: "info",
   },
   acute_severe: {
-    text: "Deine Beschwerden sind aktuell ausgeprägt. Wir empfehlen einen kurzfristigen Termin in der Praxis Glawe — oder eine fokussierte Video-Analyse mit einem unserer Therapeuten.",
-    ctaLabel: "Video-Analyse buchen (69 €)",
+    text: "Deine Beschwerden sind aktuell ausgeprägt. Jetzt ist es sinnvoll, dass ein Physiotherapeut persönlich draufschaut — am besten dein eigener Physiotherapeut, der dich von der Erstanalyse an begleitet und nicht allein lässt.",
+    ctaLabel: "Mit deinem Physiotherapeuten starten",
     ctaType: "booking",
   },
   chronic_severe: {
-    text: "Du trägst die Beschwerden schon eine Weile. Hier macht eine strukturierte Einordnung durch einen Therapeuten Sinn — wir empfehlen eine Video-Analyse.",
-    ctaLabel: "Video-Analyse buchen (69 €)",
+    text: "Du trägst die Beschwerden schon eine Weile. Jetzt ist der Moment, das nicht länger allein zu tragen: Dein eigener Physiotherapeut ordnet deine Standortbestimmung ein, gibt dir einen Plan und geht den Weg mit dir.",
+    ctaLabel: "Mit deinem Physiotherapeuten starten",
     ctaType: "booking",
   },
   acute_moderate: {
@@ -60,8 +60,8 @@ export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
     ctaType: "roadmap",
   },
   chronic_moderate: {
-    text: "Strukturierte Bewegung wird dir helfen, Klarheit zu gewinnen. Die Roadmap ist ein guter Einstieg. Wenn du eine therapeutische Einordnung möchtest, empfiehlt sich die Video-Analyse.",
-    ctaLabel: "Video-Analyse buchen (69 €)",
+    text: "Strukturierte Bewegung wird dir helfen, Klarheit zu gewinnen — die Roadmap ist ein guter Einstieg. Und wenn du nicht allein weitermachen willst, begleitet dich dein eigener Physiotherapeut von der Erstanalyse an.",
+    ctaLabel: "Mit deinem Physiotherapeuten starten",
     ctaType: "booking",
   },
   mild: {

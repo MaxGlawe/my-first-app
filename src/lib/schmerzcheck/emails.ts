@@ -90,7 +90,7 @@ function ctaButton(label: string, href: string): string {
 }
 
 function priceNote(): string {
-  return `<p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 12px;">69 € Erstanalyse · anschließend optionale Betreuung 16,99 €/Monat · monatlich kündbar</p>`
+  return `<p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 12px;">69 € Start mit deinem Physiotherapeuten (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar</p>`
 }
 
 /** Low-emphasis fallback link to the report — sits UNDER the booking CTA from D3 on. */
@@ -157,14 +157,14 @@ export function renderT2ReportEmail({ firstName, reportUrl, baseUrl, unsubscribe
   const hint = showHint
     ? `
     <div style="margin:24px 0 4px;padding-top:18px;border-top:1px solid ${C.line};">
-      <p style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.sand};margin:0 0 6px;">Wenn du Klarheit willst</p>
+      <p style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.sand};margin:0 0 6px;">Du musst da nicht allein durch</p>
       <p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 14px;">
-        Dein Report zeigt dir, wo du stehst. Wenn du wissen willst, was bei <em>dir</em>
-        konkret dran ist, schaut sich ein Therapeut in einer Video-Analyse deine Bewegung an —
-        30 Minuten, persönlich.
+        Dein Report zeigt dir, wo du stehst. Den Weg dorthin musst du aber nicht allein gehen:
+        Mit <strong style="color:${C.ink};">deinem eigenen Physiotherapeuten</strong> startest du mit einer
+        persönlichen Erstanalyse — und er bleibt danach an deiner Seite, direkt auf deinem Handy.
       </p>
-      <div style="margin:0 0 4px;">${ctaButton("Video-Analyse buchen (69 €)", bookingGo(baseUrl, token!, "T2"))}</div>
-      <p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 0;">30 Min. per Video · fachliche Einordnung deiner Antworten · monatlich kündbar</p>
+      <div style="margin:0 0 4px;">${ctaButton("Mit deinem Physiotherapeuten starten", bookingGo(baseUrl, token!, "T2"))}</div>
+      ${priceNote()}
     </div>`
     : ""
   const inner = `
@@ -295,9 +295,9 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
       ? ""
       : `<div style="margin:22px 0 0;padding-top:18px;border-top:1px solid ${C.line};">
            <p style="font-size:15px;line-height:1.6;color:${C.body};margin:0 0 12px;">
-             Du willst nicht allein herumprobieren? In einer 30-minütigen Video-Analyse ordnet ein Therapeut deine Standortbestimmung ein und zeigt dir konkret deinen nächsten Schritt.
+             Du musst das nicht allein herausfinden. Mit deinem eigenen Physiotherapeuten startest du mit einer persönlichen Erstanalyse — und hast danach jemanden an deiner Seite, der deinen Weg mit dir geht, direkt auf deinem Handy.
            </p>
-           <div style="margin:0 0 4px;">${ctaButton("Jetzt Analyse-Gespräch buchen", book(code))}</div>
+           <div style="margin:0 0 4px;">${ctaButton("Mit deinem Physiotherapeuten starten", book(code))}</div>
            ${priceNote()}
          </div>`
 
@@ -330,8 +330,8 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
     } else {
       inner =
         lead2 +
-        para("Diesen Kreislauf allein zu durchbrechen ist schwer. Genau dafür gibt es die Video-Analyse: Ein Therapeut ordnet deine Standortbestimmung ein und zeigt dir konkret den nächsten Schritt — meist kleiner, als du denkst.") +
-        `<div style="margin:6px 0 0;">${ctaButton("Jetzt Analyse-Gespräch buchen", book("D2"))}</div>` +
+        para("Diesen Kreislauf allein zu durchbrechen ist schwer. Genau dafür gibt es deinen eigenen Physiotherapeuten: Er ordnet in einer persönlichen Erstanalyse ein, wo du stehst, gibt dir einen Plan — und bleibt danach an deiner Seite, statt dich allein weitermachen zu lassen.") +
+        `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D2"))}</div>` +
         priceNote() +
         reportSecondaryLink(args.reportUrl) +
         signoff()
@@ -342,14 +342,15 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
       heading("30 Minuten, die Klarheit bringen.") +
       hi +
       para("manchmal kommt man allein nur bis zu einem Punkt. Dann bringt ein gezielter Blick von außen mehr als wochenlanges Ausprobieren.") +
-      para("Buch dir jetzt dein <strong style=\"color:" + C.ink + "\">gezieltes 30-Minuten-Analyse-Gespräch</strong>: Ein Therapeut schaut sich deine Bewegung an, ordnet deine Standortbestimmung ein und zeigt dir konkret, worauf es bei <em>dir</em> ankommt.") +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 8px;font-weight:600;">Was du mitnimmst:</p>
+      para("Starte jetzt mit <strong style=\"color:" + C.ink + "\">deinem eigenen Physiotherapeuten</strong>: In einer persönlichen 30-Minuten-Erstanalyse schaut er sich deine Bewegung an, ordnet deine Standortbestimmung ein und zeigt dir konkret, worauf es bei <em>dir</em> ankommt — und begleitet dich danach weiter.") +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 8px;font-weight:600;">Was du bekommst:</p>
        <ul style="font-size:15px;line-height:1.7;color:${C.body};margin:0 0 22px;padding-left:20px;">
          <li>Eine fachliche Einordnung deiner Antworten</li>
          <li>Die 2–3 Punkte, auf die es bei dir zuerst ankommt</li>
-         <li>Einen klaren nächsten Schritt — ohne Praxisbesuch, per Video</li>
+         <li>Einen klaren Plan — ohne Praxisbesuch, direkt aufs Handy</li>
+         <li>Einen Physiotherapeuten, der danach an deiner Seite bleibt</li>
        </ul>` +
-      `<div style="margin:6px 0 0;">${ctaButton("Jetzt Analyse-Gespräch buchen", book("D3"))}</div>` +
+      `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D3"))}</div>` +
       priceNote() +
       reportSecondaryLink(args.reportUrl) +
       signoff()
@@ -368,8 +369,8 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
         heading("Jetzt fehlt nur noch der Blick von außen.") +
         hi +
         para("du hast hingeschaut — das ist der wichtigste Schritt. Jetzt fehlt nur noch einer, und der ist näher, als du denkst.") +
-        para("In einem <strong style=\"color:" + C.ink + "\">30-minütigen Analyse-Gespräch</strong> weißt du, woran du bist und was dein nächster Schritt ist. Kein langes Programm, keine Praxis — per Video, wann es dir passt. Je früher du deine Bewegung einordnest, desto leichter fällt der Weg.") +
-        `<div style="margin:6px 0 0;">${ctaButton("Jetzt Analyse-Gespräch buchen", book("D4"))}</div>` +
+        para("Mit einer <strong style=\"color:" + C.ink + "\">persönlichen Erstanalyse</strong> weißt du, woran du bist und was dein nächster Schritt ist — und du hast ab dann deinen eigenen Physiotherapeuten an deiner Seite, der dranbleibt. Kein langes Programm, keine Praxis — direkt auf deinem Handy, wann es dir passt.") +
+        `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D4"))}</div>` +
         priceNote() +
         reportSecondaryLink(args.reportUrl) +
         signoff()
@@ -381,11 +382,11 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
       heading("„Lohnt sich das für mich?“") +
       hi +
       para("bevor du das Thema zur Seite legst, drei Fragen, die uns oft gestellt werden:") +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Was passiert in den 30 Minuten?“</strong><br/>Ein Therapeut sieht sich per Video deine Bewegung an, geht deine Antworten durch und sagt dir konkret, worauf es bei dir ankommt.</p>` +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Was passiert in den 30 Minuten?“</strong><br/>Dein Physiotherapeut sieht sich per Video deine Bewegung an, geht deine Antworten durch und sagt dir konkret, worauf es bei dir ankommt — und gibt dir einen Plan.</p>` +
       `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Ich hatte noch nie eine Video-Sprechstunde.“</strong><br/>Völlig okay. Du brauchst nur dein Handy und etwas Platz — wir führen dich durch alles.</p>` +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 18px;"><strong style="color:${C.ink};">„Und dann?“</strong><br/>Du bekommst eine klare Einschätzung. Ob und wie es weitergeht, entscheidest danach allein du.</p>` +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 18px;"><strong style="color:${C.ink};">„Und dann?“</strong><br/>Dein erster Monat Begleitung ist geschenkt — über die App bleibst du mit deinem Therapeuten in Kontakt, bekommst deinen Plan und Rückmeldung. Ob es danach weitergeht (16,99 €/Monat), entscheidest du. Jederzeit kündbar.</p>` +
       para("Du hast den ersten Schritt längst gemacht. Mach jetzt den, der dir Klarheit bringt:") +
-      `<div style="margin:6px 0 0;">${ctaButton("Jetzt Analyse-Gespräch buchen", book("D5"))}</div>` +
+      `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D5"))}</div>` +
       priceNote() +
       reportSecondaryLink(args.reportUrl) +
       signoff()

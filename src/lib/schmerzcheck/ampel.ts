@@ -123,7 +123,7 @@ const HEADLINE: Record<AmpelBand, string> = {
 const ACTION: Record<AmpelBand, string> = {
   gruen: "Bleib mit deiner Bewegungs-Roadmap dran — kleine, regelmäßige Einheiten halten dich stabil.",
   gelb: "Nutze die 7-Tage-Strategie unten. Wenn sich nach 1–2 Wochen nichts bessert, hol dir eine fachliche Einordnung.",
-  rot: "Wir empfehlen dir eine zeitnahe Video-Analyse mit einem Therapeuten, um deinen Weg klar einzuordnen.",
+  rot: "Hol dir jetzt deinen eigenen Physiotherapeuten — er ordnet deinen Weg ein und begleitet dich, statt dich allein weitermachen zu lassen.",
 }
 
 export function computeAmpel(
