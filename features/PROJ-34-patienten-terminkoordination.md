@@ -192,3 +192,8 @@ Phase 5 — QA
 - **Freigabe nötig (sicherheitsrelevant):** Der Paywall-Flip (Komponente 5) ändert das Patienten-Zugriffsverhalten + ggf. RLS → explizite Freigabe vor Umsetzung (`.claude/rules/security.md`).
 - **Mit Buchungstool-Team klären:** Deep-Link-URL-Format, Zeitzonen-Format, Event-Reihenfolge (Briefing Section 6).
 - **Stripe/Trial:** Wie „1. Monat geschenkt" abgebildet wird (trial vs. Promo), mit Billing-Setup abstimmen.
+- **Backfill Bestandspatienten (Entscheidung Max 2026-06-20): erstmal NICHT.** Neue Buchungen
+  (inkl. neue/externe Patienten) bekommen Konto + Auto-Zugangsmail wie deployt. Wenn der
+  Backfill der bestehenden Buchungstool-Patienten kommt, dürfen diese **nicht** massenhaft
+  unaufgefordert angemailt werden — Zugangsmail dann **kontrolliert**: vom Team gezielt
+  (z. B. nach Gespräch, via `sendPatientAccessMail`) ODER erst bei deren nächster Buchung.
