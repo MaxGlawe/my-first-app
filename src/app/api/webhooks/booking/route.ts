@@ -22,6 +22,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
 import { sendMetaEvent } from "@/lib/meta-capi"
+import { ensurePatientLogin } from "@/lib/patient-provisioning"
 
 /** Schmerzcheck-Lead bucht → Drip stoppen + Meta-Purchase (69 €) feuern. */
 function convertSchmerzcheckLead(
@@ -420,17 +421,35 @@ async function handlePatientCreated(
     therapeut_id: defaultTherapist.id,
   }
 
-  const { error: insertError } = await supabase.from("patients").insert(newPatient)
+  const { data: inserted, error: insertError } = await supabase
+    .from("patients")
+    .insert(newPatient)
+    .select("id")
+    .single()
 
-  if (insertError) {
-    console.error("[webhook/booking] Failed to create patient:", insertError.message)
+  if (insertError || !inserted) {
+    console.error("[webhook/booking] Failed to create patient:", insertError?.message)
     return { status: "error", errorMessage: "Patient konnte nicht angelegt werden." }
+  }
+
+  // PROJ-34: Login-Konto provisionieren (passwortlos, Magiclink-Zugangsmail).
+  // Gesperrter "Termine-only"-Zustand via app_metadata.account_origin='booking'.
+  // Nur für NEU angelegte Bucher — bestehende Patienten bleiben unberührt.
+  const provision = await ensurePatientLogin(supabase, {
+    patientId: inserted.id as string,
+    email: data.email,
+    firstName: data.vorname,
+    lastName: data.nachname,
+  })
+  if (provision.status === "error") {
+    console.error("[webhook/booking] PROJ-34 Login-Provisionierung fehlgeschlagen:", provision.error)
+    // Patient ist angelegt — Provisionierung kann später nachgeholt werden; kein Hard-Fail.
   }
 
   // BUG-3: Admin review note — new patient auto-created, manual duplicate check recommended
   return {
     status: "success",
-    errorMessage: `Neuer Patient automatisch angelegt (Buchungstool-ID: ${data.booking_patient_id}). Bitte im Admin-Bereich auf Duplikate prüfen.`,
+    errorMessage: `Neuer Patient automatisch angelegt (Buchungstool-ID: ${data.booking_patient_id}, Login: ${provision.status}). Bitte im Admin-Bereich auf Duplikate prüfen.`,
   }
 }
 

@@ -207,12 +207,16 @@ export async function updateSession(request: NextRequest) {
     // Only block if a subscription exists but is NOT active.
     // No subscription record = billing not set up yet → allow access.
     if (role === 'patient' && pathname.startsWith('/app')) {
+      // PROJ-34: Der Termin-Bereich ist immer zugänglich (auch ohne Abo) —
+      // Booking-Patienten sollen ihre Termine sehen/koordinieren können.
       const isPaywallExempt =
         pathname === '/app/abo' ||
         pathname === '/app/onboarding' ||
+        pathname.startsWith('/app/termine') ||
         pathname.startsWith('/api/auth/') ||
         pathname.startsWith('/api/me/subscription') ||
         pathname.startsWith('/api/me/billing') ||
+        pathname.startsWith('/api/me/appointments') ||
         pathname.startsWith('/api/webhooks/')
 
       if (!isPaywallExempt) {
@@ -229,10 +233,17 @@ export async function updateSession(request: NextRequest) {
             .eq('patient_id', patientRecord.id)
             .single()
 
-          // Only block if subscription exists but is expired/cancelled
-          if (subscription && !['trial', 'active'].includes(subscription.status)) {
+          const hasActiveSub = !!subscription && ['trial', 'active'].includes(subscription.status)
+          // PROJ-34: Via Buchung provisionierte Konten ("Termine-only") sind ohne
+          // aktives Abo gesperrt → Self-Upsell. Bestandspatienten OHNE Abo-Datensatz
+          // bleiben unberührt (kein account_origin-Marker).
+          const isBookingOrigin =
+            (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ===
+            'booking'
+
+          if (!hasActiveSub && (subscription || isBookingOrigin)) {
             url.pathname = '/app/abo'
-            url.searchParams.set('reason', 'subscription_expired')
+            url.searchParams.set('reason', isBookingOrigin ? 'subscription_required' : 'subscription_expired')
             return NextResponse.redirect(url)
           }
         }
