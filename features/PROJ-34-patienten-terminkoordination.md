@@ -1,8 +1,11 @@
 # PROJ-34: Patienten-Terminkoordination (Termine in Praxis OS sehen & verwalten)
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-06-20
 **Last Updated:** 2026-06-20
+**Phase 1 DEPLOYT 2026-06-20** (commit f1f79ed): Login-Provisionierung + Paywall-Flip +
+`/app/termine`. E2E lokal getestet (Provisionierung + Idempotenz), live verifiziert.
+Phase 2/3 blockiert bis Koordinations-API live (aktuell 404) + Test-`patientId`.
 **Quelle:** Briefing des Buchungstool-Teams (`Termintool_Praxis-OS/.../PROJ-34-praxis-os-dev-briefing.md`)
 
 > Nummerierung: Wir übernehmen die feature-übergreifende ID **PROJ-34** aus dem
