@@ -1,11 +1,15 @@
 # PROJ-34: Patienten-Terminkoordination (Termine in Praxis OS sehen & verwalten)
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-06-20
-**Last Updated:** 2026-06-20
-**Phase 1 DEPLOYT 2026-06-20** (commit f1f79ed): Login-Provisionierung + Paywall-Flip +
-`/app/termine`. E2E lokal getestet (Provisionierung + Idempotenz), live verifiziert.
-Phase 2/3 blockiert bis Koordinations-API live (aktuell 404) + Test-`patientId`.
+**Last Updated:** 2026-06-21
+**Phase 1 DEPLOYT 2026-06-20** (commit f1f79ed): Login-Provisionierung + Paywall-Flip.
+**Phase 2/3 DEPLOYT 2026-06-21** (commit 034fb58): `/meine-termine` (Live-Termine via
+Koordinations-API, Umbuchen/Stornieren) + ausgegraute Feature-Vorschau + kontext-Upsell
+(unbekannt→Video-Analyse, bekannt→Self-serve-Abo via Stripe 1-Monat-Trial) + Ampel-Handoff
+(Voll-Abo ohne Plan → ROT „Plan erstellen"). `PRAXIS_OS_API_KEY` auf Server gesetzt.
+Live-Prod-E2E bestanden (Termin-Anzeige/Upsell). **Noch real zu testen:** Umbuchen/Stornieren-
+Schreibpfad, Stripe-Checkout-Durchlauf (Test-Modus), Ampel-Signal in /os/ampel.
 **Quelle:** Briefing des Buchungstool-Teams (`Termintool_Praxis-OS/.../PROJ-34-praxis-os-dev-briefing.md`)
 
 > Nummerierung: Wir übernehmen die feature-übergreifende ID **PROJ-34** aus dem
