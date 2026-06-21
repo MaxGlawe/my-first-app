@@ -55,10 +55,12 @@ export default function MeineTerminePage() {
   const [reschedule, setReschedule] = useState<Appt | null>(null)
   const [cancelTarget, setCancelTarget] = useState<Appt | null>(null)
   const [aboSuccess, setAboSuccess] = useState(false)
+  const [forceAbo, setForceAbo] = useState(false) // TEMP (PROJ-34 Test): ?testabo=1 erzwingt „bekannt" — nach Test entfernen
   useEffect(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("abo") === "success") {
-      setAboSuccess(true)
-    }
+    if (typeof window === "undefined") return
+    const q = new URLSearchParams(window.location.search)
+    if (q.get("abo") === "success") setAboSuccess(true)
+    if (q.get("testabo") === "1") setForceAbo(true)
   }, [])
 
   const load = useCallback(() => {
@@ -80,7 +82,8 @@ export default function MeineTerminePage() {
   const past = appts.filter((a) => isCancelled(a.status) || new Date(a.date + "T" + a.startTime) < now)
     .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
   // "Bekannt" = hatte schon einen stattgefundenen (vergangenen, nicht stornierten) Termin.
-  const known = appts.some((a) => !isCancelled(a.status) && new Date(a.date + "T" + a.startTime) < now)
+  // forceAbo (?testabo=1): TEMP-Test-Override für den Abo-Weg — nach Test entfernen.
+  const known = forceAbo || appts.some((a) => !isCancelled(a.status) && new Date(a.date + "T" + a.startTime) < now)
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
