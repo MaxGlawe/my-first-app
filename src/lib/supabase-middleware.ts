@@ -242,8 +242,11 @@ export async function updateSession(request: NextRequest) {
             'booking'
 
           if (!hasActiveSub && (subscription || isBookingOrigin)) {
-            url.pathname = '/app/abo'
-            url.searchParams.set('reason', isBookingOrigin ? 'subscription_required' : 'subscription_expired')
+            // PROJ-34: Booking-/„Termine-only"-Patienten gehören in ihren eigenen
+            // Bereich (/meine-termine — dort liegen Termine + Upsell), nicht auf die
+            // klinische Abo-Seite. Klassische Patienten mit abgelaufenem Abo → /app/abo.
+            url.pathname = isBookingOrigin ? '/meine-termine' : '/app/abo'
+            if (!isBookingOrigin) url.searchParams.set('reason', 'subscription_expired')
             return NextResponse.redirect(url)
           }
         }
