@@ -115,7 +115,7 @@ export async function sendPatientAccessMail(
   const { data, error } = await supabase.auth.admin.generateLink({
     type: "magiclink",
     email: args.email,
-    options: { redirectTo: `${appUrl}/app/termine` },
+    options: { redirectTo: `${appUrl}/meine-termine` },
   })
   if (error || !data?.properties?.action_link) {
     throw new Error(error?.message ?? "generateLink lieferte keinen action_link")

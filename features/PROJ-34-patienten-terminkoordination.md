@@ -12,6 +12,41 @@ Phase 2/3 blockiert bis Koordinations-API live (aktuell 404) + Test-`patientId`.
 > Buchungstool-Briefing (statt unserer internen nächsten 25), damit beide Teams
 > dieselbe Referenz nutzen.
 
+## Finaler Plan (eingefroren 2026-06-21)
+Nach Abstimmung mit Max — das ist die verbindliche Soll-Architektur für Phase 2/3:
+
+**1. Eigener, abgespeckter Bereich `/meine-termine`** (NICHT in der klinischen `/app`-Hülle).
+Grund: Das E2E zeigte, dass `/app` einen „Termine-only"-Bucher unter Changelog-Modal →
+Onboarding-Wizard → täglichem Check-in begräbt (alles Overlays, für ihn sinnlos). Daher
+eigener minimaler Rahmen: kein Dashboard-Nav, kein Onboarding, kein Check-in.
+
+Inhalt von `/meine-termine`:
+  a) **Termine** (Live aus Koordinations-API): ansehen / umbuchen / stornieren.
+  b) **Ausgegraute Voll-Abo-Feature-Vorschau** (Schloss-Kacheln): Trainingsplan, Therapeuten-
+     Chat, tägliches Check-in & Fortschritt, Kurse/Wissen — Texte/Icons 1:1 aus der echten App.
+  c) **Kontext-abhängiger Upsell-CTA** (siehe Punkt 2).
+
+**2. „Bekannt vs. unbekannt" entscheidet den Einstieg** (Max-Regel):
+  - **Unbekannt** = der Patient hatte noch KEINEN stattgefundenen Termin in der Praxis
+    (keiner kennt ihn) → CTA = **„Video-Analyse buchen (69 €)"**. Das ist Pflicht-Assessment,
+    damit ein Therapeut ihn kennenlernt und überhaupt einen Plan bauen kann.
+  - **Bekannt** = hatte schon einen (stattgefundenen/abgeschlossenen) Termin → CTA =
+    **„Behandlung fortsetzen — Abo, 1. Monat geschenkt"** (Stripe `setup-checkout`).
+  - Technische Ableitung „bekannt": mindestens ein vergangener/abgeschlossener Termin.
+
+**3. Abo-Aktivierung → Handoff im Ampelsystem** (PROJ-17):
+  - Hook: Stripe-Webhook (`/api/webhooks/stripe`), wenn ein Bucher-Abo aktiv wird.
+  - Das Ampelsystem ist ein **berechnetes** Therapeuten-Dashboard (`/os/ampel`, keine Alert-
+    Tabelle) → Handoff als **neues berechnetes Signal**: „Voll-Abo-Patient ohne Plan → Plan
+    erstellen / Patient anbinden". Kein DDL nötig.
+  - Signal geht an den **zuständigen Therapeuten** (der den Patienten kennt); MVP = der
+    zugeordnete `therapeut_id` (anfangs Admin/Praxis, die zuweist). Ausbau: Auto-Zuordnung
+    aus dem gebuchten Termin (Buchungstool-Therapeut → Praxis-OS-Account, Namens-Mapping).
+  - **Patient-Hinweis** nach Kauf: „Dein Therapeut richtet jetzt deinen Plan ein."
+
+**Selbst-Tätigkeit der Features:** Challenges + Kurse laufen self-serve (sofort beim Upgrade).
+NUR der Trainingsplan braucht den Therapeuten-Handoff (Punkt 3).
+
 ## Dependencies
 - Requires: **PROJ-1** (Auth & Rollenrechte) — nutzt Rolle `patient`, `user_profiles`, `patients.user_id`.
 - Requires/Erweitert: **PROJ-7** (Buchungstool-Integration) — der Booking-Webhook (`/api/webhooks/booking`) wird um Konto-Provisionierung erweitert; `appointments`-Tabelle existiert bereits.

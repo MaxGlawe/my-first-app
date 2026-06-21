@@ -244,6 +244,16 @@ export async function GET(_request: NextRequest) {
     }
   }
 
+  // -- 3b. Aktive/Trial-Abos (PROJ-34: Plan-Handoff) --------------------------
+  // Voll-Abo-Patienten OHNE aktiven Trainingsplan sollen dem Therapeuten als
+  // Aktion erscheinen ("anbinden + Plan erstellen").
+  const { data: subRows } = await serviceClient
+    .from("patient_subscriptions")
+    .select("patient_id, status")
+    .in("patient_id", patientIds)
+    .in("status", ["trial", "active"])
+  const subscribedPatientIds = new Set((subRows ?? []).map((s) => s.patient_id))
+
   // -- 4. Group data by patient -----------------------------------------------
 
   // Pain entries grouped by patient
@@ -284,8 +294,34 @@ export async function GET(_request: NextRequest) {
     const patientAssignments = assignmentsByPatient.get(patient.id) ?? []
     const gruende: AlertGrund[] = []
 
-    // Only patients with active assignments are monitored
-    if (patientAssignments.length === 0) continue
+    // PROJ-34: Voll-Abo-Patient ohne aktiven Trainingsplan → Handoff-Signal
+    // ("Plan erstellen / anbinden"). Solche Patienten haben keine Assignments
+    // und würden sonst übersprungen — wir surfacen sie hier gezielt.
+    if (patientAssignments.length === 0) {
+      if (subscribedPatientIds.has(patient.id)) {
+        alerts.push({
+          patientId: patient.id,
+          vorname: patient.vorname,
+          nachname: patient.nachname,
+          avatarUrl: patient.avatar_url ?? null,
+          status: "ROT",
+          gruende: [{
+            key: "plan-ausstehend",
+            label: "Voll-Abo aktiv — noch kein Trainingsplan",
+            severity: "ROT",
+            empfehlung: "Neuer Abo-Patient: bitte anbinden und einen persönlichen Trainingsplan erstellen.",
+          }],
+          letzterCheckIn: null,
+          userId: patient.user_id ?? null,
+          painHistory: [],
+          compliance: null,
+          lastMessageDate: lastMessageByPatient.get(patient.id) ?? null,
+        })
+      }
+      continue
+    }
+
+    // Only patients with active assignments are monitored further
 
     // Build pain history for mini-chart
     const painHistory: PainEntry[] = patientPain.map((e) => ({
