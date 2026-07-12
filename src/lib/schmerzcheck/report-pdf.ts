@@ -299,8 +299,17 @@ export function generateReportPdf(view: ReportView, dateStr: string, baseUrl: st
   heading("Dein nächster Schritt")
   para(view.recommendation.text, 11, INK)
   if (view.recommendation.ctaType === "booking") {
-    linkButton(view.recommendation.ctaLabel, view.recommendationHref)
-    para("69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar", 8, SLATE_LIGHT)
+    // In einem PDF muss der Link absolut sein — relative Pfade sind dort tot.
+    // (Früher zeigte er auf den externen Kalender und war zufällig absolut.)
+    const href = view.recommendationHref.startsWith("/")
+      ? `${baseUrl}${view.recommendationHref}?utm_source=schmerzcheck&utm_medium=pdf&utm_campaign=masterclass&utm_content=pdf`
+      : view.recommendationHref
+    linkButton(view.recommendation.ctaLabel, href)
+    para(
+      "399 € einmalig (statt 499 €) · lebenslanger Kurszugriff · inkl. 3 Monate persönliche Begleitung per App · oder 3 × 133 € mit Klarna",
+      8,
+      SLATE_LIGHT
+    )
   } else if (view.recommendation.ctaType === "info") {
     linkButton(view.recommendation.ctaLabel, `${baseUrl}/anfrage`)
   } else {

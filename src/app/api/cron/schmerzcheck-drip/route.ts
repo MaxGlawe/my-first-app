@@ -102,6 +102,8 @@ interface LeadRow {
   email: string
   first_name: string
   email_hash: string
+  /** PROJ-25b: Schwerpunkt der Beschwerden. Nur LWS darf die Masterclass sehen. */
+  main_region?: string | null
 }
 
 interface SendOutcome {
@@ -169,9 +171,10 @@ export async function GET(req: NextRequest) {
     const leads = await paginate<LeadRow>("leads/drip", (from, to) =>
       supabase
         .from("schmerzcheck_leads")
-        .select("id, email, first_name, email_hash")
+        .select("id, email, first_name, email_hash, main_region")
         .eq("status", "check_completed")
         .eq("consent_status", "confirmed")
+        .eq("source", "schmerzcheck_landing")
         .range(from, to)
     )
 
@@ -187,14 +190,25 @@ export async function GET(req: NextRequest) {
         const result = resultByLead.get(lead.id)
         if (!result) continue
 
-        const soft = result.soft_flag === true || result.result_category === "needs_physician_assessment"
+        // „Kein Angebot" gilt aus ZWEI Gründen — und beide führen denselben Pfad:
+        //   1. soft-flag / „ärztlich abklären" → HWG (unverändert)
+        //   2. Schwerpunkt ist NICHT der untere Rücken (PROJ-25b) → die
+        //      Masterclass ist ein LWS-Kurs; einem Nacken- oder Knie-Patienten
+        //      399 € dafür anzubieten, wäre ein Fehlverkauf.
+        // Beide bekommen die reinen Nurture-Varianten; D3 und D5 (die Verkaufs-
+        // mails) werden komplett übersprungen.
+        const softFlag =
+          result.soft_flag === true || result.result_category === "needs_physician_assessment"
+        const keinLws = lead.main_region !== "unterer_ruecken"
+        const keinAngebot = softFlag || keinLws
+
         const completedAt = new Date(result.completed_at!).getTime()
         const claimed = claimedByLead.get(lead.id) ?? new Set<string>()
 
         let step: 1 | 2 | 3 | 4 | 5 | null = null
         for (let s = 1; s <= 5; s++) {
           if (claimed.has(`D${s}`)) continue
-          if ((s === 3 || s === 5) && soft) continue // skip Video-Analyse pitches for soft-flag
+          if ((s === 3 || s === 5) && keinAngebot) continue // D3/D5 sind reine Verkaufsmails
           if (now < completedAt + OFFSET_DAYS[s - 1] * DAY) break // not due yet
           step = s as 1 | 2 | 3 | 4 | 5
           break
@@ -211,7 +225,7 @@ export async function GET(req: NextRequest) {
             token,
             baseUrl,
             unsubscribeUrl: `${baseUrl}/api/email/unsubscribe?u=${encodeURIComponent(token)}`,
-            softFlag: soft,
+            softFlag: keinAngebot,
           })
         )
         if (outcome.sent) sent++
@@ -228,6 +242,7 @@ export async function GET(req: NextRequest) {
         .from("schmerzcheck_leads")
         .select("id, email, first_name, email_hash, consent_confirmed_at")
         .eq("consent_status", "confirmed")
+        .eq("source", "schmerzcheck_landing")
         .in("status", ["awaiting_check", "check_started"])
         .not("consent_confirmed_at", "is", null)
         .range(from, to)
@@ -281,9 +296,10 @@ export async function GET(req: NextRequest) {
     const wLeads = await paginate<LeadRow>("leads/winback", (from, to) =>
       supabase
         .from("schmerzcheck_leads")
-        .select("id, email, first_name, email_hash")
+        .select("id, email, first_name, email_hash, main_region")
         .eq("status", "check_completed")
         .eq("consent_status", "confirmed")
+        .eq("source", "schmerzcheck_landing")
         .is("booked_at", null)
         .range(from, to)
     )
@@ -301,7 +317,11 @@ export async function GET(req: NextRequest) {
         if (!result) continue
 
         const soft = result.soft_flag === true || result.result_category === "needs_physician_assessment"
-        if (soft) continue // HWG: kein Buchungs-Pitch für soft-flag/Arzt-Empfehlung
+        if (soft) continue // HWG: kein Angebot für soft-flag/Arzt-Empfehlung
+        // W1 ist eine reine Verkaufsmail → nur an LWS-Leads (PROJ-25b).
+        // Die Masterclass ist ein Kreuzschmerz-Kurs; ein Nacken-Patient bekommt
+        // sie nicht angeboten, auch nicht als Win-back.
+        if (lead.main_region !== "unterer_ruecken") continue
         if ((wClaimed.get(lead.id) ?? new Set<string>()).has("W1")) continue // W1 schon raus
         const completedAt = new Date(result.completed_at!).getTime()
         if (now < completedAt + WINBACK_DELAY_DAYS * DAY) continue // Cooldown nach Drip

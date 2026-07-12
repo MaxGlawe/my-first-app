@@ -1,0 +1,104 @@
+/**
+ * Sicherheitstest der Segment-Logik (Spec Teil E, Mail-System).
+ *
+ * Der wichtigste Test hier: Segment D (210 Leads OHNE Double-Opt-in) darf niemals
+ * eine Mail bekommen — auch dann nicht, wenn jemand später den Query-Filter im
+ * Cron entfernt. Deshalb prüft `assertMailable()` unmittelbar vor jedem Versand
+ * nochmal und WIRFT, statt still false zurückzugeben.
+ *
+ * Zweitwichtigster Test: Segment B (Red-Flag, nicht ärztlich abgeklärt) darf
+ * ausschließlich die Brücken-Mails B1/B2 bekommen — nie ein Kaufangebot.
+ *
+ * Aufruf: npm run test:segments
+ */
+const { computeSegment, assertMailable, isMasterclassEligible, needsRegionRouting } =
+  await import("../src/lib/schmerzcheck/segments.ts")
+
+let pass = 0
+let fail = 0
+const check = (name, ok, extra = "") => {
+  if (ok) { pass++; console.log(`  PASS  ${name}`) }
+  else { fail++; console.log(`  FAIL  ${name} ${extra}`) }
+}
+
+// Standard-Lead: Segment A, LWS-Schwerpunkt → darf die Masterclass bekommen.
+const lead = (over) => ({
+  id: "test",
+  status: "check_completed",
+  consent_status: "confirmed",
+  main_region: "unterer_ruecken",
+  ...over,
+})
+
+console.log("\n── Segment-Zuordnung ──")
+check("A: DOI + Check abgeschlossen", computeSegment(lead({})) === "A")
+check("B: DOI + Red-Flag, nicht abgeklärt", computeSegment(lead({ status: "red_flag_routed" })) === "B")
+check("A: Red-Flag, ärztlich ABGEKLÄRT → wandert nach A",
+  computeSegment(lead({ status: "red_flag_routed", medical_cleared_at: "2026-07-12T10:00:00Z" })) === "A")
+check("C: DOI, Check offen", computeSegment(lead({ status: "awaiting_check" })) === "C")
+check("C: DOI, Check begonnen", computeSegment(lead({ status: "check_started" })) === "C")
+check("D: KEIN Double-Opt-in", computeSegment(lead({ consent_status: "pending" })) === "D")
+check("D: auch bei abgeschlossenem Check ohne DOI",
+  computeSegment(lead({ status: "check_completed", consent_status: "pending" })) === "D")
+
+console.log("\n── Harte Sperre: Segment D bekommt NIE eine Mail ──")
+const throws = (l, code) => {
+  try { assertMailable(l, code); return false } catch { return true }
+}
+for (const code of ["M1", "M2", "M3", "M4", "B1", "B2", "C1R"]) {
+  check(`Segment D + ${code} → wirft`, throws(lead({ consent_status: "pending" }), code))
+}
+
+console.log("\n── Segment B bekommt NUR die Brücken-Mails (kein Kaufangebot) ──")
+const b = lead({ status: "red_flag_routed" })
+check("B + B1 → erlaubt", !throws(b, "B1"))
+check("B + B2 → erlaubt", !throws(b, "B2"))
+for (const code of ["M1", "M2", "M3", "M4", "C1R"]) {
+  check(`B + ${code} → wirft (Red-Flag darf kein Angebot sehen)`, throws(b, code))
+}
+
+console.log("\n── Nach ärztlicher Abklärung darf B die M-Sequenz bekommen ──")
+const cleared = lead({ status: "red_flag_routed", medical_cleared_at: "2026-07-12T10:00:00Z" })
+check("abgeklärt + M1 → erlaubt", !throws(cleared, "M1"))
+
+console.log("\n── Segment A + C dürfen ihre Mails ──")
+check("A + M1 → erlaubt", !throws(lead({}), "M1"))
+check("C + C1R → erlaubt", !throws(lead({ status: "awaiting_check" }), "C1R"))
+
+// ── PROJ-25b: Die Masterclass ist ein LWS-Kurs ────────────────────────────────
+// Sie einem Nacken- oder Knie-Patienten für 399 € anzubieten, wäre ein
+// Fehlverkauf. Bei UNBEKANNTER Region (die 77 aus „Mehrere Bereiche") gibt es
+// ebenfalls kein Angebot — erst der RT1-Klick schaltet frei. Fail closed.
+
+console.log("\n── Wer darf die Masterclass (LWS-Kurs) angeboten bekommen? ──")
+check("LWS → ja", isMasterclassEligible(lead({ main_region: "unterer_ruecken" })) === true)
+check("Nacken/Schulter → NEIN", isMasterclassEligible(lead({ main_region: "nacken_schulter" })) === false)
+check("Oberer Rücken → NEIN", isMasterclassEligible(lead({ main_region: "oberer_ruecken" })) === false)
+check("Knie/Hüfte/Fuß → NEIN", isMasterclassEligible(lead({ main_region: "knie_huefte_fuss" })) === false)
+check("„wechselt ständig“ → NEIN (Default: parken)", isMasterclassEligible(lead({ main_region: "wechselt_staendig" })) === false)
+check("Region UNBEKANNT → NEIN (fail closed)", isMasterclassEligible(lead({ main_region: null })) === false)
+
+console.log("\n── M-Mails an Nicht-LWS-Leads MÜSSEN werfen ──")
+for (const [region, name] of [
+  [null, "unbekannt (die 77)"],
+  ["nacken_schulter", "Nacken/Schulter"],
+  ["oberer_ruecken", "Oberer Rücken"],
+  ["knie_huefte_fuss", "Knie/Hüfte/Fuß"],
+  ["wechselt_staendig", "wechselt ständig"],
+]) {
+  for (const code of ["M1", "M2", "M3", "M4"]) {
+    check(`${name} + ${code} → wirft`, throws(lead({ main_region: region }), code))
+  }
+}
+
+console.log("\n── Routing-Mail RT1/RT2 ──")
+check("Region unbekannt + Segment A → braucht RT1", needsRegionRouting(lead({ main_region: null })) === true)
+check("Region bekannt → braucht KEIN RT1", needsRegionRouting(lead({ main_region: "nacken_schulter" })) === false)
+check("Segment B (Red-Flag) → braucht kein RT1", needsRegionRouting(lead({ status: "red_flag_routed", main_region: null })) === false)
+check("RT1 an Lead mit unbekannter Region → erlaubt", !throws(lead({ main_region: null }), "RT1"))
+check("RT2 an Lead mit unbekannter Region → erlaubt", !throws(lead({ main_region: null }), "RT2"))
+check("RT1 an Lead mit BEKANNTER Region → wirft (sinnlos)", throws(lead({ main_region: "unterer_ruecken" }), "RT1"))
+check("Segment D + RT1 → wirft (keine Einwilligung)", throws(lead({ consent_status: "pending", main_region: null }), "RT1"))
+
+console.log(`\n${pass} passed, ${fail} failed\n`)
+process.exit(fail ? 1 : 0)

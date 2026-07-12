@@ -97,8 +97,15 @@ export function QuestionClient({ step, token }: Props) {
         router.push("/check/red-flag-stop")
         return
       }
-      if (step < TOTAL_ITEMS) {
-        router.push(withT(`/check/q/${step + 1}`))
+
+      // Wurde bei „Wo spürst du Beschwerden?" nur EIN Bereich gewählt, ist der
+      // Schwerpunkt eindeutig — der Server hat ihn schon gesetzt und meldet
+      // skipNext. Die Folgefrage („Wo schränkt es dich am meisten ein?") wäre
+      // dann nur eine Wiederholung und wird übersprungen.
+      const naechster = data.skipNext ? step + 2 : step + 1
+
+      if (naechster <= TOTAL_ITEMS) {
+        router.push(withT(`/check/q/${naechster}`))
         return
       }
       // Last item → finalize

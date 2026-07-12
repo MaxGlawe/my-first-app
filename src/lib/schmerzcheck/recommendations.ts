@@ -45,13 +45,13 @@ export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
     ctaType: "info",
   },
   acute_severe: {
-    text: "Deine Beschwerden sind aktuell ausgeprägt. Jetzt ist es sinnvoll, dass ein Physiotherapeut persönlich draufschaut — am besten dein eigener Physiotherapeut, der dich von der Erstanalyse an begleitet und nicht allein lässt.",
-    ctaLabel: "Mit deinem Physiotherapeuten starten",
+    text: "Deine Beschwerden sind aktuell ausgeprägt. Jetzt hilft es, zu verstehen, was dabei passiert — und jemanden zu haben, der einordnet, was gerade sinnvoll ist und was noch nicht. Genau dafür ist die Masterclass mit ihrer dreimonatigen Begleitung gebaut.",
+    ctaLabel: "Die Masterclass ansehen",
     ctaType: "booking",
   },
   chronic_severe: {
-    text: "Du trägst die Beschwerden schon eine Weile. Jetzt ist der Moment, das nicht länger allein zu tragen: Dein eigener Physiotherapeut ordnet deine Standortbestimmung ein, gibt dir einen Plan und geht den Weg mit dir.",
-    ctaLabel: "Mit deinem Physiotherapeuten starten",
+    text: "Du trägst die Beschwerden schon eine Weile. Jetzt ist der Moment, das nicht länger allein zu tragen: In der Masterclass verstehst du, was bei dir passiert — und hast drei Monate lang jemanden an deiner Seite, der mitliest und dein Programm anpasst.",
+    ctaLabel: "Die Masterclass ansehen",
     ctaType: "booking",
   },
   acute_moderate: {
@@ -60,8 +60,8 @@ export const RECOMMENDATIONS: Record<ResultCategory, Recommendation> = {
     ctaType: "roadmap",
   },
   chronic_moderate: {
-    text: "Strukturierte Bewegung wird dir helfen, Klarheit zu gewinnen — die Roadmap ist ein guter Einstieg. Und wenn du nicht allein weitermachen willst, begleitet dich dein eigener Physiotherapeut von der Erstanalyse an.",
-    ctaLabel: "Mit deinem Physiotherapeuten starten",
+    text: "Strukturierte Bewegung wird dir helfen, Klarheit zu gewinnen — die Roadmap ist ein guter Einstieg. Und wenn du nicht allein weitermachen willst: Die Masterclass gibt dir das Verstehen dazu und drei Monate persönliche Begleitung per App.",
+    ctaLabel: "Die Masterclass ansehen",
     ctaType: "booking",
   },
   mild: {
@@ -75,9 +75,19 @@ export function getRecommendation(category: ResultCategory): Recommendation {
   return RECOMMENDATIONS[category] ?? RECOMMENDATIONS.mild
 }
 
-/** Resolve the CTA target for a recommendation. */
+/** Öffentliche Salespage der Masterclass — das aktuelle Angebot (seit 07/2026). */
+export const MASTERCLASS_URL = "/kurse/chronischer-kreuzschmerz"
+
+/**
+ * Ziel des Empfehlungs-CTAs.
+ *
+ * `ctaType: "booking"` heißt historisch „kommerzielles Angebot" — das war früher
+ * der Video-Analyse-Kalender, heute ist es die Masterclass. Der Typ bleibt, damit
+ * die Sicherheitslogik unangetastet bleibt: soft-flag/„ärztlich abklären" hat
+ * ctaType `info` und bekommt damit weiterhin KEIN Angebot.
+ */
 export function getCtaHref(rec: Recommendation): string {
-  if (rec.ctaType === "booking") return VIDEO_ANALYSE_URL
+  if (rec.ctaType === "booking") return MASTERCLASS_URL
   if (rec.ctaType === "roadmap") return "#roadmap"
   return "/anfrage" // info — non-commercial contact
 }

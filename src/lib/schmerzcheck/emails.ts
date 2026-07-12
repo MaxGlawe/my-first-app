@@ -14,7 +14,9 @@ import { escapeHtml } from "@/lib/html-escape"
 import { getSchmerzcheckFromEmail } from "@/lib/schmerzcheck/mailer"
 
 // ── Brand tokens (Premium-Rebrand / Masterclass-Welt) ────────────────────────
-const C = {
+// Exportiert, damit die Masterclass-Kampagne (emails-masterclass.ts) exakt
+// dieselben Bausteine nutzt statt sie zu duplizieren.
+export const C = {
   paper: "#F8F5F0",
   card: "#FFFFFF",
   ink: "#0f172a",
@@ -29,7 +31,7 @@ const C = {
 const SERIF = "Georgia,'Times New Roman',serif"
 const SANS = "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
 
-interface ShellOpts {
+export interface ShellOpts {
   /** Extra note shown above the disclaimer (e.g. emergency line for T3). */
   footerNote?: string
   /** Show the unsubscribe link (omit for one-off transactional like T3). */
@@ -38,7 +40,7 @@ interface ShellOpts {
   unsubscribeUrl?: string
 }
 
-function shell(inner: string, baseUrl: string, opts: ShellOpts = {}): string {
+export function shell(inner: string, baseUrl: string, opts: ShellOpts = {}): string {
   const showUnsub = opts.showUnsubscribe !== false
   const unsubHref = opts.unsubscribeUrl || `mailto:${getSchmerzcheckFromEmail()}?subject=Abmelden`
   return `
@@ -74,23 +76,35 @@ function shell(inner: string, baseUrl: string, opts: ShellOpts = {}): string {
 }
 
 /** Serif headline (email-safe Georgia stack), evokes the rebrand display font. */
-function heading(text: string): string {
+export function heading(text: string): string {
   return `<h1 style="font-family:${SERIF};font-weight:600;font-size:23px;line-height:1.25;color:${C.green};margin:18px 0 14px;">${text}</h1>`
 }
 
-function para(text: string): string {
+export function para(text: string): string {
   return `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 16px;">${text}</p>`
 }
 
-function ctaButton(label: string, href: string): string {
+export function ctaButton(label: string, href: string): string {
   return `
     <a href="${href}" style="display:inline-block;background:${C.green};color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:15px 28px;border-radius:12px;">
       ${label}
     </a>`
 }
 
+/**
+ * Preis-Block des aktuellen Angebots (Masterclass, seit 07/2026).
+ *
+ * Aufbau nach Spec B3: Anker → Preis → Begleitung GLEICHWERTIG → Klarna.
+ * Die Begleitung wird bewusst nicht als Zugabe geframt — sie begründet den Preis.
+ * Das alte Angebot (69 € Video-Analyse + 16,99 €/Monat) ist abgelöst.
+ */
 function priceNote(): string {
-  return `<p style="font-size:12px;line-height:1.5;color:${C.faint};margin:8px 0 12px;">69 € Start mit deinem Physiotherapeuten (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar</p>`
+  return `<p style="font-size:13px;line-height:1.7;color:${C.muted};margin:8px 0 12px;">
+    <span style="text-decoration:line-through;color:${C.faint};">499 €</span>
+    <strong style="color:${C.ink};font-size:15px;">&nbsp;399 €</strong> · einmalig · lebenslanger Kurszugriff<br/>
+    <strong style="color:${C.ink};">inkl. 3 Monate persönliche Begleitung per App</strong><br/>
+    <span style="color:${C.faint};">oder 3 × 133 € mit Klarna — ohne Aufpreis</span>
+  </p>`
 }
 
 /** Low-emphasis fallback link to the report — sits UNDER the booking CTA from D3 on. */
@@ -98,13 +112,17 @@ function reportSecondaryLink(reportUrl: string): string {
   return `<p style="font-size:13px;line-height:1.6;color:${C.muted};margin:0 0 4px;">Lieber erst nochmal nachlesen? <a href="${reportUrl}" style="color:${C.green};text-decoration:underline;">Hier geht's zu deinem Report →</a></p>`
 }
 
-function signoff(): string {
+export function signoff(): string {
   return `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:8px 0 0;">Herzliche Grüße<br/>Max Glawe<br/><span style="color:${C.faint};">Praxis OS</span></p>`
 }
 
-/** Tracked booking link (per-email click attribution via /api/schmerzcheck/go). */
-function bookingGo(baseUrl: string, token: string, code: string): string {
-  return `${baseUrl}/api/schmerzcheck/go?e=${code}&u=${encodeURIComponent(token)}`
+/**
+ * Getrackter Angebots-Link (Klick-Attribution je Mail via /api/schmerzcheck/go).
+ * Zielt seit 07/2026 auf die Masterclass-Salespage statt auf den externen
+ * Video-Analyse-Kalender — `t=salespage` steuert das Ziel.
+ */
+function offerGo(baseUrl: string, token: string, code: string): string {
+  return `${baseUrl}/api/schmerzcheck/go?e=${code}&t=salespage&u=${encodeURIComponent(token)}`
 }
 
 // ── T1 — Welcome / Double-Opt-in ─────────────────────────────────────────────
@@ -160,10 +178,11 @@ export function renderT2ReportEmail({ firstName, reportUrl, baseUrl, unsubscribe
       <p style="font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.sand};margin:0 0 6px;">Du musst da nicht allein durch</p>
       <p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 14px;">
         Dein Report zeigt dir, wo du stehst. Den Weg dorthin musst du aber nicht allein gehen:
-        Mit <strong style="color:${C.ink};">deinem eigenen Physiotherapeuten</strong> startest du mit einer
-        persönlichen Erstanalyse — und er bleibt danach an deiner Seite, direkt auf deinem Handy.
+        In der <strong style="color:${C.ink};">Masterclass</strong> verstehst du, was bei dir passiert —
+        und hast <strong style="color:${C.ink};">3 Monate lang jemanden an deiner Seite</strong>, der mitliest
+        und dein Programm anpasst. Direkt auf deinem Handy.
       </p>
-      <div style="margin:0 0 4px;">${ctaButton("Mit deinem Physiotherapeuten starten", bookingGo(baseUrl, token!, "T2"))}</div>
+      <div style="margin:0 0 4px;">${ctaButton("Die Masterclass ansehen", offerGo(baseUrl, token!, "T2"))}</div>
       ${priceNote()}
     </div>`
     : ""
@@ -286,18 +305,19 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
   const name = escapeHtml(args.firstName)
   const hi = `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>`
   const opts = { unsubscribeUrl: args.unsubscribeUrl }
-  const book = (code: string) => bookingGo(args.baseUrl, args.token, code)
+  const offer = (code: string) => offerGo(args.baseUrl, args.token, code)
 
-  // Booking bridge to the analyse (used in D1, never for soft-flag).
-  // Solid button + price note — the earlier ghost link barely got clicked.
+  // Angebots-Brücke (D1). Für soft-flag-Leads („ärztlich abklären") wird sie
+  // ausgelassen — kein Angebot bei ungeklärten Warnzeichen. D3 und D5 überspringt
+  // der Cron für sie komplett.
   const softBridge = (code: string) =>
     args.softFlag
       ? ""
       : `<div style="margin:22px 0 0;padding-top:18px;border-top:1px solid ${C.line};">
            <p style="font-size:15px;line-height:1.6;color:${C.body};margin:0 0 12px;">
-             Du musst das nicht allein herausfinden. Mit deinem eigenen Physiotherapeuten startest du mit einer persönlichen Erstanalyse — und hast danach jemanden an deiner Seite, der deinen Weg mit dir geht, direkt auf deinem Handy.
+             Du musst das nicht allein herausfinden. In der Masterclass verstehst du, was bei dir passiert — und hast 3 Monate lang jemanden an deiner Seite, der mitliest und dein Übungsprogramm anpasst.
            </p>
-           <div style="margin:0 0 4px;">${ctaButton("Mit deinem Physiotherapeuten starten", book(code))}</div>
+           <div style="margin:0 0 4px;">${ctaButton("Die Masterclass ansehen", offer(code))}</div>
            ${priceNote()}
          </div>`
 
@@ -330,27 +350,27 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
     } else {
       inner =
         lead2 +
-        para("Diesen Kreislauf allein zu durchbrechen ist schwer. Genau dafür gibt es deinen eigenen Physiotherapeuten: Er ordnet in einer persönlichen Erstanalyse ein, wo du stehst, gibt dir einen Plan — und bleibt danach an deiner Seite, statt dich allein weitermachen zu lassen.") +
-        `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D2"))}</div>` +
+        para("Diesen Kreislauf allein zu durchbrechen ist schwer — nicht weil dir Disziplin fehlt, sondern weil dir jemand fehlt, der von außen draufschaut. Genau dafür ist die Masterclass gebaut: 27 Lektionen zum Verstehen, dazu 3 Monate persönliche Begleitung per App, in denen ich dein Programm an dich anpasse.") +
+        `<div style="margin:6px 0 0;">${ctaButton("Die Masterclass ansehen", offer("D2"))}</div>` +
         priceNote() +
         reportSecondaryLink(args.reportUrl) +
         signoff()
     }
   } else if (args.step === 3) {
-    subject = "30 Minuten, die dir wochenlanges Ausprobieren ersparen"
+    subject = "Was in den 3 Monaten Begleitung passiert"
     inner =
-      heading("30 Minuten, die Klarheit bringen.") +
+      heading("Der Teil, über den kaum jemand spricht.") +
       hi +
-      para("manchmal kommt man allein nur bis zu einem Punkt. Dann bringt ein gezielter Blick von außen mehr als wochenlanges Ausprobieren.") +
-      para("Starte jetzt mit <strong style=\"color:" + C.ink + "\">deinem eigenen Physiotherapeuten</strong>: In einer persönlichen 30-Minuten-Erstanalyse schaut er sich deine Bewegung an, ordnet deine Standortbestimmung ein und zeigt dir konkret, worauf es bei <em>dir</em> ankommt — und begleitet dich danach weiter.") +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 8px;font-weight:600;">Was du bekommst:</p>
-       <ul style="font-size:15px;line-height:1.7;color:${C.body};margin:0 0 22px;padding-left:20px;">
-         <li>Eine fachliche Einordnung deiner Antworten</li>
-         <li>Die 2–3 Punkte, auf die es bei dir zuerst ankommt</li>
-         <li>Einen klaren Plan — ohne Praxisbesuch, direkt aufs Handy</li>
-         <li>Einen Physiotherapeuten, der danach an deiner Seite bleibt</li>
+      para("die meisten Kurse geben dir Inhalte und lassen dich damit allein. Genau daran scheitert es meistens — nicht am Wissen, sondern an den Fragen, die unterwegs auftauchen.") +
+      para("Deshalb sind in der Masterclass <strong style=\"color:" + C.ink + "\">3 Monate persönliche Begleitung</strong> fester Bestandteil, kein Beiwerk:") +
+      `<ul style="font-size:15px;line-height:1.75;color:${C.body};margin:0 0 22px;padding-left:20px;">
+         <li><strong style="color:${C.ink};">Direkter Draht per Chat</strong> — du schreibst mir, ich antworte innerhalb von 48 h werktags</li>
+         <li><strong style="color:${C.ink};">Ein Übungsprogramm, das zu dir passt</strong> — nicht von der Stange</li>
+         <li><strong style="color:${C.ink};">Verlaufskontrolle</strong> — du siehst, was sich über die Wochen verändert</li>
+         <li><strong style="color:${C.ink};">Workbook synchron in der App</strong> — kein Zettelchaos</li>
        </ul>` +
-      `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D3"))}</div>` +
+      para("Die 27 Lektionen und das Kartendeck bleiben dir dauerhaft — auch nach den drei Monaten.") +
+      `<div style="margin:6px 0 0;">${ctaButton("Ansehen, was enthalten ist", offer("D3"))}</div>` +
       priceNote() +
       reportSecondaryLink(args.reportUrl) +
       signoff()
@@ -364,29 +384,30 @@ export function renderDripEmail(args: DripArgs): { subject: string; html: string
         para("Wenn du magst, antworte einfach auf diese Mail — wir helfen dir, den passenden nächsten Schritt zu finden.") +
         signoff()
     } else {
-      subject = "Du hast hingeschaut — jetzt fehlt nur noch ein Schritt"
+      subject = "„Kann ich das nicht auch allein hinbekommen?“"
       inner =
-        heading("Jetzt fehlt nur noch der Blick von außen.") +
+        heading("Die Frage, die ich am häufigsten höre.") +
         hi +
-        para("du hast hingeschaut — das ist der wichtigste Schritt. Jetzt fehlt nur noch einer, und der ist näher, als du denkst.") +
-        para("Mit einer <strong style=\"color:" + C.ink + "\">persönlichen Erstanalyse</strong> weißt du, woran du bist und was dein nächster Schritt ist — und du hast ab dann deinen eigenen Physiotherapeuten an deiner Seite, der dranbleibt. Kein langes Programm, keine Praxis — direkt auf deinem Handy, wann es dir passt.") +
-        `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D4"))}</div>` +
+        para("kurze, ehrliche Antwort: vielleicht. Manche schaffen das allein. Wenn du es allerdings schon länger allein versuchst und immer wieder an derselben Stelle landest, dann fehlt dir nicht Disziplin — dann fehlt jemand, der von außen draufschaut.") +
+        para("Genau deshalb sind die <strong style=\"color:" + C.ink + "\">3 Monate Begleitung</strong> der Kern der Masterclass. Du schickst mir, was dich beschäftigt. Ich ordne es ein und passe dein Programm an. Du musst nicht raten, ob du gerade das Richtige tust.") +
+        para("Was ich dir nicht verspreche: dass du danach beschwerdefrei bist. Das kann seriös niemand. Die Masterclass ersetzt weder Arzt noch Therapie — sie hilft dir zu verstehen, was bei dir los ist, und gibt dir einen Weg, der zu dir passt.") +
+        `<div style="margin:6px 0 0;">${ctaButton("Zur Masterclass", offer("D4"))}</div>` +
         priceNote() +
         reportSecondaryLink(args.reportUrl) +
         signoff()
     }
   } else {
-    // D5 — objection handling + strongest booking push. Cron skips this for soft-flag leads.
+    // D5 — Einwände + letzter Anstoß. Der Cron überspringt D5 für soft-flag-Leads.
     subject = "„Lohnt sich das für mich?\" — drei ehrliche Antworten"
     inner =
       heading("„Lohnt sich das für mich?“") +
       hi +
-      para("bevor du das Thema zur Seite legst, drei Fragen, die uns oft gestellt werden:") +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Was passiert in den 30 Minuten?“</strong><br/>Dein Physiotherapeut sieht sich per Video deine Bewegung an, geht deine Antworten durch und sagt dir konkret, worauf es bei dir ankommt — und gibt dir einen Plan.</p>` +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Ich hatte noch nie eine Video-Sprechstunde.“</strong><br/>Völlig okay. Du brauchst nur dein Handy und etwas Platz — wir führen dich durch alles.</p>` +
-      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 18px;"><strong style="color:${C.ink};">„Und dann?“</strong><br/>Dein erster Monat Begleitung ist geschenkt — über die App bleibst du mit deinem Therapeuten in Kontakt, bekommst deinen Plan und Rückmeldung. Ob es danach weitergeht (16,99 €/Monat), entscheidest du. Jederzeit kündbar.</p>` +
-      para("Du hast den ersten Schritt längst gemacht. Mach jetzt den, der dir Klarheit bringt:") +
-      `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", book("D5"))}</div>` +
+      para("bevor du das Thema zur Seite legst, drei Fragen, die mir oft gestellt werden:") +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Wie schnell antwortest du?“</strong><br/>Innerhalb von 48 Stunden werktags. Das ist eine Zusage, die ich halten kann — keine Rund-um-die-Uhr-Erreichbarkeit. Für akute Beschwerden ist der Chat nicht der richtige Ort.</p>` +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 10px;"><strong style="color:${C.ink};">„Was passiert nach den 3 Monaten?“</strong><br/>Die Begleitung endet automatisch. Kein Abo, das sich still verlängert, nichts wird abgebucht. Die Lektionen, das Workbook und das Kartendeck behältst du dauerhaft.</p>` +
+      `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:0 0 18px;"><strong style="color:${C.ink};">„Ersetzt das meine Therapie?“</strong><br/>Nein. Die Masterclass ist ein Bildungs- und Orientierungsangebot. Sie ersetzt weder eine ärztliche Abklärung noch eine laufende Therapie — sie kann sie ergänzen.</p>` +
+      para("Du hast den ersten Schritt längst gemacht. Wenn du weitergehen willst:") +
+      `<div style="margin:6px 0 0;">${ctaButton("Zur Masterclass", offer("D5"))}</div>` +
       priceNote() +
       reportSecondaryLink(args.reportUrl) +
       signoff()
@@ -412,17 +433,16 @@ export interface WinbackArgs {
 export function renderWinbackEmail(args: WinbackArgs): { subject: string; html: string } {
   const name = escapeHtml(args.firstName)
   const hi = `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>`
-  const subject = "Ich muss nochmal was klarstellen (wegen deinem Schmerzcheck)"
+  const subject = "Letzte Mail dazu von mir"
   const inner =
     heading("Ich habe nochmal an dich gedacht.") +
     hi +
-    para("vor einer Weile hast du deinen Schmerzcheck gemacht — und danach ein paar Mails von mir bekommen, in denen es um eine „Video-Analyse“ ging. Ehrlich gesagt war das missverständlich. Ich habe unser Angebot inzwischen klarer gemacht und wollte mich nochmal persönlich bei dir melden.") +
-    para("Worum es eigentlich geht: Du bekommst keinen einmaligen Call, sondern <strong style=\"color:" + C.ink + "\">deinen eigenen Physiotherapeuten</strong> — er schaut sich deine Beschwerden an, gibt dir einen Plan und bleibt danach an deiner Seite. Direkt auf deinem Handy, ohne Praxisbesuch.") +
-    para("Der Start ist eine persönliche Erstanalyse — und <strong style=\"color:" + C.ink + "\">dein erster Monat Begleitung ist geschenkt.</strong>") +
-    `<div style="margin:6px 0 0;">${ctaButton("Mit deinem Physiotherapeuten starten", bookingGo(args.baseUrl, args.token, "W1"))}</div>` +
+    para("vor einer Weile hast du deinen Schmerzcheck gemacht. Ich weiß nicht, wo du gerade stehst — vielleicht hat sich etwas getan, vielleicht ist alles beim Alten.") +
+    para("Falls Letzteres: Die <strong style=\"color:" + C.ink + "\">Masterclass</strong> ist genau für den Punkt gebaut, an dem man allein nicht weiterkommt. 27 Lektionen zum Verstehen, ein Workbook, ein Kartendeck — und <strong style=\"color:" + C.ink + "\">3 Monate persönliche Begleitung per App</strong>, in denen ich dein Programm an dich anpasse und du mir schreiben kannst, wenn etwas hakt.") +
+    `<div style="margin:6px 0 0;">${ctaButton("Die Masterclass ansehen", offerGo(args.baseUrl, args.token, "W1"))}</div>` +
     priceNote() +
     reportSecondaryLink(args.reportUrl) +
-    para("Wenn das gerade nicht zu dir passt, ist das völlig in Ordnung — dann hörst du dazu nichts mehr von mir.") +
+    para("Das ist meine letzte Mail dazu — danach lasse ich dich damit in Ruhe. Falls es gerade nicht passt, ist das völlig in Ordnung.") +
     signoff()
   return { subject, html: shell(inner, args.baseUrl, { unsubscribeUrl: args.unsubscribeUrl }) }
 }

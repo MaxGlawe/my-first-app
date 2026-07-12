@@ -52,6 +52,8 @@ export interface ChatFensterProps {
   hideHeader?: boolean
   /** Whether the chat is read-only (e.g. archived patient) */
   readOnly?: boolean
+  /** Overrides the read-only banner text (e.g. beendete Masterclass-Begleitung) */
+  readOnlyMessage?: string
   className?: string
 }
 
@@ -60,6 +62,7 @@ export function ChatFenster({
   currentUserId,
   perspective,
   readOnly = false,
+  readOnlyMessage,
   className,
 }: ChatFensterProps) {
   const { messages, isLoading, isSending, error, hasOlder, loadOlder, sendMessage, markRead, refresh } =
@@ -366,7 +369,7 @@ export function ChatFenster({
       {readOnly && (
         <div className="border-t border-slate-200 bg-slate-100 px-4 py-3 text-center">
           <p className="text-sm text-slate-500">
-            Dieser Chat ist archiviert. Keine neuen Nachrichten möglich.
+            {readOnlyMessage ?? "Dieser Chat ist archiviert. Keine neuen Nachrichten möglich."}
           </p>
         </div>
       )}

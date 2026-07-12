@@ -39,6 +39,8 @@ export interface Patient {
 
   // BGF (enriched by API, not in DB)
   bgf_organization_name?: string | null
+  /** Ende der laufenden Masterclass-Begleitung (ISO) — null = keine aktive Betreuung */
+  begleitung_bis?: string | null
 }
 
 export interface PatientFormValues {

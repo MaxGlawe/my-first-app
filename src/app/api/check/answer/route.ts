@@ -83,5 +83,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, redFlag: true })
   }
 
-  return NextResponse.json({ ok: true, redFlag: false })
+  // ── Schwerpunkt-Frage überspringen, wenn nur EIN Bereich gewählt wurde ──────
+  // Der Check kennt keine bedingten Fragen. Statt eine einzuführen, füllen wir
+  // `main_region` hier automatisch und sagen dem Client, dass er die Folgefrage
+  // überspringen soll. Ohne das Auto-Füllen würde /api/check/complete den Check
+  // als unvollständig ablehnen — main_region ist eine Pflichtfrage.
+  let skipNext = false
+  if (body.itemId === "region") {
+    const regions = Array.isArray(body.value) ? body.value.map(String) : [String(body.value)]
+
+    if (regions.length === 1) {
+      await supabase.from("schmerzcheck_responses").upsert(
+        { lead_id: leadId, item_id: "main_region", value: regions[0], is_red_flag: false },
+        { onConflict: "lead_id,item_id" }
+      )
+      skipNext = true
+    } else {
+      // Mehrere Bereiche → der Nutzer muss den Schwerpunkt selbst benennen.
+      // Eine evtl. frühere Auto-Antwort (Nutzer geht zurück und wählt mehr aus)
+      // wird verworfen, sonst bliebe ein falscher Schwerpunkt stehen.
+      await supabase
+        .from("schmerzcheck_responses")
+        .delete()
+        .eq("lead_id", leadId)
+        .eq("item_id", "main_region")
+    }
+  }
+
+  return NextResponse.json({ ok: true, redFlag: false, skipNext })
 }

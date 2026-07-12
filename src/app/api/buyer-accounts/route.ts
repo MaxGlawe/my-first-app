@@ -213,9 +213,10 @@ export async function POST(request: NextRequest) {
       loginUrl: `${appUrl}/login`,
       masterclassUrl: `${appUrl}/masterclass/${product.slug}`,
     })
-    sendEmail({ to: email, subject, html }).catch((err) =>
-      console.error("[buyer-accounts] Masterclass welcome email failed:", err)
-    )
+    // Der Käufer hat 399 € bezahlt und wartet auf seinen Zugang. Ein stiller
+    // Fehlschlag wäre hier der schlimmste Fall — also: einmal erneut versuchen,
+    // und wenn es dann immer noch klemmt, Max alarmieren (Spec A5).
+    void sendAccessMailWithRetry({ to: email, subject, html, firstName })
   } else {
   sendEmail({
     to: email,
@@ -290,4 +291,67 @@ export async function POST(request: NextRequest) {
     },
     { status: 201 }
   )
+}
+
+/**
+ * Zugangsmail senden — mit einem Wiederholungsversuch und Alarm an Max (Spec A5).
+ *
+ * WARUM: Der Käufer hat bezahlt und wartet auf seinen Zugang. Bisher wurde ein
+ * Fehlschlag nur in die Konsole geloggt — niemand hätte es gemerkt, und der
+ * Kunde hätte sich zu Recht beschwert. `sendEmail` wirft nicht, sondern gibt
+ * `{ success: false }` zurück; ein blosses `.catch()` hätte den Fall also gar
+ * nicht erwischt.
+ *
+ * Der zweite Versuch nach 3 Sekunden fängt kurzzeitige SMTP-Aussetzer ab
+ * (SiteGround drosselt gelegentlich). Bleibt es dabei, bekommt Max eine Mail und
+ * kann den Zugang über „Zugang erneut senden“ manuell auslösen.
+ */
+async function sendAccessMailWithRetry(args: {
+  to: string
+  subject: string
+  html: string
+  firstName: string
+}): Promise<void> {
+  const attempt = async () => {
+    try {
+      return await sendEmail({ to: args.to, subject: args.subject, html: args.html })
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : "Unbekannter Fehler" }
+    }
+  }
+
+  let result = await attempt()
+
+  if (!result.success) {
+    console.warn(`[buyer-accounts] Zugangsmail an ${args.to} fehlgeschlagen — 2. Versuch in 3s`)
+    await new Promise((r) => setTimeout(r, 3000))
+    result = await attempt()
+  }
+
+  if (result.success) return
+
+  console.error(`[buyer-accounts] Zugangsmail an ${args.to} endgültig fehlgeschlagen:`, result.error)
+
+  try {
+    await sendEmail({
+      to: process.env.ADMIN_NOTIFY_EMAIL || "physiotherapieglawe@gmx.de",
+      subject: `🚨 Zugangsmail NICHT zugestellt — ${args.to}`,
+      html: `
+        <p style="font-family:sans-serif;font-size:15px">
+          <strong>Ein Käufer hat bezahlt, aber seine Zugangsmail kam nicht raus.</strong>
+          Zwei Versuche sind fehlgeschlagen.
+        </p>
+        <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
+          <tr><td><strong>Name</strong></td><td>${args.firstName}</td></tr>
+          <tr><td><strong>E-Mail</strong></td><td>${args.to}</td></tr>
+          <tr><td><strong>Fehler</strong></td><td>${result.error ?? "unbekannt"}</td></tr>
+        </table>
+        <p style="font-family:sans-serif;font-size:15px">
+          Der Account existiert bereits und die Inhalte sind freigeschaltet — es fehlt nur die Mail.
+          Bitte im Shop „Zugang erneut senden“ auslösen oder den Kunden direkt kontaktieren.
+        </p>`,
+    })
+  } catch (err) {
+    console.error("[buyer-accounts] Alarm-Mail an Max fehlgeschlagen:", err)
+  }
 }

@@ -38,6 +38,15 @@ function getInitials(vorname: string, nachname: string): string {
   return `${vorname.charAt(0)}${nachname.charAt(0)}`.toUpperCase()
 }
 
+/** Kurzes Datum für den Begleitungs-Badge: 12.10.2026 */
+function formatDatum(iso: string): string {
+  return new Date(iso).toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+}
+
 function formatGeschlecht(g: Patient["geschlecht"]): string {
   switch (g) {
     case "maennlich":
@@ -165,6 +174,15 @@ export function PatientTable({ patients, isLoading, error }: PatientTableProps) 
                       {patient.bgf_organization_name && (
                         <Badge variant="outline" className="text-[10px] font-bold px-1.5 py-0 h-5 border-blue-200 bg-blue-50 text-blue-700">
                           {patient.bgf_organization_name}
+                        </Badge>
+                      )}
+                      {patient.begleitung_bis && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] font-bold px-1.5 py-0 h-5 border-emerald-200 bg-emerald-50 text-emerald-700"
+                          title={`Masterclass-Begleitung bis ${formatDatum(patient.begleitung_bis)}`}
+                        >
+                          Begleitung bis {formatDatum(patient.begleitung_bis)}
                         </Badge>
                       )}
                     </div>

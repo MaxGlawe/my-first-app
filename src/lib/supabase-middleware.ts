@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/widerruf', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
@@ -48,6 +48,17 @@ export async function updateSession(request: NextRequest) {
   const isSchmerzcheckConfirmApi = pathname === '/api/leads/schmerzcheck/confirm' && request.method === 'GET'
   // PROJ-23: getrackter Buchungs-Klick-Redirect aus Mails (öffentlich, loggt + leitet weiter)
   const isSchmerzcheckGoApi = pathname === '/api/schmerzcheck/go' && request.method === 'GET'
+  // Masterclass-Kampagne: „Warst du beim Arzt?"-Klick aus den Brücken-Mails B1/B2.
+  // Kommt aus dem Mailprogramm, also IMMER ohne Session — muss öffentlich sein,
+  // sonst landet der Lead auf der Login-Seite. Token-gated im Handler selbst.
+  const isAbklaerungApi = pathname === '/api/schmerzcheck/abklaerung' && request.method === 'GET'
+  // PROJ-25b: Ein-Klick-Regionswahl aus der Routing-Mail RT1/RT2. Kommt aus dem
+  // Mailprogramm, also IMMER ohne Session. Lead-ID steckt im signierten Token.
+  const isRegionApi = pathname === '/api/schmerzcheck/region' && request.method === 'GET'
+  // Salespage-Tracking (Scroll-Tiefe, Kaufen-Klick) — öffentliche Seite, anonyme Besucher.
+  const isShopTrackApi = pathname === '/api/shop/track' && request.method === 'POST'
+  // Mail-Vorschau zum Gegenlesen — die Route selbst gibt in Produktion 404 zurück.
+  const isDevPreview = process.env.NODE_ENV !== 'production' && pathname.startsWith('/api/dev/')
   // PROJ-23 Phase 2: Schmerzcheck-Assessment-API (token-gated im Handler selbst)
   const isCheckApi = pathname.startsWith('/api/check/') && (request.method === 'GET' || request.method === 'POST')
   // PROJ-23 Phase 4: 1-Klick-Unsubscribe (token-gated im Handler selbst)
@@ -75,7 +86,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isAbklaerungApi && !isRegionApi && !isShopTrackApi && !isDevPreview && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
@@ -242,12 +253,26 @@ export async function updateSession(request: NextRequest) {
             'booking'
 
           if (!hasActiveSub && (subscription || isBookingOrigin)) {
-            // PROJ-34: Booking-/„Termine-only"-Patienten gehören in ihren eigenen
-            // Bereich (/meine-termine — dort liegen Termine + Upsell), nicht auf die
-            // klinische Abo-Seite. Klassische Patienten mit abgelaufenem Abo → /app/abo.
-            url.pathname = isBookingOrigin ? '/meine-termine' : '/app/abo'
-            if (!isBookingOrigin) url.searchParams.set('reason', 'subscription_expired')
-            return NextResponse.redirect(url)
+            // Masterclass-Begleitung: ein befristeter Zugangs-Grant zählt wie ein
+            // aktives Abo. Ohne das würde ein Käufer mit altem, gekündigtem Abo
+            // trotz frisch bezahlter Begleitung ausgesperrt. Nur im Sperr-Pfad
+            // abgefragt → im Normalfall keine zusätzliche Query.
+            const { data: grant } = await adminClient
+              .from('app_access_grants')
+              .select('id')
+              .eq('user_id', user.id)
+              .is('revoked_at', null)
+              .gt('expires_at', new Date().toISOString())
+              .limit(1)
+
+            if (!grant?.length) {
+              // PROJ-34: Booking-/„Termine-only"-Patienten gehören in ihren eigenen
+              // Bereich (/meine-termine — dort liegen Termine + Upsell), nicht auf die
+              // klinische Abo-Seite. Klassische Patienten mit abgelaufenem Abo → /app/abo.
+              url.pathname = isBookingOrigin ? '/meine-termine' : '/app/abo'
+              if (!isBookingOrigin) url.searchParams.set('reason', 'subscription_expired')
+              return NextResponse.redirect(url)
+            }
           }
         }
       }

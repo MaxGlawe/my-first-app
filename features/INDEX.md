@@ -36,11 +36,12 @@
 | PROJ-22 | Ablösung PROJ-13 & Inhalts-Migration | Deployed | [Spec](PROJ-22-kurssystem-abloesung.md) | 2026-05-14 |
 | PROJ-23 | Schmerzcheck-Funnel (B2C Akquise) | Deployed | [Spec](PROJ-23-schmerzcheck-funnel.md) | 2026-05-21 |
 | PROJ-24 | Bewegungskarten (Karten-Decks) & Shop-Ausbau (Warenkorb, Bewertungen, Shop-Analytics) | Deployed | — | 2026-05-23 |
+| PROJ-25 | Masterclass + 3 Monate Begleitung (löst Video-Analyse ab) | In Review | [Spec](PROJ-25-masterclass-begleitung.md) | 2026-07-12 |
 | PROJ-34 | Patienten-Terminkoordination (Termine sehen/umbuchen/stornieren) | Deployed | [Spec](PROJ-34-patienten-terminkoordination.md) | 2026-06-20 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-25
+## Next Available ID: PROJ-26
 <!-- PROJ-34 nutzt die feature-übergreifende ID aus dem Buchungstool-Briefing; interne Sequenz läuft bei PROJ-25 weiter. -->
 
 

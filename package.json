@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "hwg:check": "node scripts/check-hwg-vocab.mjs"
+    "hwg:check": "node scripts/check-hwg-vocab.mjs",
+    "test:redflags": "node --experimental-strip-types scripts/test-redflags.mjs",
+    "test:segments": "node --experimental-strip-types scripts/test-segments.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.76.0",

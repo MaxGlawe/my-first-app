@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { canUseChat } from "@/lib/app-access"
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -114,6 +115,9 @@ export async function GET() {
     }
   }
 
+  // Masterclass-Begleitung: steuert, ob der Chat noch offen ist und wie lange.
+  const chatAccess = await canUseChat(sc, user.id, patient.id)
+
   return NextResponse.json({
     profile: {
       id: patient.id,
@@ -122,6 +126,12 @@ export async function GET() {
       therapeut_id: patient.therapeut_id,
       therapeut_name: therapeutName,
       is_archived: !!patient.archived_at,
+    },
+    begleitung: {
+      chatOpen: chatAccess.allowed,
+      reason: chatAccess.reason ?? null,
+      endsAt: chatAccess.endsAt ?? null,
+      daysLeft: chatAccess.daysLeft ?? null,
     },
   })
 }

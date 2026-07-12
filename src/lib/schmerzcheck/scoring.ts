@@ -28,6 +28,64 @@ function asArray(v: AnswerValue | undefined): string[] {
 // ── Red flags ─────────────────────────────────────────────────────────────────
 
 /**
+ * Angaben, die für sich allein KEINEN Abbruch mehr auslösen (Anpassung 07/2026).
+ *
+ * Das Screening warf 39,7 % aller Check-Starter raus — für ein Screening absurd
+ * hoch. Zwei Kriterien waren dafür verantwortlich und hatten beide zu wenig
+ * Trennschärfe. Beide bleiben erfasst und werden im Report angesprochen; sie
+ * beenden den Check nur nicht mehr.
+ *
+ * `night_pain_severe` — „Beschwerden, die dich nachts aufwecken": häufigster
+ * Stopp-Grund (50 von 117; bei 45 der EINZIGE). Bei chronischem Rückenschmerz
+ * ist nächtliches Aufwachen der Normalfall. Leitliniennah ist es ein Warnzeichen
+ * nur IN KOMBINATION mit Gewichtsverlust, Fieber/Nachtschweiß oder Krebsanamnese
+ * — und diese drei bleiben harte Flags, jede Kombination stoppt also weiterhin.
+ *
+ * `saddle_tingling` — Kribbeln/Ameisenlaufen ohne Gefühllosigkeit. Das Warnzeichen
+ * einer Cauda-equina-Symptomatik ist die echte Sattel-ANÄSTHESIE, nicht Kribbeln.
+ * `saddle_numbness` (jetzt eindeutig als Gefühllosigkeit formuliert) stoppt
+ * unverändert hart.
+ *
+ * Ergebnis an den Bestandsdaten gerechnet: 117 → 72 Stopps (24,4 % statt 39,7 %).
+ */
+const NON_STOPPING_CODES = new Set(["none", "night_pain_severe", "saddle_tingling"])
+
+/**
+ * Die maßgebliche Region eines Checks — für Report, Bewegungsmodule und die
+ * Frage, ob die Masterclass (LWS-Kurs) überhaupt angeboten werden darf.
+ *
+ * Muss ZWEI Datenformate lesen:
+ *   NEU (ab 07/2026): `region` ist eine Mehrfachauswahl, `main_region` nennt den
+ *                     Schwerpunkt. Der Schwerpunkt gewinnt.
+ *   ALT:              `region` war eine Einfachauswahl (String), teils mit dem
+ *                     Wert 'multiple' — dem Wert, der 77 Leads unauswertbar
+ *                     gemacht hat. Er wird unverändert durchgereicht, damit alte
+ *                     Reports weiter funktionieren.
+ */
+export function resolveRegion(answers: AnswerMap): string {
+  const main = asString(answers["main_region"])
+  if (main) return main
+
+  const region = answers["region"]
+  if (Array.isArray(region)) {
+    // Mehrfachauswahl ohne Schwerpunkt (sollte nicht vorkommen — die Antwort-
+    // Route füllt main_region bei nur einer Wahl automatisch). Defensiv: erste.
+    return region.length === 1 ? String(region[0]) : String(region[0] ?? "")
+  }
+  return asString(region)
+}
+
+/** Nächtliches Aufwachen angegeben? (kein Stopp, aber ein Hinweis im Report) */
+export function hasNightPain(answers: AnswerMap): boolean {
+  return asArray(answers["rf_systemic"]).includes("night_pain_severe")
+}
+
+/** Kribbeln im Sattelbereich angegeben? (kein Stopp, aber ein Hinweis im Report) */
+export function hasSaddleTingling(answers: AnswerMap): boolean {
+  return asArray(answers["rf_cauda_equina"]).includes("saddle_tingling")
+}
+
+/**
  * Evaluate a single answer for a hard red flag (used by /api/check/answer for
  * the immediate stop after items 7/8/9).
  */
@@ -36,7 +94,7 @@ export function evaluateAnswerRedFlag(
   value: AnswerValue
 ): { hardFlag: boolean; codes: string[] } {
   if (itemId === "rf_cauda_equina" || itemId === "rf_systemic") {
-    const codes = asArray(value).filter((v) => v !== "none")
+    const codes = asArray(value).filter((v) => !NON_STOPPING_CODES.has(v))
     return { hardFlag: codes.length > 0, codes }
   }
   if (itemId === "rf_neuro") {
@@ -156,7 +214,7 @@ export function computeResult(answers: AnswerMap): ResultComputation {
   const result_category = resultCategory(soft_flag, severity_bucket, duration_bucket)
 
   return {
-    region: asString(answers["region"]),
+    region: resolveRegion(answers),
     duration_bucket,
     severity_score,
     severity_bucket,

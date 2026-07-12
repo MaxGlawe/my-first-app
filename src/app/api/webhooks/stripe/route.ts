@@ -12,6 +12,8 @@ import { createSubscriptionInvoice } from "@/lib/billing/auto-invoice"
 import { signDeckToken } from "@/lib/deck-token"
 import { renderDeckPurchaseEmail } from "@/lib/deck-emails"
 import { sendEmail } from "@/lib/email"
+import { activateBegleitung, revokeBegleitung } from "@/lib/masterclass/begleitung"
+import { sendMetaEvent } from "@/lib/meta-capi"
 import type Stripe from "stripe"
 
 export async function POST(request: NextRequest) {
@@ -31,6 +33,31 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createSupabaseServiceClient()
+
+  // ── Idempotenz-Gate ───────────────────────────────────────────────────────
+  // Stripe stellt Events mehrfach zu und wiederholt bei jedem 500 (diese Route
+  // gibt an mehreren Stellen bewusst 500 zurück, um Retries zu erzwingen).
+  // Ohne Register würde ein Retry z.B. erneut 92 Tage Begleitung freischalten.
+  //
+  // Wir sperren nur ERFOLGREICH abgeschlossene Events (completed_at gesetzt).
+  // Ein Retry nach einem Fehlschlag muss durchlaufen dürfen — sonst würde ein
+  // vorübergehender DB-Fehler den Kauf dauerhaft verschlucken.
+  const { data: seen } = await supabase
+    .from("stripe_webhook_events")
+    .select("completed_at")
+    .eq("event_id", event.id)
+    .maybeSingle()
+
+  if (seen?.completed_at) {
+    console.log(`[Stripe Webhook] Event ${event.id} (${event.type}) bereits verarbeitet — übersprungen`)
+    return NextResponse.json({ received: true, deduplicated: true })
+  }
+
+  if (!seen) {
+    await supabase
+      .from("stripe_webhook_events")
+      .insert({ event_id: event.id, event_type: event.type })
+  }
 
   try {
     switch (event.type) {
@@ -245,7 +272,7 @@ export async function POST(request: NextRequest) {
         // bestehenden Account- + Entitlement-Flow.
         const { data: purchasedProducts, error: productsErr } = await supabase
           .from("products")
-          .select("id, slug, titel, produkt_typ, preis, waehrung")
+          .select("id, slug, titel, produkt_typ, preis, waehrung, app_zugang_tage")
           .in("id", productIds)
 
         if (productsErr) {
@@ -457,6 +484,72 @@ export async function POST(request: NextRequest) {
                 { status: 500 }
               )
             }
+
+            // ── Masterclass: 3 Monate App-Begleitung freischalten ──────────
+            // Produkte mit app_zugang_tage > 0 (aktuell nur die Masterclass, 92 Tage)
+            // machen den Käufer zum Patienten (Chat braucht therapeut_id) und legen
+            // einen befristeten Zugangs-Grant an. Idempotent über die Stripe-Session:
+            // ein Webhook-Retry kann NIE ein zweites Mal 92 Tage schenken.
+            //
+            // Der Kurszugang selbst bleibt davon unberührt und lebenslang — hier
+            // geht es ausschließlich um die Betreuung.
+            const begleitungProduct = (purchasedProducts ?? []).find(
+              (p) => typeof p.app_zugang_tage === "number" && p.app_zugang_tage > 0
+            )
+
+            if (begleitungProduct) {
+              const buyerEmail =
+                session.metadata?.guest_email?.trim() || session.customer_details?.email || null
+
+              const result = await activateBegleitung(supabase, {
+                userId,
+                days: begleitungProduct.app_zugang_tage as number,
+                stripeSessionId: String(session.id),
+                productTitle: begleitungProduct.titel,
+                email: buyerEmail,
+                amount: begleitungProduct.preis ?? null,
+                // UTM-Kette schließt sich hier: Mail → /go → Salespage → Checkout
+                // → Stripe-Metadata → schmerzcheck_leads.conversion_source.
+                utm: {
+                  utm_source: session.metadata?.utm_source,
+                  utm_medium: session.metadata?.utm_medium,
+                  utm_campaign: session.metadata?.utm_campaign,
+                  utm_content: session.metadata?.utm_content,
+                },
+              })
+
+              if (!result.ok) {
+                // Der Kunde hat bezahlt und wartet auf seinen Zugang → Retry erzwingen.
+                console.error(
+                  `[Stripe Webhook] Begleitung konnte nicht aktiviert werden (session=${session.id}):`,
+                  result.error
+                )
+                return NextResponse.json(
+                  { error: "Begleitung activation failed" },
+                  { status: 500 }
+                )
+              }
+
+              console.log(
+                `[Stripe Webhook] Begleitung aktiv user=${userId} bis=${result.expiresAt}` +
+                  (result.duplicate ? " (Retry, bereits vorhanden)" : "")
+              )
+
+              // Meta CAPI: Purchase — serverseitig, damit der Kauf auch dann
+              // gezählt wird, wenn der Browser-Pixel geblockt ist (Adblocker,
+              // iOS). Deterministische event_id verhindert Doppelzählung bei
+              // einem Webhook-Retry. Feuert nur beim ERSTEN Grant, nie beim Retry.
+              if (!result.duplicate && buyerEmail) {
+                void sendMetaEvent({
+                  eventName: "Purchase",
+                  email: buyerEmail,
+                  eventId: `purchase_${session.id}`,
+                  eventSourceUrl: `${appUrl}/kurse/${begleitungProduct.slug}`,
+                  value: Number(begleitungProduct.preis) || undefined,
+                  currency: begleitungProduct.waehrung || "EUR",
+                }).catch(() => {})
+              }
+            }
           }
         }
 
@@ -515,6 +608,36 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        break
+      }
+
+      // ── Zahlung geplatzt / Chargeback → Max benachrichtigen ─────────────────
+      // Spec A5: „Klarna-Ratenzahlung platzt später" und „Zahlung angefochten".
+      // Wir sperren NICHT automatisch — ob ein Zugang entzogen wird, entscheidet
+      // Max im Einzelfall. Automatisches Sperren bei einer geplatzten Rate wäre
+      // gegenüber einem zahlungswilligen Kunden unverhältnismäßig.
+      case "charge.dispute.created":
+      case "charge.failed": {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const obj = event.data.object as any
+        const betrag = typeof obj.amount === "number" ? (obj.amount / 100).toFixed(2) : "?"
+        const mail = obj.billing_details?.email ?? obj.receipt_email ?? "unbekannt"
+        const grund = event.type === "charge.dispute.created" ? "Zahlung angefochten (Chargeback)" : "Zahlung fehlgeschlagen"
+
+        console.warn(`[Stripe Webhook] ${event.type} — ${betrag} € · ${mail}`)
+
+        await notifyAdmin(
+          `⚠️ ${grund}`,
+          `<p><strong>${grund}</strong> — bitte im Stripe-Dashboard prüfen.</p>
+           <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
+             <tr><td><strong>Betrag</strong></td><td>${betrag} €</td></tr>
+             <tr><td><strong>E-Mail</strong></td><td>${mail}</td></tr>
+             <tr><td><strong>Stripe-Event</strong></td><td>${event.type}</td></tr>
+             <tr><td><strong>Charge</strong></td><td>${obj.id ?? "—"}</td></tr>
+           </table>
+           <p style="font-family:sans-serif;font-size:14px">Der Zugang wurde <strong>nicht</strong> automatisch
+           gesperrt. Ob und wann das passiert, entscheidest du.</p>`
+        )
         break
       }
 
@@ -593,6 +716,16 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // ── Widerruf/Refund: auch die Begleitung zurücknehmen ──────────────
+        // Der Masterclass-Kurszugang wurde oben schon entzogen; hier fällt der
+        // befristete App-Zugang weg und die Lead-Konversion wird zurückgesetzt,
+        // damit die Auswertung nicht auf einem stornierten Kauf sitzenbleibt.
+        await revokeBegleitung(
+          supabase,
+          String(refundSession.id),
+          refundSession.metadata?.guest_email ?? refundSession.customer_details?.email ?? null
+        )
+
         break
       }
     }
@@ -601,7 +734,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Processing failed" }, { status: 500 })
   }
 
+  // Event erfolgreich abgearbeitet → gegen erneute Zustellung sperren.
+  // Bewusst erst hier: jeder 500-Pfad oben lässt den Retry durch.
+  await supabase
+    .from("stripe_webhook_events")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("event_id", event.id)
+
   return NextResponse.json({ received: true })
+}
+
+/**
+ * Interne Benachrichtigung an Max. Darf den Webhook NIE zum Scheitern bringen —
+ * ein fehlgeschlagener Mailversand würde sonst einen Stripe-Retry auslösen und
+ * damit den gesamten Kauf-Flow erneut durchlaufen.
+ */
+async function notifyAdmin(subject: string, html: string): Promise<void> {
+  try {
+    await sendEmail({
+      to: process.env.ADMIN_NOTIFY_EMAIL || "physiotherapieglawe@gmx.de",
+      subject,
+      html,
+    })
+  } catch (err) {
+    console.error("[Stripe Webhook] Admin-Benachrichtigung fehlgeschlagen:", err)
+  }
 }
 
 function mapStripeStatus(

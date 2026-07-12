@@ -37,6 +37,19 @@ const BodySchema = z
     email: z.string().email("Bitte gib eine gültige E-Mail-Adresse ein.").max(200),
     firstName: z.string().min(1, "Bitte gib deinen Vornamen ein.").max(100),
     lastName: z.string().min(1, "Bitte gib deinen Nachnamen ein.").max(100),
+    // Herkunft (Mail → /go → Salespage). Wandert in die Stripe-Metadata und von
+    // dort über den Webhook in schmerzcheck_leads.conversion_source.
+    utm: z
+      .object({
+        utm_source: z.string().max(120).optional(),
+        utm_medium: z.string().max(120).optional(),
+        utm_campaign: z.string().max(120).optional(),
+        utm_content: z.string().max(120).optional(),
+        utm_term: z.string().max(120).optional(),
+      })
+      .optional(),
+    // § 356 Abs. 5 BGB — ausdrückliche Zustimmung zum sofortigen Zugang.
+    widerrufVerzicht: z.boolean().optional(),
   })
   .refine((b) => b.productSlug || (b.slugs && b.slugs.length > 0), {
     message: "Es muss mindestens ein Produkt angegeben werden.",
@@ -237,6 +250,36 @@ export async function POST(request: NextRequest) {
   }
   if (purchasableProductIds.length === 1) {
     metadata.product_id = purchasableProductIds[0]
+  }
+  // UTM durchreichen — Stripe erlaubt max. 500 Zeichen pro Metadata-Wert.
+  for (const [k, v] of Object.entries(body.utm ?? {})) {
+    if (v) metadata[k] = String(v).slice(0, 200)
+  }
+
+  // ── § 356 Abs. 5 BGB — Widerrufs-Zustimmung ────────────────────────────────
+  // Bei digitalen Inhalten erlischt das Widerrufsrecht nur mit ausdrücklicher
+  // Zustimmung zum sofortigen Zugang. Serverseitig erzwungen: eine Checkbox im
+  // Frontend ist kein Nachweis, wenn der Server sie nicht verlangt. Die
+  // Zustimmung wandert als Beleg in die Stripe-Session (dauerhafte Kaufakte).
+  //
+  // Erzwungen wird sie derzeit NUR für die Masterclass — dort ist die Checkbox
+  // gebaut. Decks und Kurse laufen über dieselbe Route; ein hartes Erzwingen für
+  // alle würde deren Checkout sofort brechen. Dieselbe Zustimmung gehört dort
+  // ebenfalls hin (bestehende Lücke, kein neuer Fehler) → als Folgeaufgabe notiert.
+  const brauchtWiderrufVerzicht = activeProducts.some((p) => p.produkt_typ === "masterclass")
+
+  if (brauchtWiderrufVerzicht && !body.widerrufVerzicht) {
+    return NextResponse.json(
+      {
+        error:
+          "Bitte bestätige, dass der Zugang sofort bereitgestellt werden darf und du damit dein Widerrufsrecht verlierst.",
+      },
+      { status: 400 }
+    )
+  }
+  if (body.widerrufVerzicht) {
+    metadata.widerruf_verzicht = "true"
+    metadata.widerruf_verzicht_at = new Date().toISOString()
   }
 
   // Deck-only-Käufe sind accountlos → eigene Danke-Seite (kein "anmelden"-Wording)

@@ -14,12 +14,30 @@ import type { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
 
-/** Mail-Codes, die höchstens einmal pro Lead rausgehen dürfen. */
+/**
+ * Mail-Codes, die höchstens einmal pro Lead rausgehen dürfen.
+ *
+ *   T1–T3   transaktional (Opt-in, Report, Red-Flag-Hinweis)
+ *   D1–D5   Drip für Neuleads       R1/R2  Check-Erinnerung      W1  Win-back
+ *   M1–M4   Masterclass-Kampagne (Segment A)
+ *   B1/B2   Brücke für Red-Flag-Leads (Segment B) — KEIN Kaufangebot.
+ *           Heißen bewusst B*, nicht R* wie in der Spec: R1/R2 sind seit Juni
+ *           als Check-Erinnerung vergeben und stecken so im Event-Log und im
+ *           Claim-Register. Gleicher Code = kaputter Doppelversand-Schutz.
+ *   C1R     Reaktivierung (Segment C)
+ *   RT1/RT2 Routing-Frage an die 77 Leads mit unbekannter Region (PROJ-25b) —
+ *           KEIN Kaufangebot. Codes vorab gegen Event-Log und Claim-Register
+ *           geprüft: beide frei (Lehre aus der R1/R2-Kollision).
+ */
 export type EmailCode =
   | "T1" | "T2" | "T3"
   | "D1" | "D2" | "D3" | "D4" | "D5"
   | "R1" | "R2"
   | "W1"
+  | "M1" | "M2" | "M3" | "M4"
+  | "B1" | "B2"
+  | "C1R"
+  | "RT1" | "RT2"
 
 /**
  * Wie oft eine Mail pro Lead maximal rausgehen darf. Bewusst überall 1:
@@ -32,6 +50,10 @@ const MAX_SENDS: Record<EmailCode, number> = {
   D1: 1, D2: 1, D3: 1, D4: 1, D5: 1,
   R1: 1, R2: 1,
   W1: 1,
+  M1: 1, M2: 1, M3: 1, M4: 1,
+  B1: 1, B2: 1,
+  C1R: 1,
+  RT1: 1, RT2: 1,
 }
 
 /**
@@ -89,7 +111,25 @@ export async function loadClaimedCodes(
   supabase: ServiceClient,
   leadIds: string[]
 ): Promise<Map<string, Set<string>>> {
+  const withTime = await loadClaimsWithTime(supabase, leadIds)
   const map = new Map<string, Set<string>>()
+  for (const [leadId, codes] of withTime) {
+    map.set(leadId, new Set(codes.keys()))
+  }
+  return map
+}
+
+/**
+ * Wie loadClaimedCodes, liefert aber zusätzlich den Zeitpunkt des ersten
+ * Versands je Code. Die Kampagnen-Sequenzen takten ihre Abstände daran
+ * (M2 = 3 Tage nach M1) — nicht am Lead-Alter, denn die Bestandsleads sind
+ * Wochen alt und würden sonst alle Stufen sofort auf einmal bekommen.
+ */
+export async function loadClaimsWithTime(
+  supabase: ServiceClient,
+  leadIds: string[]
+): Promise<Map<string, Map<string, Date>>> {
+  const map = new Map<string, Map<string, Date>>()
   if (!leadIds.length) return map
 
   const CHUNK = 100 // Lead-IDs pro Anfrage (hält die URL kurz)
@@ -101,7 +141,7 @@ export async function loadClaimedCodes(
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await supabase
         .from("schmerzcheck_email_claims")
-        .select("lead_id, email_code")
+        .select("lead_id, email_code, first_claimed_at")
         .in("lead_id", chunk)
         .range(from, from + PAGE - 1)
 
@@ -110,8 +150,8 @@ export async function loadClaimedCodes(
       }
 
       for (const row of data ?? []) {
-        if (!map.has(row.lead_id)) map.set(row.lead_id, new Set())
-        map.get(row.lead_id)!.add(row.email_code)
+        if (!map.has(row.lead_id)) map.set(row.lead_id, new Map())
+        map.get(row.lead_id)!.set(row.email_code, new Date(row.first_claimed_at))
       }
 
       if (!data || data.length < PAGE) break

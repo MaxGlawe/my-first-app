@@ -93,7 +93,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Auswertung konnte nicht gespeichert werden." }, { status: 500 })
   }
 
-  await supabase.from("schmerzcheck_leads").update({ status: "check_completed" }).eq("id", leadId)
+  // Hauptregion an den Lead schreiben (PROJ-25b). Sie steuert, ob die Masterclass
+  // (LWS-Kurs) überhaupt angeboten werden darf — im Report und in den Drip-Mails.
+  // Die Check-Werte werden auf die gröberen main_region-Kategorien gemappt.
+  const MAIN_REGION_MAP: Record<string, string> = {
+    lower_back: "unterer_ruecken",
+    upper_back: "oberer_ruecken",
+    neck: "nacken_schulter",
+    shoulder: "nacken_schulter",
+    knee: "knie_huefte_fuss",
+    hip: "knie_huefte_fuss",
+    foot: "knie_huefte_fuss",
+  }
+  const mainRegion = MAIN_REGION_MAP[result.region ?? ""] ?? null
+
+  await supabase
+    .from("schmerzcheck_leads")
+    .update({
+      status: "check_completed",
+      ...(mainRegion
+        ? {
+            main_region: mainRegion,
+            main_region_set_at: new Date().toISOString(),
+            main_region_source: "check",
+          }
+        : {}),
+    })
+    .eq("id", leadId)
 
   // Meta CAPI: CompleteRegistration (server-side; deterministic event_id avoids
   // double-counting on report revisits). Fires for every completed check.

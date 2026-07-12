@@ -18,9 +18,18 @@ interface PatientProfile {
   is_archived: boolean
 }
 
+/** Masterclass-Begleitung: läuft der Chat noch, und wie lange? */
+interface BegleitungState {
+  chatOpen: boolean
+  reason: string | null
+  endsAt: string | null
+  daysLeft: number | null
+}
+
 export default function PatientChatPage() {
   const { isMember: isBgfMember } = useBgfMembership()
   const [profile, setProfile] = useState<PatientProfile | null>(null)
+  const [begleitung, setBegleitung] = useState<BegleitungState | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -50,6 +59,7 @@ export default function PatientChatPage() {
         }
         const json = await res.json()
         setProfile(json.profile ?? null)
+        setBegleitung(json.begleitung ?? null)
       } catch {
         if (!cancelled) setError("Ein unerwarteter Fehler ist aufgetreten.")
       } finally {
@@ -118,6 +128,17 @@ export default function PatientChatPage() {
 
   const therapeutName = profile.therapeut_name ?? "Dein Therapeut"
 
+  // Begleitung beendet → Verlauf bleibt lesbar, Schreiben ist zu.
+  const begleitungEnded = begleitung?.chatOpen === false
+  // Läuft noch, geht aber bald zu Ende → dezenter Hinweis statt Überraschung.
+  const endsSoon =
+    begleitung?.chatOpen === true &&
+    typeof begleitung.daysLeft === "number" &&
+    begleitung.daysLeft <= 21
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })
+
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
       <ChatHeader
@@ -125,12 +146,42 @@ export default function PatientChatPage() {
         subtitle="Dein Therapeut"
         backHref={isBgfMember ? "/app/bgf/dashboard" : "/app/dashboard"}
       />
+
+      {begleitungEnded && (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm text-amber-900">
+            <strong>Deine Begleitung ist beendet.</strong>{" "}
+            {begleitung?.endsAt && `Sie lief bis zum ${formatDate(begleitung.endsAt)}. `}
+            Dein bisheriger Verlauf und dein Übungsprogramm bleiben dir erhalten. Wenn du weiter
+            betreut werden möchtest, kannst du{" "}
+            <a href="/app/abo" className="font-semibold underline underline-offset-2">
+              die Begleitung fortsetzen
+            </a>
+            .
+          </p>
+        </div>
+      )}
+
+      {endsSoon && (
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-2">
+          <p className="text-xs text-slate-600">
+            Deine Begleitung läuft noch {begleitung!.daysLeft} Tage
+            {begleitung?.endsAt && ` (bis ${formatDate(begleitung.endsAt)})`}.
+          </p>
+        </div>
+      )}
+
       <div className="flex-1 min-h-0">
         <ChatFenster
           patientId={profile.id}
           currentUserId={currentUserId}
           perspective="patient"
-          readOnly={profile.is_archived}
+          readOnly={profile.is_archived || begleitungEnded}
+          readOnlyMessage={
+            begleitungEnded && !profile.is_archived
+              ? "Deine Begleitung ist beendet — du kannst hier keine neuen Nachrichten mehr senden."
+              : undefined
+          }
           className="h-full"
         />
       </div>

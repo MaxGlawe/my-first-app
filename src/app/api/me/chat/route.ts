@@ -8,6 +8,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { canUseChat } from "@/lib/app-access"
 
 const PAGE_SIZE = 50
 
@@ -93,6 +95,21 @@ export async function POST(req: NextRequest) {
   const patient = await resolvePatient(supabase, user.id, user.email ?? undefined)
   if (!patient) {
     return NextResponse.json({ error: "Patientenprofil nicht gefunden." }, { status: 404 })
+  }
+
+  // Masterclass-Begleitung: nach Ablauf der 92 Tage schließt der Chat. Der
+  // Verlauf bleibt lesbar (GET oben ist bewusst ungegatet) — nur neue Nachrichten
+  // sind nicht mehr möglich. Serverseitig geprüft, nicht nur im UI.
+  const chatAccess = await canUseChat(createSupabaseServiceClient(), user.id, patient.id)
+  if (!chatAccess.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "Deine 3-monatige Begleitung ist beendet. Du kannst deinen bisherigen Verlauf weiterhin lesen.",
+        reason: chatAccess.reason,
+      },
+      { status: 403 }
+    )
   }
 
   // BUG-6 FIX: Rate limiting — max 30 messages per minute per user (DB-based, serverless-safe)

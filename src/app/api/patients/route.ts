@@ -71,6 +71,33 @@ export async function GET(request: NextRequest) {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
+  // Filter „nur aktive Begleitungs-Patienten" (Masterclass) — muss VOR der
+  // Abfrage greifen, sonst würde nur die aktuelle Seite gefiltert und Zähler
+  // wie Pagination wären falsch.
+  const betreuungFilter = searchParams.get("betreuung") === "aktiv"
+  let begleitungUserIds: string[] | null = null
+
+  if (betreuungFilter) {
+    const sc = createSupabaseServiceClient()
+    const { data: activeGrants } = await sc
+      .from("app_access_grants")
+      .select("user_id")
+      .is("revoked_at", null)
+      .gt("expires_at", new Date().toISOString())
+
+    begleitungUserIds = [...new Set((activeGrants ?? []).map((g) => g.user_id as string))]
+
+    if (begleitungUserIds.length === 0) {
+      return NextResponse.json({
+        patients: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        totalPages: 1,
+      })
+    }
+  }
+
   // Build query — RLS ensures therapists only see their own patients
   let query = supabase
     .from("patients")
@@ -81,6 +108,10 @@ export async function GET(request: NextRequest) {
     .order("nachname", { ascending: true })
     .order("vorname", { ascending: true })
     .range(from, to)
+
+  if (begleitungUserIds) {
+    query = query.in("user_id", begleitungUserIds)
+  }
 
   // Scope filter: "mine" = only my patients, "all" = all praxis patients
   if (scope === "mine") {
@@ -145,6 +176,27 @@ export async function GET(request: NextRequest) {
         bgf_organization_name: p.user_id ? bgfMap.get(p.user_id) ?? null : null,
       }))
     }
+
+    // Masterclass-Begleitung: Enddatum der laufenden Betreuung (Badge + Filter).
+    // Zeigt auf einen Blick die Betreuungslast — wer wird bis wann betreut.
+    const { data: grants } = await sc
+      .from("app_access_grants")
+      .select("user_id, expires_at")
+      .in("user_id", userIds)
+      .is("revoked_at", null)
+      .gt("expires_at", new Date().toISOString())
+
+    const grantMap = new Map<string, string>()
+    for (const g of grants ?? []) {
+      // Gestapelte Grants: das späteste Ende gilt.
+      const prev = grantMap.get(g.user_id)
+      if (!prev || g.expires_at > prev) grantMap.set(g.user_id, g.expires_at)
+    }
+
+    enrichedPatients = enrichedPatients.map((p) => ({
+      ...p,
+      begleitung_bis: p.user_id ? grantMap.get(p.user_id) ?? null : null,
+    }))
   }
 
   return NextResponse.json({

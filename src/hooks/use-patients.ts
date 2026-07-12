@@ -10,6 +10,8 @@ interface UsePatientsOptions {
   showArchived?: boolean
   scope?: "mine" | "all"
   page?: number
+  /** Nur Patienten mit laufender Masterclass-Begleitung (Betreuungslast) */
+  nurBegleitung?: boolean
 }
 
 interface UsePatientsResult {
@@ -21,7 +23,7 @@ interface UsePatientsResult {
 }
 
 export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult {
-  const { search = "", showArchived = false, scope = "mine", page = 1 } = options
+  const { search = "", showArchived = false, scope = "mine", page = 1, nurBegleitung = false } = options
 
   const [patients, setPatients] = useState<Patient[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -47,6 +49,9 @@ export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult
         })
         if (search.trim()) {
           params.set("search", search.trim())
+        }
+        if (nurBegleitung) {
+          params.set("betreuung", "aktiv")
         }
 
         const res = await fetch(`/api/patients?${params.toString()}`)
@@ -75,7 +80,7 @@ export function usePatients(options: UsePatientsOptions = {}): UsePatientsResult
     return () => {
       cancelled = true
     }
-  }, [search, showArchived, scope, page, refreshKey])
+  }, [search, showArchived, scope, page, nurBegleitung, refreshKey])
 
   return { patients, totalCount, isLoading, error, refresh }
 }

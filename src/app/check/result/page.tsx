@@ -1,15 +1,17 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell, Lock, Gift } from "lucide-react"
+import { Download, ArrowRight, Clock, MessageCircle, Video, Dumbbell, Lock } from "lucide-react"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { verifyLeadToken } from "@/lib/lead-jwt"
 import { loadAnswers } from "@/lib/schmerzcheck/check-store"
 import { buildReportView, type SchmerzResult } from "@/lib/schmerzcheck/report"
 import type { AmpelBand } from "@/lib/schmerzcheck/ampel"
+import type { ResultCategory } from "@/lib/schmerzcheck/scoring"
 import { SpineDiagram } from "@/components/schmerzcheck/SpineDiagram"
 import { Barometer, BAND_DOT } from "@/components/schmerzcheck/Barometer"
 import { ReportCta } from "@/components/schmerzcheck/check/ReportCta"
+import { MasterclassOffer } from "@/components/schmerzcheck/check/MasterclassOffer"
 
 /**
  * PROJ-23 / Report v2: /check/result?t=<token> — premium, doctor-ready report
@@ -64,7 +66,7 @@ export default async function CheckResultPage({
   const supabase = createSupabaseServiceClient()
   const { data: lead } = await supabase
     .from("schmerzcheck_leads")
-    .select("first_name, status, booked_at")
+    .select("first_name, status, booked_at, converted_at")
     .eq("id", leadId)
     .maybeSingle()
 
@@ -88,12 +90,29 @@ export default async function CheckResultPage({
   const pdfHref = `/api/check/report.pdf?t=${encodeURIComponent(t ?? "")}`
   const ampel = view.ampel
   const strat = STRATEGY[ampel.overall]
-  const unlocked = Boolean(lead.booked_at) // Karten voll freigeschaltet nach Buchung
-  const FREE_CARDS = 2 // so viele Karten sind ohne Buchung sichtbar
-  // Tracked booking link — logs a "REPORT" click in schmerzcheck_email_events
-  // via /api/schmerzcheck/go, then 302s to the booking calendar (preselected).
-  const bookingHref = `/api/schmerzcheck/go?e=report&m=report&u=${encodeURIComponent(t ?? "")}`
-  const isBookingCategory = view.recommendation.ctaType === "booking"
+  const FREE_CARDS = 2 // so viele Karten sind ohne Kauf sichtbar
+  // Getrackter Ausgang: loggt einen "REPORT"-Klick (Ziel: salespage) in
+  // schmerzcheck_email_events und leitet dann mit UTM auf die Masterclass-Seite.
+  const masterclassHref =
+    `/api/schmerzcheck/go?e=REPORT&t=salespage&m=report` +
+    `&a=${encodeURIComponent(result.result_category ?? "")}&u=${encodeURIComponent(t ?? "")}`
+
+  // Die Masterclass ist ein LWS-Kurs („Chronischer Kreuzschmerz" — Anatomie der
+  // LWS, Rumpftraining). Sie einem Nacken- oder Knie-Patienten für 399 € zu
+  // zeigen, wäre ein Fehlverkauf. Das Angebot erscheint deshalb NUR, wenn der
+  // Schwerpunkt der untere Rücken ist — und nur, wenn die Kategorie es ohnehin
+  // erlaubt (soft-flag/„ärztlich abklären" bekommt weiterhin nichts).
+  const istLws = result.region === "lower_back"
+  const zeigtAngebot = view.recommendation.ctaType === "booking" && istLws
+
+  // Karten-Paywall: nach dem Kauf offen (converted_at). booked_at bleibt als
+  // Altfall drin — wer damals die Video-Analyse gebucht hat, behält den Zugang.
+  //
+  // Wem wir NICHTS anbieten dürfen (Nacken, Knie, „ärztlich abklären"), der
+  // bekommt die Karten geschenkt. Sonst wäre die Paywall eine Sackgasse:
+  // gesperrte Karten ohne jeden Weg, sie freizuschalten. Die 12 Karten sind
+  // ohnehin Ganzkörper (Nacken-Reset, Schulter-Kreise …), passen also zu ihnen.
+  const unlocked = Boolean(lead.converted_at || lead.booked_at) || !zeigtAngebot
 
   return (
     <div className="mx-auto max-w-[780px] px-5 pb-20 pt-8">
@@ -152,37 +171,15 @@ export default async function CheckResultPage({
         Beschwerden sich verschlechtern: bitte lass dich ärztlich abklären.
       </div>
 
-      {/* Primärer Buchungs-CTA — hoch platziert, nur für buchungs-berechtigte
-          Bänder (chronisch/akut-schwer). Soft-Flag/„ärztlich abklären" wird hier
-          bewusst NICHT angesprochen (HWG-/Sicherheits-Logik via ctaType). */}
-      {isBookingCategory && (
-        <div className="mt-6 rounded-3xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-50 to-[#fbfaf6] p-6 sm:p-8">
-          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-            Dein empfohlener nächster Schritt
-          </span>
-          <h2 className="mt-1.5 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-slate-900 sm:text-[26px]">
-            Mach das nicht allein — hol dir deinen eigenen Physiotherapeuten.
-          </h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-700">
-            Dein eigener Physiotherapeut schaut sich deine Bewegung an, ordnet deine Antworten
-            ein und gibt dir einen Plan — und bleibt danach an deiner Seite, statt dich allein
-            weitermachen zu lassen. Direkt auf deinem Handy, ohne Praxisbesuch.
-          </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-600/10 px-3.5 py-1.5 text-[13px] font-semibold text-emerald-800">
-            <Gift className="h-4 w-4" /> Dein 1. Monat Begleitung ist geschenkt
-          </div>
-          <div className="mt-5">
-            <ReportCta
-              href={bookingHref}
-              label="Mit deinem Physiotherapeuten starten"
-              variant="booking"
-              band={ampel.overall}
-            />
-          </div>
-          <p className="mt-3 text-[12px] text-slate-500">
-            69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
-          </p>
-        </div>
+      {/* Masterclass-Angebot — hoch platziert, nur für Kategorien mit einem
+          zulässigen Angebot. Soft-Flag / „ärztlich abklären" bekommt hier
+          bewusst NICHTS (HWG-/Sicherheits-Logik via ctaType). */}
+      {zeigtAngebot && (
+        <MasterclassOffer
+          category={result.result_category as ResultCategory}
+          token={t ?? ""}
+          band={ampel.overall}
+        />
       )}
 
       {/* Section 1 — Standortbestimmung */}
@@ -288,21 +285,22 @@ export default async function CheckResultPage({
               <Lock className="h-4 w-4" /> 10 weitere Karten gesperrt
             </div>
             <p className="mx-auto mb-4 max-w-md text-[14.5px] leading-relaxed text-slate-700">
-              Deine komplette Ganzkörper-Routine wartet hinter dem Milchglas. Sobald du mit
-              deinem <strong>eigenen Physiotherapeuten</strong> startest, schalten sich alle 12
-              Karten frei — abgestimmt auf deinen Bereich.
+              Deine komplette Ganzkörper-Routine wartet hinter dem Milchglas. Mit der{" "}
+              <strong>Masterclass</strong> schalten sich alle 12 Karten frei — dazu kommt das
+              große Bewegungs-Kartendeck aus dem Kurs.
             </p>
             <ReportCta
-              href={bookingHref}
-              label="Mit deinem Physiotherapeuten starten"
+              href={masterclassHref}
+              label="Die Masterclass ansehen"
               variant="booking"
               band={ampel.overall}
             />
             <p className="mt-3 text-[12px] text-slate-400">
-              69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
+              399 € einmalig (statt 499 €) · inkl. 3 Monate persönliche Begleitung per App · oder
+              3 × 133 € mit Klarna
             </p>
             <p className="mt-2 text-[11px] text-slate-400">
-              Nach deiner Buchung lädst du diese Seite einmal neu — dann sind alle Karten offen.
+              Nach dem Kauf lädst du diese Seite einmal neu — dann sind alle Karten offen.
             </p>
           </div>
         )}
@@ -320,15 +318,16 @@ export default async function CheckResultPage({
           <p className="text-[16px] leading-relaxed text-slate-800">{view.recommendation.text}</p>
           <div className="mt-5">
             <ReportCta
-              href={isBookingCategory ? bookingHref : view.recommendationHref}
-              label={view.recommendation.ctaLabel}
+              href={zeigtAngebot ? masterclassHref : view.recommendationHref}
+              label={zeigtAngebot ? "Die Masterclass ansehen" : view.recommendation.ctaLabel}
               variant={view.recommendation.ctaType}
               band={ampel.overall}
             />
           </div>
-          {view.recommendation.ctaType === "booking" && (
+          {zeigtAngebot && (
             <p className="mt-3 text-[12px] text-slate-400">
-              69 € Start (Erstanalyse) · 1. Monat Begleitung geschenkt · danach 16,99 €/Monat, jederzeit kündbar
+              399 € einmalig (statt 499 €) · inkl. 3 Monate persönliche Begleitung per App · oder
+              3 × 133 € mit Klarna
             </p>
           )}
         </div>
@@ -341,15 +340,15 @@ export default async function CheckResultPage({
           Praxis OS — dein Therapeut für die Hosentasche.
         </h2>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-300">
-          Der Report ist dein Startpunkt. Mit deinem eigenen Physiotherapeuten geht es individuell
-          weiter — er begleitet dich über die App, statt dich allein raten zu lassen.
-          <strong className="text-white"> Dein erster Monat Begleitung ist geschenkt.</strong>
+          Der Report ist dein Startpunkt. In der Masterclass geht es individuell weiter — mit
+          <strong className="text-white"> 3 Monaten persönlicher Begleitung per App</strong>, statt
+          dich allein raten zu lassen.
         </p>
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: Video, t: "Persönliche Erstanalyse", d: "Dein Physiotherapeut schaut sich deine Bewegung an, ordnet sie ein und gibt dir einen Plan." },
-            { icon: Dumbbell, t: "Individuelle Pläne", d: "Trainingspläne, die zu dir passen — nicht von der Stange." },
-            { icon: MessageCircle, t: "Direkter Chat", d: "Deine Fragen, direkt an deinen Therapeuten." },
+            { icon: MessageCircle, t: "Chat mit Max", d: "Du schreibst, wenn etwas hakt — Antwort innerhalb von 48 h werktags." },
+            { icon: Dumbbell, t: "Dein Übungsprogramm", d: "Auf dich abgestimmt und unterwegs anpassbar — nicht von der Stange." },
+            { icon: Video, t: "27 vertonte Lektionen", d: "Plus Workbook und Kartendeck — bleiben dir dauerhaft erhalten." },
           ].map((f) => (
             <div key={f.t} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <f.icon className="h-5 w-5 text-emerald-400" />

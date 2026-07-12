@@ -5,7 +5,7 @@
  * web report and the PDF. Copy describes a *Standortbestimmung* (orientation),
  * never an outcome or healing.
  */
-import type { ResultCategory, AnswerMap } from "./scoring"
+import { hasNightPain, hasSaddleTingling, type ResultCategory, type AnswerMap } from "./scoring"
 import { getRecommendation, getCtaHref, type Recommendation } from "./recommendations"
 import { getModulesForRegion, type MovementModule } from "./movement-modules"
 import { computeAmpel, type AmpelResult } from "./ampel"
@@ -101,6 +101,43 @@ function movementParagraph(readiness: string | null): string {
   return ""
 }
 
+/**
+ * Hinweis bei nächtlichem Schmerz (Anpassung 07/2026).
+ *
+ * Nächtliches Aufwachen stoppt den Check nicht mehr — es hatte als alleiniges
+ * Kriterium keine Trennschärfe und warf 45 Leute grundlos raus. Der klinische
+ * Hinweis darf deshalb aber nicht verschwinden: Er wandert vom Hard-Stop in den
+ * Report, sichtbar und mit klarer Grenze, ab wann es doch zum Arzt gehört.
+ */
+function nightPainAdvisory(answers: AnswerMap): string {
+  if (!hasNightPain(answers)) return ""
+  return (
+    "Du hast angegeben, dass dich die Beschwerden nachts aufwecken. Für sich genommen ist das " +
+    "bei anhaltenden Rückenbeschwerden häufig und kein Alarmzeichen — es hängt oft mit Anspannung " +
+    "und Liegeposition zusammen. Lass es aber ärztlich abklären, wenn es über Wochen nicht besser " +
+    "wird oder zusätzlich ungewollter Gewichtsverlust, Fieber oder Nachtschweiß dazukommen."
+  )
+}
+
+/**
+ * Hinweis bei Kribbeln im Sattelbereich (ohne Gefühllosigkeit).
+ *
+ * Kribbeln stoppt den Check nicht mehr — es begleitet ausstrahlende Beschwerden
+ * sehr häufig. Die Grenze zum Notfall muss aber unmissverständlich dastehen:
+ * Sobald echte Gefühllosigkeit oder Probleme mit Blase/Darm dazukommen, ist das
+ * eine Cauda-equina-Symptomatik und gehört sofort in die Notaufnahme.
+ */
+function saddleTinglingAdvisory(answers: AnswerMap): string {
+  if (!hasSaddleTingling(answers)) return ""
+  return (
+    "Du hast Kribbeln im Sattelbereich angegeben, ohne Gefühllosigkeit. Kribbeln begleitet " +
+    "ausstrahlende Rückenbeschwerden häufig und ist für sich kein Notfall. Wichtig ist die " +
+    "Grenze: Wenn der Bereich taub wird (wie beim Zahnarzt betäubt) oder du Probleme bekommst, " +
+    "Blase oder Darm zu kontrollieren, geh bitte sofort in eine Notaufnahme — das ist dann kein " +
+    "Fall zum Abwarten."
+  )
+}
+
 export function buildReportView(
   result: SchmerzResult,
   firstName: string,
@@ -116,6 +153,8 @@ export function buildReportView(
     chronicityParagraph(result.duration_bucket),
     psychosocialParagraph(result.psychosocial_risk),
     movementParagraph(result.movement_readiness),
+    nightPainAdvisory(answers),
+    saddleTinglingAdvisory(answers),
   ].filter(Boolean)
 
   return {

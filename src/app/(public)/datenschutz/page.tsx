@@ -381,6 +381,62 @@ export default async function DatenschutzPage() {
             </div>
           </section>
 
+          {/* 9a. Zahlungsabwicklung — Stripe & Klarna
+              Ergänzt 07/2026: Beim Verkauf digitaler Inhalte (Masterclass, Kurse,
+              Kartendecks) werden personenbezogene Daten an den Zahlungsdienstleister
+              übermittelt. Diese Empfänger MÜSSEN nach Art. 13 Abs. 1 lit. e DSGVO
+              genannt werden — vorher fehlten sie hier vollständig. */}
+          <section>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>
+              9a. Zahlungsabwicklung (Stripe, Klarna)
+            </h2>
+            <p>
+              Für den Kauf digitaler Inhalte (Masterclass, Online-Kurse, Kartendecks) nutzen wir den
+              Zahlungsdienstleister <strong>Stripe Payments Europe, Ltd.</strong>, 1 Grand Canal
+              Street Lower, Grand Canal Dock, Dublin, Irland.
+            </p>
+            <p className="mt-3">
+              Wenn du einen Kauf startest, werden die dafür erforderlichen Daten an Stripe
+              übermittelt — insbesondere <strong>Name, E-Mail-Adresse, Zahlungsdaten und
+              Rechnungsbetrag</strong>. Deine vollständigen Zahlungsdaten (z. B. Kreditkartennummer)
+              werden ausschließlich von Stripe verarbeitet; wir sehen und speichern sie zu keinem
+              Zeitpunkt.
+            </p>
+            <p className="mt-3">
+              Wählst du im Bezahlvorgang die Ratenzahlung, wird diese über{" "}
+              <strong>Klarna Bank AB (publ)</strong>, Sveavägen 46, 111 34 Stockholm, Schweden,
+              abgewickelt. Klarna führt dabei eigenständig eine Identitäts- und Bonitätsprüfung durch
+              und ist für diese Verarbeitung eigenverantwortlich. Es gelten die Datenschutzhinweise
+              von Klarna.
+            </p>
+            <p className="mt-3">
+              <strong>Rechtsgrundlage:</strong> Art. 6 Abs. 1 lit. b DSGVO (Erfüllung des
+              Kaufvertrags). <strong>Speicherdauer:</strong> Kaufbelege werden zur Erfüllung
+              handels- und steuerrechtlicher Aufbewahrungspflichten 10 Jahre gespeichert (§ 147 AO,
+              § 257 HGB).
+            </p>
+            <p className="mt-3">
+              Datenschutzhinweise der Anbieter:{" "}
+              <a
+                href="https://stripe.com/de/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2"
+              >
+                stripe.com/de/privacy
+              </a>{" "}
+              ·{" "}
+              <a
+                href="https://www.klarna.com/de/datenschutz/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2"
+              >
+                klarna.com/de/datenschutz
+              </a>
+            </p>
+          </section>
+
           {/* 10. Deine Rechte */}
           <section>
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>10. Deine Rechte als betroffene Person</h2>

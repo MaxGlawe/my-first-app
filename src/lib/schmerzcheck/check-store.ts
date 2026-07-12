@@ -58,7 +58,7 @@ export async function routeToRedFlag(
 
   // Der Claim ersetzt den bisherigen "idempotent guard is the caller's
   // responsibility": auch wenn zwei Routen gleichzeitig routeToRedFlag() rufen,
-  // geht die T3-Mail garantiert nur einmal raus.
+  // geht die T3-Mail sicher nur einmal raus.
   void (async () => {
     try {
       if (!(await claimEmailSend(supabase, lead.id, "T3"))) return

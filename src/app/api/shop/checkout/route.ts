@@ -33,6 +33,18 @@ const CheckoutBodySchema = z
     productSlug: z.string().min(1).max(200).optional(),
     slug: z.string().min(1).max(200).optional(),
     slugs: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+    // Herkunft (Mail → /go → Salespage) → Stripe-Metadata → conversion_source.
+    utm: z
+      .object({
+        utm_source: z.string().max(120).optional(),
+        utm_medium: z.string().max(120).optional(),
+        utm_campaign: z.string().max(120).optional(),
+        utm_content: z.string().max(120).optional(),
+        utm_term: z.string().max(120).optional(),
+      })
+      .optional(),
+    // § 356 Abs. 5 BGB — ausdrückliche Zustimmung zum sofortigen Zugang.
+    widerrufVerzicht: z.boolean().optional(),
   })
   .refine((b) => b.productSlug || b.slug || (b.slugs && b.slugs.length > 0), {
     message: "Es muss mindestens ein Produkt angegeben werden.",
@@ -228,6 +240,29 @@ export async function POST(request: NextRequest) {
   }
   if (purchasableProductIds.length === 1) {
     metadata.product_id = purchasableProductIds[0]
+  }
+  // UTM durchreichen — Stripe erlaubt max. 500 Zeichen pro Metadata-Wert.
+  for (const [k, v] of Object.entries(parsed.data.utm ?? {})) {
+    if (v) metadata[k] = String(v).slice(0, 200)
+  }
+
+  // § 356 Abs. 5 BGB — Zustimmung zum sofortigen Zugang. Nur für die Masterclass
+  // erzwungen (dort ist die Checkbox gebaut); Decks/Kurse würden sonst brechen.
+  // Siehe public-checkout für die ausführliche Begründung.
+  const brauchtWiderrufVerzicht = activeProducts.some((p) => p.produkt_typ === "masterclass")
+
+  if (brauchtWiderrufVerzicht && !parsed.data.widerrufVerzicht) {
+    return NextResponse.json(
+      {
+        error:
+          "Bitte bestätige, dass der Zugang sofort bereitgestellt werden darf und du damit dein Widerrufsrecht verlierst.",
+      },
+      { status: 400 }
+    )
+  }
+  if (parsed.data.widerrufVerzicht) {
+    metadata.widerruf_verzicht = "true"
+    metadata.widerruf_verzicht_at = new Date().toISOString()
   }
 
   // Deck-only-Käufe sind accountlos → eigene Danke-Seite (kein "anmelden"-Wording)

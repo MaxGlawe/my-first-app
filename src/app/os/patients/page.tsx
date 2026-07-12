@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { PatientsHeader } from "@/components/patients/PatientsHeader"
 import { PatientTable } from "@/components/patients/PatientTable"
+import { Button } from "@/components/ui/button"
 import { usePatients } from "@/hooks/use-patients"
 import {
   Pagination,
@@ -20,6 +21,7 @@ export default function PatientsPage() {
   const [search, setSearch] = useState("")
   const [showArchived, setShowArchived] = useState(false)
   const [scope, setScope] = useState<"mine" | "all">("mine")
+  const [nurBegleitung, setNurBegleitung] = useState(false)
   const [page, setPage] = useState(1)
 
   const debouncedSearch = useDebounce(search, 300)
@@ -29,6 +31,7 @@ export default function PatientsPage() {
     showArchived,
     scope,
     page,
+    nurBegleitung,
   })
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
@@ -48,6 +51,11 @@ export default function PatientsPage() {
     setPage(1)
   }, [])
 
+  const handleBegleitungChange = useCallback(() => {
+    setNurBegleitung((v) => !v)
+    setPage(1)
+  }, [])
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <PatientsHeader
@@ -58,6 +66,24 @@ export default function PatientsPage() {
         scope={scope}
         onScopeChange={handleScopeChange}
       />
+
+      {/* Betreuungslast: nur Patienten mit laufender Masterclass-Begleitung */}
+      <div className="mb-4 flex items-center gap-2">
+        <Button
+          type="button"
+          variant={nurBegleitung ? "default" : "outline"}
+          size="sm"
+          onClick={handleBegleitungChange}
+          className={nurBegleitung ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+        >
+          Aktive Begleitungen
+        </Button>
+        {nurBegleitung && (
+          <span className="text-sm text-slate-500">
+            {totalCount} {totalCount === 1 ? "Patient" : "Patienten"} in Betreuung
+          </span>
+        )}
+      </div>
 
       <PatientTable patients={patients} isLoading={isLoading} error={error} />
 

@@ -46,8 +46,39 @@ const NRS_LABELS: NrsLabel[] = [
 
 export const CHECK_ITEMS: CheckItem[] = [
   {
+    // MEHRFACHAUSWAHL seit 07/2026 (PROJ-25b).
+    //
+    // Vorher war das eine Einfachauswahl MIT der Option „Mehrere Bereiche
+    // gleichzeitig" — und 47 % aller Teilnehmer haben genau die geklickt und
+    // damit ihre eigene Detailangabe überschrieben. Bei 77 Leads wissen wir
+    // dadurch bis heute nicht, welche Region gemeint war. Für ein Produkt, das
+    // „Chronischer Kreuzschmerz" heißt, war das die teuerste Frage im ganzen
+    // Check. Die Option ist deshalb ersatzlos gestrichen: Wer mehrere Bereiche
+    // hat, wählt sie jetzt einzeln aus.
     id: "region",
-    text: "Wo spürst du deine Beschwerden am stärksten?",
+    text: "Wo spürst du deine Beschwerden?",
+    helperText: "Mehrfachauswahl möglich — wähle alle Bereiche, die dich betreffen.",
+    type: "multi_select",
+    required: true,
+    options: [
+      { value: "neck", label: "Nacken" },
+      { value: "shoulder", label: "Schulter" },
+      { value: "upper_back", label: "Oberer Rücken" },
+      { value: "lower_back", label: "Unterer Rücken / LWS" },
+      { value: "hip", label: "Hüfte" },
+      { value: "knee", label: "Knie" },
+      { value: "foot", label: "Fuß" },
+      { value: "other", label: "Anderer Bereich" },
+    ],
+  },
+  {
+    // Schwerpunkt-Frage. Wird ÜBERSPRUNGEN, wenn oben nur ein Bereich gewählt
+    // wurde — dann ist der Schwerpunkt eindeutig und wird automatisch gesetzt
+    // (siehe /api/check/answer). Der Check hat keine bedingten Fragen; das
+    // Überspringen passiert serverseitig über `skipNext` in der Antwort.
+    id: "main_region",
+    text: "Wo schränkt es dich im Alltag am meisten ein?",
+    helperText: "Ein Bereich — der, der dich am meisten stört.",
     type: "single_select",
     required: true,
     options: [
@@ -58,7 +89,6 @@ export const CHECK_ITEMS: CheckItem[] = [
       { value: "hip", label: "Hüfte" },
       { value: "knee", label: "Knie" },
       { value: "foot", label: "Fuß" },
-      { value: "multiple", label: "Mehrere Bereiche gleichzeitig" },
       { value: "other", label: "Anderer Bereich" },
     ],
   },
@@ -128,7 +158,22 @@ export const CHECK_ITEMS: CheckItem[] = [
     required: true,
     redFlag: true,
     options: [
-      { value: "saddle_numbness", label: "Taubheit oder Kribbeln im Genital- oder Sattelbereich", redFlag: true },
+      // Präzisiert 07/2026: Das Warnzeichen für eine Cauda-equina-Symptomatik ist
+      // die echte Sattel-ANÄSTHESIE (Gefühllosigkeit), nicht Kribbeln. Die alte
+      // Formulierung „Taubheit ODER Kribbeln" fing jeden Ischias mit
+      // ausstrahlendem Kribbeln ein — 27 Leads flogen allein deswegen raus.
+      // Der Vergleich mit der Zahnarzt-Betäubung macht den Unterschied greifbar.
+      {
+        value: "saddle_numbness",
+        label: "Taubheit/Gefühllosigkeit im Genital- oder Sattelbereich (wie beim Zahnarzt betäubt)",
+        redFlag: true,
+      },
+      // Kribbeln ist NICHT stoppend — häufig bei ausstrahlenden Beschwerden.
+      // Der Report weist trotzdem darauf hin (siehe report.ts).
+      {
+        value: "saddle_tingling",
+        label: "Nur Kribbeln oder Ameisenlaufen (ohne Gefühllosigkeit)",
+      },
       { value: "bladder_bowel", label: "Plötzlicher Verlust der Kontrolle über Blase oder Darm", redFlag: true },
       { value: "severe_progressive_weakness", label: "Stark fortschreitende Lähmung", redFlag: true },
       { value: "none", label: "Nichts davon", exclusive: true },
@@ -144,7 +189,13 @@ export const CHECK_ITEMS: CheckItem[] = [
     options: [
       { value: "weight_loss", label: "Ungewollter Gewichtsverlust (mehr als 5 kg)", redFlag: true },
       { value: "fever_sweats", label: "Wiederkehrendes Fieber oder Nachtschweiß", redFlag: true },
-      { value: "night_pain_severe", label: "Beschwerden, die dich nachts aufwecken (jede Nacht)", redFlag: true },
+      // KEIN redFlag mehr (Anpassung 07/2026): Nächtliches Aufwachen ist bei
+      // chronischem Rückenschmerz der Normalfall und hatte als alleiniges
+      // Stopp-Kriterium keine Trennschärfe — 45 Leads flogen allein deswegen
+      // raus. In KOMBINATION mit Gewichtsverlust, Fieber oder Krebsanamnese
+      // stoppt es weiterhin, weil diese drei harte Flags bleiben.
+      // Siehe scoring.ts → NON_STOPPING_CODES.
+      { value: "night_pain_severe", label: "Beschwerden, die dich nachts aufwecken (jede Nacht)" },
       { value: "cancer_history", label: "Bekannte Krebserkrankung (aktuell oder früher)", redFlag: true },
       { value: "none", label: "Nichts davon", exclusive: true },
     ],
