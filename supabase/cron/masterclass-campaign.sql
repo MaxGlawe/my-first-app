@@ -1,34 +1,44 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- PROJ-25 / 25b: Masterclass-Kampagne (Supabase pg_cron + pg_net)
+-- PROJ-25 / 25b / 25c: Masterclass-Kampagne (Supabase pg_cron + pg_net)
 --
--- Ruft täglich /api/cron/masterclass-campaign auf. Der Endpoint verschickt die
--- einmalige Kampagne an die Schmerzcheck-Bestandsleads:
+-- Ruft /api/cron/masterclass-campaign auf. Der Endpoint verschickt die einmalige
+-- Kampagne an die Schmerzcheck-Bestandsleads — 215 fällige Mails an 215 Menschen.
 --
---   RT1/RT2  → 69 Leads mit unbekannter Region. Routing-Frage, KEIN Angebot.
---   M1–M4    → nur an Leads mit main_region = 'unterer_ruecken' (LWS).
---              Die Masterclass ist ein Kreuzschmerz-Kurs — ein Nacken-Patient
---              bekommt sie NICHT angeboten.
---   B1/B2    → 117 Red-Flag-Leads. Frage nach ärztlicher Abklärung, KEIN Angebot.
---   C1R      → 13 Leads mit offenem Check.
+--   M1–M4   →  9  LWS-Leads. Die EINZIGEN, die ein Kaufangebot bekommen.
+--   RT1/RT2 → 69  Region unbekannt. Ein-Klick-Frage, KEIN Angebot.
+--   C1R     → 13  Offener Check. „Bring ihn zu Ende." KEIN Angebot.
+--   RF1     → 45  Im Juni zu Unrecht gestoppt (nur Nacht-Kriterium).
+--                 „Ich habe dich zu früh gestoppt." KEIN Angebot.
+--   B1/B2   → 72  Echte Warnzeichen. „Warst du beim Arzt?" KEIN Angebot.
+--   N1/OB1/K1 → 79  Nacken/oberer Rücken/Knie. Wert-Mail + Warteliste.
+--                 KEIN Angebot — für sie gibt es noch kein Produkt.
 --   Segment D → 210 Leads OHNE Double-Opt-in bekommen NIEMALS eine Mail.
 --
+-- ZEITPLAN: Dienstag bis Freitag, 07:00 UTC = 9:00 Uhr deutsche Sommerzeit.
+--
+--   Kein Montag: Da liegt das Wochenend-Postfach voll, eine Mail geht dort am
+--   ehesten unter. Kein Wochenende: In den Mails steht „Antwort innerhalb von
+--   48 h werktags" — wer Samstagabend auf die Arzt-Frage antwortet und bis
+--   Montag nichts hört, startet die Beziehung schlecht.
+--
+--   ⚠️ Zeitumstellung: 07:00 UTC ist von Ende März bis Ende Oktober 9:00 Uhr.
+--      Im Winter wären es 8:00 Uhr. Die Kampagne dauert ~3 Wochen im Juli —
+--      irrelevant. Für Dauerbetrieb müsste man das anpassen.
+--
 -- SICHERHEITSNETZ (im Endpoint, nicht hier):
---   • Drosselung: max. 30 Mails pro Lauf → die 91 fälligen gehen über ~3 Tage
---     raus. Gut für die Zustellbarkeit, und es bleibt Zeit zum Gegensteuern.
---   • Sanity-Guard: über 200 fällige Mails → Abbruch + Alarm-Mail, kein Versand.
+--   • Drosselung: max. 30 Mails pro Lauf → die 215 gehen über ~9 Versandtage
+--     raus. Das schützt die Absender-Reputation des Praxis-Postfachs.
+--   • Sanity-Guard: über 250 fällige Mails → Abbruch + Alarm-Mail, kein Versand.
 --   • Jede Mail claimt vor dem Versand → ein Doppellauf kann nichts doppelt senden.
 --   • Jeder Query-Fehler bricht den Lauf ab (fail closed).
---
--- Zeit: 09:00 UTC (11:00 deutsche Sommerzeit) — bewusst NACH dem Drip-Cron
--- (08:00 UTC), damit sich die beiden nicht überlappen und im Log auseinander-
--- zuhalten sind.
+--   • assertMailable() prüft vor JEDEM Versand nochmal das Segment und wirft.
 --
 -- ⚠️ MANUELL im Supabase SQL-Editor ausführen (NICHT Teil der App-Deploys).
 --    Vorher __DEIN_CRON_SECRET__ durch den echten CRON_SECRET-Wert ersetzen
---    (derselbe wie in der Server-Env / wie beim Drip-Cron).
+--    (derselbe wie beim Drip-Cron / in der Server-Env).
 --
 -- ⚠️ AB DEM AUSFÜHREN DIESER DATEI GEHEN ECHTE MAILS RAUS.
---    Erster Lauf: 30 × RT1 an die Leads mit unbekannter Region.
+--    Erster Lauf: Dienstag 9:00 Uhr → 9 × M1 + 21 × RT1.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create extension if not exists pg_cron;
@@ -44,7 +54,7 @@ end $$;
 
 select cron.schedule(
   'masterclass-campaign-daily',
-  '0 9 * * *',                       -- täglich 09:00 UTC
+  '0 7 * * 2-5',                     -- Di–Fr, 07:00 UTC = 9:00 Uhr deutscher Zeit
   $$
   select net.http_get(
     url     := 'https://wwwpraxis-os.com/api/cron/masterclass-campaign',
@@ -56,18 +66,24 @@ select cron.schedule(
 );
 
 -- ── Kontrolle ────────────────────────────────────────────────────────────────
--- Job vorhanden?
---   select jobid, jobname, schedule, active from cron.job
+-- Job vorhanden und aktiv?
+--   select jobname, schedule, active from cron.job
 --    where jobname = 'masterclass-campaign-daily';
 --
 -- Läufe (pg_cron):
---   select * from cron.job_run_details
+--   select start_time, status, return_message from cron.job_run_details
 --    where jobid = (select jobid from cron.job where jobname='masterclass-campaign-daily')
 --    order by start_time desc limit 10;
 --
--- Antworten des Endpoints (pg_net ist async — das Ergebnis landet hier):
---   select id, status_code, content, created
---     from net._http_response order by created desc limit 10;
+-- Antwort des Endpoints (pg_net ist async — das Ergebnis landet hier):
+--   select status_code, content, created from net._http_response
+--    order by created desc limit 5;
+--   → Erwartet nach dem 1. Lauf: {"ok":true,"sent":30,"failed":0,...}
+--
+-- Was ist tatsächlich rausgegangen?
+--   select email_code, count(*) from schmerzcheck_email_events
+--    where event_type = 'sent' and occurred_at > now() - interval '1 day'
+--    group by email_code order by 2 desc;
 --
 -- ── NOTBREMSE ────────────────────────────────────────────────────────────────
 -- Kampagne sofort stoppen (der Rest des Systems läuft weiter):
