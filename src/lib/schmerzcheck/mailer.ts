@@ -90,7 +90,10 @@ export async function sendSchmerzcheckEmail({
   const fromName = process.env.SCHMERZCHECK_SMTP_FROM_NAME || "Max Glawe · Praxis OS"
 
   try {
-    const logo = getLogoBuffer()
+    // Das Logo nur anhängen, wenn die Mail es auch referenziert. Sonst würde es
+    // als sichtbarer Anhang erscheinen (Büroklammer-Symbol) — irritierend bei
+    // Mails, die es gar nicht einbetten, z.B. der Kauf-Zugangsmail.
+    const logo = html.includes(`cid:${LOGO_CID}`) ? getLogoBuffer() : null
     const allAttachments = [
       ...(attachments?.map((a) => ({ filename: a.filename, content: a.content })) ?? []),
       // inline logo (cid) — shows even when the client blocks external images

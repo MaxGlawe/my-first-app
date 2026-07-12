@@ -25,6 +25,9 @@ import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { sendEmail } from "@/lib/email"
+// Kundenmails laufen über das Praxis-Postfach (SiteGround, info@physiotherapie-glawe.de).
+// sendEmail() (GMX) bleibt ausschließlich für interne Alarme an Max.
+import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 import { renderMasterclassWelcomeEmail } from "@/lib/masterclass/purchase-email"
 import { escapeHtml } from "@/lib/html-escape"
 import crypto from "crypto"
@@ -218,8 +221,12 @@ export async function POST(request: NextRequest) {
     // und wenn es dann immer noch klemmt, Max alarmieren (Spec A5).
     void sendAccessMailWithRetry({ to: email, subject, html, firstName })
   } else {
-  sendEmail({
+  // Auch die generische Zugangsmail (Kurse) geht über das Praxis-Postfach.
+  // Sie enthält ein temporäres Passwort — eine solche Mail von einer
+  // GMX-Freemail-Adresse zu bekommen, sieht für den Käufer aus wie Phishing.
+  void sendAccessMailWithRetry({
     to: email,
+    firstName,
     subject: "Dein Zugang zu Praxis OS — Kurse & Inhalte",
     html: `
 <!DOCTYPE html>
@@ -278,7 +285,7 @@ export async function POST(request: NextRequest) {
   </body>
 </html>
     `,
-  }).catch((err) => console.error("[buyer-accounts] Welcome email failed:", err))
+  })
   }
 
   console.log(`[AUDIT] New externer_kaeufer account created: email=${email} userId=${userId} ip=${ip}`)
@@ -314,7 +321,21 @@ async function sendAccessMailWithRetry(args: {
 }): Promise<void> {
   const attempt = async () => {
     try {
-      return await sendEmail({ to: args.to, subject: args.subject, html: args.html })
+      // ÜBER DAS PRAXIS-POSTFACH (SiteGround), nicht über GMX.
+      //
+      // Der Käufer hat den kompletten Funnel mit Mails von
+      // „Max Glawe · Praxis OS <info@physiotherapie-glawe.de>" durchlaufen und
+      // gerade 399 € bezahlt. Bekäme er seine Zugangsdaten — inklusive eines
+      // temporären Passworts — plötzlich von „physiotherapieglawe@gmx.de",
+      // sähe das aus wie Phishing. Genau im heikelsten Moment.
+      //
+      // sendEmail() (GMX) bleibt für INTERNE Benachrichtigungen an Max.
+      return await sendSchmerzcheckEmail({
+        to: args.to,
+        toName: args.firstName,
+        subject: args.subject,
+        html: args.html,
+      })
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : "Unbekannter Fehler" }
     }

@@ -12,6 +12,9 @@ import { createSubscriptionInvoice } from "@/lib/billing/auto-invoice"
 import { signDeckToken } from "@/lib/deck-token"
 import { renderDeckPurchaseEmail } from "@/lib/deck-emails"
 import { sendEmail } from "@/lib/email"
+// Kundenmails über das Praxis-Postfach (SiteGround, info@physiotherapie-glawe.de).
+// sendEmail() (GMX) bleibt ausschließlich für interne Benachrichtigungen an Max.
+import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 import { activateBegleitung, revokeBegleitung } from "@/lib/masterclass/begleitung"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import type Stripe from "stripe"
@@ -590,7 +593,12 @@ export async function POST(request: NextRequest) {
 
             // Fire-and-forget: ein fehlgeschlagener Mailversand darf den Webhook
             // nicht in einen Retry zwingen (sonst Doppel-Grants bei nonDecks).
-            sendEmail({ to: buyerEmail, subject, html })
+            //
+            // Über das Praxis-Postfach, nicht über GMX: Diese Mail enthält die
+            // signierten Zugangslinks zu den gekauften Karten. Der Käufer hat auf
+            // physiotherapie-glawe.de gekauft — er erwartet die Bestätigung von
+            // dort, nicht von einer fremden Freemail-Adresse.
+            sendSchmerzcheckEmail({ to: buyerEmail, toName: firstName, subject, html })
               .then((r) => {
                 if (r.success) {
                   console.log(
