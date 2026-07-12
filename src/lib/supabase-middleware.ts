@@ -55,6 +55,11 @@ export async function updateSession(request: NextRequest) {
   // PROJ-25b: Ein-Klick-Regionswahl aus der Routing-Mail RT1/RT2. Kommt aus dem
   // Mailprogramm, also IMMER ohne Session. Lead-ID steckt im signierten Token.
   const isRegionApi = pathname === '/api/schmerzcheck/region' && request.method === 'GET'
+  // PROJ-25c: Wiedereinstieg in den Check (RF1) + Wartelisten-Klick (N1/OB1/K1).
+  // Beide kommen aus dem Mailprogramm, also IMMER ohne Session. Lead-ID steckt
+  // im signierten Token, die Berechtigung wird im Handler geprueft.
+  const isRecheckApi = pathname === '/api/schmerzcheck/recheck' && request.method === 'GET'
+  const isWartelisteApi = pathname === '/api/schmerzcheck/warteliste' && request.method === 'GET'
   // Salespage-Tracking (Scroll-Tiefe, Kaufen-Klick) — öffentliche Seite, anonyme Besucher.
   const isShopTrackApi = pathname === '/api/shop/track' && request.method === 'POST'
   // Mail-Vorschau zum Gegenlesen — die Route selbst gibt in Produktion 404 zurück.
@@ -86,7 +91,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isAbklaerungApi && !isRegionApi && !isShopTrackApi && !isDevPreview && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isAbklaerungApi && !isRegionApi && !isRecheckApi && !isWartelisteApi && !isShopTrackApi && !isDevPreview && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }

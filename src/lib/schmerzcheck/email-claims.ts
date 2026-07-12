@@ -28,6 +28,13 @@ type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
  *   RT1/RT2 Routing-Frage an die 77 Leads mit unbekannter Region (PROJ-25b) —
  *           KEIN Kaufangebot. Codes vorab gegen Event-Log und Claim-Register
  *           geprüft: beide frei (Lehre aus der R1/R2-Kollision).
+ *   RF1     „Check nachgeschärft" an die 45 Leads, die im Juni NUR wegen
+ *           nächtlicher Schmerzen gestoppt wurden — wir haben sie zu Unrecht
+ *           rausgeworfen. KEIN Kaufangebot.
+ *   N1/OB1/K1  Wert-Mail + Warteliste an die 79 geparkten Leads (Nacken, oberer
+ *           Rücken, Knie/Hüfte/Fuß). Fachlicher Inhalt statt Verkauf — für sie
+ *           gibt es noch kein Produkt. KEIN Kaufangebot.
+ *   Alle vier Codes vorab gegen Event-Log + Claim-Register geprüft: frei.
  */
 export type EmailCode =
   | "T1" | "T2" | "T3"
@@ -38,6 +45,8 @@ export type EmailCode =
   | "B1" | "B2"
   | "C1R"
   | "RT1" | "RT2"
+  | "RF1"
+  | "N1" | "OB1" | "K1"
 
 /**
  * Wie oft eine Mail pro Lead maximal rausgehen darf. Bewusst überall 1:
@@ -54,6 +63,8 @@ const MAX_SENDS: Record<EmailCode, number> = {
   B1: 1, B2: 1,
   C1R: 1,
   RT1: 1, RT2: 1,
+  RF1: 1,
+  N1: 1, OB1: 1, K1: 1,
 }
 
 /**

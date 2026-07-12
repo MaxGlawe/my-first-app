@@ -35,6 +35,66 @@ export interface SegmentableLead {
   medical_cleared_at?: string | null
   /** null = Region unbekannt (die 77 „Mehrere Bereiche") → RT1 klärt das. */
   main_region?: string | null
+  /**
+   * Die Warnzeichen, wegen derer dieser Lead im Juni gestoppt wurde
+   * (schmerzcheck_results.red_flag_codes). Entscheidet über RF1 vs. B1.
+   */
+  red_flag_codes?: string[] | null
+  /** Lead hat sich bereits für ein künftiges Regions-Modul vormerken lassen. */
+  waitlist_region?: string | null
+}
+
+/**
+ * Angaben, die nach der entschärften Regel (07/2026) KEINEN Stopp mehr auslösen.
+ * Muss mit NON_STOPPING_CODES in scoring.ts übereinstimmen.
+ */
+const KEIN_STOPP_MEHR = new Set(["night_pain_severe", "saddle_tingling"])
+
+export type RedFlagGruppe = "rf1" | "b1"
+
+/**
+ * Teilt die 117 Red-Flag-Leads in zwei Gruppen — der heikelste Split im ganzen
+ * System.
+ *
+ * **rf1 (45 Leads):** Gestoppt AUSSCHLIESSLICH wegen „Beschwerden, die dich
+ * nachts aufwecken". Nach der entschärften Regel wäre keiner von ihnen gestoppt
+ * worden — nächtlicher Schmerz ist bei chronischen Beschwerden der Normalfall.
+ * Wir haben sie schlicht zu Unrecht rausgeworfen. Sie bekommen eine ehrliche
+ * Mail und dürfen den Check erneut durchlaufen.
+ *
+ * **b1 (72 Leads):** Echte Warnzeichen — Sattel-Taubheit, Blasen-/Darm-
+ * kontrollverlust, Lähmung, Gewichtsverlust, Fieber, Krebsanamnese. Diese
+ * stoppen auch nach der neuen Regel. Sie bekommen NUR die Frage nach der
+ * ärztlichen Abklärung, niemals ein Angebot.
+ *
+ * FAIL CLOSED: Fehlen die Codes (sollte nicht vorkommen — es sind bei allen 117
+ * welche gespeichert), landet der Lead in b1. Lieber jemanden zu Unrecht in der
+ * vorsichtigen Gruppe als umgekehrt.
+ */
+export function redFlagGruppe(lead: SegmentableLead): RedFlagGruppe {
+  const codes = lead.red_flag_codes
+  if (!Array.isArray(codes) || codes.length === 0) return "b1"
+
+  const echteWarnzeichen = codes.filter((c) => !KEIN_STOPP_MEHR.has(c))
+  return echteWarnzeichen.length === 0 ? "rf1" : "b1"
+}
+
+/**
+ * Für welches künftige Regions-Modul kommt dieser Lead in Frage?
+ * null = keins (LWS wird bereits bedient, unbekannte Region klärt RT1).
+ */
+export function waitlistGruppe(lead: SegmentableLead): string | null {
+  if (computeSegment(lead) !== "A") return null
+  const r = lead.main_region
+  if (r === "nacken_schulter" || r === "oberer_ruecken" || r === "knie_huefte_fuss") return r
+  return null
+}
+
+/** Mail-Code der Wert-/Wartelisten-Mail je Region. */
+export const WAITLIST_CODE: Record<string, "N1" | "OB1" | "K1"> = {
+  nacken_schulter: "N1",
+  oberer_ruecken: "OB1",
+  knie_huefte_fuss: "K1",
 }
 
 /**
@@ -106,12 +166,14 @@ export function assertMailable(lead: SegmentableLead, code: string): void {
     )
   }
 
-  // Segment B darf ausschließlich die Brücken-Mails bekommen (B1/B2) —
-  // niemals eine Verkaufsmail. Verhindert, dass ein Bug in der Empfängerliste
+  // Segment B (Red-Flag) darf ausschließlich angebotsfreie Mails bekommen:
+  //   B1/B2 → „Warst du beim Arzt?" (die 72 mit echten Warnzeichen)
+  //   RF1   → „Check nachgeschärft, hol dir dein Ergebnis" (die 45 Nacht-Stopps)
+  // Niemals eine Verkaufsmail. Verhindert, dass ein Bug in der Empfängerliste
   // einem Menschen mit ungeklärten Warnzeichen ein Angebot schickt.
-  if (segment === "B" && !/^B[12]$/.test(code)) {
+  if (segment === "B" && !/^(B[12]|RF1)$/.test(code)) {
     throw new Error(
-      `Segment B (Red-Flag, nicht abgeklärt) darf nur B1/B2 bekommen — Lead ${lead.id}, Mail ${code}`
+      `Segment B (Red-Flag, nicht abgeklärt) darf nur B1/B2/RF1 bekommen — Lead ${lead.id}, Mail ${code}`
     )
   }
 
@@ -133,6 +195,36 @@ export function assertMailable(lead: SegmentableLead, code: string): void {
     throw new Error(
       `Routing-Mail an Lead mit bereits bekannter Region "${lead.main_region}" — Lead ${lead.id}, Mail ${code}`
     )
+  }
+
+  // ── PROJ-25c: Der Red-Flag-Split ────────────────────────────────────────────
+  // RF1 („wir haben dich zu Unrecht gestoppt, mach weiter") darf NUR an die 45,
+  // deren einziger Stopp-Grund der nächtliche Schmerz war. Diese Mail an jemanden
+  // mit echter Sattel-Taubheit oder Blasenkontrollverlust zu schicken, wäre grob
+  // fahrlässig — sie lädt ihn ein, das Warnzeichen zu ignorieren.
+  if (code === "RF1" && redFlagGruppe(lead) !== "rf1") {
+    throw new Error(
+      `RF1 („Check nachgeschärft") darf NUR an reine Nacht-Stopps — Lead ${lead.id} ` +
+        `hat echte Warnzeichen: ${JSON.stringify(lead.red_flag_codes)}`
+    )
+  }
+
+  // Umgekehrt: B1/B2 („warst du beim Arzt?") an einen der 45 wäre unnötig
+  // beunruhigend — wir halten seine Angabe selbst nicht mehr für ein Warnzeichen.
+  if (/^B[12]$/.test(code) && redFlagGruppe(lead) !== "b1") {
+    throw new Error(
+      `B1/B2 (Arzt-Frage) darf NICHT an reine Nacht-Stopps — für die gibt es RF1. Lead ${lead.id}`
+    )
+  }
+
+  // ── Wartelisten-Mails: nur an die jeweilige Region ──────────────────────────
+  if (/^(N1|OB1|K1)$/.test(code)) {
+    const gruppe = waitlistGruppe(lead)
+    if (!gruppe || WAITLIST_CODE[gruppe] !== code) {
+      throw new Error(
+        `Wartelisten-Mail ${code} passt nicht zur Region "${lead.main_region ?? "unbekannt"}" — Lead ${lead.id}`
+      )
+    }
   }
 }
 

@@ -11,8 +11,14 @@
  *
  * Aufruf: npm run test:segments
  */
-const { computeSegment, assertMailable, isMasterclassEligible, needsRegionRouting } =
-  await import("../src/lib/schmerzcheck/segments.ts")
+const {
+  computeSegment,
+  assertMailable,
+  isMasterclassEligible,
+  needsRegionRouting,
+  redFlagGruppe,
+  waitlistGruppe,
+} = await import("../src/lib/schmerzcheck/segments.ts")
 
 let pass = 0
 let fail = 0
@@ -99,6 +105,75 @@ check("RT1 an Lead mit unbekannter Region → erlaubt", !throws(lead({ main_regi
 check("RT2 an Lead mit unbekannter Region → erlaubt", !throws(lead({ main_region: null }), "RT2"))
 check("RT1 an Lead mit BEKANNTER Region → wirft (sinnlos)", throws(lead({ main_region: "unterer_ruecken" }), "RT1"))
 check("Segment D + RT1 → wirft (keine Einwilligung)", throws(lead({ consent_status: "pending", main_region: null }), "RT1"))
+
+// ── PROJ-25c: Der Red-Flag-Split ─────────────────────────────────────────────
+// 45 Leads wurden AUSSCHLIESSLICH wegen „Beschwerden, die dich nachts aufwecken"
+// gestoppt — nach der entschärften Regel zu Unrecht. Sie bekommen RF1
+// („Check nachgeschärft"). Die anderen 72 haben echte Warnzeichen und bekommen
+// nur die Arzt-Frage (B1/B2).
+//
+// Der gefährlichste denkbare Fehler im ganzen System: RF1 an jemanden mit echter
+// Sattel-Taubheit oder Blasenkontrollverlust. Diese Mail lädt ihn ein,
+// weiterzumachen — bei einem Warnzeichen, das in die Notaufnahme gehört.
+
+const rfLead = (codes) =>
+  lead({ status: "red_flag_routed", main_region: null, red_flag_codes: codes })
+
+console.log("\n── Red-Flag-Split: wer bekommt RF1, wer B1? ──")
+check("nur nächtlicher Schmerz → rf1", redFlagGruppe(rfLead(["night_pain_severe"])) === "rf1")
+check("nur Sattel-Kribbeln → rf1", redFlagGruppe(rfLead(["saddle_tingling"])) === "rf1")
+check("nachts + Kribbeln → rf1", redFlagGruppe(rfLead(["night_pain_severe", "saddle_tingling"])) === "rf1")
+check("Sattel-TAUBHEIT → b1", redFlagGruppe(rfLead(["saddle_numbness"])) === "b1")
+check("Blasenkontrollverlust → b1", redFlagGruppe(rfLead(["bladder_bowel"])) === "b1")
+check("Gewichtsverlust → b1", redFlagGruppe(rfLead(["weight_loss"])) === "b1")
+check("Fieber → b1", redFlagGruppe(rfLead(["fever_sweats"])) === "b1")
+check("Krebsanamnese → b1", redFlagGruppe(rfLead(["cancer_history"])) === "b1")
+check("Lähmung → b1", redFlagGruppe(rfLead(["severe_progressive_weakness"])) === "b1")
+check("nachts + Gewichtsverlust → b1 (Kombination!)", redFlagGruppe(rfLead(["night_pain_severe", "weight_loss"])) === "b1")
+check("nachts + Sattel-Taubheit → b1", redFlagGruppe(rfLead(["night_pain_severe", "saddle_numbness"])) === "b1")
+check("KEINE Codes → b1 (fail closed)", redFlagGruppe(rfLead(null)) === "b1")
+check("leeres Array → b1 (fail closed)", redFlagGruppe(rfLead([])) === "b1")
+
+console.log("\n── RF1 an echte Warnzeichen MUSS werfen (der gefährlichste Fehler) ──")
+for (const codes of [
+  ["saddle_numbness"],
+  ["bladder_bowel"],
+  ["severe_progressive_weakness"],
+  ["weight_loss"],
+  ["fever_sweats"],
+  ["cancer_history"],
+  ["night_pain_severe", "saddle_numbness"],
+  null,
+]) {
+  check(`RF1 + ${JSON.stringify(codes)} → wirft`, throws(rfLead(codes), "RF1"))
+}
+check("RF1 + nur nächtlicher Schmerz → erlaubt", !throws(rfLead(["night_pain_severe"]), "RF1"))
+
+console.log("\n── Umgekehrt: B1 an die zu Unrecht Gestoppten MUSS werfen ──")
+check("B1 + nur nächtlicher Schmerz → wirft (dafür gibt es RF1)", throws(rfLead(["night_pain_severe"]), "B1"))
+check("B2 + nur nächtlicher Schmerz → wirft", throws(rfLead(["night_pain_severe"]), "B2"))
+check("B1 + echtes Warnzeichen → erlaubt", !throws(rfLead(["saddle_numbness"]), "B1"))
+
+console.log("\n── Red-Flag-Leads bekommen NIEMALS ein Angebot ──")
+for (const code of ["M1", "M2", "M3", "M4"]) {
+  check(`RF1-Gruppe + ${code} → wirft`, throws(rfLead(["night_pain_severe"]), code))
+  check(`B1-Gruppe + ${code} → wirft`, throws(rfLead(["saddle_numbness"]), code))
+}
+
+// ── Wartelisten-Mails an die 79 Geparkten ────────────────────────────────────
+console.log("\n── Warteliste: richtige Mail für die richtige Region ──")
+check("Nacken → N1", waitlistGruppe(lead({ main_region: "nacken_schulter" })) === "nacken_schulter")
+check("Oberer Rücken → OB1", waitlistGruppe(lead({ main_region: "oberer_ruecken" })) === "oberer_ruecken")
+check("Knie/Hüfte/Fuß → K1", waitlistGruppe(lead({ main_region: "knie_huefte_fuss" })) === "knie_huefte_fuss")
+check("LWS → keine Warteliste (bekommt das Produkt)", waitlistGruppe(lead({ main_region: "unterer_ruecken" })) === null)
+check("Region unbekannt → keine Warteliste (erst RT1)", waitlistGruppe(lead({ main_region: null })) === null)
+
+check("N1 an Nacken-Lead → erlaubt", !throws(lead({ main_region: "nacken_schulter" }), "N1"))
+check("N1 an Knie-Lead → wirft (falsche Region)", throws(lead({ main_region: "knie_huefte_fuss" }), "N1"))
+check("OB1 an Nacken-Lead → wirft", throws(lead({ main_region: "nacken_schulter" }), "OB1"))
+check("K1 an Knie-Lead → erlaubt", !throws(lead({ main_region: "knie_huefte_fuss" }), "K1"))
+check("N1 an LWS-Lead → wirft (der bekommt das Produkt)", throws(lead({ main_region: "unterer_ruecken" }), "N1"))
+check("Segment D + N1 → wirft (keine Einwilligung)", throws(lead({ consent_status: "pending", main_region: "nacken_schulter" }), "N1"))
 
 console.log(`\n${pass} passed, ${fail} failed\n`)
 process.exit(fail ? 1 : 0)

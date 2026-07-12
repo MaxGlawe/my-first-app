@@ -30,6 +30,8 @@ import {
   renderBridgeEmail,
   renderReactivationEmail,
   renderRoutingEmail,
+  renderRecheckEmail,
+  renderWaitlistEmail,
 } from "@/lib/schmerzcheck/emails-masterclass"
 import {
   renderT1WelcomeEmail,
@@ -48,6 +50,10 @@ interface MailDef {
 
 /** PROJ-25b — die Routing-Frage an die 69 Leads mit unbekannter Region. */
 const ROUTING: MailDef[] = [
+  { code: "RF1", gruppe: "An die 45 zu Unrecht Gestoppten", ziel: "„Ich habe dich zu früh gestoppt“ · KEIN Angebot", angebot: false },
+  { code: "N1", gruppe: "Warteliste · Nacken/Schulter (51)", ziel: "Wert-Mail, kein Verkauf", angebot: false },
+  { code: "OB1", gruppe: "Warteliste · Oberer Rücken (22)", ziel: "Wert-Mail, kein Verkauf", angebot: false },
+  { code: "K1", gruppe: "Warteliste · Knie/Hüfte/Fuß (6)", ziel: "Wert-Mail, kein Verkauf", angebot: false },
   { code: "RT1", gruppe: "Routing · 69 Leads mit unbekannter Region", ziel: "Tag 0 · KEIN Angebot", angebot: false },
   { code: "RT2", gruppe: "Routing · Erinnerung an Nicht-Klicker", ziel: "Tag 4 · KEIN Angebot", angebot: false },
   { code: "M1R", gruppe: "Kampagne · M1 für RT1-Klicker", ziel: "anderer Einstieg als das normale M1", angebot: true },
@@ -201,6 +207,10 @@ function render(
   if (/^RT[12]$/.test(code)) {
     return renderRoutingEmail({ ...common, step: Number(code.slice(2)) as 1 | 2 })
   }
+  if (code === "RF1") return renderRecheckEmail(common)
+  if (code === "N1") return renderWaitlistEmail({ ...common, region: "nacken_schulter" })
+  if (code === "OB1") return renderWaitlistEmail({ ...common, region: "oberer_ruecken" })
+  if (code === "K1") return renderWaitlistEmail({ ...common, region: "knie_huefte_fuss" })
   // M1 in der Variante für RT1-Klicker — anderer Einstieg, weil ihr Report
   // keinen klaren LWS-Befund zeigt.
   if (code === "M1R") {

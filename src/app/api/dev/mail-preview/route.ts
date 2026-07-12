@@ -12,6 +12,8 @@ import {
   renderBridgeEmail,
   renderReactivationEmail,
   renderRoutingEmail,
+  renderRecheckEmail,
+  renderWaitlistEmail,
 } from "@/lib/schmerzcheck/emails-masterclass"
 import {
   renderT1WelcomeEmail,
@@ -23,7 +25,7 @@ import {
 
 // Kampagne an die Bestandsleads + der umgebaute Funnel für NEUE Leads.
 const CODES = [
-  "RT1", "RT2",
+  "RT1", "RT2", "RF1", "N1", "OB1", "K1",
   "M1", "M1R", "M2", "M3", "M4", "B1", "B2", "C1R",
   "T1", "T2", "T3", "D1", "D2", "D3", "D4", "D5", "W1",
   "D1S", "D2S", "D4S", // soft-flag-Varianten: „ärztlich abklären" → KEIN Angebot
@@ -31,7 +33,11 @@ const CODES = [
 type Code = (typeof CODES)[number]
 
 const LABEL: Record<Code, string> = {
-  RT1: "RT1 · Routing-Frage an die 77 · KEIN Angebot",
+  RT1: "RT1 · Routing-Frage an die 69 · KEIN Angebot",
+  RF1: "RF1 · An die 45 zu Unrecht Gestoppten · KEIN Angebot",
+  N1: "N1 · Nacken/Schulter (51) · Wert-Mail + Warteliste · KEIN Angebot",
+  OB1: "OB1 · Oberer Rücken (22) · Wert-Mail + Warteliste · KEIN Angebot",
+  K1: "K1 · Knie/Hüfte/Fuß (6) · Wert-Mail + Warteliste · KEIN Angebot",
   RT2: "RT2 · Routing-Erinnerung (Tag 4) · KEIN Angebot",
   M1: "M1 · Kampagne · „Ich habe mein Angebot überarbeitet“",
   M1R: "M1 für RT1-Klicker · anderer Einstieg („mehrere Baustellen“)",
@@ -67,6 +73,12 @@ function render(code: Code, baseUrl: string): { subject: string; html: string } 
   if (/^RT[12]$/.test(code)) {
     return renderRoutingEmail({ ...common, step: Number(code.slice(2)) as 1 | 2 })
   }
+  if (code === "RF1") {
+    return renderRecheckEmail(common)
+  }
+  if (code === "N1") return renderWaitlistEmail({ ...common, region: "nacken_schulter" })
+  if (code === "OB1") return renderWaitlistEmail({ ...common, region: "oberer_ruecken" })
+  if (code === "K1") return renderWaitlistEmail({ ...common, region: "knie_huefte_fuss" })
   if (code === "M1R") {
     return renderMasterclassEmail({ ...common, step: 1, reportUrl, viaRouting: true })
   }

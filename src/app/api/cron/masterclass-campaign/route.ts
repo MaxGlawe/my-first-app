@@ -35,6 +35,8 @@ import {
   renderBridgeEmail,
   renderReactivationEmail,
   renderRoutingEmail,
+  renderRecheckEmail,
+  renderWaitlistEmail,
 } from "@/lib/schmerzcheck/emails-masterclass"
 import {
   claimEmailSend,
@@ -47,6 +49,9 @@ import {
   assertMailable,
   isMasterclassEligible,
   needsRegionRouting,
+  redFlagGruppe,
+  waitlistGruppe,
+  WAITLIST_CODE,
   type SegmentableLead,
 } from "@/lib/schmerzcheck/segments"
 
@@ -58,7 +63,20 @@ const RT2_DELAY_DAYS = 4 // RT2 an Nicht-Klicker, 4 Tage nach RT1
 
 const DEFAULT_LIMIT = 30 // Mails pro Lauf (Spec C3: erster Lauf max. 30)
 const HARD_LIMIT = 50 // darüber nur mit ?force=1
-const SANITY_MAX = 200 // mehr fällige Mails als das → Abbruch + Alarm
+/**
+ * Sanity-Guard: mehr fällige Mails als das → Abbruch + Alarm, kein Versand.
+ *
+ * Die Zahl ist bewusst eng gewählt. Legitim fällig sind zum Kampagnenstart 215
+ * Mails (RT1 69 + M1 9 + C1R 13 + RF1 45 + Warteliste 79). Der Guard liegt
+ * knapp darüber — genug Luft für Nachrücker, aber eng genug, um den einen Fall
+ * zu fangen, vor dem er schützen soll: dass Segment D (210 Leads OHNE
+ * Einwilligung) durch einen Bug in die Empfängerliste rutscht. Das würde die
+ * Zahl schlagartig auf ~425 treiben und hier hart abbrechen.
+ *
+ * Zu hoch angesetzt wäre der Guard wertlos. Er hat schon einmal ausgelöst und
+ * dabei genau das getan, was er soll — deshalb bleibt er eng.
+ */
+const SANITY_MAX = 250
 
 const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "physiotherapieglawe@gmx.de"
 const PAGE = 1000
@@ -82,12 +100,27 @@ interface Lead extends SegmentableLead {
  * richtigen Leute geht. Sie muss zuerst raus.
  */
 const CODE_PRIORITY: Record<string, number> = {
-  RT1: 0,
-  RT2: 1,
-  M1: 2, M2: 2, M3: 2, M4: 2,
+  M1: 0, M2: 0, M3: 0, M4: 0, // laufende Sequenz nie hängen lassen
+  RT1: 1,
+  RT2: 2,
   C1R: 3,
-  B1: 4, B2: 4,
+  RF1: 4, // „wir haben dich zu Unrecht gestoppt"
+  B1: 5, B2: 5, // Arzt-Frage an die echten Warnzeichen
+  N1: 6, OB1: 6, K1: 6, // Wert-Mail + Warteliste an die Geparkten
 }
+
+/**
+ * Versandfenster: nur Dienstag bis Freitag.
+ *
+ * Zwei Gründe. Erstens das Versprechen in den Mails — „Antwort innerhalb von
+ * 48 h werktags". Wer Samstagabend auf die Arzt-Frage antwortet und bis Montag
+ * nichts hört, startet die Beziehung schlecht. Zweitens der Montag: Da liegt
+ * das Wochenend-Postfach voll, eine Mail geht dort am ehesten unter.
+ *
+ * Fällige Mails werden an Sa/So/Mo NICHT verworfen, sondern gehalten — sie
+ * gehen am nächsten Versandtag raus.
+ */
+const VERSANDTAGE = new Set([2, 3, 4, 5]) // 0=So, 1=Mo, … 6=Sa
 
 /** Eine fällige Mail. */
 interface Pending {
@@ -119,6 +152,18 @@ export async function GET(req: NextRequest) {
       : url.origin
 
   const supabase = createSupabaseServiceClient()
+
+  // Versandfenster Di–Fr. Der Cron läuft trotzdem täglich — er hält die Mails
+  // nur zurück. `?ignoreWindow=1` überschreibt das für Tests.
+  const heute = new Date().getUTCDay()
+  const ignoreWindow = url.searchParams.get("ignoreWindow") === "1"
+  if (!VERSANDTAGE.has(heute) && !dryRun && !ignoreWindow) {
+    return NextResponse.json({
+      ok: true,
+      skipped: "kein_versandtag",
+      message: "Versand nur Di–Fr. Fällige Mails werden gehalten, nicht verworfen.",
+    })
+  }
 
   try {
     const pending = await collectPending(supabase)
@@ -229,9 +274,7 @@ async function collectPending(supabase: SC): Promise<Pending[]> {
   const leads = await paginate<Lead>("leads", (from, to) =>
     supabase
       .from("schmerzcheck_leads")
-      .select(
-        "id, email, first_name, email_hash, status, consent_status, medical_cleared_at, main_region"
-      )
+      .select("id, email, first_name, email_hash, status, consent_status, medical_cleared_at, main_region, main_region_source, waitlist_region")
       .eq("consent_status", "confirmed")
       .eq("source", "schmerzcheck_landing")
       .range(from, to)
@@ -246,6 +289,17 @@ async function collectPending(supabase: SC): Promise<Pending[]> {
     supabase,
     leads.map((l) => l.id)
   )
+
+  // Die Stopp-Gründe der Red-Flag-Leads — sie entscheiden über RF1 vs. B1.
+  // Ohne sie könnten wir die 45 zu Unrecht Gestoppten nicht von den 72 mit
+  // echten Warnzeichen trennen.
+  const redFlagCodes = await loadRedFlagCodes(
+    supabase,
+    leads.filter((l) => l.status === "red_flag_routed").map((l) => l.id)
+  )
+  for (const lead of leads) {
+    lead.red_flag_codes = redFlagCodes.get(lead.id) ?? null
+  }
 
   // B-Sequenz startet erst 2 Tage nach dem ersten M1 — so bleibt Kapazität,
   // die persönlichen Antworten der Red-Flag-Leads zu beantworten.
@@ -281,10 +335,19 @@ async function collectPending(supabase: SC): Promise<Pending[]> {
         continue // ohne Region KEINE M-Mail — fail closed
       }
 
-      // ── Region bekannt, aber kein LWS? → geparkt ──────────────────────────
-      // Nacken, Schulter, Knie: kein Angebot. Sie bekommen später ein Produkt,
-      // das zu ihnen passt — aber nicht diesen Kurs.
-      if (!isMasterclassEligible(lead)) continue
+      // ── Region bekannt, aber kein LWS? → Wert-Mail statt Schweigen ────────
+      // Nacken (51), oberer Rücken (22), Knie/Hüfte/Fuß (6): Für sie gibt es
+      // kein Produkt. Statt sie stillschweigend zu parken, bekommen sie das
+      // Einzige, was wir ihnen ehrlich geben können — fachlichen Inhalt — und
+      // dürfen sich per Klick vormerken lassen. Kein Verkauf.
+      if (!isMasterclassEligible(lead)) {
+        const gruppe = waitlistGruppe(lead)
+        if (gruppe) {
+          const code = WAITLIST_CODE[gruppe]
+          if (!sentCodes.has(code)) pending.push({ lead, code, segment })
+        }
+        continue
+      }
 
       const step = nextStep(sentCodes, "M", M_OFFSET_DAYS, now)
       if (step) pending.push({ lead, code: `M${step}` as EmailCode, segment })
@@ -292,6 +355,21 @@ async function collectPending(supabase: SC): Promise<Pending[]> {
     }
 
     if (segment === "B") {
+      // ── Der Red-Flag-Split ────────────────────────────────────────────────
+      // 45 dieser Leute wurden AUSSCHLIESSLICH wegen „Beschwerden, die dich
+      // nachts aufwecken" gestoppt. Nach der entschärften Regel wäre keiner von
+      // ihnen gestoppt worden — wir haben sie zu Unrecht rausgeworfen. Sie
+      // bekommen RF1 („Check nachgeschärft"), nicht die Arzt-Frage. Ihnen jetzt
+      // „warst du beim Arzt?" zu schreiben, wäre unnötig beunruhigend wegen
+      // etwas, das wir selbst nicht mehr für ein Warnzeichen halten.
+      if (redFlagGruppe(lead) === "rf1") {
+        if (!sentCodes.has("RF1")) pending.push({ lead, code: "RF1", segment })
+        continue
+      }
+
+      // Die verbleibenden 72 haben echte Warnzeichen (Sattel-Taubheit,
+      // Blasenkontrollverlust, Lähmung, Gewichtsverlust, Fieber, Krebs).
+      // Sie bekommen nur die Frage nach der ärztlichen Abklärung.
       if (!bridgeOpen) continue
       const step = nextStep(sentCodes, "B", B_OFFSET_DAYS, now)
       if (step) pending.push({ lead, code: `B${step}` as EmailCode, segment })
@@ -352,6 +430,24 @@ function buildMail(item: Pending, token: string, baseUrl: string): { subject: st
     return renderRoutingEmail({ ...common, step: Number(item.code.slice(2)) as 1 | 2 })
   }
 
+  // RF1 — „Ich habe dich zu früh gestoppt." Führt zurück in den Check.
+  if (item.code === "RF1") {
+    return renderRecheckEmail(common)
+  }
+
+  // N1/OB1/K1 — fachlicher Inhalt + Warteliste, kein Verkauf.
+  if (/^(N1|OB1|K1)$/.test(item.code)) {
+    const region = waitlistGruppe(item.lead)
+    if (!region) {
+      // Sollte nie passieren — assertMailable() hätte vorher geworfen.
+      throw new Error(`Wartelisten-Mail ${item.code} ohne passende Region — Lead ${item.lead.id}`)
+    }
+    return renderWaitlistEmail({
+      ...common,
+      region: region as "nacken_schulter" | "oberer_ruecken" | "knie_huefte_fuss",
+    })
+  }
+
   if (/^M[1-4]$/.test(item.code)) {
     const step = Number(item.code.slice(1)) as 1 | 2 | 3 | 4
     // Nur Leads mit abgeschlossenem Check haben einen Report. Ärztlich
@@ -392,6 +488,34 @@ async function paginate<T>(label: string, make: (from: number, to: number) => Qu
     if (!data || data.length < PAGE) break
   }
   return rows
+}
+
+/**
+ * Stopp-Gründe der Red-Flag-Leads — gechunkt + paginiert.
+ *
+ * Sie entscheiden über RF1 vs. B1: Wer ausschließlich wegen des Nacht-Kriteriums
+ * gestoppt wurde (45), bekommt die Entschuldigungs-Mail. Wer echte Warnzeichen
+ * angab (72), bekommt die Arzt-Frage. Ohne diese Daten wäre der Split unmöglich.
+ */
+async function loadRedFlagCodes(supabase: SC, leadIds: string[]): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>()
+  for (let i = 0; i < leadIds.length; i += CHUNK) {
+    const chunk = leadIds.slice(i, i + CHUNK)
+    const rows = await paginate<{ lead_id: string; red_flag_codes: string[] | null }>(
+      "red_flag_codes",
+      (from, to) =>
+        supabase
+          .from("schmerzcheck_results")
+          .select("lead_id, red_flag_codes")
+          .eq("status", "red_flag_stopped")
+          .in("lead_id", chunk)
+          .range(from, to)
+    )
+    for (const r of rows) {
+      if (Array.isArray(r.red_flag_codes)) map.set(r.lead_id, r.red_flag_codes)
+    }
+  }
+  return map
 }
 
 async function loadSuppressed(supabase: SC, hashes: string[]): Promise<Set<string>> {

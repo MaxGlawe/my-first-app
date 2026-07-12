@@ -360,3 +360,203 @@ export function renderRoutingEmail(args: RoutingMailArgs): { subject: string; ht
 
   return { subject, html: shell(inner, args.baseUrl, { unsubscribeUrl: args.unsubscribeUrl }) }
 }
+
+// ═══ RF1 — „Check nachgeschärft" an die 45 zu Unrecht Gestoppten ══════════════
+//
+// Diese 45 Menschen wurden im Juni aus dem Check geworfen, weil sie
+// „Beschwerden, die dich nachts aufwecken" angekreuzt hatten — und NUR deswegen.
+// Nach der entschärften Regel wäre keiner von ihnen gestoppt worden: Nächtlicher
+// Schmerz ist bei chronischen Beschwerden der Normalfall und hat als alleiniges
+// Kriterium keine Trennschärfe.
+//
+// Sie haben damals eine Mail bekommen, die sinngemäß sagte „lass das ärztlich
+// abklären". Das war ein Fehlalarm, den WIR verursacht haben. Diese Mail sagt
+// das offen — ohne Ausflüchte, ohne Verkauf.
+//
+// KEIN Kaufangebot. Der Link führt zurück in den Check, nicht in den Shop.
+
+export interface RecheckMailArgs {
+  firstName: string
+  token: string
+  baseUrl: string
+  unsubscribeUrl: string
+}
+
+export function renderRecheckEmail(args: RecheckMailArgs): { subject: string; html: string } {
+  const name = escapeHtml(args.firstName)
+  const checkUrl = `${args.baseUrl}/api/schmerzcheck/recheck?e=RF1&u=${encodeURIComponent(args.token)}`
+
+  const subject = "Dein Schmerzcheck — du hast noch ein Ergebnis offen"
+
+  const inner =
+    heading("Ich habe dich zu früh gestoppt.") +
+    `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>` +
+    para(
+      "du hast im Juni meinen Schmerzcheck gemacht — und ihn nicht abschließen können. Der Grund, ehrlich gesagt: Der Check war an einer Stelle strenger eingestellt, als es fachlich nötig ist."
+    ) +
+    para(
+      `Deine Angabe zu ${bold("nächtlichen Beschwerden")} hat damals automatisch zum Stopp geführt. Dabei ist nächtlicher Schmerz bei anhaltenden Beschwerden für sich allein kein Alarmzeichen — sondern leider ziemlich normal. Als alleiniges Kriterium war das schlicht zu grob.`
+    ) +
+    para(
+      "Ich habe den Check inzwischen fachlich nachgeschärft. Er prüft Warnzeichen jetzt präziser — und du kannst dir das Ergebnis holen, das damals offen geblieben ist:"
+    ) +
+    `<div style="margin:6px 0 16px;">${ctaButton("Check abschließen und Ergebnis ansehen", checkUrl)}</div>` +
+    para("Dauert etwa 3 Minuten — deine bisherigen Antworten sind noch gespeichert.") +
+    para(
+      `Und falls der Check dir auch nach der neuen Prüfung rät, etwas ärztlich abklären zu lassen: ${bold("Nimm das bitte ernst")} — genau dafür ist er da.`
+    ) +
+    `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:8px 0 0;">Beste Grüße aus Wildau<br/>Max Glawe<br/><span style="color:${C.faint};">Physiotherapeut &amp; sektoraler Heilpraktiker für Physiotherapie</span></p>`
+
+  return { subject, html: shell(inner, args.baseUrl, { unsubscribeUrl: args.unsubscribeUrl }) }
+}
+
+// ═══ N1 / OB1 / K1 — Wert-Mail + Warteliste an die 79 Geparkten ══════════════
+//
+// Diese Menschen haben den Check komplett gemacht, einen Report bekommen und ein
+// echtes chronisches Problem — aber ihr Schwerpunkt ist Nacken, oberer Rücken
+// oder Knie. Für sie gibt es kein Produkt: Die Masterclass ist ein LWS-Kurs.
+//
+// Statt sie stillschweigend zu parken, bekommen sie das Einzige, was wir ihnen
+// ehrlich geben können — fachlichen Inhalt. Drei Dinge, die Max seinen Patienten
+// zu ihrer Region am häufigsten erklärt. Danach ein Ein-Klick-Link auf eine
+// Warteliste. KEIN Kauf-Link.
+//
+// Die Klickzahl ist zugleich die Vorab-Validierung für die Produktentscheidung:
+// Ab ~15 Klicks aus 73 Nacken+BWS-Leads lohnt sich ein eigenes Modul.
+
+type WaitlistRegion = "nacken_schulter" | "oberer_ruecken" | "knie_huefte_fuss"
+
+interface WaitlistInhalt {
+  code: "N1" | "OB1" | "K1"
+  subject: string
+  headline: string
+  intro: string
+  punkte: { titel: string; text: string }[]
+  ausblick: string
+  schluss: string
+}
+
+const WAITLIST_INHALTE: Record<WaitlistRegion, WaitlistInhalt> = {
+  nacken_schulter: {
+    code: "N1",
+    subject: "Dein Nacken — drei Dinge, die kaum jemand dazusagt",
+    headline: "Drei Dinge über deinen Nacken.",
+    intro:
+      "du hast bei meinem Schmerzcheck Nacken und Schulter als deinen Schwerpunkt angegeben. Dazu bekommst du heute keine Werbung, sondern drei Dinge, die ich meinen Patienten in der Praxis dazu am häufigsten erkläre:",
+    punkte: [
+      {
+        titel: "Dein Nacken ist selten „verspannt“, weil er zu viel arbeitet — sondern weil er zu lange dasselbe tut.",
+        text: "Nicht die eine falsche Bewegung ist das Problem, sondern die fehlende Abwechslung. Deshalb hilft „Haltung verbessern“ allein meist so wenig: Die beste Haltung ist die nächste.",
+      },
+      {
+        titel: "Knirschen und Knacken sind fast nie das Warnsignal, für das sie gehalten werden.",
+        text: "Diese Geräusche entstehen in gesunden Gelenken genauso. Beunruhigender als das Geräusch ist die Schonung, die viele sich deshalb angewöhnen — sie macht den Nacken empfindlicher, nicht robuster.",
+      },
+      {
+        titel: "Stress ist beim Nacken kein Nebenfaktor, sondern Hauptdarsteller.",
+        text: "Die Nacken-Schulter-Muskulatur reagiert auf Anspannung wie kaum eine andere Region. Wenn dein Nacken in stressigen Wochen schlimmer ist, bildest du dir das nicht ein — das ist Physiologie.",
+      },
+    ],
+    ausblick:
+      "Für den unteren Rücken habe ich bereits ein strukturiertes Programm gebaut. Für Nacken und Schulter arbeite ich gerade an einem eigenen — mit demselben Ansatz: verstehen, gezielt handeln, dranbleiben.",
+    schluss: "Bis dahin: Beweg deinen Nacken heute einmal öfter, als du es sonst tun würdest.",
+  },
+
+  oberer_ruecken: {
+    code: "OB1",
+    subject: "Zwischen den Schulterblättern — drei Dinge dazu",
+    headline: "Drei Dinge über deinen oberen Rücken.",
+    intro:
+      "du hast bei meinem Schmerzcheck den oberen Rücken als deinen Schwerpunkt angegeben. Dazu bekommst du heute keine Werbung, sondern drei Dinge, die ich meinen Patienten dazu am häufigsten erkläre:",
+    punkte: [
+      {
+        titel: "Der Schmerz zwischen den Schulterblättern kommt selten aus den Schulterblättern.",
+        text: "Meistens ist er ein Bote — aus dem Nacken, aus der Brustwirbelsäule, manchmal aus der Atmung. Deshalb bringt das Kneten genau der schmerzenden Stelle oft nur kurz Erleichterung: Die Ursache sitzt woanders.",
+      },
+      {
+        titel: "Deine Brustwirbelsäule ist zum Drehen gebaut, nicht zum Stillhalten.",
+        text: "Rotation ist ihre Kernaufgabe — und genau die kommt im Alltag am kürzesten. Wer den ganzen Tag geradeaus schaut, nimmt ihr das, wofür sie gemacht ist.",
+      },
+      {
+        titel: "Der Schreibtisch ist nicht der Bösewicht, für den er gehalten wird.",
+        text: "Sitzen an sich schadet dem Rücken nicht. Bewegungslosigkeit tut es. Der Unterschied klingt klein, ist aber entscheidend — er verlagert die Lösung vom teuren Stuhl zur regelmäßigen Unterbrechung.",
+      },
+    ],
+    ausblick:
+      "Für den unteren Rücken habe ich bereits ein strukturiertes Programm gebaut. Für Nacken und oberen Rücken arbeite ich gerade an einem eigenen — mit demselben Ansatz: verstehen, gezielt handeln, dranbleiben.",
+    schluss: "Bis dahin: Dreh dich heute ein paar Mal bewusst zur Seite. Deine Brustwirbelsäule mag das.",
+  },
+
+  knie_huefte_fuss: {
+    code: "K1",
+    subject: "Knie, Hüfte, Fuß — drei Dinge dazu",
+    headline: "Drei Dinge über Belastung.",
+    intro:
+      "du hast bei meinem Schmerzcheck Knie, Hüfte oder Fuß als deinen Schwerpunkt angegeben. Dazu bekommst du heute keine Werbung, sondern drei Dinge, die ich meinen Patienten dazu am häufigsten erkläre:",
+    punkte: [
+      {
+        titel: "Knorpel mag Bewegung — er lebt davon.",
+        text: "Er hat keine eigene Blutversorgung und wird nur über Be- und Entlastung ernährt. Wer aus Sorge vor Verschleiß schont, entzieht ihm genau das, was er braucht.",
+      },
+      {
+        titel: "„Abnutzung“ im Bild sagt erstaunlich wenig über deinen Schmerz aus.",
+        text: "Es gibt Menschen mit deutlichen Veränderungen im Röntgenbild und ohne jede Beschwerde — und umgekehrt. Der Befund ist nicht die Erklärung deines Schmerzes.",
+      },
+      {
+        titel: "Nicht die Belastung ist das Problem, sondern der Sprung.",
+        text: "Gelenke passen sich an fast alles an, wenn man ihnen Zeit lässt. Beschwerden entstehen meist dort, wo die Belastung schneller steigt als die Anpassung — nach dem Umzug, dem neuen Job, dem plötzlichen Trainingsstart.",
+      },
+    ],
+    ausblick:
+      "Für den unteren Rücken habe ich bereits ein strukturiertes Programm gebaut. Ob und wann etwas für Knie, Hüfte und Fuß dazukommt, hängt davon ab, wie viele Menschen es tatsächlich brauchen.",
+    schluss: "Bis dahin: Bewegung in kleinen Dosen schlägt Schonung. Fast immer.",
+  },
+}
+
+export interface WaitlistMailArgs {
+  region: WaitlistRegion
+  firstName: string
+  token: string
+  baseUrl: string
+  unsubscribeUrl: string
+}
+
+export function renderWaitlistEmail(args: WaitlistMailArgs): { subject: string; html: string } {
+  const name = escapeHtml(args.firstName)
+  const inhalt = WAITLIST_INHALTE[args.region]
+
+  const wartelisteUrl =
+    `${args.baseUrl}/api/schmerzcheck/warteliste` +
+    `?r=${args.region}&e=${inhalt.code}&u=${encodeURIComponent(args.token)}`
+
+  const punkte = inhalt.punkte
+    .map(
+      (p, i) => `
+      <div style="margin:0 0 18px;">
+        <p style="font-size:15px;line-height:1.55;color:${C.ink};font-weight:700;margin:0 0 5px;">
+          ${i + 1}. ${p.titel}
+        </p>
+        <p style="font-size:15px;line-height:1.65;color:${C.body};margin:0;">${p.text}</p>
+      </div>`
+    )
+    .join("")
+
+  const inner =
+    heading(inhalt.headline) +
+    `<p style="font-size:16px;color:${C.ink};margin:0 0 14px;">Hallo ${name},</p>` +
+    para(inhalt.intro) +
+    punkte +
+    `<div style="margin:22px 0 0;padding-top:18px;border-top:1px solid ${C.line};">
+      ${para("Und jetzt der ehrliche Teil: " + inhalt.ausblick)}
+      ${para("Wenn du erfahren willst, sobald es fertig ist:")}
+      <div style="margin:6px 0 10px;">${ctaButton("Ja, informier mich als Erste/r", wartelisteUrl)}</div>
+      <p style="font-size:13px;line-height:1.6;color:${C.faint};margin:0 0 14px;">Ein Klick, mehr nicht. Keine Vorkasse, keine Verpflichtung.</p>
+    </div>` +
+    para(inhalt.schluss) +
+    `<p style="font-size:15px;line-height:1.65;color:${C.body};margin:8px 0 0;">Beste Grüße aus Wildau<br/>Max Glawe<br/><span style="color:${C.faint};">Physiotherapeut &amp; sektoraler Heilpraktiker für Physiotherapie</span></p>`
+
+  return {
+    subject: inhalt.subject,
+    html: shell(inner, args.baseUrl, { unsubscribeUrl: args.unsubscribeUrl }),
+  }
+}
