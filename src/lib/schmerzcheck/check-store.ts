@@ -3,6 +3,7 @@
  */
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendSchmerzcheckEmail } from "./mailer"
+import { claimEmailSend, releaseEmailClaim } from "./email-claims"
 import { renderT3RedFlagEmail } from "./emails"
 import type { AnswerMap, AnswerValue } from "./scoring"
 
@@ -55,21 +56,32 @@ export async function routeToRedFlag(
       { onConflict: "lead_id" }
     )
 
-  void sendSchmerzcheckEmail({
-    to: lead.email,
-    toName: lead.first_name,
-    subject: "Dein Schmerzcheck — wichtiger Hinweis",
-    html: renderT3RedFlagEmail({ firstName: lead.first_name, baseUrl }),
-  })
-    .then((res) =>
-      supabase.from("schmerzcheck_email_events").insert({
+  // Der Claim ersetzt den bisherigen "idempotent guard is the caller's
+  // responsibility": auch wenn zwei Routen gleichzeitig routeToRedFlag() rufen,
+  // geht die T3-Mail garantiert nur einmal raus.
+  void (async () => {
+    try {
+      if (!(await claimEmailSend(supabase, lead.id, "T3"))) return
+
+      const res = await sendSchmerzcheckEmail({
+        to: lead.email,
+        toName: lead.first_name,
+        subject: "Dein Schmerzcheck — wichtiger Hinweis",
+        html: renderT3RedFlagEmail({ firstName: lead.first_name, baseUrl }),
+      })
+
+      if (!res.success) await releaseEmailClaim(supabase, lead.id, "T3")
+
+      await supabase.from("schmerzcheck_email_events").insert({
         lead_id: lead.id,
         email_code: "T3",
         event_type: res.success ? "sent" : "failed",
         metadata: res.success ? { messageId: res.messageId } : { error: res.error },
       })
-    )
-    .catch((err) => console.error("[Schmerzcheck] T3 send error:", err))
+    } catch (err) {
+      console.error("[Schmerzcheck] T3 send error:", err)
+    }
+  })()
 }
 
 /**

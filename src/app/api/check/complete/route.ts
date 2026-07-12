@@ -17,6 +17,7 @@ import { buildReportView } from "@/lib/schmerzcheck/report"
 import { generateReportPdf } from "@/lib/schmerzcheck/report-pdf"
 import { renderT2ReportEmail } from "@/lib/schmerzcheck/emails"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
+import { claimEmailSend, releaseEmailClaim } from "@/lib/schmerzcheck/email-claims"
 import { sendMetaEvent } from "@/lib/meta-capi"
 
 const completeSchema = z.object({ t: z.string() })
@@ -114,6 +115,10 @@ export async function POST(request: NextRequest) {
   const unsubscribeUrl = `${baseUrl}/api/email/unsubscribe?u=${encodeURIComponent(body.t)}`
   void (async () => {
     try {
+      // Idempotent: ein zweiter POST auf /complete (Reload, Doppelklick) darf den
+      // Report nicht ein zweites Mal verschicken.
+      if (!(await claimEmailSend(supabase, leadId, "T2"))) return
+
       const view = buildReportView(result, lead.first_name, answers)
       const pdf = generateReportPdf(view, new Date().toLocaleDateString("de-DE"), baseUrl)
       const res = await sendSchmerzcheckEmail({
@@ -130,6 +135,9 @@ export async function POST(request: NextRequest) {
         }),
         attachments: [{ filename: "schmerz-report.pdf", content: Buffer.from(pdf) }],
       })
+
+      if (!res.success) await releaseEmailClaim(supabase, leadId, "T2")
+
       await supabase.from("schmerzcheck_email_events").insert({
         lead_id: leadId,
         email_code: "T2",

@@ -16,6 +16,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { isRateLimited } from "@/lib/rate-limit"
 import { createLeadToken } from "@/lib/lead-jwt"
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
+import { claimEmailSend, releaseEmailClaim } from "@/lib/schmerzcheck/email-claims"
 import { sendMetaLeadEvent } from "@/lib/meta-capi"
 import { renderT1WelcomeEmail } from "@/lib/schmerzcheck/emails"
 
@@ -158,22 +159,32 @@ export async function POST(request: NextRequest) {
       : new URL(request.url).origin
   const confirmUrl = `${baseUrl}/api/leads/schmerzcheck/confirm?t=${encodeURIComponent(token)}`
 
-  // T1 welcome / confirm email (fire-and-forget; failure must not block the lead)
-  void sendSchmerzcheckEmail({
-    to: email,
-    toName: body.firstName,
-    subject: "Dein Schmerzcheck ist bereit — starte jetzt",
-    html: renderT1WelcomeEmail({ firstName: body.firstName, checkUrl: confirmUrl, baseUrl }),
-  })
-    .then((res) =>
-      supabase.from("schmerzcheck_email_events").insert({
+  // T1 welcome / confirm email (fire-and-forget; failure must not block the lead).
+  // Der Claim macht den Versand idempotent: schickt jemand das Formular erneut ab
+  // (kam vor dem Fix 55× vor, teils 3× dieselbe Mail), geht KEINE zweite T1 raus.
+  void (async () => {
+    try {
+      if (!(await claimEmailSend(supabase, leadId, "T1"))) return
+
+      const res = await sendSchmerzcheckEmail({
+        to: email,
+        toName: body.firstName,
+        subject: "Dein Schmerzcheck ist bereit — starte jetzt",
+        html: renderT1WelcomeEmail({ firstName: body.firstName, checkUrl: confirmUrl, baseUrl }),
+      })
+
+      if (!res.success) await releaseEmailClaim(supabase, leadId, "T1")
+
+      await supabase.from("schmerzcheck_email_events").insert({
         lead_id: leadId,
         email_code: "T1",
         event_type: res.success ? "sent" : "failed",
         metadata: res.success ? { messageId: res.messageId } : { error: res.error },
       })
-    )
-    .catch((err) => console.error("[POST /api/leads/schmerzcheck] T1 send error:", err))
+    } catch (err) {
+      console.error("[POST /api/leads/schmerzcheck] T1 send error:", err)
+    }
+  })()
 
   // Meta CAPI Lead — server-side mirror (dedup via shared eventId)
   const eventId = body.eventId || randomUUID()
