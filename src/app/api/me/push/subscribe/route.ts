@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
 
   const { subscription, deviceType } = parsed.data
 
-  // 3. Resolve patient_id from user_id bridge column
+  // 3. Resolve the subscription owner.
+  //    Clinical patients own their subscription via patient_id (patients.user_id).
+  //    BGF employees have NO patients row → they own it via user_id.
+  //    push_subscriptions has a CHECK constraint: exactly one of the two is set.
   const { data: patient, error: patientError } = await supabase
     .from("patients")
     .select("id")
@@ -72,12 +75,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: patientError.message }, { status: 500 })
   }
 
-  if (!patient) {
-    return NextResponse.json(
-      { error: "Kein Patientenprofil gefunden." },
-      { status: 404 }
-    )
-  }
+  const owner: { patient_id: string; user_id?: undefined } | { user_id: string; patient_id?: undefined } =
+    patient ? { patient_id: patient.id } : { user_id: user.id }
 
   // 4. Upsert subscription — unique on endpoint
   // If this exact endpoint already exists, update device_type and reset timestamps.
@@ -85,7 +84,7 @@ export async function POST(req: NextRequest) {
     .from("push_subscriptions")
     .upsert(
       {
-        patient_id: patient.id,
+        ...owner,
         subscription_json: subscription,
         device_type: deviceType,
         updated_at: new Date().toISOString(),
@@ -101,7 +100,7 @@ export async function POST(req: NextRequest) {
     const { error: insertError } = await supabase
       .from("push_subscriptions")
       .insert({
-        patient_id: patient.id,
+        ...owner,
         subscription_json: subscription,
         device_type: deviceType,
       })

@@ -9,12 +9,13 @@
  *  3. Show premium dashboard: Timeline, Hydration, Goals, Weekly
  */
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useBgfMembership } from "@/hooks/use-bgf-membership"
 import { CheckInFlow } from "@/components/bgf/dashboard/CheckInFlow"
 import { SessionTimeline } from "@/components/bgf/dashboard/SessionTimeline"
+import { PausenFitReminderPrompt } from "@/components/bgf/dashboard/PausenFitReminderPrompt"
 import { HydrationTracker } from "@/components/bgf/dashboard/HydrationTracker"
 import { GoalsProgress } from "@/components/bgf/dashboard/GoalsProgress"
 import { WeeklyOverview } from "@/components/bgf/dashboard/WeeklyOverview"
@@ -143,6 +144,39 @@ export default function BgfDashboardPage() {
       fetchData()
     }
   }, [membershipLoading, organizationId, fetchData])
+
+  // ── Push-Deeplink: ?slot=<typ> aus der Erinnerung → direkt in die Session ──
+  const deeplinkHandled = useRef(false)
+
+  useEffect(() => {
+    if (membershipLoading || !organizationId || deeplinkHandled.current) return
+
+    const slot = new URLSearchParams(window.location.search).get("slot")
+    const VALID = ["morgen_aktivierung", "mittag_mobilisation", "nachmittag_reset"]
+    if (!slot || !VALID.includes(slot)) return
+
+    deeplinkHandled.current = true
+    ;(async () => {
+      try {
+        const res = await fetch("/api/bgf/pausen-fit/ensure", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ organization_id: organizationId, typ: slot }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.session?.id) {
+            router.replace(`/app/bgf/pausen-fit/${data.session.id}`)
+            return
+          }
+        }
+      } catch {
+        /* Fallback: normales Dashboard anzeigen */
+      }
+      // Slot-Param entfernen, damit er beim Zurücknavigieren nicht erneut feuert
+      window.history.replaceState(null, "", "/app/bgf/dashboard")
+    })()
+  }, [membershipLoading, organizationId, router])
 
   // ── Check-In Handler ───────────────────────────────────────────────
 
@@ -369,6 +403,9 @@ export default function BgfDashboardPage() {
 
       {/* ── Content ─────────────────────────────────────── */}
       <div className="max-w-lg mx-auto px-4 py-5 space-y-4 -mt-2">
+        {/* Push-Opt-in: Pausen-Fit Erinnerungen (verschwindet sobald aktiv) */}
+        <PausenFitReminderPrompt />
+
         {/* Sessions Timeline */}
         <div data-tutorial="sessions">
           <SessionTimeline

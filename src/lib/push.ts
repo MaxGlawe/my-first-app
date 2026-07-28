@@ -160,6 +160,118 @@ export async function sendPushToPatient(
 }
 
 /**
+ * PROJ-18: Sends a push notification to all registered devices for a given
+ * auth user (via push_subscriptions.user_id). Used for BGF employees, who do
+ * NOT have a `patients` row — their subscriptions are keyed by user_id.
+ *
+ * @param userId   - auth user id (= user_profiles.id)
+ * @param payload  - Notification content
+ * @returns Object with counts: { sent, failed, cleaned }
+ */
+export async function sendPushToUser(
+  userId: string,
+  payload: PushPayload
+): Promise<{ sent: number; failed: number; cleaned: number }> {
+  const vapid = getVapidConfig()
+
+  webpush.setVapidDetails(vapid.subject, vapid.publicKey, vapid.privateKey)
+
+  const supabase = createSupabaseServiceClient()
+
+  const { data: subscriptions, error } = await supabase
+    .from("push_subscriptions")
+    .select("id, subscription_json")
+    .eq("user_id", userId)
+
+  if (error) {
+    console.error("[push] Error loading user subscriptions:", error.message)
+    return { sent: 0, failed: 0, cleaned: 0 }
+  }
+
+  if (!subscriptions || subscriptions.length === 0) {
+    return { sent: 0, failed: 0, cleaned: 0 }
+  }
+
+  const notificationPayload = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    icon: payload.icon ?? "/icons/icon-192.png",
+    badge: payload.badge ?? "/icons/icon-192.png",
+    url: payload.url ?? "/app/bgf/dashboard",
+    tag: payload.tag,
+  })
+
+  let sent = 0
+  let failed = 0
+  let cleaned = 0
+  const expiredIds: string[] = []
+
+  await Promise.allSettled(
+    (subscriptions as PushSubscriptionRow[]).map(async (row) => {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: row.subscription_json.endpoint,
+            expirationTime: row.subscription_json.expirationTime ?? null,
+            keys: {
+              p256dh: row.subscription_json.keys.p256dh,
+              auth: row.subscription_json.keys.auth,
+            },
+          },
+          notificationPayload,
+          { TTL: 43200 }
+        )
+        sent++
+      } catch (err: unknown) {
+        const statusCode =
+          err instanceof webpush.WebPushError ? err.statusCode : null
+        if (statusCode === 404 || statusCode === 410) {
+          expiredIds.push(row.id)
+          cleaned++
+        } else {
+          console.error("[push] Send error for subscription", row.id, err)
+          failed++
+        }
+      }
+    })
+  )
+
+  if (expiredIds.length > 0) {
+    await supabase.from("push_subscriptions").delete().in("id", expiredIds)
+  }
+
+  return { sent, failed, cleaned }
+}
+
+/**
+ * PROJ-18: Sends a push notification to multiple auth users (BGF cron).
+ */
+export async function sendPushToUsers(
+  userIds: string[],
+  payload: PushPayload
+): Promise<{ sent: number; failed: number; cleaned: number }> {
+  if (userIds.length === 0) {
+    return { sent: 0, failed: 0, cleaned: 0 }
+  }
+
+  const results = await Promise.allSettled(
+    userIds.map((id) => sendPushToUser(id, payload))
+  )
+
+  return results.reduce(
+    (acc, result) => {
+      if (result.status === "fulfilled") {
+        acc.sent += result.value.sent
+        acc.failed += result.value.failed
+        acc.cleaned += result.value.cleaned
+      }
+      return acc
+    },
+    { sent: 0, failed: 0, cleaned: 0 }
+  )
+}
+
+/**
  * Sends a push notification to ALL active subscriptions for multiple patients.
  * Used by the training-reminder cron job.
  *
