@@ -1,22 +1,60 @@
 /**
  * PROJ-18: GET/PATCH /api/bgf/organizations/[id]/hr-kennzahlen
  * HR can view and update their company health KPIs (Krankenquote, Fehltage, etc.)
+ *
+ * SECURITY: Zugriff nur für Plattform-Admin ODER HR-Admin GENAU DIESER Org.
+ * (Früher prüften GET/PATCH nur "eingeloggt" → jeder Nutzer konnte die BWL-
+ *  Kennzahlen jeder Firma lesen und überschreiben. IDOR geschlossen.)
  */
 
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Prüft, ob der eingeloggte Nutzer Admin oder HR-Admin dieser Organisation ist.
+ * Gibt den Service-Client zurück (für nachfolgende Queries), sonst null.
+ */
+async function requireOrgAccess(orgId: string) {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+  if (error || !user) return null
+
+  const sc = createSupabaseServiceClient()
+
+  const { data: profile } = await sc
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  if (profile?.role === "admin") return { sc }
+
+  const { data: orgAdmin } = await sc
+    .from("organization_admins")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("user_id", user.id)
+    .maybeSingle()
+
+  if (!orgAdmin) return null
+  return { sc }
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: orgId } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
+  if (!UUID_REGEX.test(orgId)) {
+    return NextResponse.json({ error: "Ungültige Organisations-ID." }, { status: 400 })
+  }
 
-  const sc = createSupabaseServiceClient()
+  const auth = await requireOrgAccess(orgId)
+  if (!auth) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
+  const sc = auth.sc
 
   const { data: org } = await sc
     .from("organizations")
@@ -56,16 +94,18 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: orgId } = await params
-  const supabase = await createSupabaseServerClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
+  if (!UUID_REGEX.test(orgId)) {
+    return NextResponse.json({ error: "Ungültige Organisations-ID." }, { status: 400 })
+  }
+
+  const auth = await requireOrgAccess(orgId)
+  if (!auth) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
+  const sc = auth.sc
 
   let body: Record<string, unknown>
   try { body = await request.json() } catch {
     return NextResponse.json({ error: "Ungültiges JSON." }, { status: 400 })
   }
-
-  const sc = createSupabaseServiceClient()
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const update: Record<string, any> = {}
