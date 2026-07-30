@@ -1,17 +1,20 @@
 "use client"
 
-import { useMemo, useCallback, useEffect, useRef } from "react"
+import { useMemo, useCallback, useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePatientApp } from "@/hooks/use-patient-app"
+import { useMyEducation } from "@/hooks/use-education"
 import { useSessionMode } from "@/hooks/use-session-mode"
 import { useWakeLock } from "@/hooks/use-wake-lock"
 import { flattenExercises, estimateDuration } from "@/lib/training-helpers"
+import { seiteFuerSatz } from "@/lib/exercise-sides"
 import type { FlatExercise } from "@/lib/training-helpers"
 import { SessionHeader } from "@/components/app/session/SessionHeader"
 import { SessionStartScreen } from "@/components/app/session/SessionStartScreen"
 import { SessionExerciseView } from "@/components/app/session/SessionExerciseView"
 import { SessionPauseScreen } from "@/components/app/session/SessionPauseScreen"
+import { SessionSideSwitchScreen } from "@/components/app/session/SessionSideSwitchScreen"
 import { SessionTransition } from "@/components/app/session/SessionTransition"
 import { SessionExerciseDoneScreen } from "@/components/app/session/SessionExerciseDoneScreen"
 import { SessionCompletionScreen } from "@/components/app/session/SessionCompletionScreen"
@@ -24,6 +27,16 @@ export default function SessionPage() {
   const params = useParams<{ zuweisungsId: string }>()
   const router = useRouter()
   const { assignments, isLoading } = usePatientApp()
+  const { curricula } = useMyEducation()
+
+  // Eine Wissenslektion vor jedem Training: die nächste offene, freigeschaltete
+  // Lektion wird auf dem Startbildschirm angeboten.
+  const pendingLesson = useMemo(() => {
+    for (const c of curricula) {
+      if (c.next_open_lesson) return c.next_open_lesson
+    }
+    return null
+  }, [curricula])
 
   const assignment = assignments?.find((a) => a.id === params.zuweisungsId)
 
@@ -35,8 +48,14 @@ export default function SessionPage() {
   const planName = assignment?.plan?.name ?? "Training"
   const duration = useMemo(() => estimateDuration(exercises), [exercises])
 
+  // Bei „pro Seite" sind es doppelt so viele Durchgänge wie Sätze.
   const getSetsForExercise = useCallback(
-    (index: number) => exercises[index]?.params.saetze ?? 1,
+    (index: number) => exercises[index]?.saetzeGesamt ?? 1,
+    [exercises]
+  )
+
+  const getSetsPerSideForExercise = useCallback(
+    (index: number) => (exercises[index]?.proSeite ? exercises[index].saetzeProSeite : 0),
     [exercises]
   )
 
@@ -49,11 +68,16 @@ export default function SessionPage() {
     totalExercises: exercises.length,
     getSetsForExercise,
     getPauseForExercise,
+    getSetsPerSideForExercise,
     storageKey: `${SESSION_KEY_PREFIX}${params.zuweisungsId}`,
   })
 
   // Ref to TTS controller for warming up audio on user gesture
   const ttsControllerRef = useRef<SessionTTSControllerHandle>(null)
+
+  // Fehlt für die aktuelle Übung das Audio, muss der Nutzer sie manuell
+  // durchklicken können — sonst hängt er im geführten Modus fest.
+  const [audioMissing, setAudioMissing] = useState(false)
 
   // Keep screen awake during active session
   useWakeLock(session.phase !== "start" && session.phase !== "complete")
@@ -178,6 +202,8 @@ export default function SessionPage() {
             session.startSession(session.ttsEnabled)
           }}
           onBack={handleExit}
+          pendingLesson={pendingLesson}
+          onReadLesson={() => router.push("/app/wissen")}
         />
         {/* Mount TTS controller early so ref is available for warmUp during start gesture */}
         <SessionTTSController
@@ -189,6 +215,7 @@ export default function SessionPage() {
           onSetComplete={session.advanceSetTTS}
           onExerciseComplete={session.finishExerciseTTS}
           onTTSError={() => session.setTtsEnabled(false)}
+          onAudioMissingChange={setAudioMissing}
         />
       </>
     )
@@ -217,6 +244,7 @@ export default function SessionPage() {
         currentIndex={session.exerciseIndex}
         totalExercises={exercises.length}
         onExit={handleExit}
+        onPrevious={session.previousExercise}
       />
 
       <div className="flex-1 flex flex-col">
@@ -237,6 +265,17 @@ export default function SessionPage() {
             totalSets={currentExercise?.params.saetze ?? 1}
             onDone={session.restComplete}
             onSkip={session.skipRest}
+          />
+        )}
+
+        {/* Seite wechseln — muss bestätigt werden */}
+        {session.phase === "side-switch" && currentExercise && (
+          <SessionSideSwitchScreen
+            exerciseName={currentExercise.name}
+            fertigeSeite="rechts"
+            naechsteSeite="links"
+            saetzeProSeite={currentExercise.saetzeProSeite}
+            onContinue={session.sideSwitchDone}
           />
         )}
 
@@ -269,7 +308,21 @@ export default function SessionPage() {
               onStartHold={session.startHold}
               onHoldComplete={session.holdComplete}
               onSkip={() => session.skipExercise()}
-              ttsEnabled={session.ttsEnabled}
+              ttsEnabled={session.ttsEnabled && !audioMissing}
+              completedSets={session.completedSets[session.exerciseIndex] ?? 0}
+              seite={
+                currentExercise.proSeite
+                  ? seiteFuerSatz(
+                      session.completedSets[session.exerciseIndex] ?? 0,
+                      currentExercise.saetzeProSeite
+                    )
+                  : undefined
+              }
+              onNextExercise={
+                session.exerciseIndex < exercises.length - 1
+                  ? session.nextExercise
+                  : undefined
+              }
             />
           )}
       </div>
@@ -284,6 +337,7 @@ export default function SessionPage() {
         onSetComplete={session.advanceSetTTS}
         onExerciseComplete={session.finishExerciseTTS}
         onTTSError={() => session.setTtsEnabled(false)}
+        onAudioMissingChange={setAudioMissing}
       />
     </div>
   )

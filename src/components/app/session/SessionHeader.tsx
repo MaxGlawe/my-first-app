@@ -3,13 +3,15 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { X } from "lucide-react"
+import { X, ChevronLeft } from "lucide-react"
 
 interface SessionHeaderProps {
   exerciseName: string
   currentIndex: number
   totalExercises: number
   onExit: () => void
+  /** Eine Übung zurück — zum Nachschauen/Nochmal-Anhören. Fortschritt bleibt. */
+  onPrevious?: () => void
 }
 
 export function SessionHeader({
@@ -17,6 +19,7 @@ export function SessionHeader({
   currentIndex,
   totalExercises,
   onExit,
+  onPrevious,
 }: SessionHeaderProps) {
   const [showConfirm, setShowConfirm] = useState(false)
   const progress = totalExercises > 0 ? ((currentIndex) / totalExercises) * 100 : 0
@@ -62,6 +65,18 @@ export function SessionHeader({
         >
           <X className="h-5 w-5" />
         </Button>
+
+        {onPrevious && currentIndex > 0 && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 text-slate-500 hover:bg-slate-100 rounded-full"
+            onClick={onPrevious}
+            aria-label="Eine Übung zurück"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+        )}
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-900 truncate">

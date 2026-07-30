@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { proSeiteTreffer } from "@/lib/exercise-sides"
 import {
   Collapsible,
   CollapsibleContent,
@@ -73,6 +74,14 @@ interface PlanExerciseRowProps {
 }
 
 function PlanExerciseRow({ exercise, onParamsChange, onRemove }: PlanExerciseRowProps) {
+  // Erkennung nur als Vorschlag: greift, solange nichts explizit gesetzt ist.
+  const proSeiteErkannt = proSeiteTreffer({
+    name: exercise.exercise_name ?? null,
+    beschreibung: exercise.exercise_beschreibung ?? null,
+    ausfuehrung: exercise.exercise_ausfuehrung ?? null,
+    params: { anmerkung: exercise.params.anmerkung },
+  })
+  const proSeiteEffektiv = exercise.params.pro_seite ?? !!proSeiteErkannt
   const [noteOpen, setNoteOpen] = useState(false)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: exercise.id,
@@ -214,6 +223,22 @@ function PlanExerciseRow({ exercise, onParamsChange, onRemove }: PlanExerciseRow
               />
             </label>
           </div>
+
+          {/* Pro Seite — Vorauswahl aus der Texterkennung, hier überstimmbar */}
+          <label className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer w-fit">
+            <input
+              type="checkbox"
+              checked={proSeiteEffektiv}
+              onChange={(e) => onParamsChange({ pro_seite: e.target.checked })}
+              className="h-3.5 w-3.5 accent-emerald-600"
+            />
+            <span>
+              pro Seite
+              {exercise.params.pro_seite == null && proSeiteErkannt && (
+                <span className="ml-1 text-emerald-600">(erkannt: „{proSeiteErkannt}")</span>
+              )}
+            </span>
+          </label>
 
           {/* Anmerkung toggle */}
           <Collapsible open={noteOpen} onOpenChange={setNoteOpen}>

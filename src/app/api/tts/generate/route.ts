@@ -115,10 +115,22 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  // Rate limit: only count uncached generations (100 per hour)
-  if (isRateLimited(`tts:${user.id}`, 100, 3_600_000)) {
+  // Rate limit: nur ungecachte Generierungen zählen.
+  //
+  // WICHTIG: Eine geführte Trainingseinheit erzeugt pro Übung mehrere
+  // Sprech-Segmente — bei 8 Übungen sind das 60–80 Einzelanfragen. Mit dem
+  // früheren Limit von 100/h lief ein zweites Training in derselben Stunde in
+  // ein 429 und der Player blieb stumm. Das Limit muss deshalb über dem
+  // Bedarf mehrerer vollständiger Einheiten liegen; Wiederholungen kosten
+  // dank Cache ohnehin nichts.
+  if (isRateLimited(`tts:${user.id}`, 500, 3_600_000)) {
+    console.warn(`[TTS] Rate limit erreicht für User ${user.id} — 500 ungecachte Generierungen/h`)
     return NextResponse.json(
-      { error: "Zu viele Anfragen. Bitte versuche es später erneut." },
+      {
+        error:
+          "Das Sprach-Kontingent für diese Stunde ist erschöpft. Die Anleitung kann gerade nicht vorgelesen werden — das Training funktioniert weiterhin ohne Ton.",
+        code: "TTS_RATE_LIMIT",
+      },
       { status: 429 }
     )
   }

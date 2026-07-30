@@ -19,6 +19,10 @@
 interface ExerciseInput {
   name: string
   ausfuehrung: Array<{ nummer: number; beschreibung: string }> | null
+  /** Übung wird pro Seite ausgeführt (erkannt oder explizit gesetzt) */
+  proSeite?: boolean
+  /** Sätze je Seite (bei proSeite) */
+  saetzeProSeite?: number
   params: {
     saetze: number
     wiederholungen?: number | null
@@ -247,11 +251,15 @@ export function buildTrainerSegments(
 
   if (isHold) {
     addLine(
-      `Wir machen ${zahlWort(params.saetze)} Sätze und halten jede Position ${zahlWort(params.dauer_sekunden!)} Sekunden lang.`
+      exercise.proSeite
+        ? `Wir machen ${zahlWort(params.saetze)} Sätze pro Seite und halten jede Position ${zahlWort(params.dauer_sekunden!)} Sekunden lang.`
+        : `Wir machen ${zahlWort(params.saetze)} Sätze und halten jede Position ${zahlWort(params.dauer_sekunden!)} Sekunden lang.`
     )
   } else if (isRep) {
     addLine(
-      `Wir machen ${zahlWort(params.saetze)} Sätze mit jeweils ${zahlWort(params.wiederholungen!)} Wiederholungen.`
+      exercise.proSeite
+        ? `Wir machen ${zahlWort(params.saetze)} Sätze pro Seite mit jeweils ${zahlWort(params.wiederholungen!)} Wiederholungen.`
+        : `Wir machen ${zahlWort(params.saetze)} Sätze mit jeweils ${zahlWort(params.wiederholungen!)} Wiederholungen.`
     )
   } else {
     addLine(`Wir machen ${zahlWort(params.saetze)} Sätze.`)
@@ -277,21 +285,43 @@ export function buildTrainerSegments(
 
   // ── Sätze durchführen ────────────────────────────────────────────────
 
-  for (let s = 0; s < params.saetze; s++) {
-    // Satz-Ansage
-    if (params.saetze > 1) {
-      if (s === params.saetze - 1) {
+  // „pro Seite": erst alle Sätze rechts, dann alle links. Der Wechsel wird
+  // ausdrücklich angesagt — ohne diese Ansage lief der Player einseitig durch.
+  const proSeite = exercise.proSeite === true
+  const saetzeProSeite = exercise.saetzeProSeite ?? params.saetze
+  const durchgaenge = proSeite ? saetzeProSeite * 2 : params.saetze
+
+  if (proSeite) {
+    addLine("Diese Übung machst du auf beiden Seiten. Wir beginnen mit der rechten Seite.")
+  }
+
+  for (let s = 0; s < durchgaenge; s++) {
+    // Seitenwechsel genau in der Mitte
+    if (proSeite && s === saetzeProSeite) {
+      flushSpeech()
+      addLine(
+        "Die rechte Seite ist geschafft. Wechsle jetzt die Seite — dieselbe Übung auf der linken Seite."
+      )
+      addPause(5)
+      addLine("Bereit? Dann weiter mit der linken Seite.")
+    }
+
+    // Satz-Ansage (bei „pro Seite" je Seite gezählt)
+    const satzInSeite = proSeite ? s % saetzeProSeite : s
+    const saetzeDieserSeite = proSeite ? saetzeProSeite : params.saetze
+    if (saetzeDieserSeite > 1) {
+      if (satzInSeite === saetzeDieserSeite - 1) {
         addLine(pick([
           "Jetzt kommt der letzte Satz. Gib nochmal alles, du schaffst das!",
           "Letzter Satz! Zeig mir was du kannst!",
           "Ein letztes Mal, volle Konzentration!",
-        ], s))
+        ], satzInSeite))
       } else {
-        addLine(satzOrdinal(s + 1) + ".")
+        addLine(satzOrdinal(satzInSeite + 1) + ".")
       }
     }
 
-    if (s === 0 && exercise.ausfuehrung && exercise.ausfuehrung.length > 0) {
+    if (satzInSeite === 0 && exercise.ausfuehrung && exercise.ausfuehrung.length > 0) {
       addLine("Geh in die Ausgangsposition.")
     }
 
@@ -310,8 +340,8 @@ export function buildTrainerSegments(
     // Mark set as completed (used by TTS controller to advance set indicator)
     segments.push({ type: "set-boundary", completedSets: s + 1 })
 
-    // Pause zwischen Sätzen (nicht nach dem letzten)
-    if (s < params.saetze - 1) {
+    // Pause zwischen Sätzen (nicht nach dem letzten, nicht vor dem Seitenwechsel)
+    if (s < durchgaenge - 1 && !(proSeite && s + 1 === saetzeProSeite)) {
       // Pause-Ansage (Lob + Tipp) → wird noch als Speech angehängt
       addLine(pauseAnsageKurz(params.pause_sekunden, s))
 

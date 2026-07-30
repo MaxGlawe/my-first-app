@@ -28,6 +28,8 @@ export interface SessionTTSControllerHandle {
 interface SessionTTSControllerProps {
   exercises: FlatExercise[]
   currentIndex: number
+  /** Meldet, ob für die aktuelle Übung kein Audio verfügbar ist */
+  onAudioMissingChange?: (missing: boolean) => void
   phase: SessionPhase
   ttsEnabled: boolean
   onSetComplete?: (completedSets: number) => void
@@ -76,6 +78,7 @@ function formatPauseTime(seconds: number): string {
 export const SessionTTSController = forwardRef<SessionTTSControllerHandle, SessionTTSControllerProps>(function SessionTTSController({
   exercises,
   currentIndex,
+  onAudioMissingChange,
   phase,
   ttsEnabled,
   onSetComplete,
@@ -86,6 +89,10 @@ export const SessionTTSController = forwardRef<SessionTTSControllerHandle, Sessi
   const [prepProgress, setPrepProgress] = useState(0)
   const [readyExercises, setReadyExercises] = useState<Set<number>>(new Set())
   const [ttsError, setTtsError] = useState<string | null>(null)
+  // Übungen, für die kein Audio erzeugt werden konnte (z. B. Rate-Limit).
+  // Ohne diese Information lief der Player bei ihnen stumm weiter.
+  const [failedExercises, setFailedExercises] = useState<Set<number>>(new Set())
+  const [retrying, setRetrying] = useState(false)
 
   // Reactive state: which exercise index is currently playing
   const [activePlayIndex, setActivePlayIndex] = useState<number | null>(null)
@@ -106,6 +113,7 @@ export const SessionTTSController = forwardRef<SessionTTSControllerHandle, Sessi
   // Data maps
   const playItemsMapRef = useRef<Map<number, string[]>>(new Map())
   const textMapRef = useRef<Map<number, string[]>>(new Map())
+  const prepareExerciseRef = useRef<((exIdx: number) => Promise<boolean>) | null>(null)
   const setsCompletedMapRef = useRef<Map<number, number[]>>(new Map())
   const prevCompletedSetsRef = useRef(0)
   const preparingRef = useRef(false)
@@ -272,10 +280,15 @@ export const SessionTTSController = forwardRef<SessionTTSControllerHandle, Sessi
       return true
     }
 
+    prepareExerciseRef.current = prepareExercise
+
     async function progressiveGenerate() {
       let hasAnySuccess = false
       for (let exIdx = 0; exIdx < segmentsPerExercise.length; exIdx++) {
         const ok = await prepareExercise(exIdx)
+        if (!ok) {
+          setFailedExercises((prev) => new Set(prev).add(exIdx))
+        }
         if (exIdx === 0 && !ok) {
           // First exercise failed — TTS can't work at all
           console.error("[TTS] First exercise generation failed. Disabling TTS mode.")
@@ -295,6 +308,30 @@ export const SessionTTSController = forwardRef<SessionTTSControllerHandle, Sessi
     progressiveGenerate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ttsEnabled, phase])
+
+  // Fehlendes Audio für die aktuelle Übung nach oben melden, damit die
+  // manuelle Bedienung (Satz-Button) wieder eingeblendet wird.
+  const audioMissing = failedExercises.has(currentIndex) && !readyExercises.has(currentIndex)
+
+  useEffect(() => {
+    onAudioMissingChange?.(audioMissing)
+  }, [audioMissing, onAudioMissingChange])
+
+  const handleRetryCurrent = useCallback(async () => {
+    const prepare = prepareExerciseRef.current
+    if (!prepare || retrying) return
+    setRetrying(true)
+    setTtsError(null)
+    const ok = await prepare(currentIndex)
+    if (ok) {
+      setFailedExercises((prev) => {
+        const next = new Set(prev)
+        next.delete(currentIndex)
+        return next
+      })
+    }
+    setRetrying(false)
+  }, [currentIndex, retrying])
 
   // ── Consolidated playback lifecycle ─────────────────────────────────────
 
@@ -409,6 +446,31 @@ export const SessionTTSController = forwardRef<SessionTTSControllerHandle, Sessi
             onClick={handleDismissError}
           >
             OK
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Audio fehlt für diese Übung ─────────────────────────────────────────
+
+  if (audioMissing) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-amber-50/95 backdrop-blur-sm border-t border-amber-200 px-4 py-3 safe-area-inset-bottom">
+        <div className="flex items-center gap-3 max-w-md mx-auto">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+          <p className="text-xs text-amber-800 flex-1">
+            Für diese Übung fehlt die Audio-Anleitung. Du kannst sie nachladen oder
+            die Übung selbst durchklicken.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-amber-700 hover:bg-amber-100 shrink-0 text-xs h-7"
+            onClick={handleRetryCurrent}
+            disabled={retrying}
+          >
+            {retrying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Nachladen"}
           </Button>
         </div>
       </div>

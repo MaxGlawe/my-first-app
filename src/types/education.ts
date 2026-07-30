@@ -82,6 +82,10 @@ export interface DailyInsight {
 export interface PatientEducationModule extends EducationModule {
   quiz_completed: boolean
   quiz_score: number | null
+  /** Freigeschaltet? Eine Lektion je absolviertem Training (+1) */
+  unlocked?: boolean
+  /** Wie viele Trainings noch fehlen, bis diese Lektion offen ist */
+  trainings_bis_freischaltung?: number
 }
 
 // Curriculum progress summary for the Wissens-Hub
@@ -91,4 +95,9 @@ export interface CurriculumProgress {
   completed_lessons: number
   curriculum: CurriculumTopic[]
   lessons: PatientEducationModule[]
+  /** Bis hierhin freigeschaltet (= abgeschlossene Trainings + 1) */
+  unlocked_lessons?: number
+  trainings_completed?: number
+  /** Nächste offene, freigeschaltete Lektion — vor dem nächsten Training lesen */
+  next_open_lesson?: { id: string; lesson_number: number; title: string } | null
 }

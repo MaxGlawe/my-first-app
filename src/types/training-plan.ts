@@ -7,6 +7,12 @@ export interface PlanExerciseParams {
   pause_sekunden: number
   intensitaet_prozent?: number | null
   anmerkung?: string | null
+  /**
+   * Übung pro Seite ausführen (Sätze gelten je Seite).
+   * undefined/null = automatisch aus den Übungstexten erkennen
+   * (siehe lib/exercise-sides.ts) — so profitieren Altpläne ohne Neuanlage.
+   */
+  pro_seite?: boolean | null
 }
 
 export interface PlanExercise {

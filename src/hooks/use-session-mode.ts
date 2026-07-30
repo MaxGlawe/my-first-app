@@ -10,6 +10,7 @@ export type SessionPhase =
   | "holding"    // Hold timer running
   | "set-done"   // Brief celebration (auto-advances after 500ms)
   | "resting"    // Rest between sets (breathing circle + countdown)
+  | "side-switch" // Seite wechseln (erst nach allen Sätzen der ersten Seite)
   | "feedback"   // Per-exercise feedback (bottom sheet)
   | "transition" // Slide to next exercise (auto-advances after 600ms)
   | "complete"   // Completion screen
@@ -28,8 +29,11 @@ interface SessionModeState {
 
 interface UseSessionModeOptions {
   totalExercises: number
+  /** Durchgänge insgesamt — bei „pro Seite" die doppelte Satzanzahl */
   getSetsForExercise: (index: number) => number
   getPauseForExercise: (index: number) => number
+  /** Sätze je Seite; 0/undefined = Übung wird nicht pro Seite ausgeführt */
+  getSetsPerSideForExercise?: (index: number) => number
   storageKey: string
 }
 
@@ -40,7 +44,13 @@ const SET_DONE_DELAY = 600
 const TRANSITION_DELAY = 300
 
 export function useSessionMode(options: UseSessionModeOptions) {
-  const { totalExercises, getSetsForExercise, getPauseForExercise, storageKey } = options
+  const {
+    totalExercises,
+    getSetsForExercise,
+    getPauseForExercise,
+    getSetsPerSideForExercise,
+    storageKey,
+  } = options
 
   const [state, setState] = useState<SessionModeState>(() => {
     // Try to restore in-progress session from localStorage
@@ -137,6 +147,14 @@ export function useSessionMode(options: UseSessionModeOptions) {
           return { ...s, phase: "feedback" }
         }
 
+        // Seitenwechsel: alle Sätze der ersten Seite sind durch. Eigener
+        // Schritt mit Bestätigung — sonst läuft man versehentlich einseitig
+        // weiter, wie im Nutzer-Feedback berichtet.
+        const saetzeProSeite = getSetsPerSideForExercise?.(s.exerciseIndex) ?? 0
+        if (saetzeProSeite > 0 && setsDone === saetzeProSeite) {
+          return { ...s, phase: "side-switch" }
+        }
+
         // In TTS mode, skip resting — audio stream handles pauses
         if (s.ttsEnabled) {
           return { ...s, phase: "exercise" }
@@ -151,7 +169,7 @@ export function useSessionMode(options: UseSessionModeOptions) {
         return { ...s, phase: "exercise" }
       })
     }, SET_DONE_DELAY)
-  }, [getSetsForExercise, getPauseForExercise])
+  }, [getSetsForExercise, getPauseForExercise, getSetsPerSideForExercise])
 
   const startHold = useCallback(() => {
     setState((s) => ({ ...s, phase: "holding" }))
@@ -166,6 +184,11 @@ export function useSessionMode(options: UseSessionModeOptions) {
   }, [])
 
   const skipRest = useCallback(() => {
+    setState((s) => ({ ...s, phase: "exercise" }))
+  }, [])
+
+  /** Seite gewechselt — weiter mit den Sätzen der zweiten Seite. */
+  const sideSwitchDone = useCallback(() => {
     setState((s) => ({ ...s, phase: "exercise" }))
   }, [])
 
@@ -247,6 +270,53 @@ export function useSessionMode(options: UseSessionModeOptions) {
     [totalExercises]
   )
 
+  /**
+   * Eine Übung zurück — zum Nachschauen und Nochmal-Anhören.
+   *
+   * Der Fortschritt bleibt bewusst erhalten: bereits gemachte Sätze, Feedback
+   * und Skips werden NICHT zurückgesetzt. Wer zurückgeht, hört sich die Übung
+   * erneut an und geht dann wieder vor; die Sitzung merkt sich, wie weit sie
+   * schon war.
+   */
+  const previousExercise = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    setState((s) => {
+      if (s.exerciseIndex === 0) return s
+      const prevIndex = s.exerciseIndex - 1
+      return {
+        ...s,
+        phase: "exercise",
+        exerciseIndex: prevIndex,
+        // Satz-Anzeige auf den Stand dieser Übung setzen
+        currentSet: s.completedSets[prevIndex] ?? 0,
+      }
+    })
+  }, [])
+
+  /**
+   * Wieder vorwärts, ohne die Übung erneut abschließen zu müssen —
+   * Gegenstück zu previousExercise().
+   */
+  const nextExercise = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+    setState((s) => {
+      const nextIndex = s.exerciseIndex + 1
+      if (nextIndex >= totalExercises) return s
+      return {
+        ...s,
+        phase: "exercise",
+        exerciseIndex: nextIndex,
+        currentSet: s.completedSets[nextIndex] ?? 0,
+      }
+    })
+  }, [totalExercises])
+
   const setTtsEnabled = useCallback((enabled: boolean) => {
     setState((s) => ({ ...s, ttsEnabled: enabled }))
   }, [])
@@ -282,9 +352,12 @@ export function useSessionMode(options: UseSessionModeOptions) {
     holdComplete,
     restComplete,
     skipRest,
+    sideSwitchDone,
     submitFeedback,
     skipFeedback,
     skipExercise,
+    previousExercise,
+    nextExercise,
     setTtsEnabled,
     clearSession,
     advanceSetTTS,

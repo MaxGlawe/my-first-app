@@ -86,6 +86,18 @@ export async function GET() {
     return NextResponse.json({ modules: [], curricula: [] })
   }
 
+  // ── Freischaltung: eine Lektion vor jedem Training ────────────────────
+  //
+  // Regel: Lektion N wird gelesen, BEVOR das N-te Training stattfindet.
+  // Freigeschaltet sind daher (abgeschlossene Trainings + 1) Lektionen.
+  // Damit koppelt Wissen an Handeln — 10 Lektionen brauchen 10 Trainings.
+  const { count: trainingsAbgeschlossen } = await supabase
+    .from("assignment_completions")
+    .select("id", { count: "exact", head: true })
+    .eq("patient_id", patient.id)
+
+  const freigeschalteteLektionen = (trainingsAbgeschlossen ?? 0) + 1
+
   // Get quiz attempts for this patient
   const moduleIds = modules.map((m) => m.id)
   const { data: attempts } = await supabase
@@ -114,6 +126,10 @@ export async function GET() {
     quizzes: m.education_quizzes ?? [],
     quiz_completed: m.id in attemptMap,
     quiz_score: attemptMap[m.id] ?? null,
+    /** Lektion darf gelesen werden (Kopplung ans Training) */
+    unlocked: m.lesson_number <= freigeschalteteLektionen,
+    /** Anzahl Trainings, die für diese Lektion noch fehlen */
+    trainings_bis_freischaltung: Math.max(0, m.lesson_number - freigeschalteteLektionen),
   }))
 
   // Group by hauptproblem for curriculum progress view
@@ -123,6 +139,9 @@ export async function GET() {
     completed_lessons: number
     curriculum: Array<{ number: number; topic: string }>
     lessons: typeof enrichedModules
+    unlocked_lessons: number
+    trainings_completed: number
+    next_open_lesson: { id: string; lesson_number: number; title: string } | null
   }> = []
 
   for (const hp of hauptprobleme) {
@@ -134,6 +153,9 @@ export async function GET() {
     const curriculum = (master?.curriculum as Array<{ number: number; topic: string }>) ?? []
     const totalLessons = master?.total_lessons ?? lessons.length
     const completedLessons = lessons.filter((l) => l.quiz_completed).length
+    // Nächste offene, freigeschaltete Lektion — die vor dem nächsten Training
+    // gelesen werden soll.
+    const naechsteOffene = lessons.find((l) => l.unlocked && !l.quiz_completed) ?? null
 
     curricula.push({
       hauptproblem: hp,
@@ -141,6 +163,15 @@ export async function GET() {
       completed_lessons: completedLessons,
       curriculum,
       lessons,
+      unlocked_lessons: freigeschalteteLektionen,
+      trainings_completed: trainingsAbgeschlossen ?? 0,
+      next_open_lesson: naechsteOffene
+        ? {
+            id: naechsteOffene.id,
+            lesson_number: naechsteOffene.lesson_number,
+            title: naechsteOffene.title,
+          }
+        : null,
     })
   }
 

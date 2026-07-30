@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Play, SkipForward, ImageOff, ChevronDown, ChevronUp } from "lucide-react"
+import { CheckCircle2, Play, SkipForward, ImageOff, ChevronDown, ChevronUp, ChevronRight } from "lucide-react"
 import type { FlatExercise } from "@/lib/training-helpers"
 import type { SessionPhase } from "@/hooks/use-session-mode"
 import { SessionSetIndicator } from "./SessionSetIndicator"
+import { seiteLabel, type Seite } from "@/lib/exercise-sides"
 import { SessionRepCounter } from "./SessionRepCounter"
 import { SessionHoldTimer } from "./SessionHoldTimer"
 
@@ -18,6 +19,12 @@ interface SessionExerciseViewProps {
   onHoldComplete: () => void
   onSkip: () => void
   ttsEnabled?: boolean
+  /** Sätze dieser Übung, die bereits erledigt sind */
+  completedSets?: number
+  /** Vorwärts, ohne die Übung erneut abzuschließen (nach dem Zurückgehen) */
+  onNextExercise?: () => void
+  /** Aktuelle Seite bei Übungen, die pro Seite ausgeführt werden */
+  seite?: Seite
 }
 
 export function SessionExerciseView({
@@ -29,6 +36,9 @@ export function SessionExerciseView({
   onHoldComplete,
   onSkip,
   ttsEnabled,
+  completedSets = 0,
+  onNextExercise,
+  seite,
 }: SessionExerciseViewProps) {
   const [showSteps, setShowSteps] = useState(false)
   const [mediaError, setMediaError] = useState(false)
@@ -42,6 +52,9 @@ export function SessionExerciseView({
   const isHold = !!params.dauer_sekunden && !params.wiederholungen
   const isRep = !!params.wiederholungen
   const isSetDone = phase === "set-done"
+  // Nach dem Zurückgehen: Übung war schon fertig → nicht erneut abarbeiten,
+  // sondern nur ansehen/anhören und wieder vorgehen.
+  const alreadyDone = completedSets >= params.saetze && !!onNextExercise
 
   return (
     <div
@@ -128,6 +141,16 @@ export function SessionExerciseView({
           )}
         </div>
 
+        {/* Aktuelle Seite — bei „pro Seite"-Übungen immer sichtbar */}
+        {seite && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-amber-50 border border-amber-200 px-3.5 py-1.5">
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
+            <span className="text-xs font-semibold text-amber-700">
+              {seiteLabel(seite)}
+            </span>
+          </div>
+        )}
+
         {/* Execution steps toggle */}
         {exercise.ausfuehrung && exercise.ausfuehrung.length > 0 && (
           <div className="w-full mb-4">
@@ -165,8 +188,25 @@ export function SessionExerciseView({
           </p>
         )}
 
+        {/* Bereits erledigt (Rückblick) — nur weiter, kein zusätzlicher Satz */}
+        {alreadyDone && !isSetDone && (
+          <div className="w-full space-y-2">
+            <p className="text-xs text-center text-emerald-600 bg-emerald-50 rounded-xl px-3 py-2">
+              Diese Übung hast du in dieser Einheit schon abgeschlossen.
+            </p>
+            <Button
+              size="lg"
+              onClick={onNextExercise}
+              className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-base"
+            >
+              Weiter
+              <ChevronRight className="h-5 w-5 ml-1" />
+            </Button>
+          </div>
+        )}
+
         {/* Action button (hidden in TTS-guided mode) */}
-        {!isSetDone && !ttsEnabled && (
+        {!alreadyDone && !isSetDone && !ttsEnabled && (
           <Button
             size="lg"
             onClick={isHold && phase !== "holding" ? onStartHold : onCompleteSet}

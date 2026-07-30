@@ -142,7 +142,9 @@ function CurriculumCard({ curriculum }: { curriculum: CurriculumProgress }) {
           {topics.map((topic) => {
             const lesson = lessons.find((l) => l.lesson_number === topic.number)
             const isCompleted = lesson?.quiz_completed ?? false
-            const isAvailable = !!lesson
+            // Verfügbar heißt jetzt: erzeugt UND durch ein Training freigeschaltet.
+            const isAvailable = !!lesson && lesson.unlocked !== false
+            const fehlendeTrainings = lesson?.trainings_bis_freischaltung ?? 0
             const score = lesson?.quiz_score
 
             return (
@@ -184,7 +186,16 @@ function CurriculumCard({ curriculum }: { curriculum: CurriculumProgress }) {
                   </span>
                 )}
                 {!isAvailable && (
-                  <Lock className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    {fehlendeTrainings > 0 && (
+                      <span className="text-[11px] text-slate-400">
+                        {fehlendeTrainings === 1
+                          ? "nach dem nächsten Training"
+                          : `nach ${fehlendeTrainings} Trainings`}
+                      </span>
+                    )}
+                    <Lock className="h-3.5 w-3.5 text-slate-300" />
+                  </span>
                 )}
               </div>
             )

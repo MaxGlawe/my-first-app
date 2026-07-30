@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Play, Mic, Clock, Dumbbell } from "lucide-react"
+import { ArrowLeft, Play, Mic, Clock, Dumbbell, BookOpen, ArrowRight } from "lucide-react"
 import type { FlatExercise } from "@/lib/training-helpers"
 import { formatExerciseParams } from "@/lib/training-helpers"
 
@@ -13,6 +13,12 @@ interface SessionStartScreenProps {
   onToggleTts: (enabled: boolean) => void
   onStart: () => void
   onBack: () => void
+  /**
+   * Offene Wissenslektion, die vor diesem Training gelesen werden soll.
+   * Eine Lektion je Training — siehe /api/me/education (Freischaltung).
+   */
+  pendingLesson?: { lesson_number: number; title: string } | null
+  onReadLesson?: () => void
 }
 
 export function SessionStartScreen({
@@ -23,6 +29,8 @@ export function SessionStartScreen({
   onToggleTts,
   onStart,
   onBack,
+  pendingLesson,
+  onReadLesson,
 }: SessionStartScreenProps) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-teal-950 text-white">
@@ -116,15 +124,47 @@ export function SessionStartScreen({
         </button>
       </div>
 
+      {/* Wissenslektion vor dem Training */}
+      {pendingLesson && onReadLesson && (
+        <div className="px-6 pb-4 animate-fade-in-up animation-delay-450">
+          <button
+            onClick={onReadLesson}
+            className="w-full text-left rounded-2xl bg-white/10 border border-white/20 p-4 hover:bg-white/15 transition-colors"
+          >
+            <div className="flex items-start gap-3">
+              <span className="h-10 w-10 rounded-xl bg-teal-400/20 flex items-center justify-center shrink-0">
+                <BookOpen className="h-5 w-5 text-teal-200" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-teal-200/80">
+                  Vor dem Training · Lektion {pendingLesson.lesson_number}
+                </p>
+                <p className="text-sm font-semibold text-white mt-0.5 leading-snug">
+                  {pendingLesson.title}
+                </p>
+                <p className="text-xs text-white/50 mt-1">
+                  5 Minuten lesen — dann trainieren
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-white/40 shrink-0 mt-1" />
+            </div>
+          </button>
+        </div>
+      )}
+
       {/* Start button */}
       <div className="px-6 pb-10 animate-fade-in-up animation-delay-450">
         <Button
           onClick={onStart}
           size="lg"
-          className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-base shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98]"
+          className={`w-full h-14 rounded-2xl font-semibold text-base transition-all active:scale-[0.98] ${
+            pendingLesson
+              ? "bg-white/15 hover:bg-white/25 text-white border border-white/20"
+              : "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/30"
+          }`}
         >
           <Play className="h-5 w-5 mr-2" />
-          Training starten
+          {pendingLesson ? "Ohne Lektion starten" : "Training starten"}
         </Button>
       </div>
     </div>
