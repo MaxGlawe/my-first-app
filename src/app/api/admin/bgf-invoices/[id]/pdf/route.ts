@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { generateBgfInvoicePdf } from "@/lib/pdf/bgf-invoice-pdf"
+import { generateBgfERechnung } from "@/lib/erechnung/bgf-erechnung"
 
 export async function GET(
   _request: NextRequest,
@@ -21,7 +21,8 @@ export async function GET(
   const { data: invoice } = await sc.from("bgf_invoices").select("*").eq("id", id).single()
   if (!invoice) return NextResponse.json({ error: "Rechnung nicht gefunden." }, { status: 404 })
 
-  const pdfBuffer = await generateBgfInvoicePdf(invoice as any)
+  // E-Rechnung: PDF mit eingebettetem EN-16931-XML
+  const pdfBuffer = await generateBgfERechnung(invoice as never)
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     headers: {

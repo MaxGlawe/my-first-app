@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendEmail } from "@/lib/email"
-import { generateBgfInvoicePdf } from "@/lib/pdf/bgf-invoice-pdf"
+import { generateBgfERechnung } from "@/lib/erechnung/bgf-erechnung"
 import { formatZeitraum } from "@/types/bgf-invoice"
 import { getStripe } from "@/lib/stripe"
 
@@ -31,7 +31,7 @@ export async function POST(
   // Generate PDF
   let pdfBuffer: Buffer | null = null
   try {
-    pdfBuffer = await generateBgfInvoicePdf(invoice as any)
+    pdfBuffer = await generateBgfERechnung(invoice as never)
   } catch (err) {
     console.error("[bgf-invoices/send] PDF error:", err)
   }

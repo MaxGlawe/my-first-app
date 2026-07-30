@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendEmail } from "@/lib/email"
-import { generateBgfInvoicePdf } from "@/lib/pdf/bgf-invoice-pdf"
+import { generateBgfERechnung } from "@/lib/erechnung/bgf-erechnung"
 import { formatZeitraum } from "@/types/bgf-invoice"
 import { getStripe } from "@/lib/stripe"
 import type { PraxisSettings } from "@/types/billing"
@@ -223,7 +223,7 @@ export async function GET(request: NextRequest) {
       // Generate PDF
       let pdfBuffer: Buffer | null = null
       try {
-        pdfBuffer = await generateBgfInvoicePdf(invoice as any)
+        pdfBuffer = await generateBgfERechnung(invoice as never)
       } catch (err) {
         console.error(`[bgf-invoicing] PDF error for ${org.name}:`, err)
       }
