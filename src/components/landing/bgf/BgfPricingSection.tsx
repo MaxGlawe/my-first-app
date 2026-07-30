@@ -1,67 +1,35 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Check, Sparkles, ArrowRight } from "lucide-react"
+import { Check, Sparkles, ArrowRight, Lock, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import {
+  BGF_PAKETE,
+  GROSSES_TEAM_LABEL,
+  fmtEuro,
+  paketLabel,
+} from "@/lib/bgf-pakete"
 
-const tiers = [
-  {
-    name: "Prävention",
-    price: "29",
-    unit: "€/MA/Monat",
-    description: "Tägliche Begleitung für alle Mitarbeitenden — der gesunde Einstieg.",
-    features: [
-      "Tägliche Pausen-Fit-Routinen (KI)",
-      "Persönliche Gesundheits-Ist-Analyse",
-      "Ampel-System für kritische Fälle",
-      "HR-Dashboard (Basis-KPIs, anonym)",
-      "E-Mail-Support",
-    ],
-    notIncluded: ["Therapeuten-Draht (Chat)", "Quartals-Reports", "Dedizierter Therapeut"],
-    featured: false,
-  },
-  {
-    name: "Therapeut bei Bedarf",
-    price: "39",
-    unit: "€/MA/Monat",
-    description: "Ihr Team erreicht jederzeit einen echten Therapeuten — mit vollem Reporting.",
-    features: [
-      "Alles aus Prävention",
-      "Therapeuten-Draht: Chat bei Bedarf",
-      "Individuelle Übungspläne vom Therapeuten",
-      "Vollständiges HR-Dashboard & Abteilungs-Vergleich",
-      "Quartals-Reports (PDF) mit Empfehlungen",
-      "Prioritäts-Support & Onboarding-Workshop",
-    ],
-    notIncluded: [],
-    featured: true,
-  },
-  {
-    name: "Dedizierter Therapeut",
-    price: "59",
-    unit: "€/MA/Monat",
-    description: "Ein fester, persönlicher Therapeut als Ansprechpartner für Ihr Unternehmen.",
-    features: [
-      "Alles aus „Therapeut bei Bedarf“",
-      "Fester, namentlicher Therapeut für Ihr Team",
-      "Video-Konsultationen & Haltungsanalyse",
-      "Sonderkonditionen für Einzelleistungen",
-      "Multi-Standort-Management",
-      "DSGVO-Auftragsverarbeitungsvertrag (AVV)",
-    ],
-    notIncluded: [],
-    featured: false,
-  },
+// In JEDEM Paket enthalten — jeder Mitarbeiter bekommt das volle Produkt.
+const enthalten = [
+  "Echter Therapeut als fester Ansprechpartner (Heilpraktiker)",
+  "Therapeuten-Draht: Chat bei jeder Beschwerde — vertraulich",
+  "Tägliche KI-Pausen-Fit-Routinen am Arbeitsplatz",
+  "Persönliche Gesundheits-Ist-Analyse je Mitarbeiter",
+  "Individuelle Übungspläne vom Therapeuten",
+  "Ampel-System: kritische Fälle werden früh erkannt",
+  "Anonymer Nutzungs-Report für die Geschäftsführung",
+  "Onboarding-Workshop für Ihr Team",
 ]
 
 export function BgfPricingSection() {
   return (
-    <section className="py-24 sm:py-32 bg-white relative overflow-hidden">
+    <section id="preise" className="py-24 sm:py-32 bg-white relative overflow-hidden">
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-14"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-80px" }}
@@ -71,69 +39,89 @@ export function BgfPricingSection() {
             Preise
           </span>
           <h2 className="mt-3 font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-landing-fg tracking-tight">
-            So nah, wie Sie es{" "}
-            <span className="text-landing-accent">brauchen.</span>
+            Ein Angebot.{" "}
+            <span className="text-landing-accent">Nach Teamgröße.</span>
           </h2>
           <p className="mt-4 text-lg text-landing-fg-muted max-w-2xl mx-auto">
-            Drei Stufen — nach gewünschter Therapeuten-Nähe. DSGVO-konform gehostet;
-            Steuervorteile nach §3 Nr. 34 EStG über zubuchbare zertifizierte Kurse.
+            Fester Monatspreis, ein volles Produkt für jeden im Team — innerhalb
+            Ihres Pakets ohne Pro-Kopf-Rechnung. Steuervorteil nach §3 Nr. 34 EStG
+            über zubuchbare, zertifizierte Präventionskurse.
           </p>
         </motion.div>
 
-        {/* Tier cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {tiers.map((tier, i) => (
+        {/* Was enthalten ist — ein Produkt für alle */}
+        <motion.div
+          className="rounded-2xl border border-landing-border bg-landing-bg p-7 sm:p-8 mb-10"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7 }}
+        >
+          <p className="text-xs font-bold uppercase tracking-widest text-landing-fg-subtle mb-5">
+            In jedem Paket enthalten — für jeden Mitarbeiter
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+            {enthalten.map((f) => (
+              <div key={f} className="flex items-start gap-2.5 text-sm">
+                <Check className="h-4 w-4 flex-shrink-0 mt-0.5 text-landing-accent" />
+                <span className="text-landing-fg">{f}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 pt-5 border-t border-landing-border/70 flex items-start gap-2.5">
+            <Lock className="h-4 w-4 flex-shrink-0 mt-0.5 text-landing-accent" />
+            <p className="text-sm text-landing-fg-muted">
+              <span className="font-semibold text-landing-fg">Vertraulich by design:</span>{" "}
+              Die Geschäftsführung sieht Nutzung und Teilnahme — nie die
+              Gesundheitsdaten einzelner Mitarbeitender.
+            </p>
+          </div>
+          <p className="mt-4 text-xs text-landing-fg-subtle">
+            Zubuchbar: ZPP-zertifizierte Präventionskurse & Ergonomie-Audits vor Ort.
+          </p>
+        </motion.div>
+
+        {/* Preis-Bänder nach Größe */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+          {BGF_PAKETE.map((g, i) => (
             <motion.div
-              key={tier.name}
-              className={`relative rounded-2xl p-7 flex flex-col ${
-                tier.featured
+              key={g.size}
+              className={`relative rounded-2xl p-6 flex flex-col text-center ${
+                g.featured
                   ? "bg-landing-fg border-2 border-landing-fg shadow-2xl"
                   : "bg-white border border-landing-border shadow-sm"
               }`}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
-              transition={{ delay: i * 0.12, duration: 0.7 }}
+              transition={{ delay: i * 0.1, duration: 0.6 }}
             >
-              {tier.featured && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-landing-accent px-5 py-2 text-xs font-bold text-white shadow-lg shadow-landing-accent/30">
+              {g.featured && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-landing-accent px-4 py-1.5 text-xs font-bold text-white shadow-lg shadow-landing-accent/30">
                     <Sparkles className="h-3 w-3" />
-                    Empfohlen
+                    Beliebt
                   </span>
                 </div>
               )}
-
-              <div className={tier.featured ? "mt-3" : ""}>
-                <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${tier.featured ? "text-white/60" : "text-landing-fg-subtle"}`}>
-                  {tier.name}
-                </p>
-                <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className={`font-display text-5xl font-bold ${tier.featured ? "text-white" : "text-landing-fg"}`}>
-                    {tier.price}€
-                  </span>
-                </div>
-                <p className={`text-sm mb-4 ${tier.featured ? "text-white/50" : "text-landing-fg-subtle"}`}>
-                  {tier.unit}
-                </p>
-                <p className={`text-sm leading-relaxed mb-6 ${tier.featured ? "text-white/70" : "text-landing-fg-muted"}`}>
-                  {tier.description}
-                </p>
+              <p className={`text-xs font-bold uppercase tracking-widest mb-3 ${g.featured ? "text-white/60 mt-2" : "text-landing-fg-subtle"}`}>
+                {g.size} Mitarbeitende
+              </p>
+              <div className="mb-1">
+                <span className={`font-display text-4xl font-bold ${g.featured ? "text-white" : "text-landing-fg"}`}>
+                  {fmtEuro(g.preis)} €
+                </span>
               </div>
-
-              <ul className="space-y-2.5 flex-1 mb-6">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className={`h-4 w-4 flex-shrink-0 mt-0.5 ${tier.featured ? "text-landing-highlight" : "text-landing-accent"}`} />
-                    <span className={tier.featured ? "text-white/80" : "text-landing-fg"}>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Link href={`/unternehmen/kontakt?modell=${encodeURIComponent(`${tier.name} (${tier.price} €)`)}`}>
+              <p className={`text-sm mb-6 ${g.featured ? "text-white/50" : "text-landing-fg-subtle"}`}>
+                pro Monat
+              </p>
+              <Link
+                href={`/unternehmen/kontakt?modell=${encodeURIComponent(paketLabel(g))}`}
+                className="mt-auto"
+              >
                 <Button
                   className={`w-full rounded-full ${
-                    tier.featured
+                    g.featured
                       ? "bg-landing-accent hover:bg-landing-accent-hover text-white shadow-lg shadow-landing-accent/30"
                       : "border border-landing-border bg-white hover:bg-landing-bg text-landing-fg"
                   }`}
@@ -146,13 +134,60 @@ export function BgfPricingSection() {
           ))}
         </div>
 
+        {/* Wachstum während der Laufzeit */}
+        <motion.div
+          className="rounded-2xl bg-landing-bg border border-landing-border p-5 mb-6 flex items-start gap-3"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <UserPlus className="h-4 w-4 flex-shrink-0 mt-0.5 text-landing-accent" />
+          <p className="text-sm text-landing-fg-muted">
+            <span className="font-semibold text-landing-fg">Sie stellen jemanden ein?</span>{" "}
+            Jeder Mitarbeitende über der Paketgrenze kostet{" "}
+            {BGF_PAKETE.map((p) => fmtEuro(p.proMaZusatz)).at(-1)}–
+            {BGF_PAKETE.map((p) => fmtEuro(p.proMaZusatz))[0]} € im Monat — genau so
+            viel wie seine Kolleginnen und Kollegen im Paket. Wird das größere Paket
+            günstiger, wechseln Sie automatisch dorthin. Sie zahlen nie mehr als den
+            Listenpreis Ihrer Teamgröße.
+          </p>
+        </motion.div>
+
+        {/* Größere Teams — individuelles Angebot */}
+        <motion.div
+          className="rounded-2xl border border-landing-border bg-white shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-4 mb-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="text-center sm:text-left">
+            <p className="font-display text-lg font-bold text-landing-fg">
+              Mehr als 50 Mitarbeitende?
+            </p>
+            <p className="text-sm text-landing-fg-muted mt-0.5">
+              Individuelles Angebot mit fest eingeplanter Therapeuten-Kapazität für Ihr Unternehmen.
+            </p>
+          </div>
+          <Link href={`/unternehmen/kontakt?modell=${encodeURIComponent(GROSSES_TEAM_LABEL)}`}>
+            <Button
+              variant="outline"
+              className="rounded-full border-landing-border text-landing-fg hover:bg-landing-bg whitespace-nowrap"
+            >
+              Angebot anfragen
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </motion.div>
+
         {/* Pilot banner */}
         <motion.div
           className="rounded-2xl bg-gradient-to-r from-landing-accent/10 via-landing-accent-light to-landing-accent-warm/10 border border-landing-accent/20 p-8 text-center"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
-          transition={{ delay: 0.3, duration: 0.7 }}
+          transition={{ delay: 0.2, duration: 0.7 }}
         >
           <span className="inline-flex items-center gap-2 bg-landing-accent text-white text-xs font-bold px-4 py-1.5 rounded-full mb-4">
             <Sparkles className="h-3.5 w-3.5" />

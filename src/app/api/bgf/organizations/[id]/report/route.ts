@@ -10,8 +10,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import Anthropic from "@anthropic-ai/sdk"
-import { requireTierAccess } from "@/lib/bgf-tier-guard"
-import { BgfFeature } from "@/lib/bgf-tiers"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -24,10 +22,6 @@ export async function POST(
   if (!UUID_REGEX.test(orgId)) {
     return NextResponse.json({ error: "Ungültige Organisations-ID." }, { status: 400 })
   }
-
-  // Tier-Check: Quartals-Reports requires Enterprise
-  const tierAccess = await requireTierAccess(orgId, BgfFeature.QUARTALS_REPORTS)
-  if (!tierAccess.allowed) return tierAccess.response
 
   const supabase = await createSupabaseServerClient()
   const { data: { user }, error: authError } = await supabase.auth.getUser()

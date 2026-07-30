@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { VertragTier, OrgGroesse } from "@/types/bgf"
+import type { OrgGroesse } from "@/types/bgf"
+import { BGF_PAKETE, MAX_LISTEN_PAKET_MA, fmtEuro, paketByMaxMa } from "@/lib/bgf-pakete"
 
 export default function NeueOrganisationPage() {
   const router = useRouter()
@@ -30,8 +31,23 @@ export default function NeueOrganisationPage() {
   const [strasse, setStrasse] = useState("")
   const [plz, setPlz] = useState("")
   const [ort, setOrt] = useState("")
-  const [tier, setTier] = useState<VertragTier>("pro")
-  const [lizenzen, setLizenzen] = useState(50)
+  // Ein Produkt — Preis nur nach Teamgröße. 0 = individuelles Paket (über 50 MA).
+  const [paketMaxMa, setPaketMaxMa] = useState<number>(20)
+  const [monatspreis, setMonatspreis] = useState<number>(
+    paketByMaxMa(20)?.preis ?? 590
+  )
+  const [lizenzen, setLizenzen] = useState(20)
+
+  const istIndividuell = paketMaxMa === 0
+
+  function selectPaket(maxMa: number) {
+    setPaketMaxMa(maxMa)
+    const p = paketByMaxMa(maxMa)
+    if (p) {
+      setMonatspreis(p.preis)
+      setLizenzen((cur) => (cur > p.maxMa ? p.maxMa : cur))
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -52,8 +68,10 @@ export default function NeueOrganisationPage() {
           adresse_strasse: strasse.trim() || undefined,
           adresse_plz: plz.trim() || undefined,
           adresse_ort: ort.trim() || undefined,
-          vertrag_tier: tier,
+          vertrag_tier: "voll",
           vertrag_lizenzen: lizenzen,
+          vertrag_paket_max_ma: istIndividuell ? null : paketMaxMa,
+          vertrag_monatspreis: monatspreis,
         }),
       })
 
@@ -241,29 +259,63 @@ export default function NeueOrganisationPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label>Tier</Label>
-              <Select value={tier} onValueChange={(v) => setTier(v as VertragTier)}>
+              <Label>Paket (Teamgröße)</Label>
+              <Select
+                value={String(paketMaxMa)}
+                onValueChange={(v) => selectPaket(Number(v))}
+              >
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basic">Basic — 19€/MA</SelectItem>
-                  <SelectItem value="pro">Pro — 39€/MA</SelectItem>
-                  <SelectItem value="enterprise">Enterprise — 59€/MA</SelectItem>
+                  {BGF_PAKETE.map((p) => (
+                    <SelectItem key={p.maxMa} value={String(p.maxMa)}>
+                      {p.size} Mitarbeitende — {fmtEuro(p.preis)} €/Monat
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="0">
+                    über {MAX_LISTEN_PAKET_MA} MA — individuell
+                  </SelectItem>
                 </SelectContent>
               </Select>
+              <p className="mt-1 text-xs text-slate-400">
+                Vollumfang für jeden Mitarbeitenden — kein Preis pro Kopf.
+              </p>
             </div>
             <div>
-              <Label htmlFor="lizenzen">Anzahl Lizenzen</Label>
+              <Label htmlFor="lizenzen">Mitarbeitende (angemeldet)</Label>
               <Input
                 id="lizenzen"
                 type="number"
                 value={lizenzen}
-                onChange={(e) => setLizenzen(parseInt(e.target.value) || 50)}
+                onChange={(e) => setLizenzen(parseInt(e.target.value) || 1)}
                 min={1}
                 max={10000}
                 className="mt-1"
               />
+              {!istIndividuell && lizenzen > paketMaxMa && (
+                <p className="mt-1 text-xs text-amber-600">
+                  Über der Paketgrenze ({paketMaxMa} MA) — nächstgrößeres Paket wählen.
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="monatspreis">Monatspreis netto (€)</Label>
+              <Input
+                id="monatspreis"
+                type="number"
+                value={monatspreis}
+                onChange={(e) => setMonatspreis(parseFloat(e.target.value) || 0)}
+                min={0}
+                step={10}
+                readOnly={!istIndividuell}
+                className={`mt-1 ${istIndividuell ? "" : "bg-slate-50 text-slate-500"}`}
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                {istIndividuell
+                  ? "Individuell verhandelter Festpreis."
+                  : "Listenpreis der gewählten Staffel."}
+              </p>
             </div>
           </div>
         </div>

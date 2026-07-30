@@ -6,8 +6,6 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useBgfMembership } from "@/hooks/use-bgf-membership"
-import { TierLockedPage } from "@/components/bgf/TierLockedPage"
-import { hasFeature, BgfFeature } from "@/lib/bgf-tiers"
 import { IstAnalyseStepArbeitsplatz } from "@/components/bgf/onboarding/StepArbeitsplatz"
 import { IstAnalyseStepBeschwerden } from "@/components/bgf/onboarding/StepBeschwerden"
 import { IstAnalyseStepAlltag } from "@/components/bgf/onboarding/StepAlltag"
@@ -50,7 +48,7 @@ const INITIAL_VALUES: IstAnalyseFormValues = {
 
 export default function BgfOnboardingPage() {
   const router = useRouter()
-  const { organizationId, vertragTier, refresh: refreshMembership } = useBgfMembership()
+  const { organizationId, refresh: refreshMembership } = useBgfMembership()
 
   const [step, setStep] = useState(1)
   const [direction, setDirection] = useState<1 | -1>(1)
@@ -62,18 +60,6 @@ export default function BgfOnboardingPage() {
     ki_empfehlung: string
     pausen_fit_fokus: string[]
   } | null>(null)
-
-  // Tier-Gate: Ist-Analyse requires Pro+
-  if (vertragTier && !hasFeature(vertragTier, BgfFeature.IST_ANALYSE)) {
-    return (
-      <TierLockedPage
-        currentTier={vertragTier}
-        requiredTier="pro"
-        featureTitle="Ist-Analyse & Risiko-Scoring"
-        featureDescription="Die persönliche Gesundheitsanalyse erstellt ein individuelles Profil mit Risiko-Score und KI-Empfehlungen — verfügbar ab dem Professional-Tarif."
-      />
-    )
-  }
 
   const totalSteps = STEPS.length
   const progressPercent = ((step - 1) / (totalSteps - 1)) * 100

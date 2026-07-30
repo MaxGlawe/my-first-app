@@ -15,9 +15,10 @@ const createOrgSchema = z.object({
   adresse_strasse: z.string().max(200).optional(),
   adresse_plz: z.string().max(10).optional(),
   adresse_ort: z.string().max(100).optional(),
-  vertrag_tier: z.enum(["basic", "pro", "enterprise"]).optional(),
+  vertrag_tier: z.enum(["basic", "pro", "enterprise", "voll"]).optional(),
   vertrag_lizenzen: z.number().int().min(1).max(10000).optional(),
-  vertrag_preis_pro_ma_monat: z.number().min(0).max(500).optional(),
+  vertrag_paket_max_ma: z.number().int().min(1).max(10000).nullable().optional(),
+  vertrag_monatspreis: z.number().min(0).max(100000).optional(),
 })
 
 // ── GET: Liste aller Organisationen ─────────────────────────────────
@@ -159,9 +160,11 @@ export async function POST(request: NextRequest) {
       adresse_strasse: d.adresse_strasse?.trim() || null,
       adresse_plz: d.adresse_plz?.trim() || null,
       adresse_ort: d.adresse_ort?.trim() || null,
-      vertrag_tier: d.vertrag_tier || "pro",
-      vertrag_lizenzen: d.vertrag_lizenzen || 50,
-      vertrag_preis_pro_ma_monat: d.vertrag_preis_pro_ma_monat || 39.0,
+      // Ein Produkt: Preis nur nach Teamgröße (siehe lib/bgf-pakete.ts)
+      vertrag_tier: d.vertrag_tier || "voll",
+      vertrag_lizenzen: d.vertrag_lizenzen || 20,
+      vertrag_paket_max_ma: d.vertrag_paket_max_ma ?? null,
+      vertrag_monatspreis: d.vertrag_monatspreis ?? null,
       vertrag_start: new Date().toISOString().split("T")[0],
       status: "pilot",
     })

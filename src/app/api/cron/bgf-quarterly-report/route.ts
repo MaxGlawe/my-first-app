@@ -3,7 +3,7 @@
  *
  * Cron endpoint — runs daily at 07:00 UTC.
  * On the 5th day after each quarter ends (Apr 5, Jul 5, Oct 5, Jan 5),
- * generates PDF health reports for all active Enterprise organizations
+ * generates PDF health reports for all active/pilot organizations
  * and emails them to the HR contact.
  *
  * Security: Protected by CRON_SECRET header.
@@ -68,17 +68,16 @@ export async function GET(request: NextRequest) {
 
   const sc = createSupabaseServiceClient()
 
-  // Get all active/pilot organizations with enterprise tier
+  // Quartals-Reports gehören zum Vollumfang — jede aktive Organisation bekommt einen.
   const { data: orgs, error: orgsError } = await sc
     .from("organizations")
-    .select("id, name, branche, kontakt_name, kontakt_email, vertrag_tier")
+    .select("id, name, branche, kontakt_name, kontakt_email")
     .in("status", ["aktiv", "pilot"])
-    .eq("vertrag_tier", "enterprise")
 
   if (orgsError || !orgs?.length) {
     return NextResponse.json({
       skipped: true,
-      message: "Keine Enterprise-Organisationen gefunden.",
+      message: "Keine aktiven Organisationen gefunden.",
     })
   }
 

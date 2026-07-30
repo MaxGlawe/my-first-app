@@ -36,14 +36,12 @@ src/
     ui/                  shadcn/ui components (NEVER recreate these)
     bgf/                 BGF components (Dashboard, Onboarding, Pausen-Fit, TierGate)
     bgf-contracts/       BGF contract components
-    landing-bgf/         BGF landing page sections (/unternehmen)
     landing/             Main landing page sections
+    landing/bgf/         BGF landing page sections (/unternehmen)
     hausaufgaben/        Homework assignment components
     intake/              Intake form components
   hooks/                 Custom React hooks (use-bgf-membership, use-hr-auth, etc.)
   lib/                   Utilities
-    bgf-tiers.ts         BGF tier feature gating (hasFeature, BgfFeature enum)
-    bgf-tier-guard.ts    Server-side tier access guard (requireTierAccess)
     email.ts             Email sending via nodemailer
     rate-limit.ts        In-memory rate limiter
     supabase.ts          Supabase browser client
@@ -88,19 +86,39 @@ npx tsc --noEmit   # TypeScript check (run before deploying)
 - **Validation:** Zod schemas on all API inputs
 - **Auth:** supabase-middleware.ts handles role checks, paywall, deactivation
 
-## BGF Tier System
+## BGF Pricing: EIN Produkt, Staffel nach Teamgröße
 
-Three pricing tiers with feature gating (src/lib/bgf-tiers.ts):
+Seit 30.07.2026 gibt es **kein Feature-Gating mehr**. Jede Organisation bekommt den
+Vollumfang (Therapeut, Chat, Ist-Analyse, HR-Dashboard, Team-Puls, Ziel-Tracking,
+Quartals-Reports); der Preis richtet sich nur nach der Teamgröße.
 
-| Feature | Basic (29€) | Pro (39€) | Enterprise (59€) |
-|---|---|---|---|
-| Pausen-Fit, Check-In, Ergonomie, Hydration, Streaks | ✓ | ✓ | ✓ |
-| Ist-Analyse, HR-Dashboard, Chat, Team-Puls, Ziel-Tracking | ✗ | ✓ | ✓ |
-| Quartals-Reports, Dedizierter Therapeut, Zusatzleistungen | ✗ | ✗ | ✓ |
-
-- **Server guard:** `requireTierAccess(orgId, BgfFeature.X)` in API routes
-- **Frontend gate:** `<TierGate>` for sections, `<TierLockedPage>` for full pages
-- **Hooks:** `useBgfMembership()` and `useHrAuth()` return `vertragTier`
+- **Preis-Quelle (einzige!):** `src/lib/bgf-pakete.ts` — 390 € bis 10 MA, 590 € bis 20,
+  890 € bis 35, 1.190 € bis 50, darüber individuell. Genutzt von Landing (`BgfPricingSection`,
+  `BgfRoiCalculator`, `BgfContactForm`), Vertrags-API, Vertrags-PDF und Invoicing.
+  Das Paket-Label muss zwischen Pricing-Sektion und Kontaktformular identisch bleiben,
+  sonst greift die Vorauswahl per `?modell=` nicht.
+- **Entfernt:** `lib/bgf-tiers.ts`, `lib/bgf-tier-guard.ts`, `components/bgf/TierGate.tsx`,
+  `components/bgf/TierLockedPage.tsx` sowie alle `requireTierAccess`-Aufrufe.
+  Quartals-Report-Cron filtert nicht mehr auf `vertrag_tier = enterprise`.
+- **Verträge & Rechnungen:** `bgf_contracts.paket_max_ma` + `paket_label`,
+  `monatlicher_gesamtpreis` = Paket-Festpreis; `preis_pro_ma_monat` ist Altlast (neue
+  Verträge schreiben NULL), `contract_type = 'voll'`. Rechnungen tragen `paket_label`,
+  `preis_pro_ma` NULL. Vertrags-PDF, Rechnungs-PDF und Signatur-Ansicht rendern
+  **beide Welten**: `paket_label`/`contract_type='voll'` → Paketdarstellung, sonst die
+  alte Tarif-/Pro-Kopf-Darstellung (Bestandsverträge bleiben reproduzierbar).
+- **Nachbesetzungen:** Köpfe über der Paketgrenze kosten den Kopfpreis ihrer Staffel
+  (`proMaZusatz`: 39 / 29,50 / 25,50 / 24 €), gedeckelt durch die **Bestpreis-Regel** —
+  sobald ein größeres Paket günstiger ist, gilt dieses (Vertrag §4 Abs. 4/4a).
+  Berechnung ausschließlich über `berechneMonatsbetrag()` in `lib/bgf-pakete.ts`;
+  Rechnungslauf zählt dafür `organization_members` mit `status='aktiv'` und schreibt
+  `zusatz_ma_anzahl`/`zusatz_ma_preis` als zweite Rechnungsposition.
+- **Migrationen:** `20260730000001_bgf_paketpreise.sql` (Paketfelder) und
+  `20260730000002_bgf_nachbesetzung_kopfpreis.sql` (Kopfpreis + Rechnungsposition),
+  beide idempotent. Ohne sie schlagen neue Verträge/Orgs fehl (Spalten +
+  CHECK-Constraint für `'voll'`).
+- **Altverträge NICHT anfassen:** `paket_max_ma`/`paket_label` bleiben dort NULL. Ein
+  abgeleitetes Label würde einem 50 × 39 € = 1.950 €-Vertrag das Paket „bis 50"
+  (Listenpreis 1.190 €) zuschreiben und dem gespeicherten Vertragstext widersprechen.
 
 ## Claude API Gotchas (IMPORTANT)
 

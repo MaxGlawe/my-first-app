@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendEmail } from "@/lib/email"
 import { generateBgfContractPdf } from "@/lib/pdf/bgf-contract-pdf"
+import { BGF_CONTRACT_TYPE_LABELS, istPaketVertrag, type BgfContractType } from "@/types/bgf-contract"
 
 export async function POST(
   request: NextRequest,
@@ -52,8 +53,10 @@ export async function POST(
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
   const signingUrl = `${siteUrl}/bgf-vertrag/${contract.signing_token}`
 
-  const tierLabels: Record<string, string> = { basic: "Basic", pro: "Professional", enterprise: "Enterprise" }
-  const tierLabel = tierLabels[contract.contract_type] ?? contract.contract_type
+  // Paketverträge zeigen das Paket, Altverträge ihren Tarifnamen.
+  const umfangZeile = istPaketVertrag(contract)
+    ? { label: "Paket", value: (contract.paket_label as string) ?? "Vollzugriff" }
+    : { label: "Tarif", value: BGF_CONTRACT_TYPE_LABELS[contract.contract_type as BgfContractType] ?? contract.contract_type }
 
   // Send email
   const htmlBody = `
@@ -74,7 +77,7 @@ export async function POST(
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin: 24px 0;">
           <table style="width: 100%; font-size: 14px; color: #475569;">
             <tr><td style="padding: 4px 0;"><strong>Vertragsnummer:</strong></td><td style="text-align: right;">${contract.contract_number}</td></tr>
-            <tr><td style="padding: 4px 0;"><strong>Tarif:</strong></td><td style="text-align: right;">${tierLabel}</td></tr>
+            <tr><td style="padding: 4px 0;"><strong>${umfangZeile.label}:</strong></td><td style="text-align: right;">${umfangZeile.value}</td></tr>
             <tr><td style="padding: 4px 0;"><strong>Lizenzen:</strong></td><td style="text-align: right;">${contract.lizenzen} Mitarbeiter</td></tr>
             <tr><td style="padding: 4px 0;"><strong>Monatlich:</strong></td><td style="text-align: right;">${Number(contract.monatlicher_gesamtpreis).toFixed(2)} €</td></tr>
           </table>

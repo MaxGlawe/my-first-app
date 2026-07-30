@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Shield, CheckCircle2, Stethoscope, MessageCircle } from "lucide-react"
+import { ArrowRight, Shield, Stethoscope, MessageCircle, Lock } from "lucide-react"
 import { motion, useScroll, useTransform } from "framer-motion"
 
 function AnimatedKpiCounter({
@@ -104,12 +104,12 @@ function TherapistCockpit() {
             </span>
           </div>
 
-          {/* KPI row */}
+          {/* KPI row — illustrativer Dashboard-Snapshot (Nutzung, keine Ergebnis-Claims) */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Betreut", value: "87%", color: "text-landing-accent" },
-              { label: "Beschwerden ↓", value: "-34%", color: "text-emerald-600" },
-              { label: "Zufrieden", value: "4.8★", color: "text-landing-accent-warm" },
+              { label: "Team aktiv", value: "24/30", color: "text-landing-accent" },
+              { label: "Fits/Woche", value: "18", color: "text-emerald-600" },
+              { label: "Zufrieden", value: "4,8★", color: "text-landing-accent-warm" },
             ].map((kpi) => (
               <div key={kpi.label} className="rounded-xl bg-landing-bg p-3 text-center border border-landing-border/50">
                 <div className={`text-lg font-bold font-display ${kpi.color}`}>{kpi.value}</div>
@@ -123,6 +123,9 @@ function TherapistCockpit() {
             <div className="flex items-center gap-1.5 text-xs text-landing-fg-subtle mb-1">
               <MessageCircle className="h-3.5 w-3.5 text-landing-accent" />
               <span className="font-medium">Therapeuten-Draht</span>
+              <span className="ml-auto inline-flex items-center gap-1 text-[10px] text-landing-fg-subtle">
+                <Lock className="h-3 w-3" /> vertraulich
+              </span>
             </div>
             <div className="flex justify-end">
               <span className="text-[11px] bg-landing-accent text-white rounded-2xl rounded-br-sm px-3 py-1.5 max-w-[80%]">
@@ -218,7 +221,7 @@ export function BgfHeroSection() {
             >
               Ihr Therapeut.
               <br />
-              <span className="text-landing-accent">Für Ihr ganzes Team.</span>
+              <span className="text-landing-accent">In der Tasche jedes Mitarbeiters.</span>
             </motion.h1>
 
             {/* Subline */}
@@ -228,10 +231,11 @@ export function BgfHeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.7 }}
             >
-              Ein echter Physiotherapeut kümmert sich um die Gesundheit Ihrer
-              Mitarbeitenden — begleitet durch eine smarte App.{" "}
+              Jeder Mitarbeiter bekommt einen echten Physiotherapeuten als
+              persönlichen Ansprechpartner — in einer App, die täglich begleitet.{" "}
               <span className="font-semibold text-landing-fg">
-                Messbar weniger Ausfall, fittere Teams, steuerlich gefördert.
+                Sie zahlen pro Kopf; was Ihr Team mit dem Therapeuten bespricht,
+                bleibt vertraulich.
               </span>
             </motion.p>
 
@@ -274,9 +278,9 @@ export function BgfHeroSection() {
               transition={{ delay: 0.8, duration: 0.6 }}
             >
               {[
-                { icon: Shield, label: "DSGVO-konform" },
-                { icon: CheckCircle2, label: "ZPP-registrierte Kursleitung" },
-                { icon: Stethoscope, label: "Echte Therapeuten" },
+                { icon: Stethoscope, label: "Echter Therapeut, kein Chatbot" },
+                { icon: Lock, label: "Vertraulich — der Chef sieht nichts" },
+                { icon: Shield, label: "DSGVO-konform, EU-gehostet" },
               ].map(({ icon: Icon, label }) => (
                 <div
                   key={label}
@@ -293,16 +297,21 @@ export function BgfHeroSection() {
           <div className="hidden lg:block">
             <TherapistCockpit />
 
-            {/* KPI counters below cockpit */}
+            {/* Product facts (keine erfundenen Ergebnis-Zahlen — Wirtschaftlichkeit im ROI-Rechner) */}
             <motion.div
-              className="mt-6 grid grid-cols-3 gap-4 rounded-2xl bg-landing-bg border border-landing-border p-5"
+              className="mt-6 rounded-2xl bg-landing-bg border border-landing-border p-5"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.0, duration: 0.6 }}
             >
-              <AnimatedKpiCounter value={87} suffix="%" label="Teilnahmequote" delay={1200} />
-              <AnimatedKpiCounter value={34} suffix="%" label="Beschwerden ↓" delay={1400} />
-              <AnimatedKpiCounter value={35} suffix="%" label="weniger Fehltage" delay={1600} />
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-landing-fg-subtle text-center mb-3">
+                Was jeder Mitarbeiter bekommt
+              </p>
+              <div className="grid grid-cols-3 gap-4">
+                <AnimatedKpiCounter value={3} suffix=" Min" label="pro Routine, direkt am Platz" delay={1200} />
+                <AnimatedKpiCounter value={365} suffix="" label="Tage im Jahr begleitet" delay={1400} />
+                <AnimatedKpiCounter value={1} suffix=":1" label="echter Therapeut, kein Bot" delay={1600} />
+              </div>
             </motion.div>
           </div>
         </div>

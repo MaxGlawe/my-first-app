@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendEmail } from "@/lib/email"
 import { generateBgfContractPdf } from "@/lib/pdf/bgf-contract-pdf"
+import { BGF_CONTRACT_TYPE_LABELS, istPaketVertrag, type BgfContractType } from "@/types/bgf-contract"
 
 export async function POST(
   request: NextRequest,
@@ -93,7 +94,12 @@ export async function POST(
   }
 
   // Async: generate signed PDF + send confirmation email (non-blocking)
-  const tierLabels: Record<string, string> = { basic: "Basic", pro: "Professional", enterprise: "Enterprise" }
+  // Paketverträge zeigen das Paket, Altverträge ihren Tarifnamen.
+  const istPaket = istPaketVertrag(contract)
+  const umfangLabel = istPaket ? "Paket" : "Tarif"
+  const umfangValue = (istPaket ? contract.paket_label : null)
+    ?? BGF_CONTRACT_TYPE_LABELS[contract.contract_type as BgfContractType]
+    ?? contract.contract_type
 
   // Build signed contract for PDF generation
   const signedContract = {
@@ -124,7 +130,7 @@ export async function POST(
           <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px; margin: 24px 0;">
             <table style="width: 100%; font-size: 14px; color: #166534;">
               <tr><td><strong>Vertragsnummer:</strong></td><td style="text-align: right;">${contract.contract_number}</td></tr>
-              <tr><td><strong>Tarif:</strong></td><td style="text-align: right;">${tierLabels[contract.contract_type] ?? contract.contract_type}</td></tr>
+              <tr><td><strong>${umfangLabel}:</strong></td><td style="text-align: right;">${umfangValue}</td></tr>
               <tr><td><strong>Unterschrieben am:</strong></td><td style="text-align: right;">${new Date(signedAt).toLocaleDateString("de-DE")}</td></tr>
             </table>
           </div>

@@ -9,13 +9,15 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle2, ArrowRight, Building2 } from "lucide-react"
+import { BGF_PAKETE, GROSSES_TEAM_LABEL, paketLabel } from "@/lib/bgf-pakete"
 
-const MITARBEITER_OPTIONS = ["bis 25", "25–100", "100–250", "250–1.000", "über 1.000"]
+const MITARBEITER_OPTIONS = ["bis 10", "11–20", "21–35", "36–50", "über 50"]
 
+// Reihenfolge & Wortlaut identisch zur Pricing-Sektion — sonst greift die
+// Vorauswahl über ?modell=… nicht (siehe MODELL_OPTIONS.includes unten).
 const MODELL_OPTIONS = [
-  "Prävention (29 €)",
-  "Therapeut bei Bedarf (39 €)",
-  "Dedizierter Therapeut (59 €)",
+  ...BGF_PAKETE.map(paketLabel),
+  GROSSES_TEAM_LABEL,
   "Noch unsicher – Beratung",
 ]
 
@@ -69,7 +71,7 @@ export function BgfContactForm({ defaultModell = "" }: { defaultModell?: string 
     if (!data.nachname.trim()) return fail("Bitte geben Sie Ihren Nachnamen ein.")
     if (!data.email.includes("@")) return fail("Bitte geben Sie eine gültige E-Mail-Adresse ein.")
     if (!data.mitarbeiter) return fail("Bitte wählen Sie die Größe Ihres Unternehmens.")
-    if (!data.modell) return fail("Bitte wählen Sie ein präferiertes Modell.")
+    if (!data.modell) return fail("Bitte wählen Sie ein Paket.")
     if (data.nachricht.trim().length < 10) return fail("Bitte beschreiben Sie Ihr Anliegen (min. 10 Zeichen).")
     if (!data.datenschutz_akzeptiert) return fail("Bitte akzeptieren Sie die Datenschutzerklärung.")
     return true
@@ -199,9 +201,9 @@ export function BgfContactForm({ defaultModell = "" }: { defaultModell?: string 
         </div>
       </div>
 
-      {/* Präferiertes Modell */}
+      {/* Passendes Paket */}
       <div className="space-y-2">
-        <Label>Präferiertes Modell *</Label>
+        <Label>Passendes Paket *</Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {MODELL_OPTIONS.map((opt) => {
             const selected = data.modell === opt

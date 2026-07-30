@@ -15,14 +15,11 @@ import {
   Sparkles,
   Info,
 } from "lucide-react"
-
-function fmt(n: number) {
-  return new Intl.NumberFormat("de-DE").format(Math.round(n))
-}
+import { fmtEuro as fmt, monatspreis } from "@/lib/bgf-pakete"
 
 export function BgfRoiCalculator() {
   // Ihr Unternehmen
-  const [mitarbeiter, setMitarbeiter] = useState(100)
+  const [mitarbeiter, setMitarbeiter] = useState(30)
   const [auTage, setAuTage] = useState(15)
   const [kostenProTag, setKostenProTag] = useState(300)
 
@@ -34,7 +31,8 @@ export function BgfRoiCalculator() {
   const [reduktion, setReduktion] = useState(25)
 
   const calc = useMemo(() => {
-    const proTierMonat = 39
+    // Fester Monatspreis nach Teamgröße — über 50 MA nur noch Richtwert.
+    const { preis: paketMonat, paket } = monatspreis(mitarbeiter)
     const steuerfreiProMa = 600
     const steuerSatz = 0.3
 
@@ -49,7 +47,7 @@ export function BgfRoiCalculator() {
     const einsparung = adressierbar * (reduktion / 100)
 
     // Investition & Steuervorteil
-    const investitionBrutto = mitarbeiter * proTierMonat * 12
+    const investitionBrutto = paketMonat * 12
     const steuerVorteil = Math.min(
       mitarbeiter * steuerfreiProMa * steuerSatz,
       investitionBrutto * steuerSatz
@@ -62,6 +60,8 @@ export function BgfRoiCalculator() {
     const roi = investitionNetto > 0 ? Math.round((einsparung / investitionNetto) * 100) : 0
 
     return {
+      paketMonat,
+      paket,
       absentismus,
       praesentismus,
       fluktuation,
@@ -143,13 +143,14 @@ export function BgfRoiCalculator() {
                 label="Anzahl Mitarbeitende"
                 value={mitarbeiter}
                 display={`${mitarbeiter}`}
-                min={10}
-                max={1000}
-                step={10}
-                minLabel="10"
-                maxLabel="1.000"
+                min={5}
+                max={150}
+                step={5}
+                minLabel="5"
+                maxLabel="150"
                 onChange={setMitarbeiter}
                 cls={sliderCls}
+                hint="Bis 50 Mitarbeitende gilt der Listenpreis. Darüber rechnen wir mit einem Richtwert — das Angebot machen wir individuell."
               />
               <SliderRow
                 icon={<CalendarX className="h-4 w-4 text-orange-500" />}
@@ -329,7 +330,8 @@ export function BgfRoiCalculator() {
             {/* Investition */}
             <div className="rounded-2xl border border-landing-border bg-white p-5 space-y-4">
               <p className="text-xs font-semibold text-landing-fg-muted uppercase tracking-wider">
-                Ihre Investition (Pro-Tarif)
+                Ihre Investition
+                {calc.paket ? ` (Paket ${calc.paket.size} Mitarbeitende)` : " (Richtwert)"}
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -337,7 +339,10 @@ export function BgfRoiCalculator() {
                   <p className="text-xl font-bold font-display text-landing-fg">
                     {fmt(calc.investitionBrutto)} €
                   </p>
-                  <p className="text-[10px] text-landing-fg-subtle">{mitarbeiter} × 39 € × 12</p>
+                  <p className="text-[10px] text-landing-fg-subtle">
+                    {fmt(calc.paketMonat)} € / Monat × 12
+                    {calc.paket ? "" : " · individuelles Angebot"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs text-landing-fg-subtle mb-1">Steuervorteil (optional)</p>

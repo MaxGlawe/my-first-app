@@ -22,8 +22,17 @@ export interface BgfInvoice {
   zeitraum_jahr: number
 
   // Amounts
+  /** Abgedeckte Mitarbeitende (nur informativ auf der Rechnung) */
   lizenzen: number
-  preis_pro_ma: number
+  /** Paket der Rechnungsposition; null bei Altrechnungen (Pro-Kopf-Modell) */
+  paket_label: string | null
+  /** ALTLAST: Pro-Kopf-Preis; null bei Rechnungen ab dem Paketmodell */
+  preis_pro_ma: number | null
+  /** Abgerechnete Mitarbeitende über der Paketgrenze */
+  zusatz_ma_anzahl: number
+  /** Kopfpreis je Nachbesetzung in diesem Monat */
+  zusatz_ma_preis: number | null
+  /** Netto-Gesamtbetrag: Paketpreis + Nachbesetzungen */
   gesamtbetrag: number
 
   // Org snapshot

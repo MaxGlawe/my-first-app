@@ -1,12 +1,17 @@
-import type { BgfContractType, BgfLeistung, BgfVertragText } from "@/types/bgf-contract"
+import type { BgfLeistung, BgfVertragText } from "@/types/bgf-contract"
 import type { PraxisSettings } from "@/types/billing"
+import { MAX_LISTEN_PAKET_MA, paketVertragsLabel } from "@/lib/bgf-pakete"
 
 interface BgfContractContext {
-  contractType: BgfContractType
   leistungen: BgfLeistung[]
-  preisProMaMonat: number
+  /** Obergrenze der Preisstaffel; null = individuell verhandeltes Paket */
+  paketMaxMa: number | null
+  /** Abgedeckte Mitarbeitende */
   lizenzen: number
+  /** Fester Monatspreis netto (Paketpreis) */
   monatlichGesamt: number
+  /** Kopfpreis je Mitarbeitendem über der Paketgrenze; null = individuell */
+  zusatzMaPreis?: number | null
   laufzeitMonate: number
   vertragStart: string | null
   praxis: PraxisSettings
@@ -28,15 +33,6 @@ function fmtCurrency(amount: number): string {
   return amount.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
 }
 
-function getTierLabel(type: BgfContractType): string {
-  const labels: Record<BgfContractType, string> = {
-    basic: "Basic",
-    pro: "Professional",
-    enterprise: "Enterprise",
-  }
-  return labels[type]
-}
-
 export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText {
   const { praxis } = ctx
   const praxisFullAddress = `${praxis.strasse}, ${praxis.plz} ${praxis.ort}`
@@ -54,6 +50,9 @@ export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText 
     .join("\n")
 
   const vertragStartText = ctx.vertragStart ? fmtDate(ctx.vertragStart) : "nach Unterzeichnung"
+  const paketText = paketVertragsLabel(ctx.paketMaxMa)
+  const paketObergrenze = ctx.paketMaxMa
+  const zusatzPreis = ctx.zusatzMaPreis ?? null
 
   return {
     // ──────────────────────────────────────────────
@@ -103,13 +102,15 @@ export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText 
     vertragsgegenstand: [
       `§1 Vertragsgegenstand`,
       ``,
-      `(1) Gegenstand dieses Vertrages ist die Bereitstellung einer digitalen Plattform zur betrieblichen Gesundheitsförderung („Praxis OS BGF") einschließlich präventiver Maßnahmen zur Förderung von Bewegung, Ergonomie und allgemeinem Wohlbefinden der Mitarbeitenden. Das vereinbarte Leistungspaket entspricht dem Tarif „${getTierLabel(ctx.contractType)}".`,
+      `(1) Gegenstand dieses Vertrages ist die Bereitstellung einer digitalen Plattform zur betrieblichen Gesundheitsförderung („Praxis OS BGF") einschließlich präventiver Maßnahmen zur Förderung von Bewegung, Ergonomie und allgemeinem Wohlbefinden der Mitarbeitenden sowie der therapeutischen Begleitung gemäß §2. Der Leistungsumfang ist für alle teilnehmenden Mitarbeitenden identisch und vollständig; die Vergütung richtet sich ausschließlich nach der Teamgröße (Paket: ${paketText}).`,
       ``,
       `(2) Die Leistungen dienen ausschließlich der Prävention im Sinne des § 20b SGB V und stellen keine medizinische Behandlung, Therapie oder Diagnosestellung im heilkundlichen Sinne dar.`,
       ``,
       `(3) Individuelle therapeutische Leistungen bei Beschwerden sind nicht Bestandteil dieses Vertrages. Für diese gelten die Regelungen in §2a (Optionale Zusatzleistungen).`,
       ``,
-      `(4) Der Auftragnehmer stellt dem Auftraggeber ${ctx.lizenzen} Mitarbeiter-Lizenzen zur Verfügung. Jede Lizenz berechtigt einen Mitarbeitenden des Auftraggebers zur vollumfänglichen Nutzung der BGF-Plattform gemäß dem vereinbarten Leistungsumfang (§2).`,
+      paketObergrenze
+        ? `(4) Das vereinbarte Paket „${paketText}" umfasst die Betreuung von bis zu ${paketObergrenze} Mitarbeitenden. Bei Vertragsschluss sind ${ctx.lizenzen} Mitarbeitende angemeldet. Jeder angemeldete Mitarbeitende erhält den vollen Leistungsumfang gemäß §2 — unabhängig von der Teamgröße.`
+        : `(4) Die Vertragsparteien vereinbaren ein individuelles Paket für ${ctx.lizenzen} Mitarbeitende. Jeder angemeldete Mitarbeitende erhält den vollen Leistungsumfang gemäß §2. Änderungen der Teamgröße werden gemäß §4 Abs. 4 behandelt.`,
       ``,
       `(5) Der Vertrag tritt am ${vertragStartText} in Kraft und hat eine Mindestlaufzeit gemäß §5.`,
     ].join("\n"),
@@ -118,25 +119,19 @@ export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText 
     // §2 LEISTUNGSUMFANG
     // ──────────────────────────────────────────────
     leistungsumfang: [
-      `§2 Leistungsumfang (Tarif: ${getTierLabel(ctx.contractType)})`,
+      `§2 Leistungsumfang`,
       ``,
-      `(1) Der Leistungsumfang umfasst insbesondere:`,
+      `(1) Der Auftragnehmer erbringt für jeden angemeldeten Mitarbeitenden den vollen Leistungsumfang. Eine Aufteilung in Tarif- oder Funktionsstufen findet nicht statt.`,
       ``,
-      `- KI-basierte Bewegungsimpulse`,
-      `- Pausen-Fit Sessions (personalisiert auf Arbeitsplatztyp und Beschwerdeprofil)`,
-      `- Täglicher Gesundheits-Check-In mit personalisierter Tagesplanung`,
-      `- Ergonomische Empfehlungen und Bildschirm-Pausen`,
-      `- Allgemeine Bewegungsprogramme`,
-      `- Anonymisierte Auswertungen für das HR-Dashboard`,
+      ...(enthalteneLeistungen
+        ? [`(2) Enthalten sind insbesondere:`, ``, enthalteneLeistungen, ``]
+        : []),
+      `(3) Die therapeutische Begleitung erfolgt durch einen namentlich benannten Therapeuten des Auftragnehmers (Physiotherapeut/Heilpraktiker für Physiotherapie), der als fester Ansprechpartner für den Auftraggeber und dessen Mitarbeitende zur Verfügung steht.`,
       ``,
-      enthalteneLeistungen ? `(2) Im vereinbarten Tarif „${getTierLabel(ctx.contractType)}" sind folgende Leistungen enthalten:\n\n${enthalteneLeistungen}` : "",
+      `(4) Die bereitgestellten Inhalte dienen der allgemeinen Gesundheitsförderung und ersetzen keine individuelle medizinische Beratung oder Behandlung. Für individuelle therapeutische Leistungen gilt §2a.`,
       ``,
-      `(${nichtEnthalteneLeistungen ? "3" : "2"}) Die bereitgestellten Inhalte dienen der allgemeinen Gesundheitsförderung und ersetzen keine individuelle medizinische Beratung oder Behandlung.`,
-      ``,
-      nichtEnthalteneLeistungen ? `(4) Folgende Leistungen sind im gewählten Tarif nicht enthalten und können bei Bedarf durch ein Upgrade hinzugebucht werden:\n\n${nichtEnthalteneLeistungen}` : "",
-      ``,
-      `(${nichtEnthalteneLeistungen ? "5" : "3"}) Der Auftragnehmer behält sich vor, den Leistungsumfang im Rahmen von Plattform-Updates zu erweitern. Eine Reduzierung des vereinbarten Leistungsumfangs bedarf der schriftlichen Zustimmung des Auftraggebers.`,
-    ].filter(Boolean).join("\n"),
+      `(5) Der Auftragnehmer behält sich vor, den Leistungsumfang im Rahmen von Plattform-Updates zu erweitern. Eine Reduzierung des vereinbarten Leistungsumfangs bedarf der schriftlichen Zustimmung des Auftraggebers.`,
+    ].join("\n"),
 
     // ──────────────────────────────────────────────
     // §2a OPTIONALE ZUSATZLEISTUNGEN
@@ -172,7 +167,7 @@ export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText 
       ``,
       `(1) Die Mitarbeitenden des Auftraggebers erhalten individuellen Zugang zur BGF-Plattform über die Praxis-App. Der Zugang erfolgt nach Durchführung einer digitalen Ist-Analyse (Gesundheits-Onboarding).`,
       ``,
-      `(2) Die Plattform umfasst — je nach vereinbartem Tarif — folgende Kernfunktionen:`,
+      `(2) Die Plattform umfasst für jeden angemeldeten Mitarbeitenden folgende Kernfunktionen:`,
       `- Täglicher Gesundheits-Check-In mit personalisierter Tagesplanung`,
       `- KI-generierte Pausen-Fit Micro-Routinen (angepasst an Arbeitsplatztyp und Beschwerden)`,
       `- Geführte Atem-Pause zur Stressreduktion`,
@@ -196,15 +191,26 @@ export function generateBgfVertragText(ctx: BgfContractContext): BgfVertragText 
       ``,
       `(1) Der Auftraggeber zahlt für die vereinbarten Leistungen eine monatliche Vergütung in Höhe von:`,
       ``,
-      `  Preis pro Mitarbeiter/Monat: ${fmtCurrency(ctx.preisProMaMonat)}`,
-      `  Anzahl Lizenzen: ${ctx.lizenzen}`,
-      `  Monatlicher Gesamtbetrag: ${fmtCurrency(ctx.monatlichGesamt)}`,
+      `  Paket: ${paketText}`,
+      `  Monatlicher Festpreis: ${fmtCurrency(ctx.monatlichGesamt)}`,
+      `  Angemeldete Mitarbeitende bei Vertragsschluss: ${ctx.lizenzen}`,
+      ...(zusatzPreis ? [`  Jeder weitere Mitarbeitende über der Paketgrenze: ${fmtCurrency(zusatzPreis)} / Monat`] : []),
+      ``,
+      `Die Vergütung ist ein Festpreis je Kalendermonat und unabhängig von der Anzahl der tatsächlich aktiven Mitarbeitenden innerhalb der Paketgrenze. Innerhalb des Pakets wird kein Preis pro Kopf berechnet.`,
       ``,
       `(2) Die Vergütung wird monatlich im Voraus in Rechnung gestellt. Die Rechnung wird dem Auftraggeber in elektronischer Form (PDF per E-Mail) zugestellt. Das Zahlungsziel beträgt 14 Tage ab Rechnungsdatum.`,
       ``,
       `(3) Die genannten Preise verstehen sich als Nettopreise zuzüglich der gesetzlichen Umsatzsteuer, sofern diese anfällt. Physiotherapeutische Leistungen sind gemäß § 4 Nr. 14 UStG umsatzsteuerbefreit, soweit sie als Heilbehandlung im Bereich der Humanmedizin gelten. Digitale Dienstleistungen können der Regelbesteuerung unterliegen.`,
       ``,
-      `(4) Die Lizenzanzahl kann während der Vertragslaufzeit einvernehmlich angepasst werden. Eine Erhöhung wird zum Folgemonat wirksam. Eine Reduzierung ist mit einer Frist von 30 Tagen zum Monatsende möglich, jedoch nicht unter die bei Vertragsschluss vereinbarte Mindestlizenzanzahl.`,
+      zusatzPreis
+        ? `(4) Nachbesetzungen: Für jeden Mitarbeitenden, der die Obergrenze des vereinbarten Pakets übersteigt, berechnet der Auftragnehmer ${fmtCurrency(zusatzPreis)} netto je Kalendermonat. Die Abrechnung erfolgt monatlich anhand der zum Abrechnungsstichtag aktiven Zugänge; ausgeschiedene Mitarbeitende werden ab dem Folgemonat nicht mehr berechnet.`
+        : `(4) Ändert sich die Zahl der Mitarbeitenden wesentlich, passen die Vertragsparteien die Vergütung einvernehmlich an. Eine Erhöhung wird zum Folgemonat wirksam, eine Reduzierung mit einer Frist von 30 Tagen zum Monatsende.`,
+      ``,
+      zusatzPreis
+        ? `(4a) Bestpreis: Übersteigt die Summe aus Paketpreis und Nachbesetzungen den Preis eines größeren Pakets, das die gesamte Belegschaft abdeckt, so gilt automatisch dieses größere Paket. Der Auftraggeber zahlt in keinem Monat mehr als den Listenpreis des für seine Teamgröße passenden Pakets. Der Auftragnehmer teilt einen solchen Wechsel mit der nächsten Rechnung mit; einer gesonderten Vereinbarung bedarf es nicht.`
+        : "",
+      ``,
+      `(4b) Sinkt die Zahl der Mitarbeitenden dauerhaft in eine niedrigere Staffel, kann der Auftraggeber mit einer Frist von 30 Tagen zum Monatsende die Herabstufung auf das passende Paket verlangen. Ab mehr als ${MAX_LISTEN_PAKET_MA} Mitarbeitenden gilt eine individuell vereinbarte Vergütung.`,
       ``,
       `(5) Bei Zahlungsverzug ist der Auftragnehmer berechtigt, Verzugszinsen in Höhe von 5 Prozentpunkten über dem jeweiligen Basiszinssatz der Europäischen Zentralbank (§ 288 BGB) zu berechnen. Das Recht auf Geltendmachung eines weitergehenden Verzugsschadens bleibt unberührt.`,
       ``,

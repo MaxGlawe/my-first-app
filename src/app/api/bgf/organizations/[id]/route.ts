@@ -15,9 +15,10 @@ const updateOrgSchema = z.object({
   adresse_strasse: z.string().max(200).nullable().optional(),
   adresse_plz: z.string().max(10).nullable().optional(),
   adresse_ort: z.string().max(100).nullable().optional(),
-  vertrag_tier: z.enum(["basic", "pro", "enterprise"]).optional(),
+  vertrag_tier: z.enum(["basic", "pro", "enterprise", "voll"]).optional(),
   vertrag_lizenzen: z.number().int().min(1).max(10000).optional(),
-  vertrag_preis_pro_ma_monat: z.number().min(0).max(500).optional(),
+  vertrag_paket_max_ma: z.number().int().min(1).max(10000).nullable().optional(),
+  vertrag_monatspreis: z.number().min(0).max(100000).optional(),
   vertrag_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   vertrag_ende: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   status: z.enum(["pilot", "aktiv", "pausiert", "gekuendigt"]).optional(),
@@ -178,7 +179,7 @@ export async function PATCH(
     .from("organizations")
     .update(parseResult.data)
     .eq("id", id)
-    .select("id, name, status, vertrag_tier, vertrag_lizenzen, updated_at")
+    .select("id, name, status, vertrag_tier, vertrag_lizenzen, vertrag_paket_max_ma, vertrag_monatspreis, updated_at")
     .single()
 
   if (error) {

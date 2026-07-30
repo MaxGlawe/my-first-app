@@ -19,6 +19,7 @@ import { generateBgfInvoicePdf } from "@/lib/pdf/bgf-invoice-pdf"
 import { formatZeitraum } from "@/types/bgf-invoice"
 import { getStripe } from "@/lib/stripe"
 import type { PraxisSettings } from "@/types/billing"
+import { berechneMonatsbetrag, paketVertragsLabel } from "@/lib/bgf-pakete"
 
 function getBillingDay(signedAt: string): number {
   const d = new Date(signedAt)
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
   // Find all signed BGF contracts
   const { data: contracts } = await sc
     .from("bgf_contracts")
-    .select("id, organization_id, lizenzen, preis_pro_ma_monat, monatlicher_gesamtpreis, contract_type, signed_at")
+    .select("id, organization_id, lizenzen, preis_pro_ma_monat, monatlicher_gesamtpreis, contract_type, paket_max_ma, paket_label, zusatz_ma_preis, signed_at")
     .eq("status", "unterschrieben")
 
   if (!contracts || contracts.length === 0) {
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
     sepa: boolean
     status: string
     error?: string
+    hinweis?: string
   }[] = []
 
   for (const contract of dueContracts) {
@@ -125,6 +127,20 @@ export async function GET(request: NextRequest) {
         results.push({ org_name: "?", invoice_number: "—", amount: 0, sepa: false, status: "error", error: "Org nicht gefunden" })
         continue
       }
+
+      // Aktive Mitarbeitende zählen — Grundlage für Nachbesetzungen (§4 Abs. 4)
+      const { count: aktiveMa } = await sc
+        .from("organization_members")
+        .select("id", { count: "exact", head: true })
+        .eq("organization_id", org.id)
+        .eq("status", "aktiv")
+
+      const abrechnung = berechneMonatsbetrag(
+        contract.paket_max_ma,
+        Number(contract.monatlicher_gesamtpreis),
+        aktiveMa ?? contract.lizenzen,
+        contract.zusatz_ma_preis == null ? null : Number(contract.zusatz_ma_preis)
+      )
 
       // Duplicate check for this month
       const { data: existing } = await sc
@@ -172,9 +188,15 @@ export async function GET(request: NextRequest) {
           created_by: adminId,
           zeitraum_monat: monat,
           zeitraum_jahr: jahr,
-          lizenzen: contract.lizenzen,
-          preis_pro_ma: contract.preis_pro_ma_monat,
-          gesamtbetrag: contract.monatlicher_gesamtpreis,
+          lizenzen: aktiveMa ?? contract.lizenzen,
+          // Paketpreis + ggf. Nachbesetzungen (Altverträge behalten ihren Pro-Kopf-Preis).
+          paket_label: contract.paket_max_ma
+            ? paketVertragsLabel(abrechnung.abgerechnetesPaketMaxMa)
+            : contract.paket_label,
+          zusatz_ma_anzahl: abrechnung.zusatzMa,
+          zusatz_ma_preis: abrechnung.zusatzMa > 0 ? abrechnung.zusatzPreisProMa : null,
+          preis_pro_ma: contract.preis_pro_ma_monat ?? null,
+          gesamtbetrag: abrechnung.gesamt,
           org_name: org.name,
           org_address: orgAddress || null,
           kontakt_name: org.kontakt_name,
@@ -279,12 +301,22 @@ export async function GET(request: NextRequest) {
         }
       }
 
+      // Für den Admin sichtbar machen, wenn das Team aus dem Paket gewachsen ist
+      const hinweis = abrechnung.ueberListe
+        ? `${aktiveMa} MA — über der Preisliste, individuelles Angebot nötig`
+        : abrechnung.paketWechsel
+          ? `Paketwechsel: ${aktiveMa} MA → ${paketVertragsLabel(abrechnung.abgerechnetesPaketMaxMa)} (Bestpreis)`
+          : abrechnung.zusatzMa > 0
+            ? `${abrechnung.zusatzMa} Nachbesetzung(en) à ${abrechnung.zusatzPreisProMa.toFixed(2)} €`
+            : undefined
+
       results.push({
         org_name: org.name,
         invoice_number: invoiceNumber,
         amount: Number(invoice.gesamtbetrag),
         sepa: sepaCharged,
         status: sepaCharged ? "bezahlt" : "versendet",
+        hinweis,
       })
 
     } catch (err) {
@@ -304,7 +336,7 @@ export async function GET(request: NextRequest) {
           <td style="padding: 6px 12px; border-bottom: 1px solid #e2e8f0;">${r.invoice_number}</td>
           <td style="padding: 6px 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">${r.amount.toFixed(2)} €</td>
           <td style="padding: 6px 12px; border-bottom: 1px solid #e2e8f0;">${r.sepa ? "SEPA ✓" : "Überweisung"}</td>
-          <td style="padding: 6px 12px; border-bottom: 1px solid #e2e8f0;">${r.status}</td>
+          <td style="padding: 6px 12px; border-bottom: 1px solid #e2e8f0;">${r.status}${r.hinweis ? `<br><span style="color: #64748b; font-size: 12px;">${r.hinweis}</span>` : ""}</td>
         </tr>`
       ).join("")
 

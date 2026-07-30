@@ -24,6 +24,7 @@ import {
   Lightbulb, ArrowUpRight, ArrowDownRight, Minus, CheckCircle2,
 } from "lucide-react"
 import { formatZeitraum, BGF_INVOICE_STATUS_CONFIG } from "@/types/bgf-invoice"
+import { monatspreis } from "@/lib/bgf-pakete"
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -42,7 +43,8 @@ interface DashboardData {
   feedback: { avg_sterne: number | null; anzahl_bewertungen: number }
   abteilungen: { name: string; total: number; aktiv: number; teilnahmequote: number; analyse_quote: number }[]
   roi: {
-    preis_pro_ma: number | null; lizenzen: number; monatlich_netto: number | null
+    paket_label: string | null; effektiv_pro_ma_monat: number | null
+    lizenzen: number; monatlich_netto: number | null
     jaehrlich_netto: number | null; teilnahmequote: number; active_members: number
     fehltage_pro_ma: number; personalkosten_pro_tag: number; krankenquote: number
     daten_quelle: "eigene" | "branche"; branche: string | null
@@ -503,10 +505,9 @@ export default function HrDashboardPage() {
                 const totalSickDaysWith = totalSickDaysWithout - savedDays
                 const totalCostWith = totalCostWithout - savedEuro
 
-                const yearlyBgfCost = r.jaehrlich_netto ?? (lizenzen * 39 * 12)
+                const yearlyBgfCost = r.jaehrlich_netto ?? monatspreis(lizenzen).preis * 12
                 const nettoGewinn = savedEuro - yearlyBgfCost
                 const roiPercent = yearlyBgfCost > 0 ? Math.round((savedEuro / yearlyBgfCost) * 100) : 0
-                const preisProMa = r.preis_pro_ma ?? 39
                 const isEigeneDaten = r.daten_quelle === "eigene"
 
                 return (
@@ -804,7 +805,7 @@ export default function HrDashboardPage() {
                       </div>
                       <div>
                         <p className="text-xs text-slate-400">Max. Steuerfrei</p>
-                        <p className="text-lg font-bold text-emerald-700">{(Math.min(600, (d.roi.preis_pro_ma ?? 39) * 12) * d.roi.lizenzen).toLocaleString("de-DE")} €</p>
+                        <p className="text-lg font-bold text-emerald-700">{Math.min(600 * d.roi.lizenzen, d.roi.jaehrlich_netto ?? 600 * d.roi.lizenzen).toLocaleString("de-DE")} €</p>
                       </div>
                     </div>
                   </div>

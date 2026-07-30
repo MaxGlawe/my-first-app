@@ -7,8 +7,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { requireTierAccess } from "@/lib/bgf-tier-guard"
-import { BgfFeature } from "@/lib/bgf-tiers"
 
 export async function GET(request: NextRequest) {
   const supabase = await createSupabaseServerClient()
@@ -22,10 +20,6 @@ export async function GET(request: NextRequest) {
   if (!orgId) {
     return NextResponse.json({ error: "organization_id fehlt." }, { status: 400 })
   }
-
-  // Tier-Check: Team-Puls requires Pro+
-  const access = await requireTierAccess(orgId, BgfFeature.TEAM_PULS)
-  if (!access.allowed) return access.response
 
   const sc = createSupabaseServiceClient()
 

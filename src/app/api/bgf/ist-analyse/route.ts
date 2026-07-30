@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { requireTierAccess } from "@/lib/bgf-tier-guard"
-import { BgfFeature } from "@/lib/bgf-tiers"
 
 // ── Validation ──────────────────────────────────────────────────────
 
@@ -142,10 +140,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "organization_id fehlt." }, { status: 400 })
   }
 
-  // Tier-Check: Ist-Analyse requires Pro+
-  const access = await requireTierAccess(data.organization_id, BgfFeature.IST_ANALYSE)
-  if (!access.allowed) return access.response
-
   const serviceClient = createSupabaseServiceClient()
 
   // Prüfe ob User Mitglied dieser Organisation ist
@@ -256,12 +250,6 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const orgId = searchParams.get("organization_id")
-
-  // Tier-Check: Ist-Analyse requires Pro+
-  if (orgId) {
-    const access = await requireTierAccess(orgId, BgfFeature.IST_ANALYSE)
-    if (!access.allowed) return access.response
-  }
 
   // Use service client to bypass RLS (user ownership verified via auth)
   const sc = createSupabaseServiceClient()

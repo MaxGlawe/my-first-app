@@ -6,6 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SignaturePad } from "@/components/contracts/SignaturePad"
 import type { BgfContract, BgfVertragText, BgfLeistung } from "@/types/bgf-contract"
+import { paketVertragsLabel } from "@/lib/bgf-pakete"
+import { istPaketVertrag } from "@/types/bgf-contract"
 import {
   Building2,
   FileText,
@@ -24,10 +26,12 @@ function fmtCurrency(n: number) {
   return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
 }
 
+// Altverträge aus der Tarif-Ära zeigen weiter ihren Tarifnamen.
 const TIER_LABELS: Record<string, string> = {
   basic: "Basic",
   pro: "Professional",
   enterprise: "Enterprise",
+  voll: "Vollzugriff",
 }
 
 const STEPS = [
@@ -166,7 +170,10 @@ export function BgfContractSigningView({ token }: { token: string }) {
 
   const vertragText = contract.vertrag_text as BgfVertragText
   const leistungen = contract.leistungen as BgfLeistung[]
-  const tierLabel = TIER_LABELS[contract.contract_type] ?? contract.contract_type
+  const istPaket = istPaketVertrag(contract)
+  const umfangLabel = istPaket
+    ? (contract.paket_label ?? paketVertragsLabel(contract.paket_max_ma))
+    : (TIER_LABELS[contract.contract_type] ?? contract.contract_type)
 
   // ── Render ─────────────────────────────────────────────────────────
 
@@ -240,17 +247,21 @@ export function BgfContractSigningView({ token }: { token: string }) {
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-slate-400 text-xs mb-0.5">Tarif</p>
-                  <p className="font-bold text-emerald-700">{tierLabel}</p>
+                  <p className="text-slate-400 text-xs mb-0.5">{istPaket ? "Paket" : "Tarif"}</p>
+                  <p className="font-bold text-emerald-700">{umfangLabel}</p>
                 </div>
                 <div>
-                  <p className="text-slate-400 text-xs mb-0.5">Lizenzen</p>
-                  <p className="font-semibold text-slate-900">{contract.lizenzen} Mitarbeiter</p>
+                  <p className="text-slate-400 text-xs mb-0.5">Mitarbeitende</p>
+                  <p className="font-semibold text-slate-900">{contract.lizenzen} angemeldet</p>
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs mb-0.5">Monatlich</p>
                   <p className="font-bold text-slate-900 text-lg">{fmtCurrency(contract.monatlicher_gesamtpreis)}</p>
-                  <p className="text-slate-400 text-[10px]">{fmtCurrency(contract.preis_pro_ma_monat)}/MA/Monat</p>
+                  <p className="text-slate-400 text-[10px]">
+                    {istPaket
+                      ? "Festpreis — kein Preis pro Kopf"
+                      : `${fmtCurrency(contract.preis_pro_ma_monat ?? 0)}/MA/Monat`}
+                  </p>
                 </div>
                 <div>
                   <p className="text-slate-400 text-xs mb-0.5">Laufzeit</p>

@@ -2,7 +2,12 @@
 // PROJ-18: BGF Contract Types (B2B Dienstleistungsvertrag)
 // ============================================================
 
-export type BgfContractType = "basic" | "pro" | "enterprise"
+/**
+ * "voll" = aktuelles Modell (ein Produkt, Preis nach Teamgröße).
+ * basic/pro/enterprise existieren nur noch für Bestandsverträge aus der
+ * Tarif-Ära, damit alte PDFs reproduzierbar bleiben.
+ */
+export type BgfContractType = "basic" | "pro" | "enterprise" | "voll"
 
 export type BgfContractStatus =
   | "entwurf"
@@ -46,8 +51,16 @@ export interface BgfContract {
   created_by: string
   contract_type: BgfContractType
   leistungen: BgfLeistung[]
-  preis_pro_ma_monat: number
+  /** Obergrenze der Preisstaffel (NULL = individuell verhandelt) */
+  paket_max_ma: number | null
+  /** z. B. „bis 20 Mitarbeitende“ */
+  paket_label: string | null
+  /** Kopfpreis je Mitarbeitendem über der Paketgrenze (Nachbesetzung) */
+  zusatz_ma_preis: number | null
+  /** ALTLAST: Pro-Kopf-Preis der Tarif-Ära, bei neuen Verträgen null */
+  preis_pro_ma_monat: number | null
   lizenzen: number
+  /** Fester Monatspreis netto (Paketpreis) */
   monatlicher_gesamtpreis: number
   laufzeit_monate: number
   vertrag_start: string | null
@@ -88,74 +101,63 @@ export interface BgfContract {
 
 export interface BgfContractFormData {
   organization_id: string
-  contract_type: BgfContractType
+  /** Obergrenze der Preisstaffel; null = individuelles Paket */
+  paket_max_ma: number | null
+  /** Fester Monatspreis netto */
+  monatspreis: number
+  /** Kopfpreis je Nachbesetzung über der Paketgrenze */
+  zusatz_ma_preis?: number | null
+  /** Abgedeckte Mitarbeitende */
   lizenzen: number
-  preis_pro_ma_monat: number
   laufzeit_monate: number
   vertrag_start: string
   notes?: string
 }
 
-/** BGF tier configs */
-export const BGF_CONTRACT_TYPE_CONFIG: Record<BgfContractType, {
-  label: string
-  description: string
-  defaultPreis: number
-  defaultLeistungen: BgfLeistung[]
-}> = {
-  basic: {
-    label: "Basic",
-    description: "Digitale Pausen-Fit Sessions + Ergonomie-Tipps",
-    defaultPreis: 29,
-    defaultLeistungen: [
-      { beschreibung: "KI-generierte Pausen-Fit Sessions (3x täglich)", enthalten: true },
-      { beschreibung: "Täglicher Gesundheits-Check-In", enthalten: true },
-      { beschreibung: "Ergonomie-Tipps & Bildschirm-Pausen", enthalten: true },
-      { beschreibung: "Hydration-Tracker", enthalten: true },
-      { beschreibung: "Wochen-Übersicht & Streak-System", enthalten: true },
-      { beschreibung: "Ist-Analyse & Risiko-Scoring", enthalten: false },
-      { beschreibung: "HR-Dashboard mit anonymisierten Reports", enthalten: false },
-      { beschreibung: "Persönlicher Therapeuten-Chat", enthalten: false },
-    ],
-  },
-  pro: {
-    label: "Professional",
-    description: "Vollständige BGF-Plattform mit Analyse & Dashboard",
-    defaultPreis: 39,
-    defaultLeistungen: [
-      { beschreibung: "KI-generierte Pausen-Fit Sessions (3x täglich)", enthalten: true },
-      { beschreibung: "Täglicher Gesundheits-Check-In", enthalten: true },
-      { beschreibung: "Ergonomie-Tipps & Bildschirm-Pausen", enthalten: true },
-      { beschreibung: "Hydration-Tracker", enthalten: true },
-      { beschreibung: "Wochen-Übersicht & Streak-System", enthalten: true },
-      { beschreibung: "Ist-Analyse & Risiko-Scoring", enthalten: true },
-      { beschreibung: "HR-Dashboard mit anonymisierten Reports", enthalten: true },
-      { beschreibung: "Persönlicher Therapeuten-Chat", enthalten: true },
-      { beschreibung: "Ziel-Tracking mit Fortschrittsmessung", enthalten: true },
-      { beschreibung: "Team-Puls (anonyme Team-Statistik)", enthalten: true },
-      { beschreibung: "Quartals-Reports mit Handlungsempfehlungen", enthalten: false },
-    ],
-  },
-  enterprise: {
-    label: "Enterprise",
-    description: "Premium BGF mit Vor-Ort-Betreuung & individuellen Reports",
-    defaultPreis: 59,
-    defaultLeistungen: [
-      { beschreibung: "KI-generierte Pausen-Fit Sessions (3x täglich)", enthalten: true },
-      { beschreibung: "Täglicher Gesundheits-Check-In", enthalten: true },
-      { beschreibung: "Ergonomie-Tipps & Bildschirm-Pausen", enthalten: true },
-      { beschreibung: "Hydration-Tracker", enthalten: true },
-      { beschreibung: "Wochen-Übersicht & Streak-System", enthalten: true },
-      { beschreibung: "Ist-Analyse & Risiko-Scoring", enthalten: true },
-      { beschreibung: "HR-Dashboard mit anonymisierten Reports", enthalten: true },
-      { beschreibung: "Persönlicher Therapeuten-Chat", enthalten: true },
-      { beschreibung: "Ziel-Tracking mit Fortschrittsmessung", enthalten: true },
-      { beschreibung: "Team-Puls (anonyme Team-Statistik)", enthalten: true },
-      { beschreibung: "Quartals-Reports mit Handlungsempfehlungen", enthalten: true },
-      { beschreibung: "Dedizierter Therapeut als fester Ansprechpartner", enthalten: true },
-      { beschreibung: "Zugang zu Sonderkonditionen für individuelle Übungsprogramme (gem. §2a)", enthalten: true },
-    ],
-  },
+/**
+ * Leistungsumfang — gilt für JEDEN Vertrag (ein Produkt für alle).
+ * Es gibt keine „nicht enthalten"-Positionen mehr; der Preis richtet sich
+ * ausschließlich nach der Teamgröße (src/lib/bgf-pakete.ts).
+ */
+export const BGF_VOLL_LEISTUNGEN: BgfLeistung[] = [
+  { beschreibung: "Fester, namentlicher Therapeut als Ansprechpartner", enthalten: true },
+  { beschreibung: "Therapeuten-Chat bei Beschwerden (vertraulich)", enthalten: true },
+  { beschreibung: "KI-generierte Pausen-Fit Sessions (3x täglich)", enthalten: true },
+  { beschreibung: "Täglicher Gesundheits-Check-In", enthalten: true },
+  { beschreibung: "Ergonomie-Tipps & Bildschirm-Pausen", enthalten: true },
+  { beschreibung: "Hydration-Tracker", enthalten: true },
+  { beschreibung: "Wochen-Übersicht & Streak-System", enthalten: true },
+  { beschreibung: "Ist-Analyse & Risiko-Scoring je Mitarbeitendem", enthalten: true },
+  { beschreibung: "Individuelle Übungspläne vom Therapeuten", enthalten: true },
+  { beschreibung: "Ziel-Tracking mit Fortschrittsmessung", enthalten: true },
+  { beschreibung: "Ampel-System zur Früherkennung kritischer Fälle", enthalten: true },
+  { beschreibung: "Anonymisierter Nutzungs-Report für die Geschäftsführung", enthalten: true },
+  { beschreibung: "Team-Puls (anonyme Team-Statistik)", enthalten: true },
+  { beschreibung: "Quartals-Reports mit Handlungsempfehlungen", enthalten: true },
+  { beschreibung: "Onboarding-Workshop für das Team", enthalten: true },
+  { beschreibung: "Zugang zu Sonderkonditionen für individuelle Leistungen (gem. §2a)", enthalten: true },
+]
+
+/**
+ * Unterscheidet Paket- von Altverträgen — EINZIGE Stelle für diese Regel.
+ *
+ * Maßgeblich ist der Pro-Kopf-Preis: Altverträge aus der Tarif-Ära haben ihn
+ * gesetzt, Paketverträge schreiben NULL. Nicht an `paket_label` festmachen —
+ * das trägt nach dem Backfill auch mancher Altvertrag.
+ */
+export function istPaketVertrag(contract: {
+  contract_type: string
+  preis_pro_ma_monat: number | null
+}): boolean {
+  return contract.preis_pro_ma_monat == null && contract.contract_type === "voll"
+}
+
+/** Anzeige-Label historischer Tarif-Verträge (nur noch für Altbestand). */
+export const BGF_CONTRACT_TYPE_LABELS: Record<BgfContractType, string> = {
+  basic: "Basic",
+  pro: "Professional",
+  enterprise: "Enterprise",
+  voll: "Vollzugriff",
 }
 
 export const BGF_CONTRACT_STATUS_CONFIG: Record<BgfContractStatus, {

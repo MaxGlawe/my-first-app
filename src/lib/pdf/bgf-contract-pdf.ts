@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf"
 import type { BgfContract, BgfVertragText } from "@/types/bgf-contract"
+import { BGF_CONTRACT_TYPE_LABELS, istPaketVertrag } from "@/types/bgf-contract"
+import { paketVertragsLabel } from "@/lib/bgf-pakete"
 
 // ── Colors ──
 const EMERALD = { r: 16, g: 185, b: 129 }
@@ -152,19 +154,27 @@ export async function generateBgfContractPdf(
   const infoBoxX = 125
   let infoY = 54
   setFill(SUBTLE)
-  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, 35, 2, 2, "F")
+  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, contract.zusatz_ma_preis ? 40 : 35, 2, 2, "F")
 
   doc.setFontSize(8.5)
   infoY += 3
 
-  const tierLabels: Record<string, string> = { basic: "Basic", pro: "Professional", enterprise: "Enterprise" }
   const statusLabel = contract.status === "unterschrieben" ? "Unterzeichnet" : "Entwurf"
 
-  const infoRows = [
+  // Altverträge (Tarif-Ära) zeigen weiter ihren Tarif, neue das Paket.
+  const istPaket = istPaketVertrag(contract)
+  const umfangRow: [string, string] = istPaket
+    ? ["Paket", contract.paket_label ?? paketVertragsLabel(contract.paket_max_ma)]
+    : ["Tarif", BGF_CONTRACT_TYPE_LABELS[contract.contract_type] ?? contract.contract_type]
+
+  const infoRows: [string, string][] = [
     ["Vertragsnr.", contract.contract_number],
-    ["Tarif", tierLabels[contract.contract_type] ?? contract.contract_type],
-    ["Lizenzen", `${contract.lizenzen} MA`],
+    umfangRow,
+    [istPaket ? "Mitarbeitende" : "Lizenzen", `${contract.lizenzen} MA`],
     ["Monatlich", `${Number(contract.monatlicher_gesamtpreis).toFixed(2)} €`],
+    ...(istPaket && contract.zusatz_ma_preis
+      ? ([["Je weiterer MA", `${Number(contract.zusatz_ma_preis).toFixed(2)} €`]] as [string, string][])
+      : []),
     ["Status", statusLabel],
   ]
 

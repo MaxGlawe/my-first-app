@@ -9,6 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { z } from "zod"
 import type { PraxisSettings } from "@/types/billing"
+import { berechneMonatsbetrag, paketVertragsLabel } from "@/lib/bgf-pakete"
 
 const createSchema = z.object({
   organization_id: z.string().uuid(),
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
   // Load active contract
   const { data: contract } = await auth.sc
     .from("bgf_contracts")
-    .select("id, lizenzen, preis_pro_ma_monat, monatlicher_gesamtpreis, contract_type")
+    .select("id, lizenzen, preis_pro_ma_monat, monatlicher_gesamtpreis, contract_type, paket_max_ma, paket_label, zusatz_ma_preis")
     .eq("organization_id", organization_id)
     .eq("status", "unterschrieben")
     .order("created_at", { ascending: false })
@@ -104,6 +105,20 @@ export async function POST(request: NextRequest) {
   // Load organization
   const { data: org } = await auth.sc.from("organizations").select("*").eq("id", organization_id).single()
   if (!org) return NextResponse.json({ error: "Organisation nicht gefunden." }, { status: 404 })
+
+  // Aktive Mitarbeitende zählen — Grundlage für Nachbesetzungen (§4 Abs. 4)
+  const { count: aktiveMa } = await auth.sc
+    .from("organization_members")
+    .select("id", { count: "exact", head: true })
+    .eq("organization_id", organization_id)
+    .eq("status", "aktiv")
+
+  const abrechnung = berechneMonatsbetrag(
+    contract.paket_max_ma,
+    Number(contract.monatlicher_gesamtpreis),
+    aktiveMa ?? contract.lizenzen,
+    contract.zusatz_ma_preis == null ? null : Number(contract.zusatz_ma_preis)
+  )
 
   // Load praxis settings
   const { data: praxisRaw } = await auth.sc.from("praxis_settings").select("*").limit(1).single()
@@ -141,9 +156,15 @@ export async function POST(request: NextRequest) {
       created_by: auth.user.id,
       zeitraum_monat,
       zeitraum_jahr,
-      lizenzen: contract.lizenzen,
-      preis_pro_ma: contract.preis_pro_ma_monat,
-      gesamtbetrag: contract.monatlicher_gesamtpreis,
+      lizenzen: aktiveMa ?? contract.lizenzen,
+      // Paketpreis + ggf. Nachbesetzungen (Altverträge behalten ihren Pro-Kopf-Preis).
+      paket_label: contract.paket_max_ma
+        ? paketVertragsLabel(abrechnung.abgerechnetesPaketMaxMa)
+        : contract.paket_label,
+      zusatz_ma_anzahl: abrechnung.zusatzMa,
+      zusatz_ma_preis: abrechnung.zusatzMa > 0 ? abrechnung.zusatzPreisProMa : null,
+      preis_pro_ma: contract.preis_pro_ma_monat ?? null,
+      gesamtbetrag: abrechnung.gesamt,
       org_name: org.name,
       org_address: orgAddress || null,
       kontakt_name: org.kontakt_name,

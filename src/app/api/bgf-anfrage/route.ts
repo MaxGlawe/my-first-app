@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
           ${row("E-Mail:", `<a href="mailto:${escapeHtml(body.email)}">${escapeHtml(body.email)}</a>`)}
           ${body.telefon ? row("Telefon:", escapeHtml(body.telefon)) : ""}
           ${row("Mitarbeitende:", escapeHtml(body.mitarbeiter))}
-          ${row("Präferiertes Modell:", `<strong>${escapeHtml(body.modell)}</strong>`)}
+          ${row("Gewähltes Paket:", `<strong>${escapeHtml(body.modell)}</strong>`)}
           ${row("Pilot-Programm:", body.pilot ? "Ja, Interesse" : "—")}
         </table>
         <div style="margin-top: 16px; padding: 14px 16px; background: #F5F2ED; border-radius: 8px; border: 1px solid #E2DDD5;">

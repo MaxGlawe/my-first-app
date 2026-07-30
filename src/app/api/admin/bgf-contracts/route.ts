@@ -11,13 +11,18 @@ import { z } from "zod"
 import { generateToken } from "@/lib/tokens"
 import { generateBgfVertragText } from "@/lib/bgf-contract-templates"
 import type { PraxisSettings } from "@/types/billing"
-import { BGF_CONTRACT_TYPE_CONFIG } from "@/types/bgf-contract"
+import { BGF_VOLL_LEISTUNGEN } from "@/types/bgf-contract"
+import { MAX_LISTEN_PAKET_MA, paketByMaxMa, paketVertragsLabel } from "@/lib/bgf-pakete"
 
 const createSchema = z.object({
   organization_id: z.string().uuid(),
-  contract_type: z.enum(["basic", "pro", "enterprise"]),
+  /** Obergrenze der Preisstaffel (10/20/35/50) — null = individuelles Paket */
+  paket_max_ma: z.number().int().min(1).nullable().optional().default(null),
+  /** Fester Monatspreis netto; bei Listen-Paketen optional (wird abgeleitet) */
+  monatspreis: z.number().min(0).optional(),
+  /** Kopfpreis je Nachbesetzung; bei Listen-Paketen optional (wird abgeleitet) */
+  zusatz_ma_preis: z.number().min(0).nullable().optional(),
   lizenzen: z.number().int().min(1),
-  preis_pro_ma_monat: z.number().min(0),
   laufzeit_monate: z.number().int().min(1).default(12),
   vertrag_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   notes: z.string().optional(),
@@ -96,7 +101,21 @@ export async function POST(request: NextRequest) {
   }
 
   const data = parseResult.data
-  const monatlichGesamt = data.preis_pro_ma_monat * data.lizenzen
+
+  // Paketpreis: aus der Staffel ableiten, sofern kein Betrag mitgegeben wurde.
+  const paket = data.paket_max_ma ? paketByMaxMa(data.paket_max_ma) : undefined
+  const monatlichGesamt = data.monatspreis ?? paket?.preis
+  if (monatlichGesamt === undefined) {
+    return NextResponse.json(
+      {
+        error: `Kein Preis ermittelbar. Für Teams über ${MAX_LISTEN_PAKET_MA} Mitarbeitende muss ein Monatspreis angegeben werden.`,
+      },
+      { status: 422 }
+    )
+  }
+  const paketLabelText = paketVertragsLabel(data.paket_max_ma)
+  // Kopfpreis für Nachbesetzungen über der Paketgrenze (§4 Abs. 4)
+  const zusatzMaPreis = data.zusatz_ma_preis ?? paket?.proMaZusatz ?? null
 
   // Load organization
   const { data: org, error: orgError } = await auth.sc
@@ -127,9 +146,8 @@ export async function POST(request: NextRequest) {
     zulassungsnummer: null,
   }
 
-  // Get leistungen from tier config
-  const tierConfig = BGF_CONTRACT_TYPE_CONFIG[data.contract_type]
-  const leistungen = tierConfig.defaultLeistungen
+  // Ein Produkt: identischer Leistungskatalog in jedem Vertrag
+  const leistungen = BGF_VOLL_LEISTUNGEN
 
   // Generate contract text
   const orgAddress = [org.adresse_strasse, org.adresse_plz, org.adresse_ort]
@@ -137,9 +155,9 @@ export async function POST(request: NextRequest) {
     .join(", ")
 
   const vertragText = generateBgfVertragText({
-    contractType: data.contract_type,
     leistungen,
-    preisProMaMonat: data.preis_pro_ma_monat,
+    paketMaxMa: data.paket_max_ma,
+    zusatzMaPreis: zusatzMaPreis,
     lizenzen: data.lizenzen,
     monatlichGesamt,
     laufzeitMonate: data.laufzeit_monate,
@@ -184,9 +202,12 @@ export async function POST(request: NextRequest) {
       contract_number: contractNumber,
       organization_id: data.organization_id,
       created_by: auth.user.id,
-      contract_type: data.contract_type,
+      contract_type: "voll",
       leistungen,
-      preis_pro_ma_monat: data.preis_pro_ma_monat,
+      paket_max_ma: data.paket_max_ma,
+      paket_label: paketLabelText,
+      zusatz_ma_preis: zusatzMaPreis,
+      preis_pro_ma_monat: null,
       lizenzen: data.lizenzen,
       monatlicher_gesamtpreis: monatlichGesamt,
       laufzeit_monate: data.laufzeit_monate,

@@ -12,7 +12,12 @@ const faqs = [
   {
     question: "Ist das wirklich ein echter Therapeut — oder nur eine App?",
     answer:
-      "Ein echter, staatlich geprüfter Therapeut. Hinter Praxis OS steht eine Physiotherapie- und Heilpraktiker-Praxis. Die App ist das Werkzeug, mit dem ein Therapeut viele Mitarbeitende gleichzeitig betreuen kann — Analyse, individuelle Pläne, Chat bei Beschwerden und Quartals-Auswertung übernimmt ein Mensch, nicht ein Algorithmus. Im Tarif „Dedizierter Therapeut“ haben Sie sogar einen festen, namentlichen Ansprechpartner für Ihr Unternehmen.",
+      "Ein echter, staatlich geprüfter Therapeut. Hinter Praxis OS steht eine Physiotherapie- und Heilpraktiker-Praxis. Die App ist das Werkzeug, mit dem ein Therapeut viele Mitarbeitende gleichzeitig betreuen kann — Analyse, individuelle Pläne, Chat bei Beschwerden und Quartals-Auswertung übernimmt ein Mensch, nicht ein Algorithmus. Ihr Unternehmen hat dabei immer einen festen, namentlichen Ansprechpartner — das ist in jedem Paket enthalten, nicht erst im teuersten.",
+  },
+  {
+    question: "Was kostet das — und warum kein Preis pro Mitarbeiter?",
+    answer:
+      "Es gibt ein einziges Produkt, und darin ist für jeden Mitarbeitenden alles enthalten: Therapeut, Chat, Analyse, individuelle Pläne, Pausen-Fit. Abgerechnet wird nach Teamgröße als fester Monatspreis — 390 € bis 10, 590 € bis 20, 890 € bis 35 und 1.190 € bis 50 Mitarbeitende. Über 50 Mitarbeitende machen wir ein individuelles Angebot mit fest eingeplanter Therapeuten-Kapazität. Kein Pro-Kopf-Zähler, keine Funktionen, die hinter einem höheren Tarif liegen — Sie wissen vorher, was der Monat kostet.",
   },
   {
     question: "Wie läuft ein Pilot-Programm ab?",

@@ -25,8 +25,6 @@ import { BildschirmPause } from "@/components/bgf/dashboard/BildschirmPause"
 import { DashboardTutorial } from "@/components/bgf/dashboard/DashboardTutorial"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { PausenFitSession, BgfDailyCheckin } from "@/types/bgf"
-import { TierGate } from "@/components/bgf/TierGate"
-import { BgfFeature } from "@/lib/bgf-tiers"
 import { supabase } from "@/lib/supabase"
 import {
   LogOut,
@@ -73,7 +71,7 @@ function getWeekDays(): { label: string; date: string; isToday: boolean }[] {
 
 export default function BgfDashboardPage() {
   const router = useRouter()
-  const { organizationId, vertragTier, isLoading: membershipLoading } = useBgfMembership()
+  const { organizationId, isLoading: membershipLoading } = useBgfMembership()
 
   // State
   const [isLoading, setIsLoading] = useState(true)
@@ -435,18 +433,14 @@ export default function BgfDashboardPage() {
           />
         </div>
 
-        {/* Team Puls — Pro+ */}
+        {/* Team Puls */}
         <div data-tutorial="team-puls">
-          <TierGate tier={vertragTier} requiredFeature={BgfFeature.TEAM_PULS}>
-            <TeamPuls organizationId={organizationId} />
-          </TierGate>
+          <TeamPuls organizationId={organizationId} />
         </div>
 
-        {/* Goals Progress — Pro+ */}
+        {/* Goals Progress */}
         <div data-tutorial="goals">
-          <TierGate tier={vertragTier} requiredFeature={BgfFeature.ZIEL_TRACKING}>
-            <GoalsProgress organizationId={organizationId} />
-          </TierGate>
+          <GoalsProgress organizationId={organizationId} />
         </div>
 
         {/* Weekly Overview */}

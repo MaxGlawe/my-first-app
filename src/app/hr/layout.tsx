@@ -11,28 +11,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Building2, ChevronDown, LogOut, LayoutDashboard, Users, FileText, ShoppingCart, Lock } from "lucide-react"
+import { Building2, ChevronDown, LogOut, LayoutDashboard, Users, FileText, ShoppingCart } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { TierLockedPage } from "@/components/bgf/TierLockedPage"
-import { hasFeature, BgfFeature } from "@/lib/bgf-tiers"
-import type { VertragTier } from "@/types/bgf"
 
+// Ein Produkt für alle — kein Feature-Gating mehr, jede Organisation sieht
+// das komplette HR-Portal (Preis richtet sich nur nach der Teamgröße).
 const NAV_ITEMS = [
-  { href: "/hr/dashboard", label: "Dashboard", icon: LayoutDashboard, feature: BgfFeature.HR_DASHBOARD },
-  { href: "/hr/mitarbeiter", label: "Mitarbeiter", icon: Users, feature: BgfFeature.MEMBER_MANAGEMENT },
-  { href: "/hr/leistungen", label: "Leistungen", icon: ShoppingCart, feature: BgfFeature.ZUSATZLEISTUNGEN },
-  { href: "/hr/reports", label: "Berichte", icon: FileText, feature: BgfFeature.QUARTALS_REPORTS },
+  { href: "/hr/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/hr/mitarbeiter", label: "Mitarbeiter", icon: Users },
+  { href: "/hr/leistungen", label: "Leistungen", icon: ShoppingCart },
+  { href: "/hr/reports", label: "Berichte", icon: FileText },
 ] as const
 
-function HrNavbar({
-  companyName,
-  vertragTier,
-}: {
-  companyName: string | null
-  vertragTier: VertragTier | null
-}) {
+function HrNavbar({ companyName }: { companyName: string | null }) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -62,24 +55,19 @@ function HrNavbar({
           <nav className="hidden sm:flex items-center gap-1">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
-              const isLocked = vertragTier ? !hasFeature(vertragTier, item.feature) : false
               return (
                 <Link
                   key={item.href}
-                  href={isLocked ? "#" : item.href}
+                  href={item.href}
                   className={cn(
                     "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                    isLocked
-                      ? "text-slate-300 cursor-not-allowed"
-                      : isActive
+                    isActive
                       ? "bg-emerald-50 text-emerald-700"
                       : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   )}
-                  onClick={isLocked ? (e) => e.preventDefault() : undefined}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.label}
-                  {isLocked && <Lock className="h-3 w-3 text-slate-300" />}
                 </Link>
               )
             })}
@@ -126,7 +114,7 @@ function HrNavbar({
 }
 
 export default function HrLayout({ children }: { children: React.ReactNode }) {
-  const { isLoading, isAuthorized, organizationName, vertragTier } = useHrAuth()
+  const { isLoading, isAuthorized, organizationName } = useHrAuth()
 
   if (isLoading) {
     return (
@@ -152,23 +140,9 @@ export default function HrLayout({ children }: { children: React.ReactNode }) {
     return null // Router redirect handled in hook
   }
 
-  // Tier-Gate: HR portal requires Pro+
-  if (vertragTier && !hasFeature(vertragTier, BgfFeature.HR_DASHBOARD)) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <TierLockedPage
-          currentTier={vertragTier}
-          requiredTier="pro"
-          featureTitle="HR-Dashboard"
-          featureDescription="Das HR-Dashboard zeigt anonymisierte Gesundheits-KPIs, Mitarbeiter-Verwaltung und ROI-Berechnungen — verfügbar ab dem Professional-Tarif."
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-slate-50">
-      <HrNavbar companyName={organizationName} vertragTier={vertragTier} />
+      <HrNavbar companyName={organizationName} />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>

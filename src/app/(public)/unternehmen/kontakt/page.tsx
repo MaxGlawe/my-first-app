@@ -83,13 +83,13 @@ export default async function UnternehmenKontaktPage({
                 Lieber direkt?
               </p>
               <a
-                href="mailto:physiotherapieglawe@gmx.de"
+                href="mailto:info@physiotherapie-glawe.de"
                 className="flex items-center gap-3 text-landing-fg hover:text-landing-accent transition-colors"
               >
                 <span className="w-9 h-9 rounded-xl bg-landing-accent/10 flex items-center justify-center flex-shrink-0">
                   <Mail className="h-4 w-4 text-landing-accent" />
                 </span>
-                <span className="text-sm font-medium">physiotherapieglawe@gmx.de</span>
+                <span className="text-sm font-medium">info@physiotherapie-glawe.de</span>
               </a>
             </div>
 

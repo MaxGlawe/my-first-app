@@ -51,6 +51,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { fmtCurrencyEuro, paketVertragsLabel } from "@/lib/bgf-pakete"
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 
@@ -265,17 +266,21 @@ export default function OrgDetailPage({ params }: { params: Promise<{ orgId: str
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-400">Tier</span>
-                <span className="text-slate-700 font-medium capitalize">{org.vertrag_tier}</span>
+                <span className="text-slate-400">Paket</span>
+                <span className="text-slate-700 font-medium">
+                  {paketVertragsLabel(org.vertrag_paket_max_ma)}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Lizenzen</span>
+                <span className="text-slate-400">Mitarbeitende</span>
                 <span className="text-slate-700 font-medium">{org.vertrag_lizenzen}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Preis/MA/Monat</span>
+                <span className="text-slate-400">Monatspreis</span>
                 <span className="text-slate-700 font-medium">
-                  {org.vertrag_preis_pro_ma_monat.toFixed(2)} €
+                  {org.vertrag_monatspreis != null
+                    ? fmtCurrencyEuro(org.vertrag_monatspreis)
+                    : "—"}
                 </span>
               </div>
               {org.vertrag_start && (
@@ -298,9 +303,9 @@ export default function OrgDetailPage({ params }: { params: Promise<{ orgId: str
                 <BgfContractButton
                   orgId={orgId}
                   orgName={org.name}
-                  contractType={org.vertrag_tier as "basic" | "pro" | "enterprise"}
+                  paketMaxMa={org.vertrag_paket_max_ma}
                   lizenzen={org.vertrag_lizenzen}
-                  preisProMa={org.vertrag_preis_pro_ma_monat}
+                  monatspreis={org.vertrag_monatspreis}
                   vertragStart={org.vertrag_start ?? null}
                 />
               </div>
@@ -488,16 +493,16 @@ function SepaSetupCard({ orgId }: { orgId: string }) {
 function BgfContractButton({
   orgId,
   orgName,
-  contractType,
+  paketMaxMa,
   lizenzen,
-  preisProMa,
+  monatspreis,
   vertragStart,
 }: {
   orgId: string
   orgName: string
-  contractType: "basic" | "pro" | "enterprise"
+  paketMaxMa: number | null
   lizenzen: number
-  preisProMa: number
+  monatspreis: number | null
   vertragStart: string | null
 }) {
   const [creating, setCreating] = useStateReact(false)
@@ -541,9 +546,10 @@ function BgfContractButton({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organization_id: orgId,
-          contract_type: contractType,
+          paket_max_ma: paketMaxMa,
+          // Ohne Staffel (individuelles Paket) muss der Betrag mitkommen.
+          monatspreis: monatspreis ?? undefined,
           lizenzen,
-          preis_pro_ma_monat: preisProMa,
           laufzeit_monate: 12,
           vertrag_start: vertragStart || today,
         }),

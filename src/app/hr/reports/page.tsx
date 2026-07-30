@@ -16,8 +16,6 @@ import {
   AlertCircle,
   ShieldCheck,
 } from "lucide-react"
-import { TierLockedPage } from "@/components/bgf/TierLockedPage"
-import { hasFeature, BgfFeature } from "@/lib/bgf-tiers"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -48,7 +46,7 @@ function stripMd(text: string | undefined | null): string {
 
 export default function HrReportsPage() {
   const router = useRouter()
-  const { isLoading: authLoading, isAuthorized, organizationId, organizationName, vertragTier } = useHrAuth()
+  const { isLoading: authLoading, isAuthorized, organizationId, organizationName } = useHrAuth()
   const [isGenerating, setIsGenerating] = useState(false)
   const [report, setReport] = useState<Report | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -105,18 +103,6 @@ export default function HrReportsPage() {
       a.click()
       URL.revokeObjectURL(url)
     }
-  }
-
-  // Tier-Gate: Quartals-Reports requires Enterprise
-  if (!authLoading && vertragTier && !hasFeature(vertragTier, BgfFeature.QUARTALS_REPORTS)) {
-    return (
-      <TierLockedPage
-        currentTier={vertragTier}
-        requiredTier="enterprise"
-        featureTitle="Quartals-Reports"
-        featureDescription="KI-generierte Gesundheitsberichte mit anonymisierten KPIs, Abteilungsvergleichen und ROI-Berechnung — verfügbar im Enterprise-Tarif."
-      />
-    )
   }
 
   if (authLoading) {

@@ -2,7 +2,8 @@
 
 // Enums
 export type OrgStatus = "pilot" | "aktiv" | "pausiert" | "gekuendigt"
-export type VertragTier = "basic" | "pro" | "enterprise"
+/** „voll" = aktuelles Modell; die übrigen Werte nur noch für Altbestand. */
+export type VertragTier = "basic" | "pro" | "enterprise" | "voll"
 export type OrgGroesse = "1-49" | "50-99" | "100-249" | "250-499" | "500+"
 export type OrgAdminRolle = "hr_admin" | "hr_viewer" | "geschaeftsfuehrung"
 export type MemberStatus = "eingeladen" | "aktiv" | "pausiert" | "deaktiviert"
@@ -36,7 +37,12 @@ export interface Organization {
   vertrag_lizenzen: number
   vertrag_start?: string | null
   vertrag_ende?: string | null
-  vertrag_preis_pro_ma_monat: number
+  /** Obergrenze der Preisstaffel (NULL = individuelles Paket) */
+  vertrag_paket_max_ma: number | null
+  /** Fester Monatspreis netto */
+  vertrag_monatspreis: number | null
+  /** ALTLAST: Pro-Kopf-Preis der Tarif-Ära */
+  vertrag_preis_pro_ma_monat: number | null
   status: OrgStatus
 
   // Konfiguration
@@ -203,6 +209,8 @@ export interface CreateOrganizationValues {
   adresse_ort?: string
   vertrag_tier?: VertragTier
   vertrag_lizenzen?: number
+  vertrag_paket_max_ma?: number | null
+  vertrag_monatspreis?: number
   vertrag_preis_pro_ma_monat?: number
 }
 

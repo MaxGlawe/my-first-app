@@ -169,15 +169,43 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   setColor(DARK)
   doc.setFontSize(9)
   doc.text("1", colPos, y)
-  doc.text(`BGF-Lizenz — ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)}`, colLeistung, y)
-  doc.text(`${invoice.lizenzen} MA`, colAnzahl, y, { align: "right" })
-  doc.text(fmtCurrency(invoice.preis_pro_ma), colEinzel, y, { align: "right" })
+  // Paketmodell: Festpreis. Altrechnungen (preis_pro_ma gesetzt) bleiben Pro-Kopf.
+  const istPaket = invoice.preis_pro_ma === null || invoice.preis_pro_ma === undefined
+  const leistungText = istPaket
+    ? `BGF-Vollzugriff, ${invoice.paket_label ?? "Paket"} — ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)}`
+    : `BGF-Lizenz — ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)}`
+  // Nachbesetzungen über der Paketgrenze stehen als eigene Position darunter.
+  const zusatzAnzahl = invoice.zusatz_ma_anzahl ?? 0
+  const zusatzPreis = Number(invoice.zusatz_ma_preis ?? 0)
+  const zusatzBetrag = Math.round(zusatzAnzahl * zusatzPreis * 100) / 100
+  const paketBetrag = Math.round((invoice.gesamtbetrag - zusatzBetrag) * 100) / 100
+
+  doc.text(leistungText, colLeistung, y, { maxWidth: colAnzahl - colLeistung - 4 })
+  doc.text(istPaket ? "1 Monat" : `${invoice.lizenzen} MA`, colAnzahl, y, { align: "right" })
+  doc.text(fmtCurrency(istPaket ? paketBetrag : (invoice.preis_pro_ma ?? 0)), colEinzel, y, { align: "right" })
   doc.setFont("helvetica", "bold")
-  doc.text(fmtCurrency(invoice.gesamtbetrag), colGesamt, y, { align: "right" })
+  doc.text(fmtCurrency(istPaket ? paketBetrag : invoice.gesamtbetrag), colGesamt, y, { align: "right" })
   y += 7
 
   let posCounter = 2
   let totalWithFees = invoice.gesamtbetrag
+
+  // Position 2: Nachbesetzungen (nur wenn welche abgerechnet werden)
+  if (zusatzAnzahl > 0) {
+    doc.setFont("helvetica", "normal")
+    setColor(DARK)
+    doc.text(`${posCounter}`, colPos, y)
+    doc.text(
+      `Nachbesetzung über Paketgrenze — ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)}`,
+      colLeistung, y, { maxWidth: colAnzahl - colLeistung - 4 }
+    )
+    doc.text(`${zusatzAnzahl} MA`, colAnzahl, y, { align: "right" })
+    doc.text(fmtCurrency(zusatzPreis), colEinzel, y, { align: "right" })
+    doc.setFont("helvetica", "bold")
+    doc.text(fmtCurrency(zusatzBetrag), colGesamt, y, { align: "right" })
+    posCounter++
+    y += 7
+  }
 
   // Mahngebühr 1 (if applicable)
   if (invoice.mahngebuehr_1 > 0) {

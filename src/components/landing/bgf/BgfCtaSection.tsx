@@ -76,11 +76,11 @@ export function BgfCtaSection() {
             </Link>
             <span className="hidden sm:block w-1 h-1 rounded-full bg-white/20" />
             <a
-              href="mailto:physiotherapieglawe@gmx.de"
+              href="mailto:info@physiotherapie-glawe.de"
               className="flex items-center gap-2 hover:text-white/80 transition-colors"
             >
               <Mail className="h-4 w-4" />
-              physiotherapieglawe@gmx.de
+              info@physiotherapie-glawe.de
             </a>
           </div>
         </motion.div>

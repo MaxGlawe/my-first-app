@@ -268,7 +268,7 @@ export async function GET(
   // ── 7. ROI data from actual contract + HR Kennzahlen ────────────
   const { data: contract } = await sc
     .from("bgf_contracts")
-    .select("preis_pro_ma_monat, lizenzen, monatlicher_gesamtpreis")
+    .select("lizenzen, monatlicher_gesamtpreis, paket_max_ma, paket_label")
     .eq("organization_id", orgId)
     .eq("status", "unterschrieben")
     .order("created_at", { ascending: false })
@@ -299,11 +299,18 @@ export async function GET(
   const hrFehltage = orgData?.hr_fehltage_pro_ma ? Number(orgData.hr_fehltage_pro_ma) : null
   const hrKosten = orgData?.hr_personalkosten_pro_tag ? Number(orgData.hr_personalkosten_pro_tag) : null
 
+  // Paketmodell: es gibt keinen Pro-Kopf-Preis mehr — nur einen abgeleiteten
+  // Effektivwert (Monatspreis / abgedeckte Mitarbeitende) für die Anzeige.
+  const roiLizenzen = contract ? contract.lizenzen : activeMembers
+  const roiMonatlich = contract ? Number(contract.monatlicher_gesamtpreis) : null
+
   const roi = {
-    preis_pro_ma: contract ? Number(contract.preis_pro_ma_monat) : null,
-    lizenzen: contract ? contract.lizenzen : activeMembers,
-    monatlich_netto: contract ? Number(contract.monatlicher_gesamtpreis) : null,
-    jaehrlich_netto: contract ? Number(contract.monatlicher_gesamtpreis) * 12 : null,
+    paket_label: contract?.paket_label ?? null,
+    effektiv_pro_ma_monat:
+      roiMonatlich !== null && roiLizenzen > 0 ? roiMonatlich / roiLizenzen : null,
+    lizenzen: roiLizenzen,
+    monatlich_netto: roiMonatlich,
+    jaehrlich_netto: roiMonatlich !== null ? roiMonatlich * 12 : null,
     teilnahmequote: pausenFitStats.teilnahmequote,
     active_members: activeMembers,
     // HR Kennzahlen (eigene oder Branchendefault)

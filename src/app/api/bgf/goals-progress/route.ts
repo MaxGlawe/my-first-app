@@ -15,8 +15,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { requireTierAccess } from "@/lib/bgf-tier-guard"
-import { BgfFeature } from "@/lib/bgf-tiers"
 
 interface GoalProgress {
   ziel: string
@@ -61,12 +59,6 @@ export async function GET(request: NextRequest) {
   }
 
   const orgId = new URL(request.url).searchParams.get("organization_id")
-
-  // Tier-Check: Ziel-Tracking requires Pro+
-  if (orgId) {
-    const access = await requireTierAccess(orgId, BgfFeature.ZIEL_TRACKING)
-    if (!access.allowed) return access.response
-  }
 
   const sc = createSupabaseServiceClient()
 
