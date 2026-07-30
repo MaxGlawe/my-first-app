@@ -29,7 +29,49 @@ function fmtCurrency(amount: number): string {
   return amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €"
 }
 
-export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer> {
+/**
+ * Welches Dokument erzeugt wird. Eine Mahnung ist KEINE Rechnung: Sie
+ * verweist auf die bestehende Rechnung, nennt den Verzug und setzt eine neue
+ * Frist. Vorher trug jedes dieser Schreiben die Überschrift „RECHNUNG".
+ */
+export type BgfBelegArt = "rechnung" | "erinnerung" | "mahnung_1" | "mahnung_2"
+
+const BELEG_TITEL: Record<BgfBelegArt, string> = {
+  rechnung: "RECHNUNG",
+  erinnerung: "ZAHLUNGSERINNERUNG",
+  mahnung_1: "1. MAHNUNG",
+  mahnung_2: "2. MAHNUNG",
+}
+
+/** Zahlungsfrist in Tagen ab Ausstellung des Mahndokuments. */
+const BELEG_FRIST_TAGE: Record<BgfBelegArt, number> = {
+  rechnung: 0,
+  erinnerung: 7,
+  mahnung_1: 7,
+  mahnung_2: 5,
+}
+
+function tageUeberfaellig(dueDate: string): number {
+  const faellig = new Date(dueDate + "T00:00:00")
+  const heute = new Date()
+  const diff = Math.floor((heute.getTime() - faellig.getTime()) / 86_400_000)
+  return Math.max(0, diff)
+}
+
+function neueFrist(tage: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + tage)
+  return d.toISOString().split("T")[0]
+}
+
+export async function generateBgfInvoicePdf(
+  invoice: BgfInvoice,
+  belegArt: BgfBelegArt = "rechnung"
+): Promise<Buffer> {
+  const istMahnung = belegArt !== "rechnung"
+  const ueberfaelligSeit = tageUeberfaellig(invoice.due_date)
+  // Bei Mahnungen gilt eine neue, kürzere Frist — nicht das alte Fälligkeitsdatum.
+  const zahlungsziel = istMahnung ? neueFrist(BELEG_FRIST_TAGE[belegArt]) : invoice.due_date
   const doc = new jsPDF({ unit: "mm", format: "a4" })
   let y = 0
 
@@ -93,17 +135,26 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   const infoBoxX = 125
   let infoY = 54
   setFill(SUBTLE)
-  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, 30, 2, 2, "F")
+  // Mahnungen haben eine Zeile mehr (Überfällig seit / Neue Frist)
+  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, istMahnung ? 36 : 30, 2, 2, "F")
 
   doc.setFontSize(8.5)
   infoY += 3
 
-  const infoRows = [
-    ["Rechnungsnr.", invoice.invoice_number],
-    ["Datum", fmtDate(invoice.invoice_date)],
-    ["Zeitraum", formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)],
-    ["Fällig bis", fmtDate(invoice.due_date)],
-  ]
+  const infoRows: string[][] = istMahnung
+    ? [
+        ["Zu Rechnung", invoice.invoice_number],
+        ["Rechnungsdatum", fmtDate(invoice.invoice_date)],
+        ["War fällig am", fmtDate(invoice.due_date)],
+        ["Überfällig seit", `${ueberfaelligSeit} Tagen`],
+        ["Neue Frist", fmtDate(zahlungsziel)],
+      ]
+    : [
+        ["Rechnungsnr.", invoice.invoice_number],
+        ["Datum", fmtDate(invoice.invoice_date)],
+        ["Zeitraum", formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)],
+        ["Fällig bis", fmtDate(invoice.due_date)],
+      ]
 
   for (const [label, value] of infoRows) {
     doc.setFont("helvetica", "normal")
@@ -122,21 +173,25 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   doc.setFontSize(18)
   doc.setFont("helvetica", "bold")
   setColor(DARK)
-  doc.text("RECHNUNG", ML, y)
+  doc.text(BELEG_TITEL[belegArt], ML, y)
   y += 3
   setFill(EMERALD)
-  doc.rect(ML, y, 30, 1, "F")
+  doc.rect(ML, y, istMahnung ? 45 : 30, 1, "F")
   y += 10
 
   // Intro text
   doc.setFontSize(9)
   doc.setFont("helvetica", "normal")
   setColor(DARK)
-  doc.text(
-    `Sehr geehrte/r ${invoice.kontakt_name}, für den Leistungszeitraum ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)} stellen wir Ihnen folgende Leistungen in Rechnung:`,
-    ML, y, { maxWidth: RIGHT_EDGE - ML }
-  )
-  y += 14
+  const einleitung: Record<BgfBelegArt, string> = {
+    rechnung: `Sehr geehrte/r ${invoice.kontakt_name}, für den Leistungszeitraum ${formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)} stellen wir Ihnen folgende Leistungen in Rechnung:`,
+    erinnerung: `Sehr geehrte/r ${invoice.kontakt_name}, unsere Rechnung ${invoice.invoice_number} vom ${fmtDate(invoice.invoice_date)} ist seit ${ueberfaelligSeit} Tagen offen. Vermutlich ist sie im Alltag untergegangen — bitte begleichen Sie den Betrag bis zum ${fmtDate(zahlungsziel)}. Sollte sich Ihre Zahlung mit diesem Schreiben überschnitten haben, betrachten Sie es als gegenstandslos.`,
+    mahnung_1: `Sehr geehrte/r ${invoice.kontakt_name}, trotz unserer Zahlungserinnerung ist unsere Rechnung ${invoice.invoice_number} vom ${fmtDate(invoice.invoice_date)} bis heute nicht ausgeglichen. Sie ist seit ${ueberfaelligSeit} Tagen fällig. Wir bitten Sie, den unten aufgeführten Gesamtbetrag bis zum ${fmtDate(zahlungsziel)} zu überweisen.`,
+    mahnung_2: `Sehr geehrte/r ${invoice.kontakt_name}, unsere Rechnung ${invoice.invoice_number} vom ${fmtDate(invoice.invoice_date)} ist trotz Mahnung weiterhin offen — inzwischen seit ${ueberfaelligSeit} Tagen. Sie befinden sich damit in Zahlungsverzug. Wir fordern Sie letztmalig auf, den Gesamtbetrag bis zum ${fmtDate(zahlungsziel)} auszugleichen.`,
+  }
+
+  doc.text(einleitung[belegArt], ML, y, { maxWidth: RIGHT_EDGE - ML })
+  y += istMahnung ? 24 : 14
 
   // ════════════════════════════════════════════
   // 7. LINE ITEMS TABLE
@@ -237,15 +292,21 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   doc.line(ML, y, RIGHT_EDGE, y)
   y += 6
 
-  // Totals with 19% USt
-  const nettobetrag = totalWithFees
+  // Totals mit 19% USt.
+  //
+  // WICHTIG: Mahngebühren sind Verzugsschaden, kein Entgelt für eine Leistung —
+  // auf sie fällt KEINE Umsatzsteuer an. Die Steuer wird deshalb nur auf den
+  // Rechnungsbetrag gerechnet, die Gebühren kommen unversteuert obendrauf.
+  const mahngebuehren =
+    Math.round(((invoice.mahngebuehr_1 ?? 0) + (invoice.mahngebuehr_2 ?? 0)) * 100) / 100
+  const nettobetrag = Math.round((totalWithFees - mahngebuehren) * 100) / 100
   const ustBetrag = Math.round(nettobetrag * 0.19 * 100) / 100
-  const bruttobetrag = Math.round((nettobetrag + ustBetrag) * 100) / 100
+  const bruttobetrag = Math.round((nettobetrag + ustBetrag + mahngebuehren) * 100) / 100
 
   doc.setFontSize(9)
   doc.setFont("helvetica", "normal")
   setColor(GRAY)
-  doc.text("Nettobetrag", colEinzel, y, { align: "right" })
+  doc.text(mahngebuehren > 0 ? "Leistungen netto" : "Nettobetrag", colEinzel, y, { align: "right" })
   doc.setFont("helvetica", "bold")
   setColor(DARK)
   doc.text(fmtCurrency(nettobetrag), colGesamt, y, { align: "right" })
@@ -256,7 +317,18 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   doc.text("zzgl. 19% USt.", colEinzel, y, { align: "right" })
   setColor(DARK)
   doc.text(fmtCurrency(ustBetrag), colGesamt, y, { align: "right" })
-  y += 8
+  y += 6
+
+  if (mahngebuehren > 0) {
+    doc.setFont("helvetica", "normal")
+    setColor(GRAY)
+    doc.text("Mahngebühren (nicht umsatzsteuerbar)", colEinzel, y, { align: "right" })
+    setColor(DARK)
+    doc.text(fmtCurrency(mahngebuehren), colGesamt, y, { align: "right" })
+    y += 6
+  }
+
+  y += 2
 
   // Total line — wider bar starting from ML
   setFill(EMERALD)
@@ -275,7 +347,7 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   doc.setFontSize(9)
   doc.setFont("helvetica", "normal")
   doc.text(
-    `Bitte überweisen Sie den Gesamtbetrag von ${fmtCurrency(bruttobetrag)} bis zum ${fmtDate(invoice.due_date)} auf folgendes Konto:`,
+    `Bitte überweisen Sie den Gesamtbetrag von ${fmtCurrency(bruttobetrag)} bis zum ${fmtDate(zahlungsziel)} auf folgendes Konto:`,
     ML, y, { maxWidth: RIGHT_EDGE - ML }
   )
   y += 12
@@ -323,7 +395,14 @@ export async function generateBgfInvoicePdf(invoice: BgfInvoice): Promise<Buffer
   // Thank you
   doc.setFontSize(9)
   setColor(DARK)
-  doc.text("Vielen Dank für Ihr Vertrauen in unsere Leistungen.", ML, y)
+  const schlusssatz: Record<BgfBelegArt, string> = {
+    rechnung: "Vielen Dank für Ihr Vertrauen in unsere Leistungen.",
+    erinnerung: "Vielen Dank für Ihre Überweisung — und für die weiterhin gute Zusammenarbeit.",
+    mahnung_1: "Bei Fragen zur Rechnung melden Sie sich gerne, wir finden sicher eine Lösung.",
+    mahnung_2:
+      "Nach fruchtlosem Fristablauf behalten wir uns vor, Verzugszinsen in Höhe von 5 Prozentpunkten über dem Basiszinssatz (§ 288 BGB) sowie weitere Schritte geltend zu machen.",
+  }
+  doc.text(schlusssatz[belegArt], ML, y, { maxWidth: RIGHT_EDGE - ML })
   y += 5
   doc.text("Mit freundlichen Grüßen", ML, y)
   y += 8

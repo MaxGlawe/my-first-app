@@ -8,6 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendEmail } from "@/lib/email"
 import { formatZeitraum } from "@/types/bgf-invoice"
+import { generateBgfInvoicePdf } from "@/lib/pdf/bgf-invoice-pdf"
 
 export async function POST(
   _request: NextRequest,
@@ -28,9 +29,18 @@ export async function POST(
 
   const zeitraum = formatZeitraum(invoice.zeitraum_monat, invoice.zeitraum_jahr)
 
+  // Die Erinnerung ging bisher als reine Text-Mail raus. Ein eigenes Dokument
+  // macht sie nachvollziehbar — und ist kein zweites Rechnungsexemplar.
+  let pdfBuffer: Buffer | null = null
+  try {
+    pdfBuffer = await generateBgfInvoicePdf(invoice as never, "erinnerung")
+  } catch (err) {
+    console.error("[bgf-invoices/reminder] PDF error:", err)
+  }
+
   await sendEmail({
     to: invoice.kontakt_email,
-    subject: `Zahlungserinnerung — Rechnung ${invoice.invoice_number}`,
+    subject: `Zahlungserinnerung zu Rechnung ${invoice.invoice_number}`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background-color: #d97706; padding: 32px; border-radius: 16px 16px 0 0; text-align: center;">
@@ -54,6 +64,9 @@ export async function POST(
         </div>
       </div>
     `,
+    attachments: pdfBuffer
+      ? [{ filename: `Zahlungserinnerung_${invoice.invoice_number}.pdf`, content: pdfBuffer }]
+      : undefined,
   })
 
   await sc.from("bgf_invoices").update({

@@ -60,7 +60,11 @@ export async function POST(
   // Generate updated PDF with Mahngebühren
   let pdfBuffer: Buffer | null = null
   try {
-    pdfBuffer = await generateBgfInvoicePdf(updatedInvoice as any)
+    // Eigenes Mahndokument statt einer zweiten Rechnung
+    pdfBuffer = await generateBgfInvoicePdf(
+      updatedInvoice as never,
+      stufe === 1 ? "mahnung_1" : "mahnung_2"
+    )
   } catch (err) {
     console.error("[bgf-invoices/mahnung] PDF error:", err)
   }
@@ -72,7 +76,7 @@ export async function POST(
   if (stufe === 1) {
     await sendEmail({
       to: invoice.kontakt_email,
-      subject: `1. Mahnung — Rechnung ${invoice.invoice_number}`,
+      subject: `1. Mahnung zu Rechnung ${invoice.invoice_number}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #ea580c; padding: 32px; border-radius: 16px 16px 0 0; text-align: center;">
@@ -107,7 +111,7 @@ export async function POST(
   } else {
     await sendEmail({
       to: invoice.kontakt_email,
-      subject: `2. Mahnung (letzte Aufforderung) — Rechnung ${invoice.invoice_number}`,
+      subject: `2. Mahnung (letzte Aufforderung) zu Rechnung ${invoice.invoice_number}`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background-color: #dc2626; padding: 32px; border-radius: 16px 16px 0 0; text-align: center;">
