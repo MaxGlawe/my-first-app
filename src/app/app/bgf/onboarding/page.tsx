@@ -42,6 +42,21 @@ const INITIAL_VALUES: IstAnalyseFormValues = {
   schlaf_qualitaet: 7,
   bewegung_minuten_pro_woche: 60,
   ziele: [],
+  // Angaben für den heutigen Check-in (siehe StepAlltag)
+  stimmung: 5,
+  arbeitstag_typ: "buero",
+  arbeitszeit_stunden: 8,
+}
+
+/**
+ * Welche Pausen-Routinen der heutige Tag braucht — gleiche Regel wie im
+ * Dashboard-Check-in, damit beide Wege dieselben Sessions erzeugen.
+ */
+function getSessionTypes(arbeitszeit: number, arbeitstag: string): string[] {
+  if (arbeitstag === "frei") return []
+  if (arbeitszeit <= 4) return ["morgen_aktivierung"]
+  if (arbeitszeit <= 6) return ["morgen_aktivierung", "mittag_mobilisation"]
+  return ["morgen_aktivierung", "mittag_mobilisation", "nachmittag_reset"]
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -60,6 +75,8 @@ export default function BgfOnboardingPage() {
     ki_empfehlung: string
     pausen_fit_fokus: string[]
   } | null>(null)
+  // Kam der heutige Check-in aus diesem Onboarding? Steuert den Abschlusstext.
+  const [checkinAngelegt, setCheckinAngelegt] = useState(false)
 
   const totalSteps = STEPS.length
   const progressPercent = ((step - 1) / (totalSteps - 1)) * 100
@@ -126,6 +143,24 @@ export default function BgfOnboardingPage() {
       }
 
       const data = await res.json()
+
+      // Der Tages-Check-in ist mit der Analyse entstanden (siehe API). Jetzt
+      // im Hintergrund die passenden Routinen erzeugen, damit das Dashboard
+      // nach dem Onboarding fertig bestückt ist statt leer.
+      const typen = getSessionTypes(values.arbeitszeit_stunden, values.arbeitstag_typ)
+      if (typen.length > 0) {
+        void Promise.all(
+          typen.map((typ) =>
+            fetch("/api/bgf/pausen-fit/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ organization_id: organizationId, typ }),
+            }).catch(() => null)
+          )
+        )
+      }
+
+      setCheckinAngelegt(data.checkin_angelegt === true)
       setResult({
         risiko_score: data.analyse?.risiko_score ?? 0,
         ki_empfehlung: data.analyse?.ki_empfehlung ?? "",
@@ -196,6 +231,7 @@ export default function BgfOnboardingPage() {
         return (
           <IstAnalyseStepErgebnis
             result={result}
+            checkinAngelegt={checkinAngelegt}
             onFinish={() => router.push("/app/bgf/dashboard")}
           />
         )

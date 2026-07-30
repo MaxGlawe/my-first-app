@@ -237,4 +237,15 @@ export interface IstAnalyseFormValues {
   vorerkrankungen?: string[]
   medikamente?: string
   ziele: string[]
+
+  // ── Angaben für den heutigen Check-in ──────────────────────────────
+  // Gehören nicht in die Ist-Analyse, werden aber im selben Bogen erhoben:
+  // Damit entsteht der Tages-Check-in direkt aus dem Onboarding und der
+  // Nutzer muss Schmerz/Schlaf nicht unmittelbar danach erneut angeben.
+  /** Stimmung heute (0–10) */
+  stimmung: number
+  /** Wie der heutige Arbeitstag aussieht */
+  arbeitstag_typ: "buero" | "homeoffice" | "unterwegs" | "frei"
+  /** Geplante Arbeitszeit heute in Stunden */
+  arbeitszeit_stunden: number
 }

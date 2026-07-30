@@ -189,9 +189,11 @@ interface Props {
     pausen_fit_fokus: string[]
   } | null
   onFinish: () => void
+  /** Der heutige Check-in ist aus diesem Onboarding entstanden */
+  checkinAngelegt?: boolean
 }
 
-export function IstAnalyseStepErgebnis({ result, onFinish }: Props) {
+export function IstAnalyseStepErgebnis({ result, onFinish, checkinAngelegt }: Props) {
   if (!result) {
     // Should not happen, but show loading state as fallback
     return (
@@ -307,12 +309,24 @@ export function IstAnalyseStepErgebnis({ result, onFinish }: Props) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.7, duration: 0.4 }}
       >
+        {checkinAngelegt && (
+          <div className="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 p-3.5 flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <p className="text-xs text-emerald-800 leading-snug">
+              <span className="font-semibold">Ihr heutiger Tag steht bereits.</span>{" "}
+              Aus Ihren Angaben haben wir den Check-in für heute übernommen und
+              Ihre Pausen-Routinen zusammengestellt — Sie müssen nichts doppelt
+              ausfüllen. Ab morgen dauert der Check-in nur noch 30 Sekunden.
+            </p>
+          </div>
+        )}
+
         <Button
           onClick={onFinish}
           className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white font-semibold py-4 h-auto rounded-2xl shadow-lg text-base"
         >
           <PlayCircle className="w-5 h-5 mr-2" />
-          Erstes Pausen-Fit starten!
+          {checkinAngelegt ? "Zu meinem Tagesplan" : "Erstes Pausen-Fit starten!"}
         </Button>
         <p className="text-center text-xs text-slate-400 mt-3">
           Ihre Daten werden sicher und DSGVO-konform gespeichert

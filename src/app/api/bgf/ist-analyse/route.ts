@@ -23,6 +23,11 @@ const istAnalyseSchema = z.object({
   vorerkrankungen: z.array(z.string()).default([]),
   medikamente: z.string().optional().nullable(),
   ziele: z.array(z.string()).default([]),
+  // Angaben für den heutigen Check-in — werden NICHT in ist_analyse
+  // gespeichert, sondern erzeugen direkt den Tages-Check-in (siehe unten).
+  stimmung: z.coerce.number().min(0).max(10).optional().nullable(),
+  arbeitstag_typ: z.enum(["buero", "homeoffice", "unterwegs", "frei"]).optional().nullable(),
+  arbeitszeit_stunden: z.coerce.number().min(0).max(24).optional().nullable(),
 }).passthrough()
 
 // ── Risiko-Score berechnen ──────────────────────────────────────────
@@ -133,6 +138,13 @@ export async function POST(request: NextRequest) {
     sport_art: raw.sport_art ? String(raw.sport_art).trim() : null,
     vorerkrankungen: Array.isArray(raw.vorerkrankungen) ? raw.vorerkrankungen as string[] : [],
     medikamente: raw.medikamente ? String(raw.medikamente).trim() : null,
+    // Angaben für den heutigen Check-in (nicht Teil der Ist-Analyse)
+    stimmung: raw.stimmung != null ? Number(raw.stimmung) : null,
+    arbeitstag_typ: ["buero", "homeoffice", "unterwegs", "frei"].includes(String(raw.arbeitstag_typ))
+      ? (String(raw.arbeitstag_typ) as "buero" | "homeoffice" | "unterwegs" | "frei")
+      : null,
+    arbeitszeit_stunden:
+      raw.arbeitszeit_stunden != null ? Number(raw.arbeitszeit_stunden) : null,
     ziele: Array.isArray(raw.ziele) ? raw.ziele as string[] : [],
   }
 
@@ -218,6 +230,45 @@ export async function POST(request: NextRequest) {
     })
     .eq("id", membership.id)
 
+  // ── Tages-Check-in aus dem Onboarding erzeugen ──────────────────────
+  //
+  // Schmerz und Schlaf wurden gerade erhoben; ohne diesen Schritt fragte das
+  // Dashboard unmittelbar danach dieselben Werte noch einmal ab. Der Nutzer
+  // landet jetzt auf einem fertigen Tag statt auf dem nächsten Formular.
+  // Vorhandener Check-in wird nicht überschrieben (onConflict → merge).
+  const heute = new Date().toISOString().split("T")[0]
+  let checkinAngelegt = false
+
+  const { data: bestehenderCheckin } = await serviceClient
+    .from("bgf_daily_checkins")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("datum", heute)
+    .maybeSingle()
+
+  if (!bestehenderCheckin) {
+    const { error: checkinError } = await serviceClient
+      .from("bgf_daily_checkins")
+      .insert({
+        user_id: user.id,
+        organization_id: data.organization_id,
+        datum: heute,
+        stimmung: data.stimmung ?? 5,
+        schmerz_aktuell: data.schmerz_aktuell,
+        schlaf_qualitaet: data.schlaf_qualitaet,
+        arbeitstag_typ: data.arbeitstag_typ ?? "buero",
+        arbeitszeit_stunden: data.arbeitszeit_stunden ?? 8,
+        wasser_glaeser: 0,
+      })
+
+    if (checkinError) {
+      // Nicht kritisch: Der Nutzer kann den Check-in im Dashboard nachholen.
+      console.error("[POST /api/bgf/ist-analyse] Check-in aus Onboarding fehlgeschlagen:", checkinError)
+    } else {
+      checkinAngelegt = true
+    }
+  }
+
   return NextResponse.json(
     {
       analyse: {
@@ -226,6 +277,8 @@ export async function POST(request: NextRequest) {
         ki_empfehlung: analyse.ki_empfehlung,
         pausen_fit_fokus: analyse.pausen_fit_fokus,
       },
+      /** true = heutiger Check-in stammt aus diesem Onboarding */
+      checkin_angelegt: checkinAngelegt,
     },
     { status: 201 }
   )

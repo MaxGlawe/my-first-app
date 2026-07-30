@@ -226,6 +226,78 @@ export function IstAnalyseStepAlltag({ values, onChange }: Props) {
         onChange={(v) => onChange({ schlaf_qualitaet: v })}
         type="schlaf"
       />
+
+      {/* --- Heutiger Tag --- */}
+      <div className="pt-3 pb-1">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          Ihr heutiger Tag
+        </p>
+        <p className="text-xs text-slate-400 mt-1">
+          Damit stellen wir Ihre Pausen-Routinen für heute passend zusammen — Sie
+          müssen sich danach nicht noch einmal einchecken.
+        </p>
+      </div>
+
+      {/* Stimmung */}
+      <SliderRow
+        label="Stimmung heute"
+        description="Wie fühlen Sie sich gerade insgesamt?"
+        value={values.stimmung}
+        min={0}
+        max={10}
+        onChange={(v) => onChange({ stimmung: v })}
+        type="stress"
+      />
+
+      {/* Arbeitstag heute */}
+      <div className="bg-white/70 border border-slate-100 rounded-xl p-4 shadow-sm">
+        <p className="text-sm font-semibold text-slate-800 mb-0.5">Arbeitstag heute</p>
+        <p className="text-xs text-slate-500 mb-3">Wo verbringen Sie den Tag?</p>
+        <div className="grid grid-cols-2 gap-2">
+          {ARBEITSTAG_OPTIONEN.map((opt) => {
+            const aktiv = values.arbeitstag_typ === opt.wert
+            return (
+              <button
+                key={opt.wert}
+                type="button"
+                onClick={() => onChange({ arbeitstag_typ: opt.wert })}
+                className={cn(
+                  "rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors",
+                  aktiv
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200"
+                )}
+              >
+                {opt.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Arbeitszeit heute — bei „frei" nicht relevant */}
+      {values.arbeitstag_typ !== "frei" && (
+        <SliderRow
+          label="Arbeitszeit heute"
+          description="Wie lange arbeiten Sie heute ungefähr?"
+          value={values.arbeitszeit_stunden}
+          min={1}
+          max={14}
+          step={0.5}
+          unit=" Std."
+          onChange={(v) => onChange({ arbeitszeit_stunden: v })}
+        />
+      )}
     </div>
   )
 }
+
+const ARBEITSTAG_OPTIONEN: Array<{
+  wert: IstAnalyseFormValues["arbeitstag_typ"]
+  label: string
+}> = [
+  { wert: "buero", label: "Im Büro" },
+  { wert: "homeoffice", label: "Homeoffice" },
+  { wert: "unterwegs", label: "Unterwegs" },
+  { wert: "frei", label: "Frei heute" },
+]
