@@ -63,7 +63,18 @@ const VERTRAG_SECTION_ORDER = [
 
 // ── Main Component ───────────────────────────────────────────────────
 
-export function BgfContractSigningView({ token }: { token: string }) {
+export function BgfContractSigningView({
+  token,
+  readOnly = false,
+}: {
+  token: string
+  /**
+   * Vorschau für die Praxis: Vertrag lesen, aber NICHT unterschreiben.
+   * Die Unterschrift auf dieser Seite ist die des Auftraggebers — sie darf
+   * niemals von der Praxis geleistet werden.
+   */
+  readOnly?: boolean
+}) {
   const [contract, setContract] = useState<BgfContract | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -191,9 +202,19 @@ export function BgfContractSigningView({ token }: { token: string }) {
           <h1 className="text-xl font-bold">{contract.praxis_name}</h1>
           <p className="text-sm text-emerald-100 mt-0.5">{contract.contract_number}</p>
 
+          {readOnly && (
+            <div className="mt-4 rounded-xl bg-white/15 border border-white/25 px-4 py-3">
+              <p className="text-sm font-semibold">Interne Vorschau</p>
+              <p className="text-xs text-emerald-50/90 mt-0.5">
+                So sieht der Auftraggeber den Vertrag. Unterschreiben darf ausschließlich
+                er selbst — die Praxis-Unterschrift leisten Sie im BGF-Dashboard.
+              </p>
+            </div>
+          )}
+
           {/* Step indicator */}
           <div className="flex items-center gap-2 mt-5">
-            {STEPS.map((s, i) => {
+            {(readOnly ? STEPS.slice(0, 2) : STEPS).map((s, i) => {
               const Icon = s.icon
               return (
                 <div key={s.label} className="flex items-center gap-1.5">
@@ -337,20 +358,26 @@ export function BgfContractSigningView({ token }: { token: string }) {
               <Button variant="outline" onClick={() => setStep(0)} className="h-12 px-5 rounded-xl">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!hasScrolledToBottom}
-                className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md disabled:opacity-50"
-              >
-                {hasScrolledToBottom ? "Weiter zur Unterschrift" : "Bitte vollständig lesen..."}
-                <ChevronRight className="w-5 h-5 ml-1" />
-              </Button>
+              {readOnly ? (
+                <div className="flex-1 h-12 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-500">
+                  Vorschau — Unterschrift nur durch den Auftraggeber
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setStep(2)}
+                  disabled={!hasScrolledToBottom}
+                  className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md disabled:opacity-50"
+                >
+                  {hasScrolledToBottom ? "Weiter zur Unterschrift" : "Bitte vollständig lesen..."}
+                  <ChevronRight className="w-5 h-5 ml-1" />
+                </Button>
+              )}
             </div>
           </div>
         )}
 
         {/* ── Step 2: Sign ───────────────────────────── */}
-        {step === 2 && (
+        {step === 2 && !readOnly && (
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Vertrag unterschreiben</h2>

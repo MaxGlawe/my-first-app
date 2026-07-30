@@ -1,10 +1,12 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { BgfContractSigningView } from "@/components/bgf-contracts/BgfContractSigningView"
 
 export default function BgfVertragSignPage() {
   const { token } = useParams<{ token: string }>()
+  // ?vorschau=1 → interne Leseansicht ohne Unterschriftsschritt
+  const readOnly = useSearchParams().get("vorschau") === "1"
 
   if (!token) {
     return (
@@ -19,5 +21,5 @@ export default function BgfVertragSignPage() {
     )
   }
 
-  return <BgfContractSigningView token={token} />
+  return <BgfContractSigningView token={token} readOnly={readOnly} />
 }

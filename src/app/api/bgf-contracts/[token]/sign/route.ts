@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { sendEmail } from "@/lib/email"
 import { generateBgfContractPdf } from "@/lib/pdf/bgf-contract-pdf"
 import { BGF_CONTRACT_TYPE_LABELS, istPaketVertrag, type BgfContractType } from "@/types/bgf-contract"
@@ -32,6 +33,35 @@ export async function POST(
 
   if (body.consent !== true) {
     return NextResponse.json({ error: "Einverständnis erforderlich." }, { status: 400 })
+  }
+
+  // Diese Unterschrift ist die des AUFTRAGGEBERS. Praxis-Personal darf sie nicht
+  // leisten — sonst signiert die Praxis den Vertrag für den Kunden mit. Die
+  // Praxis-Unterschrift (Auftragnehmer) läuft über PATCH praxis_signature_png.
+  const PRAXIS_ROLLEN = ["admin", "heilpraktiker", "physiotherapeut", "trainer", "praxismanagement"]
+  try {
+    const userClient = await createSupabaseServerClient()
+    const { data: { user } } = await userClient.auth.getUser()
+    if (user) {
+      const { data: profile } = await createSupabaseServiceClient()
+        .from("user_profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single()
+
+      if (profile && PRAXIS_ROLLEN.includes(profile.role)) {
+        return NextResponse.json(
+          {
+            error:
+              "Diese Unterschrift muss der Auftraggeber selbst leisten. Als Praxis unterschreiben Sie im BGF-Dashboard unter Praxis-Unterschrift, bevor der Vertrag versendet wird.",
+            code: "PRAXIS_DARF_NICHT_FUER_KUNDEN_SIGNIEREN",
+          },
+          { status: 403 }
+        )
+      }
+    }
+  } catch {
+    // Keine Session vorhanden (Normalfall beim Kunden) — weiter.
   }
 
   const sc = createSupabaseServiceClient()

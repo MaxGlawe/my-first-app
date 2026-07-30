@@ -766,7 +766,7 @@ function BgfContractButton({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => window.open(`/bgf-vertrag/${signingToken}`, "_blank")}
+              onClick={() => window.open(`/bgf-vertrag/${signingToken}?vorschau=1`, "_blank")}
               className="flex-1 gap-1.5 text-xs"
             >
               <ExternalLink className="h-3.5 w-3.5" />
