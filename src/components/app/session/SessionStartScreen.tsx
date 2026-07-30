@@ -143,7 +143,7 @@ export function SessionStartScreen({
                   {pendingLesson.title}
                 </p>
                 <p className="text-xs text-white/50 mt-1">
-                  5 Minuten lesen — dann trainieren
+                  5 Minuten — freiwillig, dein Training startet auch ohne
                 </p>
               </div>
               <ArrowRight className="h-4 w-4 text-white/40 shrink-0 mt-1" />
@@ -154,17 +154,17 @@ export function SessionStartScreen({
 
       {/* Start button */}
       <div className="px-6 pb-10 animate-fade-in-up animation-delay-450">
+        {/*
+          Die Lektion ist ein Angebot, kein Türsteher: Das Training bleibt immer
+          die hervorgehobene Aktion und ist nie gesperrt.
+        */}
         <Button
           onClick={onStart}
           size="lg"
-          className={`w-full h-14 rounded-2xl font-semibold text-base transition-all active:scale-[0.98] ${
-            pendingLesson
-              ? "bg-white/15 hover:bg-white/25 text-white border border-white/20"
-              : "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/30"
-          }`}
+          className="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-base shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98]"
         >
           <Play className="h-5 w-5 mr-2" />
-          {pendingLesson ? "Ohne Lektion starten" : "Training starten"}
+          Training starten
         </Button>
       </div>
     </div>
