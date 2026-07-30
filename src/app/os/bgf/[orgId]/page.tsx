@@ -17,6 +17,7 @@ import {
   UserPlus,
   Loader2,
   CheckCircle2,
+  PenLine,
   Copy,
   Stethoscope,
   FileText,
@@ -511,6 +512,7 @@ function BgfContractButton({
   const [hasPraxisSignature, setHasPraxisSignature] = useStateReact(false)
   const [signingToken, setSigningToken] = useStateReact<string | null>(null)
   const [showSignDialog, setShowSignDialog] = useStateReact(false)
+  const [sendAfterSign, setSendAfterSign] = useStateReact(false)
   const [signaturePng, setSignaturePng] = useStateReact<string | null>(null)
   const [error, setError] = useStateReact<string | null>(null)
 
@@ -574,7 +576,7 @@ function BgfContractButton({
     setCreating(true)
     setError(null)
     try {
-      // 1. Save praxis signature
+      // 1. Save praxis signature (Auftragnehmer — vor dem Versand)
       const patchRes = await fetch(`/api/admin/bgf-contracts/${contractId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -586,6 +588,12 @@ function BgfContractButton({
         return
       }
       setHasPraxisSignature(true)
+
+      // Nur unterschreiben, Versand kommt als eigener Schritt
+      if (!sendAfterSign) {
+        setShowSignDialog(false)
+        return
+      }
 
       // 2. Send contract
       const sendRes = await fetch(`/api/admin/bgf-contracts/${contractId}/send`, {
@@ -633,6 +641,7 @@ function BgfContractButton({
   async function handleSendExisting() {
     if (!contractId) return
     if (!hasPraxisSignature) {
+      setSendAfterSign(true)
       setShowSignDialog(true)
       return
     }
@@ -670,9 +679,12 @@ function BgfContractButton({
   if (showSignDialog) {
     return (
       <div className="space-y-3">
-        <p className="text-xs font-semibold text-slate-700">Praxis-Unterschrift</p>
+        <p className="text-xs font-semibold text-slate-700">
+          Ihre Unterschrift (Auftragnehmer)
+        </p>
         <p className="text-[10px] text-slate-400">
-          Unterschreiben Sie als Auftragnehmer, bevor der Vertrag versendet wird.
+          Physiotherapie Glawe unterschreibt zuerst. Mit der Gegenunterschrift der
+          Firma ist der Vertrag bindend.
         </p>
         <div className="border border-slate-200 rounded-xl overflow-hidden">
           <SignaturePad onSignatureChange={handleSignatureChange} />
@@ -692,8 +704,14 @@ function BgfContractButton({
             disabled={!signaturePng || creating}
             className="flex-1 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-xs"
           >
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
-            Unterschreiben & senden
+            {creating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : sendAfterSign ? (
+              <Mail className="h-3.5 w-3.5" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            )}
+            {sendAfterSign ? "Unterschreiben & senden" : "Unterschrift speichern"}
           </Button>
         </div>
       </div>
@@ -761,6 +779,31 @@ function BgfContractButton({
             Löschen
           </button>
         </div>
+        {/* Schritt 1: eigene Unterschrift (Auftragnehmer) */}
+        <button
+          onClick={() => { setSendAfterSign(false); setShowSignDialog(true) }}
+          className={`w-full flex items-center gap-2 rounded-lg border p-2 text-left transition-colors ${
+            hasPraxisSignature
+              ? "border-emerald-100 bg-emerald-50 hover:bg-emerald-100/70"
+              : "border-amber-200 bg-amber-50 hover:bg-amber-100/70"
+          }`}
+        >
+          {hasPraxisSignature ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+          ) : (
+            <PenLine className="h-4 w-4 text-amber-500 flex-shrink-0" />
+          )}
+          <span className="min-w-0">
+            <span className={`block text-xs font-medium ${hasPraxisSignature ? "text-emerald-700" : "text-amber-700"}`}>
+              {hasPraxisSignature ? "Ihre Unterschrift liegt vor" : "Ihre Unterschrift fehlt"}
+            </span>
+            <span className="block text-[10px] text-slate-400">
+              {hasPraxisSignature ? "Antippen zum Ändern" : "Als Auftragnehmer vor dem Versand unterschreiben"}
+            </span>
+          </span>
+        </button>
+
+        {/* Schritt 2: Vorschau + Versand */}
         <div className="flex gap-2">
           {signingToken && (
             <Button
@@ -777,7 +820,8 @@ function BgfContractButton({
             size="sm"
             onClick={handleSendExisting}
             disabled={creating}
-            className="flex-1 gap-1.5 bg-blue-600 hover:bg-blue-700 text-xs"
+            title={hasPraxisSignature ? undefined : "Erst unterschreiben, dann senden"}
+            className="flex-1 gap-1.5 bg-blue-600 hover:bg-blue-700 text-xs disabled:opacity-50"
           >
             {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />}
             Senden
