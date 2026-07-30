@@ -39,6 +39,8 @@ type SeitenQuelle = {
   beschreibung?: string | null
   ausfuehrung?: Array<{ nummer: number; beschreibung: string }> | null
   params?: { pro_seite?: boolean | null; anmerkung?: string | null }
+  /** Stammdatum der Übung (exercises.standard_pro_seite) */
+  standardProSeite?: boolean | null
 }
 
 /** Findet das erste Muster, das anspricht — für Anzeige/Debug. */
@@ -60,12 +62,16 @@ export function proSeiteTreffer(ex: SeitenQuelle): string | null {
 }
 
 /**
- * Wird diese Übung pro Seite ausgeführt?
- * Explizites Feld schlägt Erkennung; ohne Feld entscheidet der Text.
+ * Wird diese Übung pro Seite ausgeführt? Vorrang:
+ *   1. Plan-Übung (`params.pro_seite`) — Ausnahme für genau diesen Plan
+ *   2. Übungs-Stammdatum (`standard_pro_seite`) — gilt in allen Plänen
+ *   3. Texterkennung — Rettungsnetz für ungepflegten Altbestand
  */
 export function istProSeite(ex: SeitenQuelle): boolean {
   if (ex.params?.pro_seite === true) return true
   if (ex.params?.pro_seite === false) return false
+  if (ex.standardProSeite === true) return true
+  if (ex.standardProSeite === false) return false
   return proSeiteTreffer(ex) !== null
 }
 

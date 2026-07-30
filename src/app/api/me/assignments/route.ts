@@ -162,7 +162,8 @@ export async function GET() {
                 ausfuehrung,
                 muskelgruppen,
                 media_url,
-                media_type
+                media_type,
+                standard_pro_seite
               )
             )
           )

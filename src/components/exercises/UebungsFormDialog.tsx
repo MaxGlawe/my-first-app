@@ -182,6 +182,7 @@ const DEFAULT_FORM: ExerciseFormValues = {
   standard_wiederholungen: undefined,
   standard_dauer_sekunden: undefined,
   standard_pause_sekunden: undefined,
+  standard_pro_seite: undefined,
   is_public: false,
 }
 
@@ -202,6 +203,7 @@ function exerciseToForm(exercise: Exercise): ExerciseFormValues {
     standard_wiederholungen: exercise.standard_wiederholungen ?? undefined,
     standard_dauer_sekunden: exercise.standard_dauer_sekunden ?? undefined,
     standard_pause_sekunden: exercise.standard_pause_sekunden ?? undefined,
+    standard_pro_seite: exercise.standard_pro_seite ?? undefined,
     is_public: exercise.is_public,
   }
 }
@@ -564,6 +566,26 @@ export function UebungsFormDialog({
                     placeholder="z.B. 60"
                   />
                 </div>
+              </div>
+
+              {/* Pro Seite — gilt für alle Pläne, in denen die Übung vorkommt */}
+              <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/30 p-3">
+                <Checkbox
+                  id="ex-pro-seite"
+                  checked={form.standard_pro_seite === true}
+                  onCheckedChange={(checked) =>
+                    setField("standard_pro_seite", checked === true)
+                  }
+                  className="mt-0.5"
+                />
+                <Label htmlFor="ex-pro-seite" className="cursor-pointer font-normal">
+                  <span className="text-sm">Pro Seite ausführen</span>
+                  <span className="block text-xs text-muted-foreground mt-0.5">
+                    Sätze gelten je Seite (z. B. Ausfallschritt, Einbeinstand). Der
+                    Trainer führt dann erst rechts, dann links durch — mit Ansage zum
+                    Seitenwechsel. Gilt in allen Plänen mit dieser Übung.
+                  </span>
+                </Label>
               </div>
             </div>
 

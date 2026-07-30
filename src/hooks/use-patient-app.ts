@@ -40,6 +40,8 @@ export interface PatientAppAssignment extends PatientAssignment {
             muskelgruppen: string[]
             media_url: string | null
             media_type: "image" | "video" | null
+            /** Stammdatum: Übung pro Seite ausführen */
+            standard_pro_seite?: boolean | null
           } | null
         }>
       }>

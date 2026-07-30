@@ -43,6 +43,7 @@ const updateExerciseSchema = z.object({
   standard_wiederholungen: z.number().int().min(1).max(999).optional().nullable(),
   standard_dauer_sekunden: z.number().int().min(1).max(7200).optional().nullable(),
   standard_pause_sekunden: z.number().int().min(0).max(3600).optional().nullable(),
+  standard_pro_seite: z.boolean().optional().nullable(),
   is_public: z.boolean().optional(),
 })
 
@@ -202,6 +203,7 @@ export async function PUT(
     standard_wiederholungen: values.standard_wiederholungen ?? null,
     standard_dauer_sekunden: values.standard_dauer_sekunden ?? null,
     standard_pause_sekunden: values.standard_pause_sekunden ?? null,
+    standard_pro_seite: values.standard_pro_seite ?? null,
     is_public: isPublic,
   }
 

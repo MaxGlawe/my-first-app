@@ -26,9 +26,11 @@ export interface FlatExercise {
     /** Explizit im Plan gesetzt — überstimmt die Texterkennung */
     pro_seite?: boolean | null
   }
+  /** Stammdatum der Übung — gilt in allen Plänen */
+  standardProSeite?: boolean | null
   /**
-   * Wird die Übung pro Seite ausgeführt? Aus `params.pro_seite` oder — bei
-   * Altplänen ohne das Feld — aus den Übungstexten erkannt.
+   * Wird die Übung pro Seite ausgeführt? Vorrang: Plan-Übung →
+   * Übungs-Stammdatum → Texterkennung (für ungepflegten Altbestand).
    */
   proSeite: boolean
   /** Sätze je Seite (= params.saetze); Gesamtzahl der Durchgänge ist doppelt */
@@ -51,7 +53,7 @@ export interface ExerciseFeedback {
 function mitSeitenInfo(
   ex: Omit<FlatExercise, "proSeite" | "saetzeProSeite" | "saetzeGesamt">
 ): FlatExercise {
-  const proSeite = istProSeite(ex)
+  const proSeite = istProSeite({ ...ex, standardProSeite: ex.standardProSeite })
   const saetzeProSeite = ex.params.saetze
   return {
     ...ex,
@@ -85,6 +87,7 @@ export function flattenExercises(assignment: PatientAppAssignment): FlatExercise
               ausfuehrung: pe.exercises.ausfuehrung ?? null,
               media_url: pe.exercises.media_url ?? null,
               media_type: pe.exercises.media_type ?? null,
+              standardProSeite: pe.exercises.standard_pro_seite ?? null,
               params,
             })
           )

@@ -80,7 +80,9 @@ export interface Exercise {
   standard_saetze?: number | null
   standard_wiederholungen?: number | null
   standard_dauer_sekunden?: number | null
-  standard_pause_sekunden?: number | null
+  standard_pause_sekunden?: number
+  /** Übung pro Seite ausführen; NULL = aus Texten erkennen */
+  standard_pro_seite?: boolean | null
 
   // System
   is_public: boolean        // true = Praxis-Bibliothek; false = persönliche Übung
@@ -104,6 +106,8 @@ export interface ExerciseFormValues {
   standard_wiederholungen?: number
   standard_dauer_sekunden?: number
   standard_pause_sekunden?: number
+  /** Sätze gelten je Seite (Ausfallschritt, Einbeinstand …) */
+  standard_pro_seite?: boolean
   is_public?: boolean
 }
 
