@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import {
   ArrowLeft, Plus, MoreHorizontal, Send, CheckCircle2, AlertTriangle,
-  FileText, Download, Loader2, Receipt,
+  FileText, FileCode, Download, Loader2, Receipt,
 } from "lucide-react"
 import type { BgfInvoice } from "@/types/bgf-invoice"
 import { BGF_INVOICE_STATUS_CONFIG, formatZeitraum } from "@/types/bgf-invoice"
@@ -303,7 +303,10 @@ export default function BgfRechnungenPage() {
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => window.open(`/api/admin/bgf-invoices/${inv.id}/pdf`, "_blank")}>
-                          <FileText className="h-4 w-4 mr-2" /> Vorschau (PDF)
+                          <FileText className="h-4 w-4 mr-2" /> Vorschau (PDF mit E-Rechnung)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => window.open(`/api/admin/bgf-invoices/${inv.id}/xml`, "_blank")}>
+                          <FileCode className="h-4 w-4 mr-2" /> E-Rechnung als XML
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
