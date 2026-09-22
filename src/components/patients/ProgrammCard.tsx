@@ -62,13 +62,24 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
   const [error, setError] = useState<string | null>(null)
   const [kopiert, setKopiert] = useState(false)
   const [qrOffen, setQrOffen] = useState(false)
+  const [ladeFehler, setLadeFehler] = useState<string | null>(null)
 
   const load = useCallback(() => {
     setLoading(true)
+    setLadeFehler(null)
     fetch(`/api/os/programm-angebot?patient_id=${patientId}`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then(async (r) => {
+        if (r.ok) return r.json()
+        // Nicht still verschwinden: eine Karte, die einfach fehlt, sieht aus
+        // wie ein fehlendes Feature statt wie ein Fehler.
+        const j = await r.json().catch(() => ({}))
+        throw new Error(j.error ?? `Serverantwort ${r.status}`)
+      })
       .then((data) => setState(data))
-      .catch(() => setState(null))
+      .catch((err: Error) => {
+        setState(null)
+        setLadeFehler(err.message)
+      })
       .finally(() => setLoading(false))
   }, [patientId])
 
@@ -118,7 +129,27 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
     )
   }
 
-  if (!state) return null
+  if (!state) {
+    return (
+      <Card className="mb-6 border-red-200 bg-red-50/50">
+        <CardContent className="py-5">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">Praxis-OS-Programm</h3>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-600">
+                Der Programm-Status konnte nicht geladen werden.
+                {ladeFehler && <> Grund: {ladeFehler}</>}
+              </p>
+              <Button size="sm" variant="outline" onClick={load} className="mt-3">
+                <RefreshCw className="mr-1.5 h-4 w-4" /> Erneut versuchen
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   const { betreuung, offenes_angebot: angebot, qr_data_url: qr } = state
   const letztesAbgelaufen = state.angebote?.find((a) => a.abgelaufen && !a.paid_at)

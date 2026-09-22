@@ -48,7 +48,7 @@ async function requireStaff() {
   const svc = createSupabaseServiceClient()
   const { data: profile } = await svc
     .from("user_profiles")
-    .select("role, full_name")
+    .select("role, first_name, last_name")
     .eq("id", user.id)
     .single()
 
@@ -307,7 +307,9 @@ export async function POST(request: NextRequest) {
     contractNumber: contract.contract_number,
     gueltigBis: formatDateTime(expiresAt),
     praxisName: praxis.praxis_name,
-    behandlerName: auth.profile.full_name || praxis.inhaber_name,
+    behandlerName:
+      [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") ||
+      praxis.inhaber_name,
     siteUrl,
   })
 
