@@ -2,7 +2,7 @@
 
 > **Weg von „die App kostet etwas" — hin zu „die 90-Tage-Betreuung kostet etwas".**
 
-**Status:** In Progress — Phase 1 + 2 gebaut (lokal), nicht deployt
+**Status:** In Progress — Phase 1 + 2 **DEPLOYT 22.09.2026** (Commit 0e2c166), Phase 3–5 offen
 **Stand:** 22.09.2026
 
 ---
@@ -65,7 +65,7 @@ daneben bestehen.
 
 ## 4 · Phasen
 
-### Phase 1 — Widersprüche beseitigen ✅ gebaut, nicht deployt
+### Phase 1 — Widersprüche beseitigen ✅ deployt
 
 Das System verkaufte und verhielt sich noch nach dem alten Modell.
 
@@ -80,7 +80,7 @@ Das System verkaufte und verhielt sich noch nach dem alten Modell.
   einzige Wahrheit. `programm_beendet` = Lesezugriff statt Rauswurf.
   Middleware **und** alle schreibenden `/api/me`-Routen fragen dieselbe Funktion.
 
-### Phase 2 — Die 378 € ✅ gebaut, nicht deployt
+### Phase 2 — Die 378 € ✅ deployt
 
 - **Migration** `20260922000001_praxis_os_programm.sql`: neuer `contract_type`,
   `bereits_beglichen`, `programm_tage`, `stripe_session_id` (UNIQUE), `paid_at`.

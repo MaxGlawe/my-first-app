@@ -37,7 +37,7 @@
 | PROJ-23 | Schmerzcheck-Funnel (B2C Akquise) | Deployed | [Spec](PROJ-23-schmerzcheck-funnel.md) | 2026-05-21 |
 | PROJ-24 | Bewegungskarten (Karten-Decks) & Shop-Ausbau (Warenkorb, Bewertungen, Shop-Analytics) | Deployed | — | 2026-05-23 |
 | PROJ-25 | Masterclass + 3 Monate Begleitung (löst Video-Analyse ab) | In Review | [Spec](PROJ-25-masterclass-begleitung.md) | 2026-07-12 |
-| PROJ-26 | Praxis OS als 90-Tage-Programm (Neupositionierung) | In Progress | [Spec](PROJ-26-praxis-os-programm.md) | 2026-09-22 |
+| PROJ-26 | Praxis OS als 90-Tage-Programm (Neupositionierung) | In Review | [Spec](PROJ-26-praxis-os-programm.md) | 2026-09-22 |
 | PROJ-34 | Patienten-Terminkoordination (Termine sehen/umbuchen/stornieren) | Deployed | [Spec](PROJ-34-patienten-terminkoordination.md) | 2026-06-20 |
 
 <!-- Add features above this line -->
