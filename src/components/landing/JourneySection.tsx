@@ -1,15 +1,21 @@
 "use client"
 
 /**
- * PROJ-26: Die 90 Tage als Zeitachse.
+ * PROJ-26: Die 90 Tage als Zeitachse — das Herzstück der Seite.
  *
- * Das ist die Sektion, die das Angebot erklärt. Wer bis hierher scrollt, will
- * wissen: Was passiert konkret, wann, und wie oft sehe ich jemanden? Deshalb
- * echte Zeitpunkte statt Schlagworte — und am Ende das Ausschleichen, weil das
- * der eigentliche Punkt ist: eng begleitet, Schritt für Schritt allein weiter.
+ * Bildidee: Nicht die Pflanze erzählt die Geschichte, sondern DER STAB.
+ * Tag 1 wird er gesetzt und eng gebunden, Woche für Woche werden die
+ * Bindungen lockerer, am Ende liegt er neben dem Topf am Boden.
  *
- * Bewusst ohne Ergebnisversprechen. Jede Zeile beschreibt eine Leistung, die
- * wir erbringen, nicht ein Ergebnis, das eintritt.
+ * Das ist bewusst so gewählt. Eine reine Samen-wird-Pflanze-Reihe neben
+ * „Tag 0 → Tag 90" liest sich als bildliches Versprechen einer Besserung —
+ * also als Vorher-Nachher-Darstellung, die wir auf dieser Seite überall
+ * sonst gerade entfernt haben (§ 3 HWG). Der Stab dagegen zeigt UNSERE
+ * Leistung: Wir geben Halt und nehmen ihn wieder weg. Kein Ergebnis-
+ * versprechen, und trotzdem das stärkere Bild.
+ *
+ * Jede Zeile im Text beschreibt entsprechend eine Leistung, nicht ein
+ * Ergebnis.
  */
 
 import Image from "next/image"
@@ -30,128 +36,129 @@ interface Etappe {
   marke: string
   titel: string
   text: string
-  /** Screenshot aus der App, sofern vorhanden. */
-  bild?: { src: string; alt: string }
+  bild: string
+  alt: string
 }
 
 const ETAPPEN: Etappe[] = [
   {
     marke: "Tag 0",
     titel: "Die Videokonsultation",
-    text:
-      "30 Minuten, per Video. Wir gehen deine Beschwerden durch, schauen uns an, wo du stehst — und klären ehrlich, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir dir das und du verlierst keine Zeit.",
+    text: "30 Minuten per Video. Wir gehen deine Beschwerden durch, schauen uns an, wo du stehst — und klären ehrlich, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir dir das, und du verlierst keine Zeit.",
+    bild: "/images/journey/1-samen.webp",
+    alt: "Ein Tontopf mit dunkler Erde, darauf ein einzelnes Samenkorn — noch ist nichts gepflanzt.",
   },
   {
     marke: "Tag 1",
-    titel: "Dein Plan steht in der App",
-    text:
-      "Kurze Übungen für jeden Tag, dazu ein Trainingsplan für die Tage, die du dir vorgenommen hast. Alles mit Video-Anleitung, alles auf dich zugeschnitten. Du musst nichts selbst zusammensuchen.",
-    bild: { src: "/images/app/training.png", alt: "Trainingsplan mit Übungen in der Praxis-OS-App" },
+    titel: "Dein Plan steht",
+    text: "Kurze Übungen für jeden Tag, dazu ein Trainingsplan für die Tage, die du dir vorgenommen hast. Alles mit Video-Anleitung, alles auf dich zugeschnitten. Du musst nichts selbst zusammensuchen.",
+    bild: "/images/journey/2-keimling.webp",
+    alt: "Ein junger Keimling im Topf, daneben ein frisch gesetzter Holzstab mit einer Leinenbindung.",
   },
   {
-    marke: "Woche 1 bis 4",
+    marke: "Woche 1 – 4",
     titel: "Wöchentlich im Gespräch",
-    text:
-      "Einmal pro Woche sehen wir uns per Video. Dazwischen checkst du täglich kurz ein — Schmerz, Schlaf, Belastung, in unter einer Minute. Dein Therapeut sieht den Verlauf mit und passt den Plan an, statt ihn stehen zu lassen.",
-    bild: { src: "/images/app/dashboard.png", alt: "Tägliches Check-in im Dashboard der Praxis-OS-App" },
+    text: "Einmal pro Woche sehen wir uns per Video. Dazwischen checkst du täglich kurz ein — Schmerz, Schlaf, Belastung, in unter einer Minute. Dein Therapeut liest den Verlauf mit und passt den Plan an, statt ihn stehen zu lassen.",
+    bild: "/images/journey/3-gestuetzt.webp",
+    alt: "Eine junge Pflanze, eng an einen Holzstab gebunden — der Halt liegt dicht am Stamm.",
   },
   {
-    marke: "Woche 5 bis 8",
+    marke: "Woche 5 – 8",
     titel: "Die Leine wird länger",
-    text:
-      "Jetzt alle zwei Wochen. Du kennst deine Übungen, du weißt, worauf du achtest. Der Chat bleibt offen — Antwort werktags innerhalb von 24 Stunden. Und wenn es schlechter wird, schieben wir eine zusätzliche Sitzung ein.",
+    text: "Jetzt alle zwei Wochen. Du kennst deine Übungen, du weißt, worauf du achtest. Der Chat bleibt offen, Antwort werktags innerhalb von 24 Stunden. Und wenn es schlechter wird, schieben wir eine zusätzliche Sitzung ein.",
+    bild: "/images/journey/4-gelockert.webp",
+    alt: "Eine kräftigere Pflanze, die sich vom Stab wegneigt — nur noch eine lockere Bindung hält sie.",
   },
   {
     marke: `Tag ${PROGRAMM.tage}`,
     titel: "Das Abschlussgespräch",
-    text:
-      "Ein Zwischen-Call und zum Schluss das Abschlussgespräch: Was hat getragen, was nimmst du mit, wie machst du allein weiter. Danach endet die Betreuung automatisch — kein Abo, keine Verlängerung, keine Abbuchung.",
+    text: "Ein Zwischen-Call und zum Schluss das Abschlussgespräch: Was hat getragen, was nimmst du mit, wie machst du allein weiter. Danach endet die Betreuung automatisch — kein Abo, keine Verlängerung, keine Abbuchung.",
+    bild: "/images/journey/5-frei.webp",
+    alt: "Die Pflanze steht aufrecht ohne Stütze, der Holzstab liegt daneben auf dem Tisch.",
   },
 ]
 
 export function JourneySection() {
   return (
     <section id="ablauf" className="relative py-24 sm:py-32" style={{ backgroundColor: PAPER }}>
-      <div className="container mx-auto max-w-4xl px-4">
-        <ScrollReveal className="mb-14 sm:mb-20">
+      <div className="container mx-auto max-w-6xl px-4">
+        <ScrollReveal className="mb-16 max-w-2xl sm:mb-24">
           <span className="text-sm font-medium uppercase tracking-wider" style={{ color: GREEN }}>
             Der Ablauf
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl" style={{ ...serif, color: INK }}>
             {PROGRAMM.tage} Tage, Schritt für Schritt
           </h2>
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed" style={{ color: MUTED }}>
-            Am Anfang eng, zum Schluss auf eigenen Beinen. Was in diesen Wochen passiert, steht
-            hier — ohne Kleingedrucktes.
+          <p className="mt-4 text-lg leading-relaxed" style={{ color: MUTED }}>
+            Am Anfang eng, zum Schluss auf eigenen Beinen. Der Halt, den wir geben, nimmt mit
+            Absicht ab — bis du ihn nicht mehr brauchst.
           </p>
         </ScrollReveal>
 
-        <ol className="relative">
-          {/* Durchgehende Linie der Zeitachse, auf Mobilgeräten links */}
-          <span
-            aria-hidden
-            className="absolute left-[7px] top-2 bottom-2 w-px sm:left-[calc(9rem+7px)]"
-            style={{ backgroundColor: LINE }}
-          />
-
-          {ETAPPEN.map((e, i) => (
-            <li key={e.marke} className="relative">
-              <ScrollReveal>
-                <div className="flex gap-5 pb-12 sm:gap-8 sm:pb-16">
-                  {/* Zeitmarke */}
-                  <div className="hidden w-36 shrink-0 pt-0.5 text-right sm:block">
-                    <span className="text-sm font-semibold tracking-wide" style={{ color: GREEN }}>
-                      {e.marke}
-                    </span>
-                  </div>
-
-                  {/* Punkt auf der Linie */}
-                  <span
-                    aria-hidden
-                    className="relative z-10 mt-1.5 h-[15px] w-[15px] shrink-0 rounded-full border-[3px] bg-white"
-                    style={{ borderColor: i === ETAPPEN.length - 1 ? SAND : GREEN }}
-                  />
-
-                  <div className="min-w-0 flex-1">
-                    <span
-                      className="mb-1 block text-xs font-semibold uppercase tracking-wider sm:hidden"
-                      style={{ color: GREEN }}
-                    >
-                      {e.marke}
-                    </span>
-                    <h3 className="text-xl sm:text-2xl" style={{ ...serif, color: INK }}>
-                      {e.titel}
-                    </h3>
-                    <p className="mt-2.5 max-w-xl text-[15px] leading-relaxed sm:text-base" style={{ color: BODY }}>
-                      {e.text}
-                    </p>
-
-                    {e.bild && (
+        <ol className="space-y-20 sm:space-y-28">
+          {ETAPPEN.map((e, i) => {
+            const bildRechts = i % 2 === 1
+            return (
+              <li key={e.marke}>
+                <ScrollReveal>
+                  <div className="grid items-center gap-8 sm:gap-14 lg:grid-cols-2">
+                    {/* Bild */}
+                    <div className={bildRechts ? "lg:order-last" : undefined}>
                       <div
-                        className="mt-5 inline-block overflow-hidden rounded-2xl border bg-white p-2"
-                        style={{ borderColor: LINE }}
+                        className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl"
+                        style={{ backgroundColor: "#EFEAE2" }}
                       >
                         <Image
-                          src={e.bild.src}
-                          alt={e.bild.alt}
-                          width={260}
-                          height={520}
-                          loading="lazy"
-                          className="h-auto w-[180px] rounded-xl sm:w-[220px]"
+                          src={e.bild}
+                          alt={e.alt}
+                          fill
+                          loading={i === 0 ? "eager" : "lazy"}
+                          sizes="(min-width: 1024px) 46vw, 100vw"
+                          className="object-cover"
                         />
                       </div>
-                    )}
+                    </div>
+
+                    {/* Text */}
+                    <div className={bildRechts ? "lg:pr-6" : "lg:pl-6"}>
+                      <div className="flex items-center gap-3">
+                        <span
+                          aria-hidden
+                          className="h-px w-8"
+                          style={{ backgroundColor: i === ETAPPEN.length - 1 ? SAND : GREEN }}
+                        />
+                        <span
+                          className="text-[12px] font-semibold uppercase tracking-[0.18em]"
+                          style={{ color: i === ETAPPEN.length - 1 ? "#8a7a62" : GREEN }}
+                        >
+                          {e.marke}
+                        </span>
+                      </div>
+
+                      <h3
+                        className="mt-4 text-2xl leading-tight sm:text-3xl lg:text-4xl"
+                        style={{ ...serif, color: INK }}
+                      >
+                        {e.titel}
+                      </h3>
+                      <p
+                        className="mt-4 max-w-xl text-[15.5px] leading-relaxed sm:text-base"
+                        style={{ color: BODY }}
+                      >
+                        {e.text}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </ScrollReveal>
-            </li>
-          ))}
+                </ScrollReveal>
+              </li>
+            )
+          })}
         </ol>
 
         <ScrollReveal>
           <p
-            className="rounded-2xl border p-5 text-[15px] leading-relaxed sm:p-6"
-            style={{ borderColor: LINE, backgroundColor: "rgba(44,62,45,0.04)", color: BODY }}
+            className="mx-auto mt-20 max-w-2xl rounded-2xl border p-5 text-center text-[14.5px] leading-relaxed sm:mt-28 sm:p-6"
+            style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)", color: BODY }}
           >
             Insgesamt {PROGRAMM_CALLS} Video-Sitzungen, fest eingeplant. Fällt eine aus, wird sie
             nachgeholt. Praxis OS ist kein Notdienst — bei akuten Beschwerden wende dich bitte an
