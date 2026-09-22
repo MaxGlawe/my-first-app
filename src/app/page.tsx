@@ -5,6 +5,7 @@ import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { HeroSection } from "@/components/landing/HeroSection"
 import { ProblemSection } from "@/components/landing/ProblemSection"
+import { WendepunktSection } from "@/components/landing/WendepunktSection"
 import { JourneySection } from "@/components/landing/JourneySection"
 import { GarantieSection } from "@/components/landing/GarantieSection"
 import { EignungSection } from "@/components/landing/EignungSection"
@@ -56,6 +57,7 @@ export default function LandingPage() {
       <main className="flex-1">
         <HeroSection />
         <ProblemSection />
+        <WendepunktSection />
         <JourneySection />
         <GarantieSection />
         <CredentialsSection />

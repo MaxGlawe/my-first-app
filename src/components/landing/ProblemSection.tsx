@@ -18,7 +18,6 @@
 
 import { ScrollReveal } from "./ScrollReveal"
 import { Hourglass, FileMinus, Timer, MapPinOff, type LucideIcon } from "lucide-react"
-import { PROGRAMM } from "@/lib/programm"
 
 const INK = "#0f172a"
 const BODY = "#334155"
@@ -96,17 +95,6 @@ export function ProblemSection() {
           ))}
         </div>
 
-        {/* Das Angebot in einem Satz — bewusst als eigener, ruhiger Block. */}
-        <ScrollReveal className="mt-16 text-center sm:mt-24">
-          <p
-            className="mx-auto max-w-3xl text-2xl leading-[1.35] sm:text-3xl lg:text-4xl"
-            style={{ ...serif, color: INK }}
-          >
-            Praxis OS ist ein {PROGRAMM.tage}-Tage-Programm:
-            <span style={{ color: GREEN }}> ein Therapeut, ein Plan, täglicher Kontakt</span> — und
-            eine App, die das Ganze zusammenhält.
-          </p>
-        </ScrollReveal>
       </div>
     </section>
   )
