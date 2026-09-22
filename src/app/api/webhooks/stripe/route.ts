@@ -16,6 +16,7 @@ import { sendEmail } from "@/lib/email"
 // sendEmail() (GMX) bleibt ausschließlich für interne Benachrichtigungen an Max.
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 import { activateBegleitung, revokeBegleitung } from "@/lib/masterclass/begleitung"
+import { aktiviereProgramm } from "@/lib/programm-aktivierung"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import type Stripe from "stripe"
 
@@ -250,6 +251,47 @@ export async function POST(request: NextRequest) {
 
         // Only handle shop purchases — skip subscription/setup checkouts
         if (session.mode !== "payment") break
+
+        // ── PROJ-26: Praxis-OS-Programm (Angebot nach der Konsultation) ────
+        // Eigener Zweig VOR der Shop-Logik: hier gibt es keine `products`,
+        // sondern einen Behandlungsvertrag. Ein Fehler muss 500 liefern, damit
+        // Stripe wiederholt — der Patient hat bezahlt und wartet auf Zugang.
+        if (session.metadata?.kind === "praxis_os_programm") {
+          const contractId = String(session.metadata.contract_id ?? "")
+          if (!contractId) {
+            console.error(`[Stripe Webhook] Programm ohne contract_id session=${session.id}`)
+            break
+          }
+
+          const result = await aktiviereProgramm(supabase, {
+            contractId,
+            stripeSessionId: String(session.id),
+            amountTotal: typeof session.amount_total === "number" ? session.amount_total : null,
+          })
+
+          if (!result.ok) {
+            console.error(
+              `[Stripe Webhook] Programm-Aktivierung fehlgeschlagen session=${session.id}:`,
+              result.error
+            )
+            return NextResponse.json({ error: "Programm activation failed" }, { status: 500 })
+          }
+
+          // Purchase-Signal an Meta (serverseitig) — darf nie blockieren.
+          if (!result.duplicate && session.customer_details?.email) {
+            void sendMetaEvent({
+              eventName: "Purchase",
+              email: String(session.customer_details.email),
+              eventId: `programm_${contractId}`,
+              value:
+                typeof session.amount_total === "number" ? session.amount_total / 100 : undefined,
+              currency: "EUR",
+              eventSourceUrl: "https://wwwpraxis-os.com/",
+            }).catch(() => {})
+          }
+
+          break
+        }
 
         // Mehrartikel: product_ids (comma-separated). Rückwärtskompatibel: product_id (alt).
         const productIds: string[] = session.metadata?.product_ids

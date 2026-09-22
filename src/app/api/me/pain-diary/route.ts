@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { requireWriteAccess } from "@/lib/app-access"
 
 const createEntrySchema = z.object({
   pain_level: z.number().int().min(0).max(10),
@@ -102,6 +104,16 @@ export async function POST(request: NextRequest) {
       { status: 404 }
     )
   }
+
+  // PROJ-26: Nach Ablauf der Betreuung bleibt der Verlauf lesbar, neue Einträge
+  // sind gesperrt.
+  const blocked = await requireWriteAccess(createSupabaseServiceClient(), {
+    userId: user.id,
+    patientId: patient.id,
+    accountOrigin:
+      (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ?? null,
+  })
+  if (blocked) return blocked
 
   // Parse body
   let body: unknown

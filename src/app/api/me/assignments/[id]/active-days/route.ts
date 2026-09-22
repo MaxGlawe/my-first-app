@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { requireWriteAccess } from "@/lib/app-access"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -65,6 +66,15 @@ export async function PATCH(
   // Use service client to bypass RLS (patient doesn't have direct access to patient_assignments).
   // Security: we verified the patient identity above, and filter by patient_id below.
   const service = createSupabaseServiceClient()
+
+  // PROJ-26: Nach Ablauf der Betreuung bleibt der Plan sichtbar, aber unveränderlich.
+  const blocked = await requireWriteAccess(service, {
+    userId: user.id,
+    patientId: patient.id,
+    accountOrigin:
+      (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ?? null,
+  })
+  if (blocked) return blocked
 
   // Fetch assignment — must belong to this patient and be active
   const { data: assignment, error: fetchErr } = await service

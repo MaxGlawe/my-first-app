@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { requireWriteAccess } from "@/lib/app-access"
 
 const answerSchema = z.object({
   question_id: z.string().uuid(),
@@ -48,6 +50,17 @@ export async function POST(request: NextRequest) {
 
   if (!patient) {
     return NextResponse.json({ error: "Kein Patient-Profil gefunden." }, { status: 404 })
+  }
+
+  // PROJ-26: Schreiben nur bei laufender Betreuung / Erhaltungsphase.
+  const blocked = await requireWriteAccess(createSupabaseServiceClient(), {
+    userId: user.id,
+    patientId: patient.id,
+    accountOrigin:
+      (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ?? null,
+  })
+  if (blocked) {
+    return blocked
   }
 
   // Parse body

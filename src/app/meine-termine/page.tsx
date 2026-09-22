@@ -1,8 +1,12 @@
 "use client"
 
 // PROJ-34 / Stage 1: Eigener "Termine-only"-Bereich für Buchungs-Patienten.
-// Live-Termine (ansehen/umbuchen/stornieren) + ausgegraute Voll-Abo-Vorschau +
-// kontext-abhängiger Upsell (bekannt → Abo, unbekannt → Video-Analyse).
+// Live-Termine (ansehen/umbuchen/stornieren) + kontext-abhängige Information.
+//
+// PROJ-26: KEIN Selbst-Checkout mehr. Der Zugang zum 90-Tage-Programm entsteht
+// ausschließlich über ein Angebot, das der Therapeut nach der Videokonsultation
+// erstellt — nicht über einen Button, den der Patient hier selbst drücken kann.
+// Diese Seite informiert, sie verkauft nicht.
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,12 +21,14 @@ import {
 } from "@/components/ui/alert-dialog"
 import {
   Calendar, Clock, User, AlertTriangle, CalendarX, CalendarClock, X, Lock,
-  Dumbbell, MessageCircle, Activity, GraduationCap, Gift, ArrowRight,
+  Dumbbell, MessageCircle, Activity, GraduationCap, ArrowRight,
 } from "lucide-react"
 
-// Video-Analyse-Buchung (Einstieg für unbekannte Patienten) — entspricht dem Schmerzcheck-Funnel.
-const VIDEO_ANALYSE_URL =
-  "https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os&utm_source=praxis-os&utm_medium=meine-termine&utm_campaign=video-analyse"
+// Einstieg ins Programm: die 30-minütige Videokonsultation (69 €), gebucht im
+// Kalender der Praxis. Das ist der einzige Weg hinein — danach entscheidet die
+// Konsultation, ob eine Fernbetreuung fachlich überhaupt in Frage kommt.
+const KONSULTATION_URL =
+  "https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os&utm_source=praxis-os&utm_medium=meine-termine&utm_campaign=videokonsultation"
 
 interface Appt {
   bookingId: string; bookingNumber?: string; date: string; startTime: string; endTime: string
@@ -89,12 +95,15 @@ export default function MeineTerminePage() {
         <p className="mt-1 text-sm text-muted-foreground">Termine ansehen, umbuchen oder stornieren.</p>
       </header>
 
+      {/* PROJ-26: Nur noch die Erhaltungsphase (16,99 €/Monat) landet hier — der
+          Programm-Zugang entsteht über das Angebot des Therapeuten, nicht hier.
+          Das success_url wandert in Phase 5 auf /app/dashboard. */}
       {aboSuccess && (
         <div className="mb-6 rounded-2xl border-2 border-emerald-600 bg-emerald-50 p-5">
-          <p className="text-[15px] font-bold text-emerald-900">Willkommen — dein Zugang ist freigeschaltet! 🎉</p>
+          <p className="text-[15px] font-bold text-emerald-900">Deine Weiternutzung ist aktiv.</p>
           <p className="mt-1 text-[14px] leading-relaxed text-emerald-800">
-            Dein Therapeut richtet jetzt deinen persönlichen Trainingsplan ein — du bekommst
-            Bescheid, sobald er bereit ist. Die volle App schaltet sich in Kürze frei.
+            Dein Bereich ist wieder freigeschaltet — Check-ins, Chat und Pläne stehen dir erneut
+            zur Verfügung. Schreib deinem Therapeuten, wenn du einen aktualisierten Plan brauchst.
           </p>
         </div>
       )}
@@ -118,7 +127,7 @@ export default function MeineTerminePage() {
               : <ul className="space-y-3">{upcoming.map((a) => <ApptCard key={a.bookingId} a={a} onReschedule={() => setReschedule(a)} onCancel={() => setCancelTarget(a)} />)}</ul>}
           </section>
 
-          <UpsellSection known={known} />
+          <ProgrammSection hasUpcoming={upcoming.length > 0} known={known} />
 
           {past.length > 0 && (
             <section>
@@ -163,30 +172,64 @@ function ApptCard({ a, past, onReschedule, onCancel }: { a: Appt; past?: boolean
 }
 
 const FEATURES = [
-  { icon: Dumbbell, t: "Dein persönlicher Trainingsplan", d: "Von deinem Therapeuten zusammengestellt — abgestimmt auf dich." },
-  { icon: MessageCircle, t: "Direkter Therapeuten-Chat", d: "Fragen jederzeit, Antwort von einem echten Menschen." },
-  { icon: Activity, t: "Tägliches Check-in & Fortschritt", d: "Schmerz & Wohlbefinden im Verlauf — dein Therapeut sieht mit." },
-  { icon: GraduationCap, t: "Kurse & Wissen", d: "Bewegungs-Programme und Lektionen zu deinen Beschwerden." },
+  { icon: Dumbbell, t: "Täglicher Plan", d: "Micro-Übungen für jeden Tag, Trainingsplan für deine Trainingstage." },
+  { icon: MessageCircle, t: "Direkter Therapeuten-Chat", d: "Antwort von einem echten Menschen, werktags innerhalb von 24 Stunden." },
+  { icon: Activity, t: "Tägliches Check-in", d: "Kurze Fragen zu Schmerz, Schlaf und Belastung — dein Therapeut sieht mit." },
+  { icon: GraduationCap, t: "Begleitende Video-Calls", d: "Zuerst wöchentlich, dann in größeren Abständen — bis du allein weitermachst." },
 ]
 
-function UpsellSection({ known }: { known: boolean }) {
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState<string | null>(null)
+/** Was die Konsultation klärt — Erwartungsmanagement vor dem Termin. */
+const KONSULTATION_PUNKTE = [
+  "Was genau deine Beschwerden auslöst und wo du gerade stehst",
+  "Ob sich dein Beschwerdebild aus der Ferne überhaupt sinnvoll betreuen lässt",
+  "Wie eine Betreuung über Praxis OS in deinem Fall konkret aussehen würde",
+]
 
-  async function startAbo() {
-    setBusy(true); setErr(null)
-    try {
-      const res = await fetch("/api/me/billing/start-subscription", { method: "POST" })
-      const j = await res.json()
-      if (!res.ok || !j.url) { setErr(j.error || "Checkout konnte nicht gestartet werden."); return }
-      window.location.href = j.url
-    } catch { setErr("Checkout konnte nicht gestartet werden.") } finally { setBusy(false) }
+/**
+ * Kontext-abhängige Information — bewusst ohne Kaufbutton.
+ *
+ *  hasUpcoming → Vorbereitung auf die anstehende Videokonsultation
+ *  known       → Konsultation war; wie es weitergeht (ohne Verkauf)
+ *  sonst       → noch kein Termin: Einstieg über die Konsultation
+ */
+function ProgrammSection({ hasUpcoming, known }: { hasUpcoming: boolean; known: boolean }) {
+  if (hasUpcoming) {
+    return (
+      <section className="overflow-hidden rounded-3xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-50 to-[#fbfaf6] p-6 sm:p-7">
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Dein nächster Termin</span>
+        <h2 className="mt-1.5 text-[20px] font-extrabold leading-tight text-slate-900 sm:text-[23px]">So läuft deine Videokonsultation ab</h2>
+        <p className="mt-2 max-w-lg text-[14px] leading-relaxed text-slate-700">
+          30 Minuten, per Video, ohne Praxisbesuch. Wir nehmen uns die Zeit für drei Dinge:
+        </p>
+        <ul className="mt-4 space-y-2.5">
+          {KONSULTATION_PUNKTE.map((p) => (
+            <li key={p} className="flex items-start gap-2.5 text-[14px] leading-relaxed text-slate-700">
+              <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600" />
+              <span>{p}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-5 rounded-2xl border border-slate-200 bg-white/70 p-4">
+          <h3 className="text-[13px] font-bold text-slate-800">Leg dir kurz bereit</h3>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-slate-500">
+            Vorhandene Befunde oder Bildgebung, aktuelle Medikamente — und einen Platz, an dem du
+            dich frei bewegen kannst.
+          </p>
+        </div>
+      </section>
+    )
   }
 
   return (
     <section className="overflow-hidden rounded-3xl border-2 border-emerald-600 bg-gradient-to-br from-emerald-50 to-[#fbfaf6] p-6 sm:p-7">
-      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Das steckt noch in Praxis OS für dich</span>
-      <h2 className="mt-1.5 text-[20px] font-extrabold leading-tight text-slate-900 sm:text-[23px]">Mehr als nur Termine — dein eigener Physiotherapeut.</h2>
+      <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">Praxis OS</span>
+      <h2 className="mt-1.5 text-[20px] font-extrabold leading-tight text-slate-900 sm:text-[23px]">
+        90 Tage Betreuung — begleitet, nicht allein.
+      </h2>
+      <p className="mt-2 max-w-lg text-[14px] leading-relaxed text-slate-700">
+        Physiotherapie aus der Ferne, über 90 Tage begleitet. Die App ist dabei die Schaltzentrale:
+        Plan, Check-ins und Chat an einem Ort — kein separates Abo.
+      </p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         {FEATURES.map((f) => (
@@ -200,28 +243,28 @@ function UpsellSection({ known }: { known: boolean }) {
       </div>
 
       {known ? (
-        <div className="mt-6">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-600/10 px-3.5 py-1.5 text-[13px] font-semibold text-emerald-800">
-            <Gift className="h-4 w-4" /> Dein 1. Monat Begleitung ist geschenkt
-          </div>
-          <Button onClick={startAbo} disabled={busy} className="group w-full bg-gradient-to-r from-emerald-600 to-teal-600 py-6 text-base font-bold hover:from-emerald-700 hover:to-teal-700 sm:w-auto sm:px-8">
-            {busy ? "Wird gestartet…" : "Behandlung fortsetzen — alles freischalten"}
-            {!busy && <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
-          </Button>
-          <p className="mt-2 text-[12px] text-slate-500">1. Monat geschenkt · danach 16,99 €/Monat, jederzeit kündbar</p>
-          {err && <p className="mt-2 text-[12px] text-red-600">{err}</p>}
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
+          <h3 className="text-[14px] font-bold text-slate-800">Wie es weitergeht</h3>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
+            Wenn wir in der Konsultation gemeinsam entschieden haben, dass eine Betreuung aus der
+            Ferne für dich passt, bekommst du von deinem Therapeuten ein persönliches Angebot per
+            E-Mail. Sobald es angenommen ist, schaltet sich dein Bereich frei.
+          </p>
+          <p className="mt-2 text-[12px] text-slate-500">
+            Noch offene Fragen? Antworte einfach auf die E-Mail deines Therapeuten.
+          </p>
         </div>
       ) : (
         <div className="mt-6">
           <p className="mb-3 max-w-md text-[14px] leading-relaxed text-slate-700">
-            Damit dein Therapeut dir einen Plan erstellen kann, lernt er dich zuerst in einer
-            persönlichen Video-Analyse kennen — 30 Minuten, ohne Praxisbesuch.
+            Der Weg beginnt mit einer persönlichen Videokonsultation — 30 Minuten, in denen wir
+            klären, ob wir dein Beschwerdebild aus der Ferne betreuen können.
           </p>
-          <a href={VIDEO_ANALYSE_URL} target="_blank" rel="noopener noreferrer"
+          <a href={KONSULTATION_URL} target="_blank" rel="noopener noreferrer"
              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-4 text-[16px] font-bold text-white shadow-lg transition hover:-translate-y-0.5">
-            Video-Analyse buchen (69 €) <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            Videokonsultation buchen (69 €) <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </a>
-          <p className="mt-2 text-[12px] text-slate-500">Erstanalyse · 1. Monat Begleitung danach geschenkt · 16,99 €/Monat, kündbar</p>
+          <p className="mt-2 text-[12px] text-slate-500">30 Minuten · Eignungsprüfung inklusive</p>
         </div>
       )}
     </section>

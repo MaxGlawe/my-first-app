@@ -1,16 +1,20 @@
 /**
- * Masterclass-Begleitung: zeitlich begrenzter App-Zugang (92 Tage).
+ * Zugang zur Patienten-App: befristete Betreuungs-Grants + Zugangszustand.
  *
- * Getrennt vom Abo (`patient_subscriptions`), weil Stripe dort bei jeder
- * Abrechnung `current_period_end` überschreibt — angehängte Bonus-Tage wären
+ * Grants sind getrennt vom Abo (`patient_subscriptions`), weil Stripe dort bei
+ * jeder Abrechnung `current_period_end` überschreibt — angehängte Tage wären
  * beim nächsten Monatswechsel still verschwunden. Grants sind entkoppelt,
  * stapelbar und laufen NIE automatisch weiter (kein Auto-Abo, § 312 BGB).
  *
- * Was der Grant steuert: die BEGLEITUNG (Chat mit dem Therapeuten).
- * Was er NICHT steuert: den Masterclass-Kurszugang (lebenslang via
- * content_entitlements) und den Blick aufs Übungsprogramm — beides bleibt
- * nach Ablauf sichtbar. Nur die Betreuung endet.
+ * Was ein Grant steuert: die BETREUUNG (Chat, Check-ins, neue Pläne).
+ * Was er NICHT steuert: den Blick zurück. Nach Ablauf bleibt der Verlauf
+ * lesbar (`programm_beendet`), und ein Masterclass-Kurszugang bleibt ohnehin
+ * lebenslang bestehen (content_entitlements). Es endet nur die Betreuung.
+ *
+ * `getAccessState()` weiter unten ist die EINZIGE Stelle, an der entschieden
+ * wird, wer hinein darf und wer schreiben darf — Middleware wie API-Routen.
  */
+import { NextResponse } from "next/server"
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
@@ -90,38 +94,85 @@ export async function hasActiveAppGrant(supabase: ServiceClient, userId: string)
   return !!data?.length
 }
 
-export interface ChatAccess {
-  allowed: boolean
-  /** 'begleitung_ended' → Begleitung ist abgelaufen (Upsell zeigen). */
-  reason?: "begleitung_ended"
-  /** Ende der Begleitung — für die Anzeige („noch 12 Tage"). */
-  endsAt?: string | null
-  daysLeft?: number
+// ── Zugangszustand: die EINZIGE Wahrheit ────────────────────────────────────
+//
+// PROJ-26. Vorher gab es zwei: `canUseChat()` sagte „Chat zu, Übungen bleiben",
+// die Middleware warf denselben Patienten komplett aus /app. Im neuen Modell
+// kommt JEDER Programmpatient über den Buchungskalender (account_origin =
+// 'booking') — der Widerspruch hätte also jeden Einzelnen an Tag 91 getroffen.
+// Middleware und Schreib-Endpunkte fragen ab jetzt dieselbe Funktion.
+
+export type AccessState =
+  /** Bezahlte 90-Tage-Betreuung läuft. */
+  | "programm_aktiv"
+  /** Erhaltungsphase (16,99 €/Monat) läuft. */
+  | "erhaltung_aktiv"
+  /** Betreuung gelaufen, nicht verlängert → Verlauf lesbar, nichts Neues. */
+  | "programm_beendet"
+  /** Konto existiert, war aber nie im Programm → kein Zugang zu /app. */
+  | "gesperrt"
+  /** Bestandspatient ohne Abrechnungsdatensatz → unverändertes Altverhalten. */
+  | "bestandspatient"
+
+export interface AccessInfo {
+  state: AccessState
+  /** Darf /app überhaupt betreten werden? */
+  canEnter: boolean
+  /** Darf Neues angelegt werden (Check-in, Training, Quiz, Chat)? */
+  canWrite: boolean
+  /** Ende der Betreuung — für „beendet am TT.MM.JJJJ". */
+  endsAt: string | null
+  /**
+   * Verbleibende Tage — NUR bei laufender Betreuung, sonst null.
+   * Wichtig: nicht 0 zurückgeben, sonst zeigt die Oberfläche „läuft noch 0 Tage".
+   */
+  daysLeft: number | null
+}
+
+/** Text für die 403-Antwort, wenn die Betreuung ausgelaufen ist. */
+export const WRITE_BLOCKED_ENDED =
+  "Deine Betreuung ist beendet. Dein Verlauf bleibt dir erhalten — für neue Einträge sprich bitte deinen Therapeuten an."
+
+/** Text für die 403-Antwort, wenn nie eine Betreuung bestand. */
+export const WRITE_BLOCKED_LOCKED =
+  "Für diesen Bereich brauchst du eine laufende Betreuung. Der Einstieg läuft über eine persönliche Videokonsultation."
+
+/** Passende Meldung zum Zustand — damit alle Endpunkte identisch antworten. */
+export function writeBlockedMessage(state: AccessState): string {
+  return state === "programm_beendet" ? WRITE_BLOCKED_ENDED : WRITE_BLOCKED_LOCKED
 }
 
 /**
- * Darf dieser Patient im Chat schreiben?
+ * Zugangszustand eines Patienten. Reihenfolge ist bewusst:
  *
- * Reihenfolge ist wichtig:
- *   1. Laufende Begleitung  → ja (Masterclass-Käufer)
- *   2. Aktives Abo          → ja (regulärer Abonnent)
- *   3. Hatte mal eine Begleitung, die abgelaufen ist → NEIN (Chat schließt)
- *   4. Sonst                → ja (Bestandspatient ohne Abo-Datensatz, unverändert)
+ *   1. Laufende Betreuung        → voller Zugriff
+ *   2. Laufende Erhaltungsphase  → voller Zugriff
+ *   3. Betreuung war da, ist aus → LESEN (der neue dritte Zustand)
+ *   4. Abo-Datensatz oder via Buchung provisioniert, nie Betreuung → gesperrt
+ *   5. Sonst                     → Bestandspatient, unverändert
  *
- * Schritt 4 hält das bestehende Verhalten für Alt-Patienten unangetastet: wer nie
- * eine Begleitung hatte und keinen Abo-Datensatz besitzt, chattet wie bisher.
- * Der Lesezugriff auf den Verlauf bleibt in JEDEM Fall erhalten — es endet nur
- * die Betreuung, die Historie gehört dem Patienten.
+ * `accountOrigin` kommt aus `user.app_metadata.account_origin` (nicht
+ * user-editierbar) und markiert via Buchungstool provisionierte Konten.
+ *
+ * Aufrufer stellen sicher, dass ein Patientendatensatz existiert — ohne einen
+ * solchen greift die Sperre wie bisher nicht.
  */
-export async function canUseChat(
+export async function getAccessState(
   supabase: ServiceClient,
-  userId: string,
-  patientId: string
-): Promise<ChatAccess> {
-  const begleitung = await getBegleitungStatus(supabase, userId)
+  args: { userId: string; patientId: string; accountOrigin?: string | null }
+): Promise<AccessInfo> {
+  const { userId, patientId, accountOrigin } = args
 
-  if (begleitung.active) {
-    return { allowed: true, endsAt: begleitung.endsAt, daysLeft: begleitung.daysLeft }
+  const betreuung = await getBegleitungStatus(supabase, userId)
+
+  if (betreuung.active) {
+    return {
+      state: "programm_aktiv",
+      canEnter: true,
+      canWrite: true,
+      endsAt: betreuung.endsAt,
+      daysLeft: betreuung.daysLeft,
+    }
   }
 
   const { data: sub } = await supabase
@@ -131,14 +182,58 @@ export async function canUseChat(
     .maybeSingle()
 
   if (sub && ["trial", "active"].includes(sub.status)) {
-    return { allowed: true }
+    return {
+      state: "erhaltung_aktiv",
+      canEnter: true,
+      canWrite: true,
+      endsAt: betreuung.endsAt,
+      daysLeft: null,
+    }
   }
 
-  if (begleitung.everHadGrant) {
-    return { allowed: false, reason: "begleitung_ended", endsAt: begleitung.endsAt }
+  if (betreuung.everHadGrant) {
+    return {
+      state: "programm_beendet",
+      canEnter: true,
+      canWrite: false,
+      endsAt: betreuung.endsAt,
+      daysLeft: null,
+    }
   }
 
-  return { allowed: true }
+  if (sub || accountOrigin === "booking") {
+    return { state: "gesperrt", canEnter: false, canWrite: false, endsAt: null, daysLeft: null }
+  }
+
+  return { state: "bestandspatient", canEnter: true, canWrite: true, endsAt: null, daysLeft: null }
+}
+
+/**
+ * Schreib-Gate für Patienten-Endpunkte.
+ *
+ * Gibt `null` zurück, wenn geschrieben werden darf — sonst eine fertige
+ * 403-Antwort. Damit antworten alle Endpunkte identisch, und die Regel steht
+ * an genau einer Stelle.
+ *
+ * Wichtig: Dieses Gate gehört in JEDE schreibende /api/me-Route. Die Middleware
+ * greift ausschließlich bei Seitenaufrufen unter `/app` — API-Routen hat sie
+ * noch nie erfasst.
+ */
+export async function requireWriteAccess(
+  supabase: ServiceClient,
+  args: { userId: string; patientId: string; accountOrigin?: string | null }
+): Promise<NextResponse | null> {
+  const access = await getAccessState(supabase, args)
+  if (access.canWrite) return null
+
+  return NextResponse.json(
+    {
+      error: writeBlockedMessage(access.state),
+      code: access.state,
+      endsAt: access.endsAt,
+    },
+    { status: 403 }
+  )
 }
 
 export interface GrantResult {

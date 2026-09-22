@@ -7,7 +7,7 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { canUseChat } from "@/lib/app-access"
+import { getAccessState } from "@/lib/app-access"
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -115,8 +115,14 @@ export async function GET() {
     }
   }
 
-  // Masterclass-Begleitung: steuert, ob der Chat noch offen ist und wie lange.
-  const chatAccess = await canUseChat(sc, user.id, patient.id)
+  // PROJ-26: Dieselbe Quelle wie das Schreib-Gate in /api/me/chat — sonst zeigt
+  // die Oberfläche ein offenes Eingabefeld, das der Server dann mit 403 abweist.
+  const access = await getAccessState(sc, {
+    userId: user.id,
+    patientId: patient.id,
+    accountOrigin:
+      (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ?? null,
+  })
 
   return NextResponse.json({
     profile: {
@@ -128,10 +134,10 @@ export async function GET() {
       is_archived: !!patient.archived_at,
     },
     begleitung: {
-      chatOpen: chatAccess.allowed,
-      reason: chatAccess.reason ?? null,
-      endsAt: chatAccess.endsAt ?? null,
-      daysLeft: chatAccess.daysLeft ?? null,
+      chatOpen: access.canWrite,
+      reason: access.canWrite ? null : access.state,
+      endsAt: access.endsAt,
+      daysLeft: access.daysLeft,
     },
   })
 }

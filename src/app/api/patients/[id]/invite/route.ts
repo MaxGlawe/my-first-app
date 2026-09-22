@@ -68,6 +68,27 @@ export async function POST(
     )
   }
 
+  // PROJ-26: Konten, die über die Terminbuchung entstanden sind, tragen KEIN
+  // `invite_status` (ensurePatientLogin setzt es nicht). Ohne diesen Guard
+  // liefe so ein Patient in den Einladungsfluss weiter unten — und der setzt
+  // `patients.user_id` auf NULL, während der Auth-User weiterlebt. Der Patient
+  // wäre eingeloggt, aber seinem Patientendatensatz nicht mehr zugeordnet:
+  // Check-ins, Chat, Termine und die Zugangsprüfung fallen still aus.
+  //
+  // Im neuen Modell kommt JEDER Programmpatient über den Kalender, also wäre
+  // das der Normalfall, nicht die Ausnahme.
+  if (patient.user_id && patient.invite_status !== "invited") {
+    return NextResponse.json(
+      {
+        error:
+          "Dieser Patient hat bereits ein Konto (angelegt bei der Terminbuchung) und braucht keine Einladung. " +
+          "Für den Zugang zum Programm erstellst du im Patientenprofil ein Programm-Angebot.",
+        code: "KONTO_VORHANDEN",
+      },
+      { status: 409 }
+    )
+  }
+
   const serviceClient = createSupabaseServiceClient()
 
   // If a previous invite created an auth user that never completed registration, delete it

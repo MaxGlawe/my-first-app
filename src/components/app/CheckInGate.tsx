@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { usePainDiary } from "@/hooks/use-pain-diary"
+import { useAccessState } from "@/hooks/use-access-state"
 import { CheckInForm } from "@/components/app/CheckInForm"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Sun, Cloud, Moon as MoonIcon } from "lucide-react"
@@ -23,6 +24,9 @@ function getTodayFormatted(): string {
 
 export function CheckInGate({ children }: { children: React.ReactNode }) {
   const { todayEntry, isLoading } = usePainDiary()
+  // PROJ-26: Nach Ablauf der Betreuung gibt es keine neuen Check-ins mehr —
+  // dann darf das Gate auch nicht mehr danach fragen.
+  const { readOnly, isLoading: accessLoading } = useAccessState()
   const [skipped, setSkipped] = useState(() => {
     if (typeof window === "undefined") return false
     return sessionStorage.getItem("checkin-skipped-today") === new Date().toISOString().split("T")[0]
@@ -30,7 +34,7 @@ export function CheckInGate({ children }: { children: React.ReactNode }) {
   const [completed, setCompleted] = useState(false)
 
   // Loading state
-  if (isLoading) {
+  if (isLoading || accessLoading) {
     return (
       <div className="container mx-auto py-8 px-4 max-w-lg space-y-6">
         <Skeleton className="h-12 w-48" />
@@ -40,8 +44,9 @@ export function CheckInGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  // Already checked in today, or skipped, or just completed
-  if (todayEntry || skipped || completed) {
+  // Already checked in today, or skipped, or just completed — or the care period
+  // has ended, in which case there is nothing left to check in on.
+  if (todayEntry || skipped || completed || readOnly) {
     return <>{children}</>
   }
 

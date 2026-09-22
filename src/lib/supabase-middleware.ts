@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getAccessState } from '@/lib/app-access'
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -219,9 +220,15 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // ── Paywall: Patients with expired/cancelled subscriptions ──
-    // Only block if a subscription exists but is NOT active.
-    // No subscription record = billing not set up yet → allow access.
+    // ── Zugangs-Gate für Patienten (PROJ-26) ──────────────────────────────
+    // Ein einziger Zustand aus getAccessState() entscheidet. Nur `gesperrt`
+    // führt noch zu einem Redirect; `programm_beendet` darf hinein und sieht
+    // seinen Verlauf — das Schreiben sperren die Endpunkte selbst.
+    //
+    // ACHTUNG: Dieser Block greift nur für Seiten (`/app/...`). API-Routen
+    // beginnen mit `/api/` und sind hier strukturell nie erfasst — die
+    // `/api/...`-Einträge in isPaywallExempt unten waren daher schon immer
+    // wirkungslos. Jede schreibende /api/me-Route prüft selbst.
     if (role === 'patient' && pathname.startsWith('/app')) {
       // PROJ-34: Der Termin-Bereich ist immer zugänglich (auch ohne Abo) —
       // Booking-Patienten sollen ihre Termine sehen/koordinieren können.
@@ -243,41 +250,27 @@ export async function updateSession(request: NextRequest) {
           .single()
 
         if (patientRecord) {
-          const { data: subscription } = await adminClient
-            .from('patient_subscriptions')
-            .select('status')
-            .eq('patient_id', patientRecord.id)
-            .single()
+          // Via Buchung provisionierte Konten ("Termine-only") sind ohne Betreuung
+          // gesperrt. Bestandspatienten OHNE Abrechnungsdatensatz bleiben unberührt
+          // (kein account_origin-Marker).
+          const accountOrigin =
+            (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ??
+            null
 
-          const hasActiveSub = !!subscription && ['trial', 'active'].includes(subscription.status)
-          // PROJ-34: Via Buchung provisionierte Konten ("Termine-only") sind ohne
-          // aktives Abo gesperrt → Self-Upsell. Bestandspatienten OHNE Abo-Datensatz
-          // bleiben unberührt (kein account_origin-Marker).
-          const isBookingOrigin =
-            (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ===
-            'booking'
+          const access = await getAccessState(adminClient, {
+            userId: user.id,
+            patientId: patientRecord.id,
+            accountOrigin,
+          })
 
-          if (!hasActiveSub && (subscription || isBookingOrigin)) {
-            // Masterclass-Begleitung: ein befristeter Zugangs-Grant zählt wie ein
-            // aktives Abo. Ohne das würde ein Käufer mit altem, gekündigtem Abo
-            // trotz frisch bezahlter Begleitung ausgesperrt. Nur im Sperr-Pfad
-            // abgefragt → im Normalfall keine zusätzliche Query.
-            const { data: grant } = await adminClient
-              .from('app_access_grants')
-              .select('id')
-              .eq('user_id', user.id)
-              .is('revoked_at', null)
-              .gt('expires_at', new Date().toISOString())
-              .limit(1)
-
-            if (!grant?.length) {
-              // PROJ-34: Booking-/„Termine-only"-Patienten gehören in ihren eigenen
-              // Bereich (/meine-termine — dort liegen Termine + Upsell), nicht auf die
-              // klinische Abo-Seite. Klassische Patienten mit abgelaufenem Abo → /app/abo.
-              url.pathname = isBookingOrigin ? '/meine-termine' : '/app/abo'
-              if (!isBookingOrigin) url.searchParams.set('reason', 'subscription_expired')
-              return NextResponse.redirect(url)
-            }
+          if (!access.canEnter) {
+            // Booking-/„Termine-only"-Patienten gehören in ihren eigenen Bereich
+            // (/meine-termine), nicht auf die klinische Abo-Seite. Klassische
+            // Patienten mit abgelaufenem Abo → /app/abo.
+            const isBookingOrigin = accountOrigin === 'booking'
+            url.pathname = isBookingOrigin ? '/meine-termine' : '/app/abo'
+            if (!isBookingOrigin) url.searchParams.set('reason', 'subscription_expired')
+            return NextResponse.redirect(url)
           }
         }
       }

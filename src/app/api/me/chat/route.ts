@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { canUseChat } from "@/lib/app-access"
+import { requireWriteAccess } from "@/lib/app-access"
 
 const PAGE_SIZE = 50
 
@@ -97,20 +97,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Patientenprofil nicht gefunden." }, { status: 404 })
   }
 
-  // Masterclass-Begleitung: nach Ablauf der 92 Tage schließt der Chat. Der
-  // Verlauf bleibt lesbar (GET oben ist bewusst ungegatet) — nur neue Nachrichten
-  // sind nicht mehr möglich. Serverseitig geprüft, nicht nur im UI.
-  const chatAccess = await canUseChat(createSupabaseServiceClient(), user.id, patient.id)
-  if (!chatAccess.allowed) {
-    return NextResponse.json(
-      {
-        error:
-          "Deine 3-monatige Begleitung ist beendet. Du kannst deinen bisherigen Verlauf weiterhin lesen.",
-        reason: chatAccess.reason,
-      },
-      { status: 403 }
-    )
-  }
+  // PROJ-26: Nach Ablauf der Betreuung schließt der Chat. Der Verlauf bleibt
+  // lesbar (GET oben ist bewusst ungegatet) — nur neue Nachrichten sind nicht
+  // mehr möglich. Serverseitig geprüft, nicht nur im UI.
+  //
+  // Bewusst dasselbe Gate wie alle übrigen Schreibpfade: `canUseChat()` ließ
+  // ein via Buchung provisioniertes Konto ohne jede Betreuung schreiben,
+  // weil es nur auf „hatte mal einen Grant" prüfte.
+  const blocked = await requireWriteAccess(createSupabaseServiceClient(), {
+    userId: user.id,
+    patientId: patient.id,
+    accountOrigin:
+      (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ?? null,
+  })
+  if (blocked) return blocked
 
   // BUG-6 FIX: Rate limiting — max 30 messages per minute per user (DB-based, serverless-safe)
   const oneMinuteAgo = new Date(Date.now() - 60_000).toISOString()

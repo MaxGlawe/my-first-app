@@ -2,7 +2,14 @@
 // PROJ-18: Treatment Contract Types
 // ============================================================
 
-export type ContractType = "einzelsitzung" | "mini_reha_post_op" | "chronik_programm"
+import { PROGRAMM_LEISTUNGEN } from "@/lib/programm"
+
+export type ContractType =
+  | "einzelsitzung"
+  | "mini_reha_post_op"
+  | "chronik_programm"
+  /** PROJ-26: 90-Tage-Programm, Annahme per Zahlung statt per Unterschrift. */
+  | "praxis_os_programm"
 
 export type ContractStatus =
   | "entwurf"
@@ -75,6 +82,22 @@ export interface TreatmentContract {
   pdf_path: string | null
   signed_pdf_path: string | null
   notes: string | null
+  // ── PROJ-26: Annahme per Zahlung ──────────────────────────────────────
+  /** Bereits beglichener Anteil (z. B. 69 € Videokonsultation). */
+  bereits_beglichen: number
+  /** Tage Betreuung, die die Zahlung freischaltet (Programm = 90). */
+  programm_tage: number | null
+  /** Idempotenz-Anker: eine Stripe-Session kann nur einmal bezahlen. */
+  stripe_session_id: string | null
+  paid_at: string | null
+}
+
+/** Beim Programm ist der zu zahlende Betrag die Differenz zum Gesamtpreis. */
+export function offenerBetrag(c: {
+  gesamtpreis: number
+  bereits_beglichen?: number | null
+}): number {
+  return Math.max(0, c.gesamtpreis - (c.bereits_beglichen ?? 0))
 }
 
 export interface ContractWithPatient extends TreatmentContract {
@@ -126,6 +149,14 @@ export const CONTRACT_TYPE_CONFIG: Record<ContractType, {
       { beschreibung: "Unbegrenzter Chat-Support", preis: 0 },
       { beschreibung: "Abschlussbefund & Übergabe an Arzt", preis: 0 },
     ],
+    defaultZahlungsweise: "einmalig",
+  },
+  // PROJ-26 — Leistungen und Preise kommen aus lib/programm.ts (einzige Quelle).
+  praxis_os_programm: {
+    label: "Praxis-OS-Programm (90 Tage Betreuung)",
+    description:
+      "Physiotherapeutische Fernbetreuung über 90 Tage — Annahme per Zahlung, keine Verlängerung",
+    defaultLeistungen: PROGRAMM_LEISTUNGEN,
     defaultZahlungsweise: "einmalig",
   },
   chronik_programm: {

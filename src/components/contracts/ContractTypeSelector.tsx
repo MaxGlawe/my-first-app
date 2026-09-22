@@ -2,13 +2,22 @@
 
 import { CONTRACT_TYPE_CONFIG } from "@/types/contract"
 import type { ContractType } from "@/types/contract"
-import { Video, Activity, Clock, type LucideIcon } from "lucide-react"
+import { Video, Activity, Clock, CalendarRange, type LucideIcon } from "lucide-react"
 
 const typeIcons: Record<ContractType, LucideIcon> = {
   einzelsitzung: Video,
   mini_reha_post_op: Activity,
   chronik_programm: Clock,
+  praxis_os_programm: CalendarRange,
 }
+
+/**
+ * PROJ-26: Das Praxis-OS-Programm wird NICHT über dieses generische Formular
+ * angelegt, sondern über „Programm-Angebot erstellen" beim Patienten. Nur dort
+ * werden Anrechnung (69 €), Betreuungsdauer und Zahlungs-Token korrekt gesetzt
+ * — ein hier erzeugter Vertrag würde nach Zahlung keinen Zugang freischalten.
+ */
+const HIDDEN_TYPES: ContractType[] = ["praxis_os_programm"]
 
 interface ContractTypeSelectorProps {
   value: ContractType | null
@@ -18,7 +27,9 @@ interface ContractTypeSelectorProps {
 export function ContractTypeSelector({ value, onChange }: ContractTypeSelectorProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {(Object.entries(CONTRACT_TYPE_CONFIG) as [ContractType, typeof CONTRACT_TYPE_CONFIG[ContractType]][]).map(
+      {(Object.entries(CONTRACT_TYPE_CONFIG) as [ContractType, typeof CONTRACT_TYPE_CONFIG[ContractType]][])
+        .filter(([type]) => !HIDDEN_TYPES.includes(type))
+        .map(
         ([type, config]) => {
           const Icon = typeIcons[type]
           const isSelected = value === type

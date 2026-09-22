@@ -7,6 +7,7 @@ import { BgfNavigation } from "@/components/bgf/BgfNavigation"
 import { OnboardingWizard } from "@/components/app/OnboardingWizard"
 import { PaymentSetupGate } from "@/components/app/PaymentSetupGate"
 import { CheckInGate } from "@/components/app/CheckInGate"
+import { ReadOnlyBanner } from "@/components/app/ReadOnlyBanner"
 import { MilestonePopup } from "@/components/app/MilestonePopup"
 import { WhatsNewDialog } from "@/components/app/WhatsNewDialog"
 import { ClientErrorReporter } from "@/components/app/ClientErrorReporter"
@@ -83,6 +84,7 @@ export default function PatientenAppLayout({
           <Suspense>
             <PaymentSetupGate>
               <CheckInGate>
+                <ReadOnlyBanner />
                 <main className="pb-20">{children}</main>
               </CheckInGate>
             </PaymentSetupGate>

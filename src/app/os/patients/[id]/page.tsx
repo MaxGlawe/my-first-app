@@ -19,6 +19,7 @@ import { BefindlichkeitTab } from "@/components/befindlichkeit/BefindlichkeitTab
 import { EdukationTab } from "@/components/education/EdukationTab"
 import { BillingTab } from "@/components/billing/BillingTab"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ProgrammCard } from "@/components/patients/ProgrammCard"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -91,6 +92,9 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
       <PatientDetailHeader patient={patient} onRefresh={refresh} />
+
+      {/* PROJ-26: Kontrollpunkt des 90-Tage-Programms — nur klinische Rollen. */}
+      {isClinicalRole && !readOnly && <ProgrammCard patientId={patient.id} />}
 
       <Tabs defaultValue={searchParams.get("tab") ?? "stammdaten"} className="mt-2">
         <TabsList className="mb-6 flex-wrap h-auto gap-1 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl p-1.5">

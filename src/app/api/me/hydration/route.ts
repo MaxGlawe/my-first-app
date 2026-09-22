@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { requireWriteAccess } from "@/lib/app-access"
 
 const MAX_GLASSES = 20
 
@@ -83,6 +84,24 @@ export async function PATCH(request: NextRequest) {
   const patient = await getPatientForUser()
   if (!patient) {
     return NextResponse.json({ error: "Patient nicht gefunden." }, { status: 404 })
+  }
+
+  // PROJ-26: Schreiben nur bei laufender Betreuung / Erhaltungsphase.
+  {
+    const authClient = await createSupabaseServerClient()
+    const {
+      data: { user },
+    } = await authClient.auth.getUser()
+    if (user) {
+      const blocked = await requireWriteAccess(createSupabaseServiceClient(), {
+        userId: user.id,
+        patientId: patient.id,
+        accountOrigin:
+          (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ??
+          null,
+      })
+      if (blocked) return blocked
+    }
   }
 
   let body: { action?: string }

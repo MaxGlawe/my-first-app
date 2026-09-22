@@ -1,5 +1,6 @@
 import type { ContractType, Leistung, VertragText } from "@/types/contract"
 import type { PraxisSettings } from "@/types/billing"
+import { PROGRAMM_CALL_TAKTUNG } from "@/lib/programm"
 
 interface ContractContext {
   contractType: ContractType
@@ -8,6 +9,10 @@ interface ContractContext {
   zahlungsweise: "einmalig" | "pro_sitzung"
   dauerWochen?: number | null
   sitzungenAnzahl?: number | null
+  /** PROJ-26: bereits bezahlter Anteil (Videokonsultation) — wird angerechnet. */
+  bereitsBeglichen?: number | null
+  /** PROJ-26: Dauer der Betreuung in Tagen (Programm = 90). */
+  programmTage?: number | null
   praxis: PraxisSettings
   patientName: string
   patientAddress?: string | null
@@ -29,6 +34,7 @@ function getTypeLabel(type: ContractType): string {
     einzelsitzung: "Einzelsitzung (Video-Behandlung)",
     mini_reha_post_op: "Mini-Reha Post-OP Programm",
     chronik_programm: "Chronik-Programm",
+    praxis_os_programm: "Praxis-OS-Programm (90 Tage physiotherapeutische Fernbetreuung)",
   }
   return labels[type]
 }
@@ -57,7 +63,18 @@ export function generateVertragText(ctx: ContractContext): VertragText {
     ? `Der Vertrag umfasst ${ctx.sitzungenAnzahl} Video-Sitzungen à ca. 30 Minuten.`
     : ""
 
-  const einzelpreisText = ctx.zahlungsweise === "pro_sitzung"
+  // PROJ-26: Beim Praxis-OS-Programm weichen mehrere Klauseln bewusst vom
+  // Standardvertrag ab — Zahlung per Link statt Überweisung, feste Sitzungen
+  // statt Verfall, befristeter App-Zugang statt 30-Tage-Nachlauf.
+  const isProgramm = ctx.contractType === "praxis_os_programm"
+  const bereitsBeglichen = ctx.bereitsBeglichen ?? 0
+  const offen = Math.max(0, ctx.gesamtpreis - bereitsBeglichen)
+
+  const einzelpreisText = isProgramm
+    ? `Der Gesamtpreis für die vereinbarte Betreuung beträgt ${fmtCurrency(ctx.gesamtpreis)}. ` +
+      `Davon wurden ${fmtCurrency(bereitsBeglichen)} für die vorausgegangene Videokonsultation bereits beglichen. ` +
+      `Der bei Vertragsschluss zu zahlende Restbetrag beträgt ${fmtCurrency(offen)}.`
+    : ctx.zahlungsweise === "pro_sitzung"
     ? `Der Preis je Sitzung beträgt ${fmtCurrency(ctx.gesamtpreis)}.`
     : `Der Gesamtpreis für das vereinbarte Leistungspaket beträgt ${fmtCurrency(ctx.gesamtpreis)}.`
 
@@ -116,7 +133,11 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       inklusivleistungen ? `(3) Im Vertragspreis sind folgende Zusatzleistungen ohne gesonderte Berechnung enthalten:\n\n${inklusivleistungen}` : "",
       ``,
       dauerText ? `(${inklusivleistungen ? "4" : "3"}) ${dauerText}` : "",
-      sitzungenText ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die einzelnen Sitzungen werden individuell terminiert. Nicht wahrgenommene Sitzungen verfallen gemäß den Regelungen in §6 dieses Vertrages.` : "",
+      sitzungenText
+        ? isProgramm
+          ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die Sitzungen sind gestaffelt: ${PROGRAMM_CALL_TAKTUNG}. Bei einer Verschlechterung des Beschwerdebildes kann zusätzlich eine weitere Sitzung vereinbart werden. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
+          : `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die einzelnen Sitzungen werden individuell terminiert. Nicht wahrgenommene Sitzungen verfallen gemäß den Regelungen in §6 dieses Vertrages.`
+        : "",
       ``,
       `(${inklusivleistungen ? "6" : "5"}) Die Behandlung erfolgt per Video-Sitzung (Telerehabilitation) über eine gesicherte, DSGVO-konforme Videoverbindung. Zwischen den Sitzungen erhält der Patient einen individuellen, digitalen Trainingsplan über die Praxis-App (siehe §2) sowie persönlichen Chat-Support durch den Behandler.`,
       ``,
@@ -148,7 +169,9 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       ``,
       `(5) Die in der App bereitgestellten Trainingspläne und Übungsanleitungen sind individuell auf den Patienten zugeschnitten und dienen ausschließlich der therapeutischen Nachsorge. Sie ersetzen nicht die professionelle Behandlung durch den Behandler und dürfen nicht eigenmächtig verändert oder an Dritte weitergegeben werden (siehe §13 Urheberrecht).`,
       ``,
-      `(6) Nach Beendigung des Vertragsverhältnisses (durch Ablauf, Kündigung oder Widerruf) bleibt der App-Zugang für einen Übergangszeitraum von 30 Tagen bestehen, damit der Patient seine Daten sichern kann. Danach wird der Zugang deaktiviert.`,
+      isProgramm
+        ? `(6) Der Betreuungszugang endet mit Ablauf der vereinbarten ${ctx.programmTage ?? 90} Tage automatisch. Eine stillschweigende Verlängerung findet nicht statt, es wird kein Abonnement begründet und es erfolgt keine weitere Abbuchung. Nach Ablauf bleibt dem Patienten der Lesezugriff auf seinen bisherigen Verlauf (Trainingspläne, Check-ins, Nachrichtenverlauf) erhalten; neue Einträge, Nachrichten und Pläne sind dann nicht mehr möglich. Auf Wunsch kann der Patient die Weiternutzung der App gesondert beauftragen; diese ist nicht Gegenstand dieses Vertrages.`
+        : `(6) Nach Beendigung des Vertragsverhältnisses (durch Ablauf, Kündigung oder Widerruf) bleibt der App-Zugang für einen Übergangszeitraum von 30 Tagen bestehen, damit der Patient seine Daten sichern kann. Danach wird der Zugang deaktiviert.`,
     ].join("\n"),
 
     // ──────────────────────────────────────────────
@@ -200,7 +223,9 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       ``,
       `(1) ${einzelpreisText} In diesem Preis sind alle in §1 und §2 genannten Leistungen enthalten, einschließlich der Nutzung der digitalen Praxis-App.`,
       ``,
-      ctx.zahlungsweise === "einmalig"
+      isProgramm
+        ? `(2) Der Restbetrag in Höhe von ${fmtCurrency(offen)} ist bei Vertragsschluss über den vom Behandler bereitgestellten Zahlungslink zu entrichten. Zur Verfügung stehen die dort angebotenen Zahlungsarten (u. a. Kartenzahlung sowie Klarna). Ob und in welcher Form Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung; ein Anspruch darauf besteht nicht. Der Vertrag kommt mit dem erfolgreichen Zahlungseingang zustande; eine Unterschrift ist nicht erforderlich.`
+        : ctx.zahlungsweise === "einmalig"
         ? `(2) Der Gesamtbetrag ist innerhalb von 7 Tagen nach Vertragsunterzeichnung auf das folgende Konto zu überweisen:\n\n${praxis.iban ? `IBAN: ${praxis.iban}` : "Bankverbindung wird nach Vertragsschluss mitgeteilt."}\n${praxis.bic ? `BIC: ${praxis.bic}` : ""}\nKontoinhaber: ${praxis.inhaber_name}\nVerwendungszweck: Vertragsnummer (wird nach Vertragsschluss mitgeteilt)\n\nAlternativ kann die Zahlung per Überweisung nach Rechnungserhalt erfolgen. Das Zahlungsziel beträgt 14 Tage ab Rechnungsdatum.`
         : `(2) Die Vergütung in Höhe von ${fmtCurrency(ctx.gesamtpreis)} je Sitzung ist jeweils innerhalb von 14 Tagen nach der jeweiligen Sitzung fällig. Der Behandler stellt dem Patienten nach jeder Sitzung eine entsprechende Rechnung.`,
       ``,
@@ -231,7 +256,9 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       ``,
       `(5) Verspätungen: Erscheint der Patient mehr als 10 Minuten nach dem vereinbarten Sitzungsbeginn, kann der Behandler die Sitzung um die entsprechende Zeit verkürzen. Ein Anspruch auf vollständige Nachholung der versäumten Zeit besteht nicht. Bei einer Verspätung von mehr als 20 Minuten gilt der Termin als nicht wahrgenommen (No-Show), sofern keine rechtzeitige Benachrichtigung erfolgt ist.`,
       ``,
-      `(6) Im Falle von Paketverträgen (Einmalzahlung): Nicht wahrgenommene Sitzungen, die gemäß Abs. 3 als Ausfalltermine gelten, verfallen und werden nicht nachgeholt oder erstattet. Bei Absage gemäß Abs. 2 wird ein Ersatztermin angeboten.`,
+      isProgramm
+        ? `(6) Die vereinbarten Video-Sitzungen sind fester Bestandteil der Betreuung. Sagt der Patient einen Termin gemäß Abs. 2 rechtzeitig ab, wird die Sitzung innerhalb des Betreuungszeitraums nachgeholt. Auch bei einer Absage gemäß Abs. 3 bietet der Behandler einen Ersatztermin innerhalb des Betreuungszeitraums an; ein Anspruch auf Verlängerung des Betreuungszeitraums oder auf Erstattung nicht wahrgenommener Sitzungen besteht nicht.`
+        : `(6) Im Falle von Paketverträgen (Einmalzahlung): Nicht wahrgenommene Sitzungen, die gemäß Abs. 3 als Ausfalltermine gelten, verfallen und werden nicht nachgeholt oder erstattet. Bei Absage gemäß Abs. 2 wird ein Ersatztermin angeboten.`,
     ].join("\n"),
 
     // ──────────────────────────────────────────────

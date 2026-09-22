@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { requireWriteAccess } from "@/lib/app-access"
 
 // ── Zod Schemas ─────────────────────────────────────────────────────────────
 
@@ -122,6 +124,21 @@ export async function POST(request: NextRequest) {
   }
 
   const { patientId } = result
+
+  // PROJ-26: Schreiben nur bei laufender Betreuung / Erhaltungsphase.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user) {
+    const blocked = await requireWriteAccess(createSupabaseServiceClient(), {
+      userId: user.id,
+      patientId,
+      accountOrigin:
+        (user.app_metadata as { account_origin?: string } | null | undefined)?.account_origin ??
+        null,
+    })
+    if (blocked) return blocked
+  }
 
   let body: unknown
   try {
