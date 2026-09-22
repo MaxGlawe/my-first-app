@@ -8,9 +8,9 @@
  * als die freie Fläche darin — deshalb liegt der Text hier über der ruhigen
  * Seite des Motivs und nicht über dem Gesicht.
  *
- * WENN EIN QUERFORMAT KOMMT: nur HERO_BILD austauschen und `variante` auf
- * "vollflaechig" stellen. Dann legt sich der Text über das ganze Bild statt
- * daneben. Beide Wege sind unten ausgebaut, damit der Wechsel kein Umbau wird.
+ * WENN EIN QUERFORMAT KOMMT: HERO_BILD austauschen, das Raster unten von zwei
+ * Spalten auf eine stellen und den Verlauf von links/unten auf einen dunklen
+ * Schleier am unteren Bildrand aendern — dann liegt der Text ueber dem Bild.
  */
 
 import Image from "next/image"
@@ -29,13 +29,13 @@ const GREEN = "#2C3E2D"
 const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 /**
- * Das Hero-Motiv. Hochformat 800x1200 — reicht fuer die halbe Breite in
+ * Das Hero-Motiv. Hochformat 1120x1400 — reicht fuer die halbe Breite in
  * nativer Aufloesung, nicht fuer die ganze. Ein Querformat mit ruhiger Flaeche
- * oben (Menschen klein im Bild, Gegenlicht) wuerde die vollflaechige Variante
- * tragen.
+ * (Menschen klein im Bild, Gegenlicht) wuerde die vollflaechige Variante
+ * tragen; dann hier tauschen und die Spaltenaufteilung unten aufloesen.
  */
 const HERO_BILD = {
-  src: "/images/maxglawe.webp",
+  src: "/images/max-portrait.jpg",
   alt: "Max Glawe, Heilpraktiker für Physiotherapie, in seinen Praxisräumen",
 }
 
@@ -55,7 +55,7 @@ export function HeroSection() {
               fill
               priority
               sizes="(min-width: 1024px) 48vw, 100vw"
-              className="object-cover object-[50%_18%] lg:object-[40%_22%]"
+              className="object-cover object-[50%_12%] lg:object-[30%_16%]"
             />
             {/* Uebergang ins Papier: unten auf Mobil, links auf Desktop */}
             <div
