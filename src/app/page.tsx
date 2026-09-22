@@ -7,6 +7,7 @@ import { HeroSection } from "@/components/landing/HeroSection"
 import { ProblemSection } from "@/components/landing/ProblemSection"
 import { WendepunktSection } from "@/components/landing/WendepunktSection"
 import { JourneySection } from "@/components/landing/JourneySection"
+import { CtaBand } from "@/components/landing/CtaBand"
 import { GarantieSection } from "@/components/landing/GarantieSection"
 import { EignungSection } from "@/components/landing/EignungSection"
 import { CredentialsSection } from "@/components/landing/CredentialsSection"
@@ -59,8 +60,19 @@ export default function LandingPage() {
         <ProblemSection />
         <WendepunktSection />
         <JourneySection />
+        <CtaBand
+          abschnitt="nach-ablauf"
+          satz="Klingt das nach dem, was dir bisher gefehlt hat?"
+          zusatz="Dann lass uns 30 Minuten sprechen. Die Buchung kostet nichts, und wir sagen dir ehrlich, ob wir dich aus der Ferne betreuen können."
+        />
         <GarantieSection />
         <CredentialsSection />
+        <CtaBand
+          hell
+          abschnitt="nach-therapeut"
+          satz="Der schnellste Weg herauszufinden, ob das passt: miteinander reden."
+          zusatz="30 Minuten per Video, ohne Verordnung, ohne Wartezeit."
+        />
         <EignungSection />
         <PricingSection />
         <FaqSection />
