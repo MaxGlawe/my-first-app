@@ -45,8 +45,12 @@ const PRAXIS = {
  * Profil ist schlechter als gar keines.
  */
 const PRAXIS_PROFILE: string[] = [
-  // "https://www.instagram.com/...",
-  // "https://maps.app.goo.gl/...",   // aus dem Google-Unternehmensprofil: „Profil teilen"
+  "https://www.instagram.com/physiotherapie.glawe/",
+  // Der geteilte Kurzlink (share.google/...) landet auf einer Google-Suche mit
+  // Sitzungs-Parametern — unbrauchbar als dauerhafte Kennung. Verwendet wird
+  // deshalb die Knowledge-Graph-ID des Eintrags, die der Kurzlink aufloest:
+  // stabil, ohne Nachverfolgungs-Parameter, und sie benennt genau diesen Betrieb.
+  "https://www.google.com/search?kgmid=/g/11s5bz3p_z",
 ]
 
 export function StructuredData() {
