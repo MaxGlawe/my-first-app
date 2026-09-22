@@ -28,11 +28,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { KrankenkasseCombobox } from "./KrankenkasseCombobox"
-import { AlertTriangle, Mail, Gift, BadgeCheck, XCircle, X, Loader2 } from "lucide-react"
+import { AlertTriangle, Mail, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 const patientSchema = z.object({
@@ -67,13 +65,9 @@ export function NewPatientForm() {
   const [serverError, setServerError] = useState<string | null>(null)
   const [duplicate, setDuplicate] = useState<DuplicateInfo | null>(null)
   const [pendingData, setPendingData] = useState<PatientFormValues | null>(null)
+  // PROJ-26: Kein Abo mehr beim Anlegen. Zugang zur App entsteht ausschliesslich
+  // ueber das Programm-Angebot im Patientenprofil (Zahlung -> 90 Tage Betreuung).
   const [sendInvite, setSendInvite] = useState(false)
-  const [activateSubscription, setActivateSubscription] = useState(true)
-  const [patientType, setPatientType] = useState<"praxis" | "extern">("praxis")
-  const [planType, setPlanType] = useState<"monthly" | "yearly">("monthly")
-  const [promoCode, setPromoCode] = useState("")
-  const [promoValid, setPromoValid] = useState<{ valid: boolean; type?: string; value?: number; error?: string } | null>(null)
-  const [promoChecking, setPromoChecking] = useState(false)
 
   const {
     register,
@@ -104,25 +98,6 @@ export function NewPatientForm() {
     } catch {
       return null
     }
-  }
-
-  async function validatePromo(code: string) {
-    if (!code.trim()) { setPromoValid(null); return }
-    setPromoChecking(true)
-    try {
-      const res = await fetch(`/api/admin/promo-codes/validate?code=${encodeURIComponent(code)}`)
-      setPromoValid(await res.json())
-    } catch {
-      setPromoValid({ valid: false, error: "Prüfung fehlgeschlagen." })
-    } finally {
-      setPromoChecking(false)
-    }
-  }
-
-  function formatPromoValue(type: string, value: number): string {
-    if (type === "free_months") return `+${value} Gratis-Monat${value > 1 ? "e" : ""}`
-    if (type === "percent_off") return `${value}% Rabatt`
-    return `${value.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} Rabatt`
   }
 
   const savePatient = async (data: PatientFormValues) => {
@@ -159,30 +134,20 @@ export function NewPatientForm() {
         return
       }
 
-      // Step 2: Send invite + optional subscription activation
+      // PROJ-26: Nur noch die reine Einladung (Login ohne Programm). Kein
+      // plan_type, kein Promo-Code — ein Abo wird hier nicht mehr angelegt.
       if (sendInvite && email) {
         try {
-          const inviteBody: Record<string, unknown> = {}
-          if (activateSubscription) {
-            inviteBody.plan_type = planType
-            inviteBody.patient_type = patientType
-            if (promoCode && promoValid?.valid) inviteBody.promo_code = promoCode
-          }
-
           const inviteRes = await fetch(`/api/patients/${json.patient.id}/invite`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(inviteBody),
+            body: JSON.stringify({}),
           })
 
           const inviteJson = await inviteRes.json().catch(() => ({}))
 
           if (inviteRes.ok) {
-            toast.success(
-              activateSubscription
-                ? "Patient angelegt, Einladung gesendet & App-Zugang freigeschaltet."
-                : "Patient angelegt und Einladung per E-Mail gesendet."
-            )
+            toast.success("Patient angelegt und Einladung per E-Mail gesendet.")
           } else {
             toast.warning(`Patient angelegt. Einladung fehlgeschlagen: ${inviteJson.error}`)
           }
@@ -407,140 +372,21 @@ export function NewPatientForm() {
                   <div className="grid gap-0.5">
                     <Label htmlFor="send_invite" className="cursor-pointer flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      Einladung zur Patienten-App per E-Mail senden
+                      App-Zugang ohne Programm einrichten
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Der Patient erhält eine E-Mail mit einem Link zur Registrierung.
+                      Ausnahmefall: Der Patient erhält eine Registrierungs-Mail und vollen
+                      App-Zugang, ohne im 90-Tage-Programm zu sein — etwa Bestandspatienten
+                      oder Kulanzfälle.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Für den Regelweg nichts ankreuzen: Nach der Videokonsultation erstellst
+                      du im Patientenprofil ein <strong>Programm-Angebot</strong>. Das Konto
+                      entsteht dann automatisch mit der Zahlung.
                     </p>
                   </div>
                 </div>
 
-                {/* Subscription activation — only when invite is checked */}
-                {sendInvite && (
-                  <div className="space-y-3 border-t border-slate-200 pt-3">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="activate_subscription" className="flex items-center gap-2 cursor-pointer text-sm">
-                        <Gift className="h-4 w-4 text-emerald-600" />
-                        Betreuungspauschale aktivieren
-                      </Label>
-                      <Switch
-                        id="activate_subscription"
-                        checked={activateSubscription}
-                        onCheckedChange={setActivateSubscription}
-                      />
-                    </div>
-
-                    {activateSubscription && (
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Patiententyp</Label>
-                          <RadioGroup
-                            value={patientType}
-                            onValueChange={(v) => setPatientType(v as "praxis" | "extern")}
-                            className="space-y-2"
-                          >
-                            <label
-                              htmlFor="np-pt-praxis"
-                              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                patientType === "praxis" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
-                              }`}
-                            >
-                              <RadioGroupItem value="praxis" id="np-pt-praxis" className="mt-0.5" />
-                              <div className="flex-1 space-y-0.5">
-                                <p className="text-sm font-medium">Praxis-Patient</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Bestandspatient — 14 Tage kostenfrei testen, danach Betreuungspauschale.
-                                </p>
-                              </div>
-                            </label>
-                            <label
-                              htmlFor="np-pt-extern"
-                              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                                patientType === "extern" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
-                              }`}
-                            >
-                              <RadioGroupItem value="extern" id="np-pt-extern" className="mt-0.5" />
-                              <div className="flex-1 space-y-0.5">
-                                <p className="text-sm font-medium">Neukunde / Warteliste</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Ist-Analyse (69€) wurde bereits separat berechnet — 1 Monat kostenfrei, danach Betreuungspauschale.
-                                </p>
-                              </div>
-                            </label>
-                          </RadioGroup>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Abo-Modell</Label>
-                          <Select value={planType} onValueChange={(v) => setPlanType(v as "monthly" | "yearly")}>
-                            <SelectTrigger className="h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="monthly">Monatlich — 16,99 €/Monat</SelectItem>
-                              <SelectItem value="yearly">Jährlich — 169,99 €/Jahr</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Promo-Code (optional)</Label>
-                          <div className="flex gap-2">
-                            <div className="relative flex-1">
-                              <Input
-                                value={promoCode}
-                                onChange={(e) => {
-                                  setPromoCode(e.target.value.toUpperCase())
-                                  setPromoValid(null)
-                                }}
-                                placeholder="z.B. WILLKOMMEN"
-                                className={`h-9 ${promoValid?.valid === true ? "border-emerald-500" : promoValid?.valid === false ? "border-red-500" : ""}`}
-                              />
-                              {promoValid?.valid === true && (
-                                <BadgeCheck className="absolute right-2.5 top-2.5 h-4 w-4 text-emerald-500" />
-                              )}
-                              {promoValid?.valid === false && (
-                                <XCircle className="absolute right-2.5 top-2.5 h-4 w-4 text-red-500" />
-                              )}
-                            </div>
-                            {promoCode && promoValid !== null && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={() => { setPromoCode(""); setPromoValid(null) }}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-9"
-                              disabled={!promoCode || promoChecking}
-                              onClick={() => validatePromo(promoCode)}
-                            >
-                              {promoChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Prüfen"}
-                            </Button>
-                          </div>
-                          {promoValid?.valid === true && promoValid.type && promoValid.value && (
-                            <p className="text-xs text-emerald-600 flex items-center gap-1">
-                              <BadgeCheck className="h-3 w-3" />
-                              Code gültig — {formatPromoValue(promoValid.type, promoValid.value)}
-                            </p>
-                          )}
-                          {promoValid?.valid === false && (
-                            <p className="text-xs text-red-500">
-                              {promoValid.error || "Ungültiger oder abgelaufener Promo-Code."}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
@@ -637,11 +483,9 @@ export function NewPatientForm() {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isLoading
               ? "Speichern..."
-              : sendInvite && activateSubscription
-                ? "Anlegen, Einladen & Freischalten"
-                : sendInvite
-                  ? "Anlegen & Einladen"
-                  : "Patient anlegen"}
+              : sendInvite
+                ? "Anlegen & Einladen"
+                : "Patient anlegen"}
           </Button>
           <Button
             type="button"

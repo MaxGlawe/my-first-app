@@ -62,12 +62,6 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
 
   // Invite + Subscription dialog
   const [showInviteDialog, setShowInviteDialog] = useState(false)
-  const [activateSubscription, setActivateSubscription] = useState(true)
-  const [patientType, setPatientType] = useState<"praxis" | "extern">("praxis")
-  const [planType, setPlanType] = useState<"monthly" | "yearly">("monthly")
-  const [promoCode, setPromoCode] = useState("")
-  const [promoValid, setPromoValid] = useState<{ valid: boolean; type?: string; value?: number; error?: string } | null>(null)
-  const [promoChecking, setPromoChecking] = useState(false)
 
   const isArchived = !!patient.archived_at
 
@@ -163,35 +157,13 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
     }
   }
 
-  async function validatePromo(code: string) {
-    if (!code.trim()) { setPromoValid(null); return }
-    setPromoChecking(true)
-    try {
-      const res = await fetch(`/api/admin/promo-codes/validate?code=${encodeURIComponent(code)}`)
-      setPromoValid(await res.json())
-    } catch {
-      setPromoValid({ valid: false, error: "Prüfung fehlgeschlagen." })
-    } finally {
-      setPromoChecking(false)
-    }
-  }
-
-  function formatPromoValue(type: string, value: number): string {
-    if (type === "free_months") return `+${value} Gratis-Monat${value > 1 ? "e" : ""}`
-    if (type === "percent_off") return `${value}% Rabatt`
-    return `${value.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} Rabatt`
-  }
 
   const handleSendInvite = async () => {
     setIsSendingInvite(true)
     try {
       // One API call: invite + optional subscription activation
+      // PROJ-26: reine Einladung — kein Abo, kein Promo-Code.
       const inviteBody: Record<string, unknown> = {}
-      if (activateSubscription) {
-        inviteBody.plan_type = planType
-        inviteBody.patient_type = patientType
-        if (promoCode && promoValid?.valid) inviteBody.promo_code = promoCode
-      }
 
       const res = await fetch(`/api/patients/${patient.id}/invite`, {
         method: "POST",
@@ -209,11 +181,6 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
       toast.success(json.message ?? "Einladung wurde gesendet.")
 
       setShowInviteDialog(false)
-      setPromoCode("")
-      setPromoValid(null)
-      setActivateSubscription(true)
-      setPatientType("praxis")
-      setPlanType("monthly")
       onRefresh()
     } catch {
       toast.error("Ein unerwarteter Fehler ist aufgetreten.")
@@ -336,137 +303,20 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
               </DialogHeader>
 
               <div className="space-y-5 py-2">
-                {/* Subscription toggle */}
-                <div className="flex items-center justify-between rounded-lg border border-slate-200 p-4">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">Betreuungspauschale aktivieren</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {patientType === "extern" ? "1 Monat" : "14 Tage"} kostenfrei, danach {planType === "yearly" ? "169,99€/Jahr" : "16,99€/Monat"}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={activateSubscription}
-                    onCheckedChange={setActivateSubscription}
-                  />
+                <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                  <p className="text-sm font-medium text-slate-900">
+                    App-Zugang ohne Programm
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Der Patient bekommt eine Registrierungs-Mail und vollen App-Zugang, ohne im
+                    90-Tage-Programm zu sein — gedacht fuer Bestandspatienten und Kulanzfaelle.
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    Der Regelweg laeuft anders: Nach der Videokonsultation erstellst du unten ein
+                    <strong> Programm-Angebot</strong>. Das Konto entsteht automatisch mit der
+                    Zahlung — eine Einladung ist dafuer nicht noetig.
+                  </p>
                 </div>
-
-                {activateSubscription && (
-                  <div className="space-y-4 pl-1">
-                    {/* Patient type */}
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">Patiententyp</Label>
-                      <RadioGroup
-                        value={patientType}
-                        onValueChange={(v) => setPatientType(v as "praxis" | "extern")}
-                        className="space-y-2"
-                      >
-                        <label
-                          htmlFor="pt-praxis"
-                          className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                            patientType === "praxis" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <RadioGroupItem value="praxis" id="pt-praxis" className="mt-0.5" />
-                          <div className="flex-1 space-y-0.5">
-                            <p className="text-sm font-medium">Praxis-Patient</p>
-                            <p className="text-xs text-muted-foreground">
-                              Bestandspatient — 14 Tage kostenfrei testen, danach Betreuungspauschale.
-                            </p>
-                          </div>
-                        </label>
-                        <label
-                          htmlFor="pt-extern"
-                          className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                            patientType === "extern" ? "border-emerald-500 bg-emerald-50/50" : "border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          <RadioGroupItem value="extern" id="pt-extern" className="mt-0.5" />
-                          <div className="flex-1 space-y-0.5">
-                            <p className="text-sm font-medium">Neukunde / Warteliste</p>
-                            <p className="text-xs text-muted-foreground">
-                              Ist-Analyse (69€) wurde bereits separat berechnet — 1 Monat kostenfrei, danach Betreuungspauschale.
-                            </p>
-                          </div>
-                        </label>
-                      </RadioGroup>
-                    </div>
-
-                    {/* Plan type */}
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">Abrechnungsmodell</Label>
-                      <Select value={planType} onValueChange={(v) => setPlanType(v as "monthly" | "yearly")}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="monthly">Monatlich — 16,99€/Monat</SelectItem>
-                          <SelectItem value="yearly">Jahresmitgliedschaft — 169,99€/Jahr</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Promo code */}
-                    <div className="space-y-1.5">
-                      <Label className="text-sm flex items-center gap-1.5">
-                        <Gift className="h-3.5 w-3.5" />
-                        Promo-Code (optional)
-                      </Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="z.B. WILLKOMMEN"
-                            value={promoCode}
-                            onChange={(e) => {
-                              setPromoCode(e.target.value.toUpperCase())
-                              setPromoValid(null)
-                            }}
-                            className={`font-mono pr-8 ${
-                              promoValid?.valid === true
-                                ? "border-emerald-500 focus-visible:ring-emerald-500"
-                                : promoValid?.valid === false
-                                ? "border-red-400 focus-visible:ring-red-400"
-                                : ""
-                            }`}
-                          />
-                          {promoCode && (
-                            <button
-                              type="button"
-                              onClick={() => { setPromoCode(""); setPromoValid(null) }}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                            >
-                              <X className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => validatePromo(promoCode)}
-                          disabled={!promoCode.trim() || promoChecking}
-                          className="shrink-0"
-                        >
-                          {promoChecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Prüfen"}
-                        </Button>
-                      </div>
-
-                      {promoValid?.valid === true && (
-                        <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 rounded-md px-3 py-2">
-                          <BadgeCheck className="h-4 w-4 shrink-0" />
-                          <span className="font-medium">
-                            Code gültig — {formatPromoValue(promoValid.type!, promoValid.value!)}
-                          </span>
-                        </div>
-                      )}
-                      {promoValid?.valid === false && (
-                        <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
-                          <XCircle className="h-4 w-4 shrink-0" />
-                          <span>{promoValid.error}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <DialogFooter>
@@ -483,7 +333,7 @@ export function PatientDetailHeader({ patient, onRefresh }: PatientDetailHeaderP
                   ) : (
                     <Send className="h-4 w-4 mr-1.5" />
                   )}
-                  {activateSubscription ? "Einladen & Freischalten" : "Einladung senden"}
+                  {"Einladung senden"}
                 </Button>
               </DialogFooter>
             </DialogContent>
