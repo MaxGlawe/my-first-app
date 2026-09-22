@@ -29,11 +29,11 @@ const trustItems = [
   {
     icon: Server,
     title: "Server in Deutschland und der EU",
-    // "Keine Datenuebertragung ins Ausland" liess sich nicht halten: die
-    // Anwendung laeuft in Deutschland (Hetzner), die Datenbank in der EU.
-    // Region des Supabase-Projekts ist noch zu bestaetigen.
+    // Stand 22.09.2026: Anwendung auf Hetzner in Deutschland, Datenbank
+    // (Supabase) in der SCHWEIZ. Zulaessig ueber den EU-Angemessenheits-
+    // beschluss, aber eben NICHT "EU" — die Aussage muss das hergeben.
     description:
-      "Die Anwendung läuft auf Servern in Deutschland, die Datenhaltung erfolgt innerhalb der EU — nach den Vorgaben der DSGVO.",
+      "Die Anwendung läuft auf Servern in Deutschland. Die Datenhaltung erfolgt in der Schweiz, für die ein Angemessenheitsbeschluss der EU-Kommission gilt — DSGVO-konform ohne Zusatzgarantien.",
   },
   {
     icon: Award,

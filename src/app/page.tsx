@@ -4,15 +4,12 @@ import { StructuredData } from "@/components/landing/StructuredData"
 import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { HeroSection } from "@/components/landing/HeroSection"
-import { DeviceShowcase } from "@/components/landing/DeviceShowcase"
-import { UniqueSection } from "@/components/landing/UniqueSection"
-import { FeaturesShowcase } from "@/components/landing/FeaturesShowcase"
-import { TechnologySection } from "@/components/landing/TechnologySection"
-import { ProcessSection } from "@/components/landing/ProcessSection"
+import { ProblemSection } from "@/components/landing/ProblemSection"
+import { JourneySection } from "@/components/landing/JourneySection"
+import { GarantieSection } from "@/components/landing/GarantieSection"
+import { EignungSection } from "@/components/landing/EignungSection"
 import { CredentialsSection } from "@/components/landing/CredentialsSection"
-import { QuoteSection } from "@/components/landing/QuoteSection"
 import { PricingSection } from "@/components/landing/PricingSection"
-import { ShopShowcaseSection } from "@/components/landing/ShopShowcaseSection"
 import { FaqSection } from "@/components/landing/FaqSection"
 import { CtaSection } from "@/components/landing/CtaSection"
 import { LandingFooter } from "@/components/landing/LandingFooter"
@@ -58,14 +55,11 @@ export default function LandingPage() {
       <LandingHeader />
       <main className="flex-1">
         <HeroSection />
-        <ShopShowcaseSection />
-        <DeviceShowcase />
-        <UniqueSection />
-        <FeaturesShowcase />
-        <TechnologySection />
-        <ProcessSection />
+        <ProblemSection />
+        <JourneySection />
+        <GarantieSection />
         <CredentialsSection />
-        <QuoteSection />
+        <EignungSection />
         <PricingSection />
         <FaqSection />
         <CtaSection />

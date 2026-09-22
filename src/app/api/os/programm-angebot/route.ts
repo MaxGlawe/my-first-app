@@ -36,6 +36,13 @@ const bodySchema = z.object({
    * Bewusst explizit — sonst entstehen im Eifer des Gefechts Doppelangebote.
    */
   neu_ausstellen: z.boolean().optional().default(false),
+  /**
+   * Der Patient hat die Videokonsultation bereits einzeln bezahlt (69 €) und
+   * entscheidet sich jetzt doch fürs Programm. Dann wird sie angerechnet und
+   * es sind nur noch 430 € offen. Startet er direkt im Call, ist die
+   * Konsultation im Gesamtpreis enthalten und es bleibt bei 499 €.
+   */
+  konsultation_angerechnet: z.boolean().optional().default(false),
 })
 
 async function requireStaff() {
@@ -140,7 +147,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Ungültige Eingabe." }, { status: 422 })
   }
-  const { patient_id, neu_ausstellen } = parsed.data
+  const { patient_id, neu_ausstellen, konsultation_angerechnet } = parsed.data
   const svc = auth.svc
 
   // ── Patient laden ─────────────────────────────────────────────────────────
@@ -241,11 +248,13 @@ export async function POST(request: NextRequest) {
   // maßgeblich für die Freischaltung ist programm_tage.
   const dauerWochen = Math.round(PROGRAMM.tage / 7)
 
+  const angerechnet = konsultation_angerechnet ? PROGRAMM.konsultation : 0
+
   const vertragText = generateVertragText({
     contractType: "praxis_os_programm",
     leistungen: PROGRAMM_LEISTUNGEN,
     gesamtpreis: PROGRAMM.gesamtpreis,
-    bereitsBeglichen: PROGRAMM.konsultation,
+    bereitsBeglichen: angerechnet,
     programmTage: PROGRAMM.tage,
     zahlungsweise: "einmalig",
     dauerWochen,
@@ -271,7 +280,7 @@ export async function POST(request: NextRequest) {
       contract_type: "praxis_os_programm",
       leistungen: PROGRAMM_LEISTUNGEN,
       gesamtpreis: PROGRAMM.gesamtpreis,
-      bereits_beglichen: PROGRAMM.konsultation,
+      bereits_beglichen: angerechnet,
       programm_tage: PROGRAMM.tage,
       zahlungsweise: "einmalig",
       dauer_wochen: dauerWochen,
@@ -328,7 +337,7 @@ export async function POST(request: NextRequest) {
     qr_data_url: await qrFor(angebotUrl),
     expires_at: expiresAt,
     mail_versendet: !!sent?.success,
-    zu_zahlen: PROGRAMM.zuZahlen,
+    zu_zahlen: PROGRAMM.gesamtpreis - angerechnet,
     label: CONTRACT_TYPE_CONFIG.praxis_os_programm.label,
   })
 }

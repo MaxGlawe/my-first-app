@@ -114,7 +114,7 @@ export default function OnlinePhysiotherapieHubPage() {
             {[
               { icon: Video, label: "HD Video-Sitzungen", sub: "Persönlich & individuell" },
               { icon: Clock, label: "Termine in 24h", sub: "Keine langen Wartezeiten" },
-              { icon: ShieldCheck, label: "DSGVO-konform", sub: "EU-Server, verschlüsselt" },
+              { icon: ShieldCheck, label: "DSGVO-konform", sub: "Verschlüsselt, DSGVO-konform" },
               { icon: Star, label: "Evidenzbasiert", sub: "Wissenschaftlich fundiert" },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-3">

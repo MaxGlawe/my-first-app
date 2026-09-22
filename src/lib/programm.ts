@@ -14,12 +14,18 @@
 import type { Leistung } from "@/types/contract"
 
 export const PROGRAMM = {
-  /** Vertragswert gesamt. */
-  gesamtpreis: 447,
-  /** Im Buchungskalender bereits bezahlte Videokonsultation. */
+  /** Vertragswert gesamt — die Konsultation ist darin enthalten. */
+  gesamtpreis: 499,
+  /**
+   * Preis der Videokonsultation, wenn der Patient NICHT ins Programm startet.
+   * Startet er direkt, ist sie im Gesamtpreis enthalten und wird nie separat
+   * berechnet. Hat er sie vorher einzeln bezahlt, wird sie angerechnet.
+   */
   konsultation: 69,
-  /** Im Angebot zu zahlender Restbetrag. */
-  zuZahlen: 447 - 69,
+  /** Voller Programmbetrag, wenn noch nichts bezahlt wurde. */
+  zuZahlen: 499,
+  /** Restbetrag, wenn die Konsultation bereits einzeln bezahlt wurde. */
+  zuZahlenNachKonsultation: 499 - 69,
   /** Dauer der Betreuung. */
   tage: 90,
   /** Gültigkeit des Angebots-Links. */
@@ -43,21 +49,22 @@ export const PROGRAMM_CALLS = 5
  */
 export const PROGRAMM_LEISTUNGEN: Leistung[] = [
   {
-    beschreibung: "Videokonsultation (30 Min.) inkl. Eignungsprüfung",
-    preis: PROGRAMM.konsultation,
-    details: "Bereits im Rahmen der Terminbuchung beglichen",
-  },
-  {
     beschreibung: `Physiotherapeutische Fernbetreuung über ${PROGRAMM.tage} Tage`,
-    preis: PROGRAMM.zuZahlen,
-    details: `Einschließlich ${PROGRAMM_CALLS} Video-Sitzungen à ca. 30 Minuten`,
+    preis: PROGRAMM.gesamtpreis,
+    details: `Einschließlich der vorausgegangenen Videokonsultation und ${PROGRAMM_CALLS} Video-Sitzungen à ca. 30 Minuten`,
   },
   {
-    beschreibung: "Individueller Plan: tägliche Micro-Übungen und Trainingsplan für die vereinbarten Trainingstage",
+    beschreibung: "Videokonsultation (30 Min.) mit Eignungsprüfung",
     preis: 0,
   },
   {
-    beschreibung: "Tägliches Kurz-Briefing, wöchentlich ausführliche Verlaufskontrolle",
+    beschreibung:
+      "Individueller Plan: tägliche Micro-Übungen und Trainingsplan für die vereinbarten Trainingstage",
+    preis: 0,
+  },
+  {
+    beschreibung:
+      "Tägliches Kurz-Check-in, wöchentlich ausführliche Verlaufskontrolle, laufende Anpassung des Plans",
     preis: 0,
   },
   {
@@ -81,4 +88,22 @@ export const PROGRAMM_CALL_TAKTUNG =
 
 export function formatEuro(amount: number): string {
   return amount.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+}
+
+/**
+ * Einstieg in den Buchungskalender. Bewusst ein Link auf physiotherapie-glawe.de
+ * statt eines eingebetteten iframes: Der Kalender lebt dort, wir haetten im
+ * Rahmen weder Layout-Kontrolle noch verlaessliches Verhalten auf
+ * Mobilgeraeten. `abschnitt` landet als utm_content in der Statistik und sagt,
+ * welcher Teil der Seite die Buchung gebracht hat.
+ */
+export function buchungsUrl(abschnitt: string): string {
+  const params = new URLSearchParams({
+    service: "video-sprechstunde-praxis-os",
+    utm_source: "praxis-os",
+    utm_medium: "website",
+    utm_campaign: "programm-90-tage",
+    utm_content: abschnitt,
+  })
+  return `https://physiotherapie-glawe.de/termin-buchen.html?${params.toString()}`
 }

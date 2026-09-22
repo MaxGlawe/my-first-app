@@ -206,7 +206,7 @@ function getFaq(city: string, variant: number) {
     ],
     [
       { q: `Gibt es eine Mindestlaufzeit?`, a: `Nein, es gibt keine Mindestlaufzeit. Du kannst die Zusammenarbeit jederzeit beenden. Wir empfehlen jedoch mindestens 4-6 Wochen, um nachhaltige Ergebnisse zu erzielen.` },
-      { q: `Sind meine Daten sicher?`, a: `Absolut. Unsere Plattform ist DSGVO-konform und wird auf EU-Servern gehostet. Alle Daten werden verschlüsselt übertragen und gespeichert. Wir nehmen Datenschutz sehr ernst.` },
+      { q: `Sind meine Daten sicher?`, a: `Unsere Plattform ist DSGVO-konform. Die Anwendung läuft auf Servern in Deutschland, die Datenhaltung erfolgt in der Schweiz, für die ein Angemessenheitsbeschluss der EU-Kommission gilt. Alle Daten werden verschlüsselt übertragen und gespeichert.` },
     ],
   ]
 

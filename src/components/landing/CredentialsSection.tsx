@@ -56,7 +56,7 @@ const credentials = [
   },
   {
     icon: Server,
-    badge: "EU-Server",
+    badge: "DSGVO-konform",
     title: "Europäische Server",
     description:
       "Alle Daten werden ausschließlich auf Servern in der Europäischen Union gespeichert. Keine Datenübertragung in Drittländer.",

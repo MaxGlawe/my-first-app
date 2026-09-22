@@ -63,6 +63,7 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
   const [kopiert, setKopiert] = useState(false)
   const [qrOffen, setQrOffen] = useState(false)
   const [ladeFehler, setLadeFehler] = useState<string | null>(null)
+  const [konsultationBezahlt, setKonsultationBezahlt] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -92,7 +93,11 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
       const res = await fetch("/api/os/programm-angebot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patient_id: patientId, neu_ausstellen: neuAusstellen }),
+        body: JSON.stringify({
+          patient_id: patientId,
+          neu_ausstellen: neuAusstellen,
+          konsultation_angerechnet: konsultationBezahlt,
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -232,6 +237,20 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
                 ? `Das letzte Angebot (${letztesAbgelaufen.contract_number}) ist abgelaufen.`
                 : "Noch kein Angebot erstellt. Der Patient kann sich nicht selbst freischalten."}
             </p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-white/70 p-3">
+              <input
+                type="checkbox"
+                checked={konsultationBezahlt}
+                onChange={(e) => setKonsultationBezahlt(e.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-[#2C3E2D]"
+              />
+              <span className="text-[12.5px] leading-relaxed text-slate-600">
+                Der Patient hat die Videokonsultation bereits einzeln bezahlt (69 €) — dann
+                anrechnen, es sind noch <strong>430 €</strong> offen. Ohne Haken gilt der volle
+                Programmpreis von <strong>499 €</strong>, die Konsultation ist darin enthalten.
+              </span>
+            </label>
+
             <Button
               size="sm"
               onClick={() => erstellen(!!letztesAbgelaufen)}

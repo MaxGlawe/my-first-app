@@ -32,7 +32,7 @@ const faqs = [
   {
     question: "Ist das wirklich DSGVO-konform?",
     answer:
-      "Ja. Alle Daten werden ausschließlich auf deutschen EU-Servern gespeichert. Wir schließen mit Ihnen einen DSGVO-konformen Auftragsverarbeitungsvertrag (AVV). Die technische Anonymisierung der HR-Auswertungen ist architektonisch sichergestellt. Mitarbeitende geben informierte Einwilligung bei der Registrierung. Auf Wunsch stellen wir alle DSGVO-Unterlagen vor Vertragsabschluss zur Verfügung.",
+      "Ja. Die Anwendung läuft auf Servern in Deutschland, die Datenhaltung erfolgt in der Schweiz — für sie gilt ein Angemessenheitsbeschluss der EU-Kommission, die Übermittlung ist damit ohne Zusatzgarantien DSGVO-konform. Wir schließen mit Ihnen einen DSGVO-konformen Auftragsverarbeitungsvertrag (AVV). Die technische Anonymisierung der HR-Auswertungen ist architektonisch sichergestellt. Mitarbeitende geben informierte Einwilligung bei der Registrierung. Auf Wunsch stellen wir alle DSGVO-Unterlagen vor Vertragsabschluss zur Verfügung.",
   },
   {
     question: "Brauchen Mitarbeiter eine App?",
