@@ -127,6 +127,29 @@ export async function POST(
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
 
+  // ── Testbetrag (Abnahme der Zahlungskette ohne 378 € zu bewegen) ─────────
+  //
+  // Greift NUR, wenn beides zutrifft:
+  //   1. PROGRAMM_TESTBETRAG_CENT ist gesetzt, UND
+  //   2. die Patienten-E-Mail enthält "+test"
+  //
+  // Die zweite Bedingung ist die eigentliche Sicherung: Bleibt die Variable
+  // nach dem Test versehentlich stehen, zahlt ein echter Patient trotzdem den
+  // vollen Betrag — seine Adresse enthält kein "+test". Ein vergessener
+  // Testschalter kann hier also keinen Umsatz kosten.
+  const testCent = Number(process.env.PROGRAMM_TESTBETRAG_CENT ?? 0)
+  const istTestAdresse = (contract.patient_email ?? "").toLowerCase().includes("+test")
+  const testbetragAktiv = Number.isFinite(testCent) && testCent > 0 && istTestAdresse
+
+  const unitAmount = testbetragAktiv ? Math.round(testCent) : Math.round(betrag * 100)
+
+  if (testbetragAktiv) {
+    console.warn(
+      `[programm-checkout] TESTBETRAG AKTIV: ${unitAmount} Cent statt ${betrag} EUR ` +
+        `(Vertrag ${contract.contract_number}, ${contract.patient_email})`
+    )
+  }
+
   try {
     const stripe = getStripe()
     const session = await stripe.checkout.sessions.create({
@@ -136,10 +159,14 @@ export async function POST(
         {
           price_data: {
             currency: "eur",
-            unit_amount: Math.round(betrag * 100),
+            unit_amount: unitAmount,
             product_data: {
-              name: CONTRACT_TYPE_CONFIG.praxis_os_programm.label,
-              description: `Vertrag ${contract.contract_number} — Videokonsultation bereits angerechnet`,
+              name: testbetragAktiv
+                ? `TESTZAHLUNG — ${CONTRACT_TYPE_CONFIG.praxis_os_programm.label}`
+                : CONTRACT_TYPE_CONFIG.praxis_os_programm.label,
+              description: testbetragAktiv
+                ? `TEST — Vertrag ${contract.contract_number}, regulär ${betrag.toFixed(2)} €`
+                : `Vertrag ${contract.contract_number} — Videokonsultation bereits angerechnet`,
             },
           },
           quantity: 1,
@@ -158,6 +185,7 @@ export async function POST(
         patient_id: contract.patient_id,
         widerruf_verzicht: "true",
         widerruf_verzicht_at: new Date().toISOString(),
+        ...(testbetragAktiv ? { testzahlung: "true" } : {}),
       },
     })
 
