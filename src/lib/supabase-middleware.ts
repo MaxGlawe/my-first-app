@@ -81,7 +81,9 @@ export async function updateSession(request: NextRequest) {
   const isRootPage = pathname === '/'
 
   // SEO-critical routes — must be accessible to crawlers
-  const isSeoRoute = pathname === '/sitemap.xml' || pathname === '/robots.txt' || pathname === '/opengraph-image'
+  // llms.txt gehoert zwingend dazu: Ohne sie leitet die Middleware jeden
+  // KI-Crawler auf /login um, und die Datei ist wirkungslos.
+  const isSeoRoute = pathname === '/sitemap.xml' || pathname === '/robots.txt' || pathname === '/opengraph-image' || pathname === '/llms.txt'
 
   // Static assets + API routes that handle their own auth
   const isStaticAsset = pathname === '/sw.js' || pathname.startsWith('/icons/') || pathname.startsWith('/images/') || pathname.startsWith('/audio/') || pathname.startsWith('/downloads/')
