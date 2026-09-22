@@ -1,5 +1,4 @@
 import { MetadataRoute } from "next"
-import { STAEDTE } from "@/lib/staedte"
 import { BESCHWERDEN } from "@/lib/beschwerden"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 
@@ -29,13 +28,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  // City pages — all DACH cities
-  const stadtPages: MetadataRoute.Sitemap = STAEDTE.map((s) => ({
-    url: `${baseUrl}/online-physiotherapie/${s.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly" as const,
-    priority: 0.6,
-  }))
+  // PROJ-26: Stadtseiten stehen auf noindex (Brueckenseiten aus einer Vorlage).
+  // Was nicht in den Index soll, gehoert auch nicht in die Sitemap — sonst
+  // widersprechen sich die beiden Signale.
+  const stadtPages: MetadataRoute.Sitemap = []
 
   // Shop pages (PROJ-21)
   const kurseStatic: MetadataRoute.Sitemap = [

@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!city) return {}
   return {
     title: `Online Physiotherapie ${city.name} — Jetzt Termin buchen`,
-    description: `Physiotherapie in ${city.name} per Video: Professionelle Behandlung ohne Wartezeit. Individueller Trainingsplan, persönliche Betreuung & schnelle Termine. Ersteinschätzung ab 69 €.`,
+    description: `Physiotherapie in ${city.name} per Video: Professionelle Behandlung ohne Wartezeit. Individueller Trainingsplan und persönliche Betreuung über 90 Tage — ohne ärztliche Verordnung.`,
     keywords: [
       `Physiotherapie ${city.name}`,
       `Online Physiotherapie ${city.name}`,
@@ -50,6 +50,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       `Video Physiotherapie ${city.name}`,
       `Physiotherapeut ${city.name}`,
     ],
+    // PROJ-26: 193 Seiten aus EINER Vorlage, die sich nur im Stadtnamen
+    // unterscheiden — das sind Brueckenseiten im Sinne der Google-Richtlinien
+    // und koennen die ganze Domain belasten. Sie bleiben erreichbar (wer den
+    // Link hat, landet auf einer sinnvollen Seite), gehoeren aber nicht in den
+    // Index. Der Hub /online-physiotherapie bleibt indexierbar.
+    //
+    // Der Weg zurueck ist nicht "robots wieder entfernen", sondern: fuenf bis
+    // zehn Staedte mit echtem lokalem Inhalt fuellen und NUR diese freigeben.
+    robots: { index: false, follow: true },
     alternates: { canonical: `https://wwwpraxis-os.com/online-physiotherapie/${city.slug}` },
     openGraph: {
       title: `Online Physiotherapie in ${city.name}`,

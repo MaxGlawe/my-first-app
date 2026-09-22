@@ -5,6 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { ArrowRight, Menu, X } from "lucide-react"
+import { buchungsUrl } from "@/lib/programm"
 
 // Premium-Markenwelt (Masterclass-Format)
 const GREEN = "#2C3E2D"
@@ -13,13 +14,24 @@ const MUTED = "#64748b"
 const LINE = "#e7e1d6"
 const PAPER = "#F8F5F0"
 
-const NAV = [
-  { label: "Features", href: "#features" },
-  { label: "Ablauf", href: "#ablauf" },
-  { label: "Vorteile", href: "#vorteile" },
-  { label: "Preise", href: "#preise" },
-  { label: "Shop", href: "/kurse" },
-  { label: "Für Unternehmen", href: "/unternehmen" },
+/**
+ * PROJ-26: Menue auf das Programm ausgerichtet.
+ *
+ * Die alte Fassung zeigte auf "#features", "#vorteile" und "#preise" — alles
+ * Sektionen, die es nach dem Umbau nicht mehr gibt. Tote Anker im Hauptmenue
+ * scrollen ins Leere und faellt niemandem auf, der die Seite gebaut hat.
+ *
+ * `sekundaer` markiert die Angebote NEBEN dem Programm: Shop (dort liegen
+ * Masterclass, Challenges und Kartendecks) und die B2B-Seite. Sie bleiben
+ * erreichbar, treten aber optisch zurueck — die Startseite verkauft eine Sache.
+ */
+const NAV: { label: string; href: string; sekundaer?: boolean }[] = [
+  { label: "Ablauf", href: "/#ablauf" },
+  { label: "Preis", href: "/#preis" },
+  { label: "Fragen", href: "/#faq" },
+  { label: "Über mich", href: "/max-glawe" },
+  { label: "Shop", href: "/kurse", sekundaer: true },
+  { label: "Für Unternehmen", href: "/unternehmen", sekundaer: true },
 ]
 
 export function LandingHeader() {
@@ -69,15 +81,19 @@ export function LandingHeader() {
           </Link>
 
           <nav className="hidden sm:flex items-center gap-6 text-sm">
-            {NAV.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                className="transition-opacity hover:opacity-70"
-                style={{ color: INK }}
-              >
-                {link.label}
-              </a>
+            {NAV.map((link, i) => (
+              <span key={link.label} className="flex items-center gap-6">
+                {link.sekundaer && !NAV[i - 1]?.sekundaer && (
+                  <span aria-hidden className="h-4 w-px" style={{ backgroundColor: LINE }} />
+                )}
+                <a
+                  href={link.href}
+                  className="transition-opacity hover:opacity-70"
+                  style={{ color: link.sekundaer ? MUTED : INK }}
+                >
+                  {link.label}
+                </a>
+              </span>
             ))}
           </nav>
 
@@ -87,16 +103,16 @@ export function LandingHeader() {
                 Anmelden
               </Button>
             </Link>
-            <Link href="/anfrage">
+            <a href={buchungsUrl("kopfzeile")} target="_blank" rel="noopener noreferrer">
               <Button
                 size="sm"
                 className="rounded-xl px-5 text-white hover:opacity-90"
                 style={{ backgroundColor: GREEN }}
               >
-                Jetzt starten
+                Konsultation buchen
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
-            </Link>
+            </a>
           </div>
 
           <button
@@ -128,12 +144,17 @@ export function LandingHeader() {
             <Link href="/login" className="text-lg" style={{ color: INK }} onClick={() => setMenuOpen(false)}>
               Anmelden
             </Link>
-            <Link href="/anfrage" onClick={() => setMenuOpen(false)}>
+            <a
+              href={buchungsUrl("kopfzeile-mobil")}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMenuOpen(false)}
+            >
               <Button className="rounded-xl px-6 text-white" style={{ backgroundColor: GREEN }}>
-                Jetzt starten
+                Konsultation buchen
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </nav>
         </div>
       )}
