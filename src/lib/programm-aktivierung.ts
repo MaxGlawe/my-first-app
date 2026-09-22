@@ -18,9 +18,10 @@
 
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { grantAppAccess, revokeAppAccess } from "@/lib/app-access"
-import { ensurePatientLogin } from "@/lib/patient-provisioning"
+import { ensurePatientLogin, createMagicLink } from "@/lib/patient-provisioning"
 import { createProgrammInvoiceDraft } from "@/lib/billing/programm-invoice"
 import { sendEmail } from "@/lib/email"
+import { programmWillkommenEmail } from "@/lib/email-templates/programm-willkommen"
 import type { Leistung } from "@/types/contract"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
@@ -111,6 +112,9 @@ export async function aktiviereProgramm(
       email: patient.email,
       firstName: patient.vorname,
       lastName: patient.nachname,
+      // Die Buchungs-Mail bereitet auf die Konsultation vor — die ist hier
+      // laengst vorbei. Stattdessen folgt unten die Willkommensmail.
+      sendAccessMail: false,
     })
     if (provision.status === "error") {
       console.error("[programm] Login-Provisionierung fehlgeschlagen:", provision.error)
@@ -152,6 +156,15 @@ export async function aktiviereProgramm(
     leistungen: (contract.leistungen ?? []) as Leistung[],
     stripeSessionId,
   }).catch((err) => console.error("[programm] Rechnungsentwurf fehlgeschlagen:", err))
+
+  // Willkommensmail an den Patienten — geht an JEDEN, der bezahlt, auch wenn
+  // sein Konto schon aus der Terminbuchung bestand.
+  void sendeWillkommensmail(supabase, {
+    email: patient?.email ?? contract.patient_email,
+    firstName: patient?.vorname ?? contract.patient_name.split(" ")[0],
+    expiresAt: expiresAt ?? null,
+    therapeutId: contract.created_by,
+  }).catch((err) => console.error("[programm] Willkommensmail fehlgeschlagen:", err))
 
   void benachrichtige({
     patientName: contract.patient_name,
@@ -282,4 +295,54 @@ async function benachrichtige(
       </p>
     `,
   })
+}
+
+/**
+ * Willkommensmail zum Programm: was ab jetzt passiert und wann es endet.
+ * Enthaelt einen Magiclink direkt ins Dashboard — der Patient soll nicht erst
+ * ein Passwort setzen muessen, um seinen Plan zu sehen.
+ */
+async function sendeWillkommensmail(
+  supabase: ServiceClient,
+  args: {
+    email: string | null
+    firstName: string
+    expiresAt: string | null
+    therapeutId: string
+  }
+): Promise<void> {
+  if (!args.email) return
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+
+  const [{ data: therapeut }, { data: praxis }] = await Promise.all([
+    supabase.from("user_profiles").select("first_name, last_name").eq("id", args.therapeutId).maybeSingle(),
+    supabase.from("praxis_settings").select("praxis_name, inhaber_name").limit(1).maybeSingle(),
+  ])
+
+  const behandlerName =
+    [therapeut?.first_name, therapeut?.last_name].filter(Boolean).join(" ") ||
+    praxis?.inhaber_name ||
+    "Dein Behandler"
+
+  const link = await createMagicLink(supabase, args.email, `${siteUrl}/app/dashboard`)
+
+  const endetAm = args.expiresAt
+    ? new Date(args.expiresAt).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "—"
+
+  const mail = programmWillkommenEmail({
+    firstName: args.firstName,
+    appUrl: link,
+    endetAm,
+    behandlerName,
+    praxisName: praxis?.praxis_name ?? "Physiotherapie Glawe",
+    siteUrl,
+  })
+
+  await sendEmail({ to: args.email, subject: mail.subject, html: mail.html })
 }

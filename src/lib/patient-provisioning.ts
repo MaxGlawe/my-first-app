@@ -40,7 +40,19 @@ export type ProvisionResult =
  */
 export async function ensurePatientLogin(
   supabase: ServiceClient,
-  args: { patientId: string; email: string; firstName?: string | null; lastName?: string | null }
+  args: {
+    patientId: string
+    email: string
+    firstName?: string | null
+    lastName?: string | null
+    /**
+     * PROJ-26: Die Zugangsmail unten bereitet auf die VIDEOKONSULTATION vor.
+     * Wer bereits bezahlt hat, ist an dieser Stelle laengst weiter — dort
+     * schickt `aktiviereProgramm()` stattdessen die Willkommensmail zum
+     * Programm. Deshalb hier abschaltbar.
+     */
+    sendAccessMail?: boolean
+  }
 ): Promise<ProvisionResult> {
   const email = args.email.trim().toLowerCase()
   const firstName = args.firstName?.trim() || "Patient"
@@ -99,11 +111,33 @@ export async function ensurePatientLogin(
   }
 
   // Einmalige Zugangsmail (fire-and-forget) — Magiclink direkt in den Termin-Bereich.
-  void sendPatientAccessMail(supabase, { email, firstName }).catch((err) =>
-    console.error("[PROJ-34] Zugangsmail fehlgeschlagen:", err)
-  )
+  if (args.sendAccessMail !== false) {
+    void sendPatientAccessMail(supabase, { email, firstName }).catch((err) =>
+      console.error("[PROJ-34] Zugangsmail fehlgeschlagen:", err)
+    )
+  }
 
   return { status: "created", userId }
+}
+
+/**
+ * Passwortloser Anmeldelink. Wird von mehreren Mails gebraucht (Termin-Zugang,
+ * Programm-Willkommen), deshalb hier einmal zentral.
+ */
+export async function createMagicLink(
+  supabase: ServiceClient,
+  email: string,
+  redirectTo: string
+): Promise<string> {
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: { redirectTo },
+  })
+  if (error || !data?.properties?.action_link) {
+    throw new Error(error?.message ?? "generateLink lieferte keinen action_link")
+  }
+  return data.properties.action_link
 }
 
 /**
@@ -122,15 +156,7 @@ export async function sendPatientAccessMail(
   args: { email: string; firstName: string }
 ): Promise<void> {
   const appUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: "magiclink",
-    email: args.email,
-    options: { redirectTo: `${appUrl}/meine-termine` },
-  })
-  if (error || !data?.properties?.action_link) {
-    throw new Error(error?.message ?? "generateLink lieferte keinen action_link")
-  }
-  const link = data.properties.action_link
+  const link = await createMagicLink(supabase, args.email, `${appUrl}/meine-termine`)
   const name = escapeHtml(args.firstName)
 
   // Marken-Token des Premium-Rebrands (Paper/Ink/Green/Sand, Georgia-Serif).
