@@ -157,6 +157,11 @@ export async function aktiviereProgramm(
     stripeSessionId,
   }).catch((err) => console.error("[programm] Rechnungsentwurf fehlgeschlagen:", err))
 
+  // Der Patient soll ein richtiges Passwort haben, nicht dauerhaft auf
+  // Magiclinks angewiesen sein. Der Zwang wird beim ersten Besuch von der
+  // Middleware durchgesetzt und von /login/update-password wieder geloescht.
+  await setzePasswortPflicht(supabase, userId)
+
   // Willkommensmail an den Patienten — geht an JEDEN, der bezahlt, auch wenn
   // sein Konto schon aus der Terminbuchung bestand.
   void sendeWillkommensmail(supabase, {
@@ -345,4 +350,30 @@ async function sendeWillkommensmail(
   })
 
   await sendEmail({ to: args.email, subject: mail.subject, html: mail.html })
+}
+
+/**
+ * Markiert das Konto so, dass beim ersten Besuch ein Passwort gesetzt werden
+ * muss. Die Middleware leitet dann auf /login/update-password um; das Formular
+ * dort setzt `must_change_password` wieder auf false und schickt den Patienten
+ * aufs Dashboard.
+ *
+ * Wer bereits ein Passwort gesetzt hat (Flag steht explizit auf false), wird
+ * nicht erneut behelligt.
+ */
+async function setzePasswortPflicht(supabase: ServiceClient, userId: string): Promise<void> {
+  try {
+    const { data } = await supabase.auth.admin.getUserById(userId)
+    const meta = (data?.user?.user_metadata ?? {}) as Record<string, unknown>
+
+    if (meta.must_change_password === false) return
+
+    await supabase.auth.admin.updateUserById(userId, {
+      user_metadata: { ...meta, must_change_password: true },
+    })
+  } catch (err) {
+    // Kein Grund, den Kauf scheitern zu lassen — der Patient kommt per
+    // Magiclink trotzdem hinein und kann das Passwort spaeter setzen.
+    console.error("[programm] Passwort-Pflicht konnte nicht gesetzt werden:", err)
+  }
 }

@@ -97,14 +97,22 @@ export function programmWillkommenEmail(props: ProgrammWillkommenProps): {
           )
           .join("")}
 
-        <div style="margin:24px 0 20px;">
+        <h2 style="font-family:${SERIF};font-weight:600;font-size:17px;color:${INK};margin:26px 0 8px;">
+          So kommst du rein
+        </h2>
+        <p style="font-size:14px;line-height:1.65;color:${MUTED};margin:0 0 16px;">
+          Über den Knopf unten bist du direkt angemeldet — beim ersten Mal legst du dort dein
+          eigenes Passwort fest. Danach meldest du dich ganz normal mit deiner E-Mail-Adresse
+          und diesem Passwort an, auf jedem Gerät.
+        </p>
+        <div style="margin:0 0 14px;">
           <a href="${props.appUrl}" style="display:inline-block;background:${GREEN};color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:15px 28px;border-radius:12px;">
-            Zur App &rarr;
+            Passwort festlegen und starten &rarr;
           </a>
         </div>
         <p style="font-size:13px;line-height:1.6;color:${FAINT};margin:0 0 20px;">
-          Ein Klick genügt, kein Passwort nötig. Der Link ist persönlich und nur begrenzte Zeit
-          gültig — danach meldest du dich einfach über „Passwort vergessen" auf der Anmeldeseite an.
+          Dieser Link ist persönlich und nur begrenzte Zeit gültig. Deine Anmeldeseite findest du
+          jederzeit unter <a href="${props.siteUrl}/login" style="color:${MUTED};">${props.siteUrl.replace(/^https?:\/\//, "")}/login</a>.
         </p>
 
         <div style="padding:16px 18px;background:${PAPER};border:1px solid ${LINE};border-radius:12px;margin:0 0 20px;">
