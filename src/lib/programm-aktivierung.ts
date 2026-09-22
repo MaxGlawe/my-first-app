@@ -17,7 +17,7 @@
  */
 
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { grantAppAccess } from "@/lib/app-access"
+import { grantAppAccess, revokeAppAccess } from "@/lib/app-access"
 import { ensurePatientLogin } from "@/lib/patient-provisioning"
 import { createProgrammInvoiceDraft } from "@/lib/billing/programm-invoice"
 import { sendEmail } from "@/lib/email"
@@ -166,6 +166,59 @@ export async function aktiviereProgramm(
   )
 
   return { ok: true, expiresAt }
+}
+
+/**
+ * Rückerstattung / Widerruf: Betreuung zurücknehmen.
+ *
+ * Ohne das behielte ein Patient nach einer Rückerstattung die vollen 90 Tage
+ * Zugang — und der Rechnungsentwurf stünde weiter offen. Idempotent: mehrfache
+ * Zustellung desselben Refund-Events ändert nichts mehr.
+ */
+export async function widerrufeProgramm(
+  supabase: ServiceClient,
+  stripeSessionId: string
+): Promise<void> {
+  const { data: contract } = await supabase
+    .from("treatment_contracts")
+    .select("id, contract_number, patient_name")
+    .eq("stripe_session_id", stripeSessionId)
+    .maybeSingle()
+
+  if (!contract) return
+
+  await revokeAppAccess(supabase, stripeSessionId, "refund")
+
+  await supabase
+    .from("treatment_contracts")
+    .update({ status: "widerrufen", widerrufen_at: new Date().toISOString() })
+    .eq("id", contract.id)
+    .is("widerrufen_at", null)
+
+  // Der noch nicht versendete Rechnungsentwurf wird gegenstandslos.
+  await supabase
+    .from("invoices")
+    .update({ status: "storniert", cancelled_at: new Date().toISOString() })
+    .eq("notes", `stripe_session:${stripeSessionId}`)
+    .eq("status", "entwurf")
+
+  console.log(`[programm] Widerrufen: ${contract.contract_number} (session=${stripeSessionId})`)
+
+  void sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Programm widerrufen: ${contract.patient_name}`,
+    html: `
+      <p style="font-family:sans-serif;font-size:14px">
+        Rückerstattung eingegangen — die Betreuung zu Vertrag
+        <strong>${contract.contract_number}</strong> wurde zurückgenommen,
+        der Zugang ist gesperrt und der Rechnungsentwurf storniert.
+      </p>
+      <p style="font-family:sans-serif;font-size:13px;color:#64748b">
+        Bei einem Widerruf nach Betreuungsbeginn steht dir Wertersatz für die
+        bereits erbrachten Leistungen zu (§ 357 Abs. 8 BGB, siehe §11 des Vertrages).
+      </p>
+    `,
+  }).catch((err) => console.error("[programm] Widerruf-Benachrichtigung fehlgeschlagen:", err))
 }
 
 function betragAusVertrag(c: { gesamtpreis: number; bereits_beglichen: number | null }): number {

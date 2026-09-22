@@ -16,7 +16,7 @@ import { sendEmail } from "@/lib/email"
 // sendEmail() (GMX) bleibt ausschließlich für interne Benachrichtigungen an Max.
 import { sendSchmerzcheckEmail } from "@/lib/schmerzcheck/mailer"
 import { activateBegleitung, revokeBegleitung } from "@/lib/masterclass/begleitung"
-import { aktiviereProgramm } from "@/lib/programm-aktivierung"
+import { aktiviereProgramm, widerrufeProgramm } from "@/lib/programm-aktivierung"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import type Stripe from "stripe"
 
@@ -713,6 +713,13 @@ export async function POST(request: NextRequest) {
         })
         const refundSession = sessions.data[0]
         if (!refundSession || refundSession.mode !== "payment") break
+
+        // PROJ-26: Programm-Zahlungen tragen keine product_ids — sie würden
+        // unten aus der Schleife fallen und der Patient behielte seine 90 Tage.
+        if (refundSession.metadata?.kind === "praxis_os_programm") {
+          await widerrufeProgramm(supabase, String(refundSession.id))
+          break
+        }
 
         // Mehrartikel: product_ids (comma-separated). Rückwärtskompatibel: product_id.
         const refundProductIds: string[] = refundSession.metadata?.product_ids
