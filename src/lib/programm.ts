@@ -39,8 +39,15 @@ export const PROGRAMM = {
   chatAntwortStunden: 24,
 } as const
 
-/** Anzahl fest zugesagter Video-Calls (werden bei Absage nachgeholt). */
-export const PROGRAMM_CALLS = 5
+/**
+ * Anzahl fest zugesagter Video-Sitzungen (werden bei Absage nachgeholt).
+ *
+ * Ergibt sich zwingend aus der Taktung: Woche 1-4 woechentlich = 4,
+ * Woche 5-8 vierzehntaegig = 2, Woche 9-12 Zwischen- und Abschlussgespraech
+ * = 2. Wer die Taktung aendert, muss diese Zahl mitaendern - sie steht als
+ * zugesicherte Leistung im Behandlungsvertrag.
+ */
+export const PROGRAMM_CALLS = 8
 
 /**
  * Vertragspositionen. Die erste Zeile macht die Anrechnung sichtbar: Sie steht
