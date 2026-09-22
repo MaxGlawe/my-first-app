@@ -85,7 +85,7 @@ export function HeroSection() {
             style={{ color: "#334155" }}
           >
             Echte Physiotherapie per Video-Termin, dein persönlicher Trainingsplan in der App
-            und dein Therapeut — jederzeit erreichbar. Verstehen, üben, dranbleiben.
+            und dein Therapeut — Antwort werktags innerhalb von 24 Stunden. Verstehen, üben, dranbleiben.
           </p>
 
           <div className="animate-fade-in-up animation-delay-450 mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">

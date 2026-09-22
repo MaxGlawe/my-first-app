@@ -9,15 +9,11 @@ import { UniqueSection } from "@/components/landing/UniqueSection"
 import { FeaturesShowcase } from "@/components/landing/FeaturesShowcase"
 import { TechnologySection } from "@/components/landing/TechnologySection"
 import { ProcessSection } from "@/components/landing/ProcessSection"
-import { EvidenceSection } from "@/components/landing/EvidenceSection"
-import { ComparisonSection } from "@/components/landing/ComparisonSection"
 import { CredentialsSection } from "@/components/landing/CredentialsSection"
-import { ResultsSection } from "@/components/landing/ResultsSection"
 import { QuoteSection } from "@/components/landing/QuoteSection"
 import { PricingSection } from "@/components/landing/PricingSection"
 import { ShopShowcaseSection } from "@/components/landing/ShopShowcaseSection"
 import { FaqSection } from "@/components/landing/FaqSection"
-import { TrustSection } from "@/components/landing/TrustSection"
 import { CtaSection } from "@/components/landing/CtaSection"
 import { LandingFooter } from "@/components/landing/LandingFooter"
 
@@ -68,14 +64,10 @@ export default function LandingPage() {
         <FeaturesShowcase />
         <TechnologySection />
         <ProcessSection />
-        <EvidenceSection />
-        <ComparisonSection />
         <CredentialsSection />
-        <ResultsSection />
         <QuoteSection />
         <PricingSection />
         <FaqSection />
-        <TrustSection />
         <CtaSection />
       </main>
       <LandingFooter />

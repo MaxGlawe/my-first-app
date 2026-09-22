@@ -23,7 +23,7 @@ const faqCategories = [
       {
         question: "Funktioniert Physiotherapie wirklich online?",
         answer:
-          "Ja — und das ist wissenschaftlich belegt. Ein Cochrane Review (Cottrell et al. 2017) zeigt, dass Telerehabilitation gleichwertige Ergebnisse wie Präsenzbehandlung erzielt. Zusätzlich profitieren Patienten von höherer Therapietreue (+34%), weil der digitale Support zwischen den Sitzungen die Motivation aufrechterhält. Entscheidend ist nicht der Ort der Behandlung, sondern die Qualität der Anleitung und die Konsequenz des Trainings.",
+          "Die Behandlung findet per Video statt, die Anleitung bleibt persönlich. Entscheidend ist nicht der Ort, sondern wie genau angeleitet wird und wie konsequent du trainierst — genau dafür ist das Programm gebaut: täglicher Plan, kurzes Check-in, Anpassung durch deinen Therapeuten. Ob dein Beschwerdebild dafür geeignet ist, klären wir vorab in der Konsultation.",
       },
       {
         question: "Für welche Beschwerden eignet sich Online-Therapie?",

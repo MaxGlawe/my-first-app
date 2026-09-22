@@ -20,14 +20,20 @@ const trustItems = [
   {
     icon: Lock,
     title: "Verschlüsselte Kommunikation",
+    // Korrektur: Chat-Nachrichten liegen als Klartext in der Datenbank — der
+    // Therapeut liest sie im OS, das ist der Sinn der Sache. Ende-zu-Ende trifft
+    // nur auf die Video-Calls zu (Doctolib). Die Aussage entsprechend getrennt.
     description:
-      "Ende-zu-Ende-Verschlüsselung für alle Nachrichten und Video-Gespräche. Kein unbefugter Zugriff.",
+      "Video-Sprechstunden laufen Ende-zu-Ende verschlüsselt über Doctolib. Nachrichten werden verschlüsselt übertragen und gespeichert — lesen kann sie nur dein Therapeut.",
   },
   {
     icon: Server,
-    title: "Deutsche Server",
+    title: "Server in Deutschland und der EU",
+    // "Keine Datenuebertragung ins Ausland" liess sich nicht halten: die
+    // Anwendung laeuft in Deutschland (Hetzner), die Datenbank in der EU.
+    // Region des Supabase-Projekts ist noch zu bestaetigen.
     description:
-      "Alle Daten werden auf Servern in Deutschland gehostet. Keine Datenübertragung ins Ausland.",
+      "Die Anwendung läuft auf Servern in Deutschland, die Datenhaltung erfolgt innerhalb der EU — nach den Vorgaben der DSGVO.",
   },
   {
     icon: Award,

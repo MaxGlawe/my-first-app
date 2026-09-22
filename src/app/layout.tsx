@@ -67,8 +67,9 @@ export const viewport: Viewport = {
   themeColor: "#10b981",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // maximumScale/userScalable bewusst NICHT gesetzt: beides verhindert das
+  // Zoomen auf Mobilgeraeten und sperrt Menschen mit Sehschwaeche aus
+  // (WCAG 1.4.4). Auf einer Gesundheitsseite ist das besonders unpassend.
 }
 
 export default function RootLayout({

@@ -270,7 +270,7 @@ export function PricingSection() {
                   <span className="font-semibold" style={{ color: BODY }}>
                     privaten Krankenversicherungen
                   </span>{" "}
-                  erstattet — je nach Tarif bis zu 100%.
+                  je nach Tarif teilweise erstattungsfähig. Einen Kostenvoranschlag bekommst du vorab.
                 </p>
               </div>
 
