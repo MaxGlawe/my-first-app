@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { STAEDTE, LAND_NAMEN, getStadtBySlug } from "@/lib/staedte"
@@ -114,7 +115,7 @@ function getAdvantages(city: string, variant: number) {
       "Evidenzbasierte Behandlungsmethoden",
       "Tägliches Befindlichkeits-Tracking per App",
       "Trainingspläne, die sich deinem Fortschritt anpassen",
-      "Ersteinschätzung bereits ab 69 €",
+      "Ersteinschätzung bereits ohne Verordnung",
     ],
     [
       `Schnelle Termine für Patienten in ${city}`,
@@ -172,7 +173,7 @@ function getProcessSteps(city: string, variant: number) {
     ],
     [
       { title: "Kontakt aufnehmen", desc: `Über unser Formular erreichst du uns in weniger als 2 Minuten. Wir antworten innerhalb eines Werktags.` },
-      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir dir am besten helfen können — ab 69 €.` },
+      { title: "Ersteinschätzung", desc: `In einem Erstgespräch klären wir, wie wir dir am besten helfen können — ohne Verordnung.` },
       { title: "Therapieplan erhalten", desc: `Basierend auf deiner Untersuchung erhältst du einen evidenzbasierten Trainingsplan für deine Beschwerden.` },
       { title: "Fortlaufende Betreuung", desc: `Dein Therapeut begleitet dich per Video und Chat — als wärst du direkt in der Praxis in ${city}.` },
     ],
@@ -192,7 +193,7 @@ function getFaq(city: string, variant: number) {
     },
     {
       q: `Was kostet Online-Physiotherapie?`,
-      a: `Die Ersteinschätzung beginnt ab 69 €. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf deinen Bedürfnissen.`,
+      a: `Die Ersteinschätzung beginnt ohne Verordnung. Je nach Beschwerdebild bieten wir verschiedene Behandlungspakete an. Konkrete Preise besprechen wir im Erstgespräch basierend auf deinen Bedürfnissen.`,
     },
   ]
 
@@ -319,13 +320,13 @@ export default async function StadtPage({ params }: Props) {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
               <Link
-                href="/anfrage"
+                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
                 style={{ backgroundColor: GREEN }}
               >
-                Jetzt Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
+                Konsultation buchen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ab 69 €</span>
+              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ohne Verordnung</span>
             </div>
           </div>
         </div>
@@ -542,11 +543,11 @@ export default async function StadtPage({ params }: Props) {
               24 Stunden eine persönliche Rückmeldung von unserem Therapeuten.
             </p>
             <Link
-              href="/anfrage"
+              href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
               style={{ color: GREEN }}
             >
-              Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
+              Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>

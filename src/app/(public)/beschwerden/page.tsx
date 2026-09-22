@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import { BESCHWERDEN } from "@/lib/beschwerden"
 import { ArrowRight, Activity, Sparkles } from "lucide-react"
@@ -122,11 +123,11 @@ export default function BeschwerdenHubPage() {
                 Stelle eine Anfrage und wir beraten dich persönlich.
               </p>
               <Link
-                href="/anfrage"
+                href={buchungsUrl("beschwerden")} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
                 style={{ color: GREEN }}
               >
-                Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
+                Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

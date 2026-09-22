@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { buchungsUrl } from "@/lib/programm"
 import { Calendar, MessageCircle, Clock, Check, ExternalLink } from "lucide-react"
 import { IntakeForm } from "@/components/intake/IntakeForm"
 
@@ -14,15 +15,12 @@ const LINE = "#e7e1d6"
 export const metadata: Metadata = {
   title: "Termin buchen oder Anfrage stellen | Online Physiotherapie — Praxis OS",
   description:
-    "Buchen Sie direkt Ihren Termin für die Video-Analyse oder stellen Sie eine unverbindliche Anfrage — wir melden uns innerhalb von 24 Stunden.",
+    "Buchen Sie direkt Ihre Videokonsultation — 30 Minuten, ohne ärztliche Verordnung. Oder stellen Sie vorab eine unverbindliche Frage.",
 }
 
-const BOOKING_URL =
-  "https://physiotherapie-glawe.de/termin-buchen.html" +
-  "?service=video-sprechstunde-praxis-os" +
-  "&utm_source=praxis-os-website" +
-  "&utm_medium=cta" +
-  "&utm_campaign=direct-booking"
+// Zentrale Quelle statt eigener Zusammenbau — sonst laufen die
+// UTM-Parameter hier und auf der Startseite auseinander.
+const BOOKING_URL = buchungsUrl("anfrage")
 
 export default function AnfragePage() {
   return (
@@ -61,7 +59,7 @@ export default function AnfragePage() {
                 className="text-xl sm:text-2xl leading-tight"
                 style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
               >
-                Video-Analyse — 30 Min., 69 €
+                Videokonsultation — 30 Min.
               </h2>
               <p className="text-sm mt-1" style={{ color: MUTED }}>
                 Wähle deinen freien Termin in unserem Online-Kalender.

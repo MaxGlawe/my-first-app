@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import {
   STAEDTE,
@@ -95,13 +96,13 @@ export default function OnlinePhysiotherapieHubPage() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/anfrage"
+                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
                 style={{ backgroundColor: GREEN }}
               >
-                Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
+                Konsultation buchen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm" style={{ color: MUTED }}>Ersteinschätzung ab 69 €</span>
+              <span className="text-sm" style={{ color: MUTED }}>Ersteinschätzung ohne Verordnung</span>
             </div>
           </div>
         </div>
@@ -255,14 +256,14 @@ export default function OnlinePhysiotherapieHubPage() {
               <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
                 Kein Problem — unsere Online-Physiotherapie ist komplett digital
                 und funktioniert überall in Deutschland, Österreich und der Schweiz.
-                Starte jetzt mit deiner Ersteinschätzung.
+                Starte mit einer Videokonsultation.
               </p>
               <Link
-                href="/anfrage"
+                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
                 style={{ color: GREEN }}
               >
-                Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
+                Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>

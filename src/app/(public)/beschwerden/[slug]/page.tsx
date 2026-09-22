@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { BESCHWERDEN, getBeschwerdeBySlug } from "@/lib/beschwerden"
@@ -118,13 +119,13 @@ export default async function BeschwerdePage({ params }: Props) {
             <p className="text-lg leading-relaxed max-w-2xl" style={{ color: BODY }}>{b.heroSubtitle}</p>
             <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
               <Link
-                href="/anfrage"
+                href={buchungsUrl("beschwerden")} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
                 style={{ backgroundColor: GREEN }}
               >
-                Jetzt Ersteinschätzung anfragen <ArrowRight className="h-4 w-4" />
+                Konsultation buchen <ArrowRight className="h-4 w-4" />
               </Link>
-              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ab 69 €</span>
+              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ohne Verordnung</span>
             </div>
           </div>
         </div>
@@ -290,11 +291,11 @@ export default async function BeschwerdePage({ params }: Props) {
               24 Stunden eine persönliche Rückmeldung von unserem Therapeuten.
             </p>
             <Link
-              href="/anfrage"
+              href={buchungsUrl("beschwerden")} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
               style={{ color: GREEN }}
             >
-              Anfrage stellen — ab 69 € <ArrowRight className="h-4 w-4" />
+              Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </section>
