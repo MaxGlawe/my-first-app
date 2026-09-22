@@ -15,9 +15,9 @@
  * aus denselben Texten erzeugt, die auch sichtbar sind, und kann deshalb nicht
  * von ihnen abweichen.
  *
- * `sameAs` (Google-Unternehmensprofil, Social Profiles) fehlt noch — die URLs
- * liegen mir nicht vor. Sie sind der Hebel, mit dem Suchmaschinen die Person
- * mit bestehenden Profilen verknuepfen, und sollten nachgetragen werden.
+ * `sameAs` steht am PRAXIS-Block (siehe PRAXIS_PROFILE unten), nicht bei der
+ * Person: Google-Unternehmensprofil und Instagram laufen unter
+ * „Physiotherapie Glawe" und gehoeren damit der Praxis.
  */
 
 import { PROGRAMM, PROGRAMM_CALLS } from "@/lib/programm"
@@ -32,6 +32,22 @@ const PRAXIS = {
   telefon: "+49 3375 9209877",
   land: "DE",
 } as const
+
+/**
+ * Profile der PRAXIS — Google-Unternehmensprofil, Instagram und Ähnliches.
+ *
+ * Bewusst hier und nicht beim Person-Block: `sameAs` verknüpft eine Entität mit
+ * ihren EIGENEN Profilen. Ein Konto, das „Physiotherapie Glawe" heisst, gehört
+ * der Praxis, nicht Max als Person. Falsch zugeordnet erschwert es die
+ * Zuordnung, statt sie zu stützen.
+ *
+ * Bitte nur nachweislich eigene URLs eintragen — ein sameAs auf ein fremdes
+ * Profil ist schlechter als gar keines.
+ */
+const PRAXIS_PROFILE: string[] = [
+  // "https://www.instagram.com/...",
+  // "https://maps.app.goo.gl/...",   // aus dem Google-Unternehmensprofil: „Profil teilen"
+]
 
 export function StructuredData() {
   const praxis = {
@@ -59,6 +75,9 @@ export function StructuredData() {
     },
     areaServed: { "@type": "Country", name: "Deutschland" },
     availableLanguage: "de",
+    // Erst ausgeben, wenn wirklich Profile hinterlegt sind — ein leeres
+    // sameAs ist kein neutraler Platzhalter, sondern eine leere Behauptung.
+    ...(PRAXIS_PROFILE.length > 0 ? { sameAs: PRAXIS_PROFILE } : {}),
   }
 
   const person = {
