@@ -1,3 +1,11 @@
+> **Stand 22.09.2026 — RUHEND.** Das Buchungstool ruft unseren Webhook im
+> Alltag nicht auf: 14 Ereignisse insgesamt, das letzte am 20.06.2026, alle
+> aus der Entwicklungsphase, kein einziges `appointment.created`. Von 30
+> Patienten tragen 2 eine Buchungstool-Verknuepfung. Es kommt also niemand
+> ueber diesen Weg in Praxis OS an — Patienten werden bewusst von Hand
+> angelegt (Entscheidung PROJ-26). Der Empfaenger bleibt funktionsfaehig und
+> abgesichert; scharf schalten hiesse, das Buchungstool zum Senden zu bringen.
+
 # PROJ-34: Patienten-Terminkoordination (Termine in Praxis OS sehen & verwalten)
 
 ## Status: Deployed
