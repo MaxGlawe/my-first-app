@@ -1,5 +1,28 @@
 "use client"
 
+/**
+ * PROJ-26: FAQ.
+ *
+ * Zwei Regeln, nach denen jede Antwort hier geschrieben ist:
+ *
+ *  1. IN SICH GESCHLOSSEN. Jede Antwort muss ohne die Frage und ohne den Rest
+ *     der Seite verständlich sein — sie wiederholt den Gegenstand also
+ *     ausdrücklich („Das 90-Tage-Programm kostet ..."), statt auf „das" oder
+ *     „oben" zu verweisen. Das ist der GEO-Punkt: Sprachmodelle zitieren
+ *     einzelne Absätze, nicht ganze Seiten.
+ *
+ *  2. KEINE WIRKUNGSAUSSAGE. Auch nicht in der Frage. „Hilft mir das?" wäre
+ *     eine Einladung zum Heilversprechen; deshalb fragt die Seite stattdessen,
+ *     was passiert, wenn es nicht passt.
+ *
+ * Die Erhaltungsphase (16,99 €/Monat) steht bewusst NUR hier und nirgends
+ * prominent — sie ist eine Möglichkeit nach dem Programm, kein Teil des
+ * Angebots. Genau dieses Nebeneinander war im alten Modell das Problem.
+ *
+ * Das JSON-LD unten wird aus derselben Liste erzeugt wie die sichtbaren
+ * Texte. So können Rich Snippet und Seite nicht auseinanderlaufen.
+ */
+
 import { ScrollReveal } from "./ScrollReveal"
 import {
   Accordion,
@@ -7,171 +30,108 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { PROGRAMM, PROGRAMM_CALLS, formatEuro } from "@/lib/programm"
 
-// Premium-Markenwelt (Masterclass-Format)
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
 const BODY = "#334155"
 const MUTED = "#64748b"
 const GREEN = "#2C3E2D"
-const LINE = "#e7e1d6"
 
-const faqCategories = [
+const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
+
+const FRAGEN: { frage: string; antwort: string }[] = [
   {
-    category: "Über Online-Therapie",
-    items: [
-      {
-        question: "Funktioniert Physiotherapie wirklich online?",
-        answer:
-          "Die Behandlung findet per Video statt, die Anleitung bleibt persönlich. Entscheidend ist nicht der Ort, sondern wie genau angeleitet wird und wie konsequent du trainierst — genau dafür ist das Programm gebaut: täglicher Plan, kurzes Check-in, Anpassung durch deinen Therapeuten. Ob dein Beschwerdebild dafür geeignet ist, klären wir vorab in der Konsultation.",
-      },
-      {
-        question: "Für welche Beschwerden eignet sich Online-Therapie?",
-        answer:
-          "Online-Therapie eignet sich besonders gut für: Rückenschmerzen (LWS, BWS, HWS), Schulter- und Nackenbeschwerden, Kniebeschwerden, Rehabilitaton nach Operationen, Prävention und Haltungskorrektur. Nicht geeignet ist sie für akute Notfälle, frische Frakturen oder Beschwerden, die eine manuelle Untersuchung vor Ort erfordern. In der Ersteinschätzung (30 Min., 69€) klären wir gemeinsam, ob Online-Therapie für dich der richtige Weg ist.",
-      },
-      {
-        question: "Was brauche ich technisch?",
-        answer:
-          "Nicht viel: Ein Smartphone, Tablet oder Computer mit Kamera, eine stabile Internetverbindung und ca. 2×2 Meter Platz zum Üben. Für die Übungen benötigst du keine speziellen Geräte — wir arbeiten vorrangig mit deinem eigenen Körpergewicht und Alltagsgegenständen. Falls ein Hilfsmittel sinnvoll ist, besprechen wir das individuell.",
-      },
-    ],
+    frage: "Wie läuft das 90-Tage-Programm von Praxis OS ab?",
+    antwort: `Das 90-Tage-Programm beginnt mit einer 30-minütigen Videokonsultation, in der Beschwerden, Vorgeschichte und Ziele besprochen werden und geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der App wird täglich kurz eingecheckt, der Plan wird laufend angepasst. Über die gesamte Zeit gibt es ${PROGRAMM_CALLS} Video-Sitzungen: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 alle zwei Wochen, in den Wochen 9 bis 12 ein Zwischengespräch und ein Abschlussgespräch. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch.`,
   },
   {
-    category: "Kosten & Erstattung",
-    items: [
-      {
-        question: "Übernimmt meine Krankenkasse die Kosten?",
-        answer:
-          "Ja, in vielen Fällen. Private Krankenversicherungen (PKV) erstatten Heilpraktiker-Leistungen in der Regel vollständig oder anteilig — je nach Tarif. Auch Heilpraktiker-Zusatzversicherungen (schon ab ca. 15€/Monat) decken unsere Behandlungen ab — ideal für gesetzlich Versicherte. In der Ersteinschätzung prüfen wir gerne deine individuelle Erstattungssituation.",
-      },
-      {
-        question: "Brauche ich eine ärztliche Verordnung?",
-        answer:
-          "Nein. Als Heilpraktiker für Physiotherapie sind wir berechtigt, eigenständig Diagnosen zu stellen und zu behandeln — ohne dass du vorher zum Arzt musst. Das spart dir Zeit und Wartezeit. Du kannst direkt bei uns anfragen und sofort starten.",
-      },
-    ],
+    frage: "Brauche ich eine ärztliche Verordnung oder eine Überweisung?",
+    antwort:
+      "Für das 90-Tage-Programm von Praxis OS ist weder eine ärztliche Verordnung noch eine Überweisung nötig. Behandelt wird von Max Glawe, Heilpraktiker für Physiotherapie. Diese Erlaubnis nach dem Heilpraktikergesetz, beschränkt auf das Gebiet der Physiotherapie, erlaubt eigenständige Befunderhebung und Behandlung — man spricht vom Direktzugang. Unabhängig davon empfehlen wir, ungeklärte oder plötzlich aufgetretene Beschwerden vorab ärztlich abklären zu lassen.",
   },
   {
-    category: "Ablauf & Betreuung",
-    items: [
-      {
-        question: "Wie persönlich ist die Betreuung?",
-        answer:
-          "Sehr persönlich. Du hast einen festen Therapeuten, der dich über den gesamten Behandlungszeitraum begleitet — kein Wechsel, kein Weiterreichen. Wir nehmen bewusst nur eine begrenzte Anzahl an Patienten gleichzeitig an, damit jeder die Aufmerksamkeit bekommt, die er verdient. Per Chat sind wir auch zwischen den Sitzungen erreichbar.",
-      },
-      {
-        question: "Was ist, wenn mir die Therapie nicht hilft?",
-        answer:
-          "Schon in der Ersteinschätzung (30 Min., 69€) besprechen wir ehrlich, ob Online-Therapie für deine Situation geeignet ist. Nicht jede Beschwerde lässt sich online behandeln — und das sagen wir dir offen. Sollten wir im Verlauf der Therapie feststellen, dass eine andere Behandlungsform besser passt, beraten wir dich und finden gemeinsam eine Lösung. Die Betreuungspauschale (16,99€/Monat) ist jederzeit kündbar — du gehst also kein Risiko ein.",
-      },
-      {
-        question:
-          "Was wenn ich mal keine Zeit zum Trainieren habe?",
-        answer:
-          "Das passiert — und ist kein Problem. Dein Trainingsplan passt sich deinem Leben an, nicht umgekehrt. Wenn es eine stressige Woche ist, reduzieren wir den Umfang. Wenn du verreist, passen wir die Übungen an. Das Ziel ist eine nachhaltige Routine, keine Perfektion. Dein Therapeut begleitet dich flexibel durch Höhen und Tiefen.",
-      },
-    ],
+    frage: "Was kostet das Programm, und wann wird abgerechnet?",
+    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(PROGRAMM.gesamtpreis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Die Terminbuchung selbst kostet nichts und es wird dabei nichts abgebucht. Abgerechnet wird erst nach dem Gespräch: entweder das Programm, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
+  },
+  {
+    frage: "Was passiert, wenn ihr mein Beschwerdebild nicht betreuen könnt?",
+    antwort: `Dann wird das in der Videokonsultation offen gesagt. Fernbetreuung ist nicht für jedes Beschwerdebild geeignet — etwa nicht bei frischen Verletzungen, nach einer kürzlichen Operation oder bei Anzeichen, die zuerst ärztlich abgeklärt gehören. In diesem Fall entstehen nur die ${formatEuro(PROGRAMM.konsultation)} für das Gespräch, und es wird kein Programm abgeschlossen. Nach Möglichkeit wird auf einen geeigneteren Weg hingewiesen.`,
+  },
+  {
+    frage: "Ist das ein Abonnement, und was passiert nach den 90 Tagen?",
+    antwort: `Das 90-Tage-Programm von Praxis OS ist kein Abonnement. Es endet nach ${PROGRAMM.tage} Tagen automatisch, verlängert sich nicht und es wird danach nichts weiter abgebucht. Der bisherige Verlauf — Pläne, Check-ins, Nachrichten — bleibt danach einsehbar. Wer die App darüber hinaus aktiv weiternutzen möchte, kann das gesondert für 16,99 € im Monat tun; diese Weiternutzung ist jederzeit kündbar und enthält keine Video-Sitzungen. Sie ist nicht Bestandteil des Programms und muss ausdrücklich beauftragt werden.`,
+  },
+  {
+    frage: "Übernimmt die Krankenkasse die Kosten?",
+    antwort:
+      "Die gesetzliche Krankenkasse übernimmt die Kosten für das 90-Tage-Programm von Praxis OS nicht. Es handelt sich um eine Privatleistung, abgerechnet über eine Heilpraktiker-Rechnung; als heilkundliche Leistung ist sie nach § 4 Nr. 14a UStG umsatzsteuerfrei. Private Krankenversicherungen, Beihilfestellen und Heilpraktiker-Zusatzversicherungen erstatten je nach Tarif teilweise — das hängt ausschließlich vom individuellen Vertrag ab. Ein Kostenvoranschlag wird auf Wunsch vorab ausgestellt. Das Programm ist kein nach § 20 SGB V zertifizierter Präventionskurs.",
+  },
+  {
+    frage: "Wie schnell bekomme ich eine Antwort, wenn ich eine Frage habe?",
+    antwort: `Im Chat von Praxis OS wird an Werktagen innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden geantwortet, und zwar vom betreuenden Behandler selbst, nicht von einem Team oder einer Hotline. Verschlechtern sich die Beschwerden, kann zusätzlich eine weitere Video-Sitzung vereinbart werden; eine Rückmeldung dazu erfolgt spätestens am nächsten Werktag. Praxis OS ist kein Notdienst: Bei akuten Beschwerden ist der ärztliche Notdienst oder die 112 zuständig.`,
+  },
+  {
+    frage: "Was brauche ich technisch, um mitzumachen?",
+    antwort:
+      "Für das 90-Tage-Programm von Praxis OS genügen ein Smartphone, Tablet oder Computer mit Kamera, Mikrofon und Internetverbindung sowie etwas Platz zum Bewegen. Die Video-Sitzungen laufen über Doctolib; dafür wird vor jedem Termin ein persönlicher Zugangslink verschickt, eine Installation ist nicht nötig. Plan, Check-in und Chat laufen über die Praxis-OS-App im Browser, die sich auf dem Startbildschirm ablegen lässt. Besondere Geräte oder Trainingsmittel werden nicht vorausgesetzt.",
+  },
+  {
+    frage: "Kann ich den Vertrag widerrufen?",
+    antwort:
+      "Ja. Für das 90-Tage-Programm von Praxis OS besteht ein Widerrufsrecht von 14 Tagen ab Vertragsschluss. Beim Abschluss wird ausdrücklich zugestimmt, dass die Betreuung sofort beginnt — dadurch ist im Fall eines Widerrufs nach Beginn ein anteiliger Wertersatz für die bereits erbrachten Leistungen zu zahlen (§ 357 Abs. 8 BGB). Die vollständigen Bedingungen stehen im Behandlungsvertrag, der vor der Zahlung vollständig einsehbar ist.",
   },
 ]
 
 export function FaqSection() {
-  return (
-    <section
-      id="faq"
-      className="py-24 sm:py-32 relative overflow-hidden"
-      style={{ backgroundColor: PAPER }}
-    >
-      {/* Smart line */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <div className="smart-line h-12" />
-        <div className="smart-line-dot animate-dot-pulse" />
-      </div>
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FRAGEN.map((f) => ({
+      "@type": "Question",
+      name: f.frage,
+      acceptedAnswer: { "@type": "Answer", text: f.antwort },
+    })),
+  }
 
-      <div className="container mx-auto px-4 max-w-6xl">
-        <ScrollReveal className="text-center mb-16">
+  return (
+    <section id="faq" className="relative py-24 sm:py-32" style={{ backgroundColor: PAPER }}>
+      {/* Aus derselben Liste wie die sichtbaren Texte — sie können nicht auseinanderlaufen. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="container mx-auto max-w-3xl px-4">
+        <ScrollReveal className="mb-12 sm:mb-16">
           <span className="text-sm font-medium uppercase tracking-wider" style={{ color: GREEN }}>
-            FAQ
+            Häufige Fragen
           </span>
-          <h2
-            className="mt-3 text-3xl sm:text-4xl lg:text-5xl tracking-tight"
-            style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}
-          >
-            Noch Fragen?
+          <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl" style={{ ...serif, color: INK }}>
+            Was du wissen solltest
           </h2>
-          <p className="mt-4 text-lg max-w-2xl mx-auto" style={{ color: MUTED }}>
-            Die häufigsten Fragen — ehrlich und ausführlich beantwortet.
+          <p className="mt-4 text-lg leading-relaxed" style={{ color: MUTED }}>
+            Offene Fragen klären wir ohnehin in der Konsultation. Das Wichtigste steht aber
+            schon hier.
           </p>
         </ScrollReveal>
 
-        {/* Two-column layout: sticky header left + accordion right */}
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-16">
-          {/* Left: Category navigation (sticky on desktop) */}
-          <div className="hidden lg:block">
-            <div className="sticky top-24 space-y-6">
-              {faqCategories.map((cat) => (
-                <div key={cat.category}>
-                  <p className="text-sm font-semibold" style={{ color: INK }}>
-                    {cat.category}
+        <ScrollReveal>
+          <Accordion type="single" collapsible className="w-full">
+            {FRAGEN.map((f, i) => (
+              <AccordionItem key={f.frage} value={`frage-${i}`}>
+                <AccordionTrigger className="text-left text-[17px] leading-snug hover:no-underline sm:text-lg">
+                  <span style={{ ...serif, color: INK }}>{f.frage}</span>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p className="pb-2 text-[15.5px] leading-relaxed" style={{ color: BODY }}>
+                    {f.antwort}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: MUTED }}>
-                    {cat.items.length} Fragen
-                  </p>
-                </div>
-              ))}
-              <div className="pt-4 border-t" style={{ borderColor: LINE }}>
-                <p className="text-xs" style={{ color: MUTED }}>
-                  Weitere Fragen? Stelle eine{" "}
-                  <a
-                    href="/anfrage"
-                    className="font-medium hover:opacity-80"
-                    style={{ color: GREEN }}
-                  >
-                    Anfrage
-                  </a>
-                  .
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Accordion */}
-          <div>
-            {faqCategories.map((cat) => (
-              <div key={cat.category} className="mb-8 last:mb-0">
-                <h3
-                  className="text-xs font-semibold uppercase tracking-wider mb-4"
-                  style={{ color: GREEN }}
-                >
-                  {cat.category}
-                </h3>
-                <Accordion type="single" collapsible className="space-y-2">
-                  {cat.items.map((item, idx) => (
-                    <AccordionItem
-                      key={idx}
-                      value={`${cat.category}-${idx}`}
-                      className="rounded-2xl border bg-white px-6 data-[state=open]:shadow-lg data-[state=open]:shadow-slate-900/5 transition-shadow"
-                      style={{ borderColor: LINE }}
-                    >
-                      <AccordionTrigger
-                        className="text-left text-base font-semibold hover:no-underline py-5"
-                        style={{ color: INK }}
-                      >
-                        {item.question}
-                      </AccordionTrigger>
-                      <AccordionContent
-                        className="text-sm leading-relaxed pb-5"
-                        style={{ color: BODY }}
-                      >
-                        {item.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+                </AccordionContent>
+              </AccordionItem>
             ))}
-          </div>
-        </div>
+          </Accordion>
+        </ScrollReveal>
       </div>
     </section>
   )
