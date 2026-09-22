@@ -17,30 +17,50 @@ import { CtaSection } from "@/components/landing/CtaSection"
 import { LandingFooter } from "@/components/landing/LandingFooter"
 
 export const metadata: Metadata = {
-  title: "Online Physiotherapie | Praxis OS — Physiotherapie Glawe",
+  // PROJ-26: Auf das 90-Tage-Programm ausgerichtet. Vorher stand hier das
+  // abgeloeste Angebot (Video-Analyse, Abo) — Title und Description sind das,
+  // was in der Trefferliste steht, und wirkten laenger nach als der Fliesstext.
+  title: "90 Tage Physiotherapie per Video | Praxis OS — Physiotherapie Glawe",
   description:
-    "Professionelle Physiotherapie online. Heilpraktiker-Behandlung per Video, individuelle Trainingspläne und persönliche Betreuung per App — deutschlandweit ohne Wartezeit.",
+    "Physiotherapeutische Fernbetreuung über 90 Tage: Videokonsultation mit ehrlicher " +
+    "Eignungsprüfung, persönlicher Trainingsplan, tägliches Check-in und acht Video-Sitzungen. " +
+    "Heilpraktiker für Physiotherapie — ohne ärztliche Verordnung, ohne Wartezeit.",
   keywords: [
     "Online Physiotherapie",
-    "Physiotherapie online",
-    "Video Physiotherapie",
     "Physiotherapie per Video",
     "Heilpraktiker Physiotherapie",
-    "Online Physiotherapie Deutschland",
+    "Rückenschmerzen online behandeln",
+    "Physiotherapie ohne Verordnung",
+    "Telerehabilitation",
     "Physiotherapie ohne Wartezeit",
-    "Physiotherapie App",
+    "Physiotherapie Wildau",
+    "digitale Physiotherapie",
     "Trainingsplan Physiotherapie",
-    "Schmerztherapie online",
-    "Rückenschmerzen Physiotherapie",
-    "Physiotherapie von zuhause",
   ],
   openGraph: {
-    title: "Online Physiotherapie — Behandlung per Video | Praxis OS",
+    title: "90 Tage Physiotherapie per Video | Praxis OS",
     description:
-      "Professionelle Physiotherapie per Video. Heilpraktiker-Behandlung, individuelle Trainingspläne und persönliche Betreuung per App — deutschlandweit.",
+      "Ein Therapeut, ein Plan, täglicher Kontakt — 90 Tage begleitet, Schritt für Schritt in " +
+      "die Selbstständigkeit. Am Anfang steht eine Videokonsultation mit ehrlicher Eignungsprüfung.",
     type: "website",
     locale: "de_DE",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Praxis OS — Online Physiotherapie" }],
+    url: "https://wwwpraxis-os.com",
+    siteName: "Praxis OS",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Praxis OS — 90 Tage physiotherapeutische Fernbetreuung",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "90 Tage Physiotherapie per Video | Praxis OS",
+    description:
+      "Videokonsultation mit ehrlicher Eignungsprüfung, persönlicher Plan, täglicher Kontakt. " +
+      "Kein Abo — die Betreuung endet nach 90 Tagen automatisch.",
   },
   alternates: {
     canonical: "https://wwwpraxis-os.com",

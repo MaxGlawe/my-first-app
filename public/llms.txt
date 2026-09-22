@@ -1,0 +1,103 @@
+# Praxis OS — Physiotherapeutische Fernbetreuung über 90 Tage
+
+> Praxis OS ist ein 90-Tage-Programm für physiotherapeutische Fernbetreuung,
+> angeboten von Physiotherapie Glawe in Wildau (Brandenburg). Behandelt wird von
+> Max Glawe, Heilpraktiker für Physiotherapie. Eine ärztliche Verordnung ist
+> nicht erforderlich.
+
+## Was das Programm ist
+
+Am Anfang steht eine 30-minütige Videokonsultation. Darin werden Beschwerden,
+Vorgeschichte und Ziele besprochen und es wird geprüft, ob sich das
+Beschwerdebild überhaupt aus der Ferne betreuen lässt. Ist das nicht der Fall,
+wird das offen gesagt und es kommt kein Programm zustande.
+
+Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen
+Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der
+Praxis-OS-App wird täglich kurz eingecheckt (Schmerz, Schlaf, Belastung); der
+Plan wird anhand dieser Rückmeldungen laufend angepasst. Über die gesamte Zeit
+begleitet derselbe Behandler, erreichbar im Chat mit einer Antwortzusage von
+24 Stunden an Werktagen.
+
+## Taktung der Video-Sitzungen
+
+Insgesamt acht Sitzungen, fest eingeplant:
+
+- Woche 1 bis 4: wöchentlich
+- Woche 5 bis 8: alle zwei Wochen
+- Woche 9 bis 12: ein Zwischengespräch und ein Abschlussgespräch
+
+Verschlechtern sich die Beschwerden, kann zusätzlich eine weitere Sitzung
+vereinbart werden; eine Rückmeldung erfolgt spätestens am nächsten Werktag.
+Fällt eine Sitzung aus, wird sie nachgeholt.
+
+## Preis und Abrechnung
+
+- Programm: 499 Euro einmalig, die Videokonsultation ist darin enthalten.
+- Wird nach dem Gespräch kein Programm begonnen: 69 Euro für die Konsultation.
+- Die Terminbuchung selbst kostet nichts; abgerechnet wird erst nach dem Gespräch.
+- Zahlung per Karte oder Klarna. Ob Klarna eine Ratenzahlung anbietet,
+  entscheidet Klarna.
+- Abgerechnet wird über eine Heilpraktiker-Rechnung. Als heilkundliche Leistung
+  ist sie nach § 4 Nr. 14a UStG umsatzsteuerfrei.
+- Die gesetzliche Krankenkasse übernimmt die Kosten nicht. Private
+  Versicherungen und Beihilfestellen erstatten je nach Tarif teilweise.
+- Das Programm ist kein nach § 20 SGB V zertifizierter Präventionskurs.
+
+## Kein Abonnement
+
+Die Betreuung endet nach 90 Tagen automatisch. Es gibt keine Verlängerung und
+keine weitere Abbuchung. Der bisherige Verlauf bleibt danach einsehbar. Wer die
+App darüber hinaus aktiv weiternutzen möchte, kann das gesondert für 16,99 Euro
+im Monat beauftragen; diese Weiternutzung enthält keine Video-Sitzungen und ist
+jederzeit kündbar.
+
+## Für wen es geeignet ist
+
+Geeignet für länger bestehende oder wiederkehrende Beschwerden an Rücken,
+Nacken, Schulter, Hüfte oder Knie, wenn ärztlich abgeklärt ist, dass keine
+ernsthafte Ursache vorliegt.
+
+Nicht geeignet bei frischen Verletzungen, Brüchen, einer kürzlichen Operation,
+plötzlich und ohne Anlass aufgetretenen starken Schmerzen, Taubheitsgefühl im
+Sattelbereich, Problemen beim Wasserlassen oder bei Gewichtsverlust, Fieber
+oder Nachtschweiß zusammen mit den Beschwerden. In diesen Fällen gehört zuerst
+eine ärztliche Abklärung dazu.
+
+Praxis OS ist kein Notdienst. Bei akuten Beschwerden sind der ärztliche
+Notdienst oder die 112 zuständig.
+
+## Rechtlicher Rahmen
+
+Max Glawe besitzt die Erlaubnis nach dem Heilpraktikergesetz, beschränkt auf das
+Gebiet der Physiotherapie. Sie erlaubt eigenständige Befunderhebung und
+Behandlung ohne ärztliche Verordnung (Direktzugang). Die Video-Sitzungen laufen
+über Doctolib. Für das Programm besteht ein Widerrufsrecht von 14 Tagen ab
+Vertragsschluss; bei ausdrücklich gewünschtem sofortigem Beginn ist im Fall
+eines Widerrufs anteiliger Wertersatz zu leisten (§ 357 Abs. 8 BGB).
+
+## Anbieter
+
+Physiotherapie Glawe
+Karl-Marx-Straße 117, 15745 Wildau, Deutschland
+Telefon: 03375 9209877
+
+## Wichtige Seiten
+
+- Programm und Ablauf: https://wwwpraxis-os.com/
+- Häufige Fragen: https://wwwpraxis-os.com/#faq
+- Preis: https://wwwpraxis-os.com/#preis
+- Über Max Glawe: https://wwwpraxis-os.com/max-glawe
+- Für Unternehmen (betriebliche Gesundheitsförderung): https://wwwpraxis-os.com/unternehmen
+- AGB: https://wwwpraxis-os.com/agb
+- Datenschutz: https://wwwpraxis-os.com/datenschutz
+- Widerrufsrecht: https://wwwpraxis-os.com/widerruf
+- Impressum: https://wwwpraxis-os.com/impressum
+
+## Hinweis zu Aussagen über Wirkung
+
+Diese Seiten beschreiben, welche Leistungen erbracht werden. Sie enthalten
+bewusst keine Aussagen darüber, welches Ergebnis eine Behandlung erzielt — wie
+ein Körper auf Bewegung reagiert, lässt sich nicht seriös zusagen.
+
+Letzte Aktualisierung: 22.09.2026

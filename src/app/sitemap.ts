@@ -11,6 +11,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${baseUrl}/anfrage`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    // PROJ-26: Autorenseite — traegt die Zurechenbarkeit der Gesundheitsinhalte
+    { url: `${baseUrl}/max-glawe`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${baseUrl}/beschwerden`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/online-physiotherapie`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/impressum`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
