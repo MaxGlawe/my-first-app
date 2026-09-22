@@ -62,12 +62,12 @@ export function CredentialsSection() {
               style={{ backgroundColor: PAPER }}
             >
               <Image
-                src="/images/maxglawe.webp"
+                src="/images/max-portrait.jpg"
                 alt="Max Glawe, Heilpraktiker für Physiotherapie, in den Räumen der Praxis Physiotherapie Glawe in Wildau"
                 fill
                 loading="lazy"
                 sizes="(min-width: 1024px) 32vw, 90vw"
-                className="object-cover object-top"
+                className="object-cover object-[50%_28%]"
               />
             </div>
           </ScrollReveal>
