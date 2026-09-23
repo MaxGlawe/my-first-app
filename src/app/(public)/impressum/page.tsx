@@ -214,20 +214,8 @@ export default async function ImpressumPage() {
 
           {/* 11. Streitschlichtung */}
           <section>
-            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>11. Online-Streitbeilegung</h2>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>11. Verbraucherstreitbeilegung</h2>
             <p>
-              Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:{" "}
-              <a
-                href="https://ec.europa.eu/consumers/odr/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:underline"
-                style={{ color: GREEN }}
-              >
-                ec.europa.eu/consumers/odr
-              </a>
-            </p>
-            <p className="mt-2">
               Wir sind weder bereit noch verpflichtet, an einem Streitbeilegungsverfahren vor einer
               Verbraucherschlichtungsstelle teilzunehmen.
             </p>

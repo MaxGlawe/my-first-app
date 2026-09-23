@@ -60,9 +60,10 @@ export default async function DatenschutzPage() {
               die zugehörige Patienten-App „Praxis OS" nutzt.
             </p>
             <p className="mt-2">
-              <span className="font-medium" style={{ color: INK }}>Kurzfassung:</span> Deine Daten werden ausschließlich auf
-              Servern in der Europäischen Union gespeichert. Wir verkaufen keine Daten an Dritte. Gesundheitsdaten
-              werden nur mit deiner ausdrücklichen Einwilligung verarbeitet.
+              <span className="font-medium" style={{ color: INK }}>Kurzfassung:</span> Unsere Anwendung läuft auf Servern in
+              Deutschland, die Datenbank wird in der Schweiz betrieben — einem Land, für das ein
+              Angemessenheitsbeschluss der Europäischen Kommission vorliegt. Wir verkaufen keine Daten an Dritte.
+              Gesundheitsdaten werden nur mit deiner ausdrücklichen Einwilligung verarbeitet.
             </p>
           </section>
 
@@ -177,8 +178,11 @@ export default async function DatenschutzPage() {
                 <p className="font-medium" style={{ color: INK }}>Supabase Inc.</p>
                 <p className="text-xs mb-2" style={{ color: MUTED }}>Datenbank, Authentifizierung, Speicherung</p>
                 <p>
-                  Alle Daten werden auf Servern in der <span className="font-medium">Europäischen Union (AWS Frankfurt)</span> gespeichert.
-                  Ein Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO liegt vor. Supabase ist SOC2 Type II zertifiziert.
+                  Die Datenbank wird in der <span className="font-medium">Schweiz</span> betrieben. Die Schweiz ist ein
+                  Drittland im Sinne der DSGVO; für sie besteht ein <span className="font-medium">Angemessenheitsbeschluss
+                  der Europäischen Kommission</span>, sodass die Übermittlung ohne zusätzliche Garantien zulässig ist
+                  (Art. 45 DSGVO). Ein Auftragsverarbeitungsvertrag (AVV) gemäß Art. 28 DSGVO liegt vor.
+                  Supabase ist SOC2 Type II zertifiziert.
                 </p>
               </div>
 

@@ -55,16 +55,29 @@ export default function AgbPage() {
           {/* § 2 */}
           <section>
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 2 Leistungsbeschreibung</h2>
-            <p>(1) Der Anbieter erbringt folgende Leistungen:</p>
+            <p>
+              (1) Kernleistung des Anbieters ist das <span className="font-medium" style={{ color: INK }}>90-Tage-Programm
+              „Praxis OS"</span> — eine physiotherapeutische Fernbetreuung über 90 Tage. Es umfasst:
+            </p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
-              <li>Physiotherapeutische Ersteinschätzung und Befunderhebung per Video</li>
-              <li>Individuelle Behandlung durch einen Heilpraktiker für Physiotherapie per Videokonsultation</li>
-              <li>Erstellung individueller Trainingspläne mit Video-Anleitungen</li>
-              <li>Bereitstellung von Wissens-Lektionen zum jeweiligen Beschwerdebild</li>
-              <li>Tägliches Befindlichkeits-Tracking (Schmerztagebuch) über die App</li>
-              <li>Chat-Kommunikation zwischen Therapeut und Patient</li>
-              <li>Bei Buchung eines Reha-Programms: strukturierte Betreuung über den vereinbarten Zeitraum</li>
+              <li>Eine Videokonsultation von ca. 30 Minuten mit Befunderhebung und Prüfung, ob sich das Beschwerdebild für eine Fernbetreuung eignet</li>
+              <li>Einen individuellen Plan aus täglichen Kurzübungen und einem Trainingsplan für vereinbarte Trainingstage, mit Video-Anleitungen</li>
+              <li>Acht Video-Sitzungen von je ca. 30 Minuten: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 vierzehntägig, in den Wochen 9 bis 12 ein Zwischen- und ein Abschlussgespräch</li>
+              <li>Tägliches Befindlichkeits-Tracking über die App und Anpassung des Plans anhand dieser Angaben</li>
+              <li>Chat-Kommunikation mit dem behandelnden Therapeuten; Antwort an Werktagen innerhalb von 24 Stunden</li>
+              <li>Eine zusätzliche Video-Sitzung bei Verschlechterung des Beschwerdebildes; Rückmeldung spätestens am nächsten Werktag</li>
+              <li>Die Nutzung der Patienten-App für die Dauer der Betreuung, ohne gesonderte Berechnung</li>
             </ul>
+            <p className="mt-3">
+              (1a) Die Betreuung endet nach 90 Tagen automatisch. Es entsteht kein Abonnement, es erfolgt keine
+              Verlängerung und keine weitere Abbuchung. Eine Weiternutzung der App über diesen Zeitraum hinaus ist
+              nur auf ausdrückliche gesonderte Beauftragung möglich und nicht Gegenstand des Programms.
+            </p>
+            <p className="mt-3">
+              (1b) Daneben bietet der Anbieter Einzelsitzungen sowie strukturierte Reha-Programme an. Für diese
+              gelten die Regelungen dieser AGB entsprechend; Leistungsumfang, Laufzeit und Vergütung ergeben sich
+              aus dem jeweiligen Behandlungsvertrag.
+            </p>
             <p className="mt-3">
               (2) Die <span className="font-medium" style={{ color: INK }}>Video-Konsultationen</span> werden über die
               Plattform <span className="font-medium" style={{ color: INK }}>Doctolib GmbH</span> durchgeführt. Der Patient
@@ -93,18 +106,28 @@ export default function AgbPage() {
               sondern eine unverbindliche Aufforderung an den Patienten, eine Anfrage zu stellen.
             </p>
             <p className="mt-2">
-              (2) Mit dem Absenden des Anfrage-Formulars gibt der Patient ein unverbindliches Angebot auf
-              Abschluss eines Behandlungsvertrags ab.
+              (2) Mit der Buchung eines Termins im Terminkalender des Anbieters gibt der Patient ein Angebot auf
+              Abschluss eines Vertrags über die Videokonsultation ab. Bei der Buchung wird kein Betrag abgebucht.
             </p>
             <p className="mt-2">
-              (3) Der Behandlungsvertrag kommt erst mit der ausdrücklichen Annahme durch den Anbieter zustande.
-              Die Annahme erfolgt in der Regel durch die Bestätigung eines Termins für die Ersteinschätzung
-              per E-Mail oder über Doctolib.
+              (3) Der Vertrag über die Videokonsultation kommt mit der Bestätigung des Termins durch den Anbieter
+              zustande. Die Vergütung wird nach der Konsultation abgerechnet.
             </p>
             <p className="mt-2">
-              (4) Bei Buchung eines Reha-Programms (z. B. Mini-Reha Post-OP, Chronik-Programm) wird ein
-              separater Behandlungsvertrag geschlossen, der den Leistungsumfang, die Laufzeit und die
-              Vergütung regelt.
+              (4) Über das 90-Tage-Programm nach § 2 Abs. 1 wird ein <span className="font-medium" style={{ color: INK }}>gesonderter
+              Behandlungsvertrag</span> geschlossen. Der Anbieter stellt dem Patienten nach der Videokonsultation ein
+              befristetes Angebot bereit, das den vollständigen Vertragstext, den Leistungsumfang und die Vergütung
+              ausweist. Der Behandlungsvertrag kommt mit dem erfolgreichen Zahlungseingang zustande; eine Unterschrift
+              ist nicht erforderlich.
+            </p>
+            <p className="mt-2">
+              (5) Vor der Zahlung bestätigt der Patient ausdrücklich, dass der Anbieter mit der Erbringung der
+              Dienstleistung vor Ablauf der Widerrufsfrist beginnt. Auf die daraus folgende Pflicht zum Wertersatz
+              (§ 357 Abs. 8 BGB) wird an dieser Stelle gesondert hingewiesen; Näheres regelt die Widerrufsbelehrung.
+            </p>
+            <p className="mt-2">
+              (6) Nimmt der Patient das Angebot nach Abs. 4 nicht an, bleibt es bei der Vergütung für die
+              Videokonsultation. Für Einzelsitzungen und Reha-Programme gelten Abs. 2 bis 4 entsprechend.
             </p>
           </section>
 
