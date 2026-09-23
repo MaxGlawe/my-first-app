@@ -1,255 +1,133 @@
 "use client"
 
 /**
- * PROJ-27 — „Sprechzimmer öffnen" im Patientenprofil.
+ * PROJ-27 — Videotermine im Patientenprofil.
  *
- * Der Einstieg in jedes Gespräch. Bewusst hier und nicht in einem eigenen
- * Menüpunkt: Du stehst ohnehin beim Patienten, wenn du mit ihm sprechen
- * willst.
+ * NUR ANZEIGE. Angelegt werden Termine in der digitalen Sprechstunde — an
+ * einem Ort, nicht an zweien. Der erste Entwurf hatte hier den vollen
+ * Anlage-Vorgang mit „jetzt einen Raum aufmachen". Das ging an der
+ * Wirklichkeit vorbei: Ein Patient hat nicht dann Zeit, wenn der Behandler
+ * gerade Zeit hat. Ein Videotermin ist ein Termin.
  *
- * Die Karte blendet sich vollständig aus, solange auf dem Server kein
- * Videodienst eingerichtet ist. Dasselbe Muster wie bei der Terminkarte —
- * lieber nichts zeigen als einen Knopf, der ins Leere führt. Sobald die
- * Zugangsdaten gesetzt sind, erscheint sie von allein.
+ * Was hier bleibt, ist die Frage, die man sich im Profil wirklich stellt:
+ * Wann sprechen wir das nächste Mal? Und wenn es gerade so weit ist, der
+ * kürzeste Weg hinein.
+ *
+ * Blendet sich aus, solange kein Videodienst eingerichtet ist.
  */
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Video, Loader2, AlertTriangle, Copy, Check, DoorOpen, PhoneOff, QrCode, Smartphone,
-} from "lucide-react"
-
-type Anlass = "konsultation" | "programm_sitzung" | "verschlechterung" | "sonstiges"
-
-const ANLAESSE: { id: Anlass; label: string }[] = [
-  { id: "konsultation", label: "Videokonsultation" },
-  { id: "programm_sitzung", label: "Programm-Sitzung" },
-  { id: "verschlechterung", label: "Verschlechterung" },
-  { id: "sonstiges", label: "Sonstiges" },
-]
+import { Video, DoorOpen, CalendarPlus, AlertTriangle } from "lucide-react"
+import { formatKurz, relativ, zustand } from "@/lib/video/termin"
 
 interface Call {
   id: string
-  room_name: string
-  anlass: Anlass
+  anlass: string
   status: string
-  schliesst_at: string
-  /** Zutritt fuer den Patienten OHNE Praxis-OS-Konto. */
-  gast_url?: string | null
-  qr_data_url?: string | null
+  geplant_at: string
+  dauer_minuten: number
+  einladung_gesendet_at: string | null
 }
 
-function fmt(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+const ANLASS_LABEL: Record<string, string> = {
+  konsultation: "Videokonsultation",
+  programm_sitzung: "Programm-Sitzung",
+  verschlechterung: "Zusätzliche Sitzung",
+  sonstiges: "Videogespräch",
 }
 
 export function SprechzimmerCard({ patientId }: { patientId: string }) {
   const [eingerichtet, setEingerichtet] = useState<boolean | null>(null)
-  const [aktiv, setAktiv] = useState<Call | null>(null)
-  const [anlass, setAnlass] = useState<Anlass>("konsultation")
-  const [busy, setBusy] = useState(false)
-  const [fehler, setFehler] = useState<string | null>(null)
-  const [kopiert, setKopiert] = useState(false)
-  const [qrOffen, setQrOffen] = useState(false)
+  const [calls, setCalls] = useState<Call[]>([])
 
   const laden = useCallback(() => {
     fetch(`/api/os/video-calls?patient_id=${patientId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         setEingerichtet(d?.eingerichtet ?? false)
-        setAktiv(d?.aktiv ?? null)
+        setCalls(d?.calls ?? [])
       })
       .catch(() => setEingerichtet(false))
   }, [patientId])
 
   useEffect(() => laden(), [laden])
 
-  async function eroeffnen() {
-    setBusy(true)
-    setFehler(null)
-    try {
-      const res = await fetch("/api/os/video-calls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patient_id: patientId, anlass }),
-      })
-      const json = await res.json()
-      if (!res.ok) {
-        setFehler(json.error ?? "Das Sprechzimmer konnte nicht geöffnet werden.")
-        return
-      }
-      setAktiv(json.call)
-      // BEWUSST kein Sprung in den Raum. Der erste Entwurf tat das — und
-      // damit sah der Behandler den QR-Code nie, den der Patient braucht,
-      // um ueberhaupt hineinzukommen. Erst teilen, dann eintreten.
-    } catch {
-      setFehler("Verbindungsfehler. Bitte erneut versuchen.")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function beenden(id: string) {
-    setBusy(true)
-    setFehler(null)
-    try {
-      const res = await fetch("/api/os/video-calls", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      })
-      if (!res.ok) {
-        const j = await res.json()
-        setFehler(j.error ?? "Konnte nicht beendet werden.")
-        return
-      }
-      laden()
-    } catch {
-      setFehler("Verbindungsfehler. Bitte erneut versuchen.")
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function kopieren() {
-    if (!aktiv?.gast_url) return
-    try {
-      await navigator.clipboard.writeText(aktiv.gast_url)
-      setKopiert(true)
-      setTimeout(() => setKopiert(false), 2000)
-    } catch {
-      setFehler("Kopieren nicht möglich — bitte den Link manuell markieren.")
-    }
-  }
-
-  // Noch nichts geladen, oder kein Videodienst auf diesem Server → nichts zeigen.
   if (eingerichtet !== true) return null
+
+  const jetzt = Date.now()
+  const kommend = calls
+    .filter(
+      (c) =>
+        c.status !== "abgesagt" &&
+        c.status !== "beendet" &&
+        new Date(c.geplant_at).getTime() > jetzt - 6 * 60 * 60_000
+    )
+    .sort((a, b) => +new Date(a.geplant_at) - +new Date(b.geplant_at))
+
+  const naechster = kommend[0]
+  const z = naechster ? zustand(naechster.geplant_at, naechster.dauer_minuten) : null
+  const offen = z === "offen" || z === "laeuft"
 
   return (
     <Card className="mb-6 border-[#e7e1d6] bg-[#F8F5F0]">
       <CardContent className="py-5">
         <div className="flex flex-wrap items-center gap-2">
           <Video className="h-4 w-4 text-[#2C3E2D]" />
-          <h3 className="text-sm font-bold text-slate-900">Sprechzimmer</h3>
-          {aktiv && (
+          <h3 className="text-sm font-bold text-slate-900">Digitale Sprechstunde</h3>
+          {offen && (
             <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-              offen bis {fmt(aktiv.schliesst_at)} Uhr
+              {z === "laeuft" ? "läuft" : "Zugang offen"}
             </Badge>
           )}
         </div>
 
-        {fehler && (
-          <Alert variant="destructive" className="mt-3">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{fehler}</AlertDescription>
-          </Alert>
-        )}
-
-        {aktiv ? (
+        {naechster ? (
           <div className="mt-3">
-            <div className="flex flex-wrap gap-2">
-              <a href={`/os/sprechzimmer/${aktiv.id}`}>
-                <Button size="sm" className="bg-[#2C3E2D] hover:bg-[#24321f]">
-                  <DoorOpen className="mr-1.5 h-4 w-4" /> Eintreten
+            <p className="text-[13.5px] text-slate-700">
+              <strong>{ANLASS_LABEL[naechster.anlass] ?? "Videogespräch"}</strong> —{" "}
+              {formatKurz(naechster.geplant_at)}
+              <span className="text-slate-500"> · {relativ(naechster.geplant_at)}</span>
+            </p>
+            {!naechster.einladung_gesendet_at && (
+              <p className="mt-1 flex items-center gap-1.5 text-[12.5px] text-amber-700">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Einladung noch nicht verschickt
+              </p>
+            )}
+            {kommend.length > 1 && (
+              <p className="mt-1 text-[12.5px] text-slate-500">
+                und {kommend.length - 1} weitere Termine
+              </p>
+            )}
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {offen && (
+                <a href={`/os/sprechzimmer/${naechster.id}`}>
+                  <Button size="sm" className="bg-[#2C3E2D] hover:bg-[#24321f]">
+                    <DoorOpen className="mr-1.5 h-4 w-4" /> Eintreten
+                  </Button>
+                </a>
+              )}
+              <a href="/os/sprechstunde">
+                <Button size="sm" variant="outline">
+                  Termine verwalten
                 </Button>
               </a>
-              <Button size="sm" variant="outline" onClick={() => setQrOffen((v) => !v)}>
-                <QrCode className="mr-1.5 h-4 w-4" />
-                {qrOffen ? "QR ausblenden" : "QR-Code zeigen"}
-              </Button>
-              <Button size="sm" variant="outline" onClick={kopieren}>
-                {kopiert ? (
-                  <Check className="mr-1.5 h-4 w-4 text-emerald-600" />
-                ) : (
-                  <Copy className="mr-1.5 h-4 w-4" />
-                )}
-                {kopiert ? "Kopiert" : "Link kopieren"}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => beenden(aktiv.id)} disabled={busy}>
-                <PhoneOff className="mr-1.5 h-4 w-4" /> Beenden
-              </Button>
-            </div>
-
-            {/* So kommt der Patient WIRKLICH hinein.
-                Push setzt eine installierte App und eine erteilte Erlaubnis
-                voraus — im Praxistest am 23.09.2026 gab es im ganzen System
-                genau eine solche Anmeldung. Und bei der Konsultation hat der
-                Patient ueberhaupt noch kein Konto. Der Link funktioniert
-                ohne beides. */}
-            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
-              <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-slate-600">
-                <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2C3E2D]" />
-                <span>
-                  Schick dem Patienten diesen Link — er braucht dafür <strong>kein Konto</strong>.
-                  Im Gespräch kannst du auch den Bildschirm teilen und den QR-Code scannen lassen.
-                </span>
-              </p>
-              {aktiv.gast_url && (
-                <p className="mt-2 break-all rounded-lg bg-slate-50 px-2.5 py-2 font-mono text-[11.5px] text-slate-700">
-                  {aktiv.gast_url}
-                </p>
-              )}
-              <p className="mt-2 text-[12px] text-slate-500">
-                Gültig bis {fmt(aktiv.schliesst_at)} Uhr, danach ist er wertlos.
-              </p>
-
-              {qrOffen && aktiv.qr_data_url && (
-                <div className="mt-3 flex flex-col items-center rounded-xl border border-[#e7e1d6] bg-[#F8F5F0] p-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={aktiv.qr_data_url}
-                    alt="QR-Code zum Sprechzimmer"
-                    className="h-56 w-56"
-                  />
-                  <p className="mt-2 text-center text-[12px] text-slate-500">
-                    Mit der Handykamera scannen — der Patient landet direkt im Warteraum.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         ) : (
           <div className="mt-3">
-            <div className="flex flex-wrap gap-1.5">
-              {ANLAESSE.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => setAnlass(a.id)}
-                  className={`rounded-full border px-3 py-1.5 text-[12.5px] transition-colors ${
-                    anlass === a.id
-                      ? "border-[#2C3E2D] bg-white font-medium text-slate-900"
-                      : "border-slate-200 bg-white/60 text-slate-600 hover:bg-white"
-                  }`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-
-            <Button
-              size="sm"
-              onClick={eroeffnen}
-              disabled={busy}
-              className="mt-3 bg-[#2C3E2D] hover:bg-[#24321f]"
-            >
-              {busy ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Wird geöffnet…
-                </>
-              ) : (
-                <>
-                  <Video className="mr-1.5 h-4 w-4" /> Sprechzimmer öffnen
-                </>
-              )}
-            </Button>
-            <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
-              Danach bekommst du Link und QR-Code für den Patienten. Das Zutrittsfenster steht
-              zwei Stunden offen und schliesst sich, sobald du beendest.
+            <p className="text-[13px] leading-relaxed text-slate-600">
+              Kein Videotermin geplant.
             </p>
+            <a href="/os/sprechstunde">
+              <Button size="sm" variant="outline" className="mt-3">
+                <CalendarPlus className="mr-1.5 h-4 w-4" /> Termin anlegen
+              </Button>
+            </a>
           </div>
         )}
       </CardContent>

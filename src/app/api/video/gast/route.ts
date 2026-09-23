@@ -30,6 +30,63 @@ import { videoEingerichtet, ANLASS_TEXT } from "@/lib/video"
 
 const schema = z.object({ token: z.string().uuid() })
 
+/**
+ * GET /api/video/gast?token=…
+ *
+ * Wann ist mein Termin, und kann ich schon hinein? Bewusst OHNE
+ * Videozugang: Wer am Vorabend auf den Link klickt, soll eine Uhrzeit sehen
+ * und keine Fehlermeldung. Ein Link, der zwoelf Stunden vorher wie ein
+ * Defekt aussieht, erzeugt genau den Anruf, den die Einladung ersparen
+ * sollte.
+ *
+ * Herausgegeben wird nur, was auf einer Einladung ohnehin steht — Zeitpunkt,
+ * Dauer, Name des Behandlers. Keine Angaben zur Beschwerde.
+ */
+export async function GET(request: NextRequest) {
+  const token = request.nextUrl.searchParams.get("token")
+  if (!token || !z.string().uuid().safeParse(token).success) {
+    return NextResponse.json({ error: "Dieser Zugang ist nicht gültig." }, { status: 404 })
+  }
+
+  const svc = createSupabaseServiceClient()
+  const { data: call } = await svc
+    .from("video_calls")
+    .select("id, anlass, status, geplant_at, dauer_minuten, oeffnet_at, schliesst_at, therapist_id, hinweis")
+    .eq("gast_token", token)
+    .maybeSingle()
+
+  if (!call) {
+    return NextResponse.json({ error: "Dieser Zugang ist nicht gültig." }, { status: 404 })
+  }
+
+  const { data: therapeut } = await svc
+    .from("user_profiles")
+    .select("first_name, last_name")
+    .eq("id", call.therapist_id)
+    .maybeSingle()
+
+  const jetzt = Date.now()
+  const zustand =
+    call.status === "abgesagt"
+      ? "abgesagt"
+      : call.status === "beendet" || jetzt > new Date(call.schliesst_at).getTime()
+      ? "vorbei"
+      : jetzt >= new Date(call.oeffnet_at).getTime()
+      ? "offen"
+      : "wartet"
+
+  return NextResponse.json({
+    zustand,
+    titel: ANLASS_TEXT[call.anlass]?.kurz ?? "Videogespräch",
+    geplant_at: call.geplant_at,
+    dauer_minuten: call.dauer_minuten,
+    oeffnet_at: call.oeffnet_at,
+    hinweis: call.hinweis,
+    behandler:
+      [therapeut?.first_name, therapeut?.last_name].filter(Boolean).join(" ") || "dein Behandler",
+  })
+}
+
 export async function POST(request: NextRequest) {
   if (!videoEingerichtet()) {
     return NextResponse.json({ error: "Der Videodienst ist nicht eingerichtet." }, { status: 503 })

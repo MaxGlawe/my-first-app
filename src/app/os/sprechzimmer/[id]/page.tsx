@@ -22,6 +22,7 @@ const serif = { fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 600
 interface Daten {
   titel: string
   patient: string
+  gastUrl?: string
 }
 
 export default function TherapeutSprechzimmerPage() {
@@ -39,7 +40,7 @@ export default function TherapeutSprechzimmerPage() {
         if (!r.ok) throw new Error(j.error ?? `Serverantwort ${r.status}`)
         return j
       })
-      .then((d) => setDaten({ titel: d.titel, patient: d.patient }))
+      .then((d) => setDaten({ titel: d.titel, patient: d.patient, gastUrl: d.gast_url }))
       .catch((e: Error) => setFehler(e.message))
       .finally(() => setLaedt(false))
   }, [callId])
@@ -71,7 +72,9 @@ export default function TherapeutSprechzimmerPage() {
       callId={callId!}
       anlassText={daten.titel}
       gegenueber={daten.patient}
-      zurueckHref="/os/patients"
+      zurueckHref="/os/sprechstunde"
+      gastUrl={daten.gastUrl}
+      qrUrl={`/api/os/video-calls/${callId}/qr`}
     />
   )
 }

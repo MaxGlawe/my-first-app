@@ -18,20 +18,30 @@ import { sendPushToPatient } from "@/lib/push"
 import { videoAnbieter } from "@/lib/video/livekit"
 import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
 import QRCode from "qrcode"
+import { sendEmail } from "@/lib/email"
+import { sprechzimmerEinladung } from "@/lib/email-templates/sprechzimmer-einladung"
+import { oeffnetAm, schliesstAm, kalendereintrag } from "@/lib/video/termin"
 
 const STAFF_ROLES = ["admin", "heilpraktiker", "physiotherapeut"]
 
-const eroeffnenSchema = z.object({
+const anlegenSchema = z.object({
   patient_id: z.string().uuid(),
   anlass: z.enum(["konsultation", "programm_sitzung", "verschlechterung", "sonstiges"]),
+  /** Geplanter Beginn, ISO. Darf auch „jetzt" sein — dann ist es ein Sofort-Termin. */
+  geplant_at: z.string().datetime({ offset: true }),
+  dauer_minuten: z.number().int().min(10).max(180).default(30),
+  /** Was der Patient vorbereiten soll — landet in der Einladung. */
+  hinweis: z.string().trim().max(500).optional().nullable(),
   verschlechterung_id: z.string().uuid().optional().nullable(),
-  /** Wie lange das Zutrittsfenster offen steht. */
-  fenster_minuten: z.number().int().min(15).max(240).default(120),
+  /** Einladung sofort verschicken? */
+  einladen: z.boolean().default(true),
 })
 
-const beendenSchema = z.object({
+const patchSchema = z.object({
   id: z.string().uuid(),
+  aktion: z.enum(["beenden", "einladung", "absagen"]).default("beenden"),
   notiz: z.string().trim().max(4000).optional().nullable(),
+  grund: z.string().trim().max(500).optional().nullable(),
 })
 
 /** QR serverseitig erzeugen — im Call zaehlt, dass das Bild sofort da ist. */
@@ -73,14 +83,41 @@ export async function GET(request: NextRequest) {
   if (!auth) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 403 })
 
   const patientId = request.nextUrl.searchParams.get("patient_id")
+
+  // Ohne patient_id: die Uebersicht der digitalen Sprechstunde. Alles, was
+  // noch aussteht oder gerade lief — der Blick, mit dem der Behandler seinen
+  // Tag beginnt.
   if (!patientId) {
-    return NextResponse.json({ error: "patient_id fehlt." }, { status: 400 })
+    const grenze = new Date(Date.now() - 6 * 60 * 60_000).toISOString()
+    const { data, error } = await auth.svc
+      .from("video_calls")
+      .select(
+        "id, patient_id, gast_token, anlass, status, geplant_at, dauer_minuten, oeffnet_at, schliesst_at, hinweis, einladung_gesendet_at, abgesagt_at, patients(vorname, nachname, email)"
+      )
+      .gte("geplant_at", grenze)
+      .not("status", "in", "(abgesagt)")
+      .order("geplant_at", { ascending: true })
+      .limit(200)
+
+    if (error) {
+      console.error("[os/video-calls] Uebersicht:", error)
+      return NextResponse.json({ error: "Konnte nicht geladen werden." }, { status: 500 })
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+    return NextResponse.json({
+      eingerichtet: videoEingerichtet(),
+      termine: (data ?? []).map((c) => ({
+        ...c,
+        gast_url: `${siteUrl}/sprechzimmer/${c.gast_token}`,
+      })),
+    })
   }
 
   const { data, error } = await auth.svc
     .from("video_calls")
     .select(
-      "id, room_name, gast_token, anlass, status, oeffnet_at, schliesst_at, begonnen_at, beendet_at, notiz, created_at"
+      "id, room_name, gast_token, anlass, status, geplant_at, dauer_minuten, oeffnet_at, schliesst_at, begonnen_at, beendet_at, notiz, hinweis, einladung_gesendet_at, created_at"
     )
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
@@ -142,15 +179,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Ungültiges JSON." }, { status: 400 })
   }
 
-  const parsed = eroeffnenSchema.safeParse(body)
+  const parsed = anlegenSchema.safeParse(body)
   if (!parsed.success) {
-    return NextResponse.json({ error: "Validierungsfehler." }, { status: 400 })
+    return NextResponse.json(
+      { error: "Validierungsfehler.", details: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    )
   }
-  const { patient_id, anlass, verschlechterung_id, fenster_minuten } = parsed.data
+  const { patient_id, anlass, geplant_at, dauer_minuten, hinweis, verschlechterung_id, einladen } =
+    parsed.data
 
   const { data: patient } = await auth.svc
     .from("patients")
-    .select("id, vorname, nachname, user_id")
+    .select("id, vorname, nachname, email")
     .eq("id", patient_id)
     .maybeSingle()
 
@@ -158,22 +199,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Patient nicht gefunden." }, { status: 404 })
   }
 
-  // Läuft schon eines? Dann dieses zurückgeben, statt ein zweites zu
-  // eröffnen. Zwei offene Räume für denselben Patienten sind die sicherste
-  // Art, dass Behandler und Patient in verschiedenen sitzen.
-  const { data: offen } = await auth.svc
-    .from("video_calls")
-    .select("id, room_name, gast_token, anlass, oeffnet_at, schliesst_at, status")
-    .eq("patient_id", patient_id)
-    .in("status", ["offen", "laeuft"])
-    .gt("schliesst_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (offen) {
-    return NextResponse.json({ call: offen, bereitsOffen: true })
-  }
+  // Zutrittsfenster aus der geplanten Zeit. Gespeichert und nicht gerechnet:
+  // Wann jemand hineindurfte, muss nachvollziehbar bleiben, auch wenn sich
+  // die Regel im Code spaeter aendert.
+  const oeffnet = oeffnetAm(geplant_at)
+  const schliesst = schliesstAm(geplant_at, dauer_minuten)
 
   // Laufenden Programm-Vertrag mitschreiben, falls vorhanden — nie Pflicht.
   const { data: vertrag } = await auth.svc
@@ -186,47 +216,106 @@ export async function POST(request: NextRequest) {
     .limit(1)
     .maybeSingle()
 
-  const schliesst = new Date(Date.now() + fenster_minuten * 60_000)
-
   const { data: call, error } = await auth.svc
     .from("video_calls")
     .insert({
       patient_id,
       therapist_id: auth.user.id,
       anlass,
+      geplant_at,
+      dauer_minuten,
+      hinweis: hinweis || null,
       verschlechterung_id: verschlechterung_id ?? null,
       contract_id: vertrag?.id ?? null,
+      oeffnet_at: oeffnet.toISOString(),
       schliesst_at: schliesst.toISOString(),
+      status: "geplant",
     })
-    .select("id, room_name, gast_token, anlass, status, oeffnet_at, schliesst_at")
+    .select(
+      "id, room_name, gast_token, anlass, status, geplant_at, dauer_minuten, oeffnet_at, schliesst_at, hinweis"
+    )
     .single()
 
   if (error || !call) {
     console.error("[os/video-calls] POST:", error)
-    return NextResponse.json({ error: "Gespräch konnte nicht eröffnet werden." }, { status: 500 })
+    return NextResponse.json({ error: "Termin konnte nicht angelegt werden." }, { status: 500 })
   }
-
-  // Der Patient erfährt davon — fire and forget. Ein fehlgeschlagener Push
-  // darf das Gespräch nicht verhindern; der Behandler kann den Link zur Not
-  // in den Chat schicken.
-  const text = ANLASS_TEXT[anlass]
-  void sendPushToPatient(patient_id, {
-    title: "Dein Behandler wartet",
-    body: `${text.kurz} — du kannst jetzt beitreten.`,
-    url: "/app/sprechzimmer",
-    tag: "sprechzimmer",
-  }).catch((err) => console.error("[os/video-calls] Push fehlgeschlagen:", err))
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
   const gastUrl = `${siteUrl}/sprechzimmer/${call.gast_token}`
 
+  // ── Einladung ────────────────────────────────────────────────────────────
+  // Scheitert sie, bleibt der Termin trotzdem bestehen und die Oberflaeche
+  // sagt es. Ein Termin ohne Mail laesst sich nachtraeglich verschicken; ein
+  // verlorener Termin waere schlimmer.
+  let einladungFehler: string | null = null
+  if (einladen) {
+    if (!patient.email) {
+      einladungFehler = "Der Patient hat keine E-Mail-Adresse hinterlegt."
+    } else {
+      const behandlerName =
+        [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") || "Dein Behandler"
+      const { data: praxis } = await auth.svc
+        .from("praxis_settings")
+        .select("praxis_name, email")
+        .limit(1)
+        .maybeSingle()
+
+      const mail = sprechzimmerEinladung({
+        vorname: patient.vorname || "",
+        geplantAt: geplant_at,
+        dauerMinuten: dauer_minuten,
+        beitrittsUrl: gastUrl,
+        behandlerName,
+        praxisName: praxis?.praxis_name ?? "Physiotherapie Glawe",
+        siteUrl,
+        hinweis: hinweis || null,
+      })
+
+      const ics = kalendereintrag({
+        uid: call.id,
+        geplantAt: geplant_at,
+        dauerMinuten: dauer_minuten,
+        titel: "Video-Sprechstunde",
+        beschreibung: `Zum Sprechzimmer: ${gastUrl}
+
+Der Zugang öffnet sich 5 Minuten vor Beginn.`,
+        url: gastUrl,
+        organisator: behandlerName,
+        organisatorEmail: praxis?.email || process.env.SMTP_USER || "info@wwwpraxis-os.com",
+      })
+
+      const res = await sendEmail({
+        to: patient.email,
+        subject: mail.subject,
+        html: mail.html,
+        // Als Buffer, so erwartet es sendEmail. utf-8 ist fuer .ics richtig:
+        // Umlaute im Titel und im Behandlernamen muessen ankommen.
+        attachments: [{ filename: "Videotermin.ics", content: Buffer.from(ics, "utf-8") }],
+      })
+
+      if (res.success) {
+        await auth.svc
+          .from("video_calls")
+          .update({ einladung_gesendet_at: new Date().toISOString() })
+          .eq("id", call.id)
+      } else {
+        einladungFehler = res.error ?? "Die Einladung konnte nicht verschickt werden."
+      }
+    }
+  }
+
   return NextResponse.json(
-    { call: { ...call, gast_url: gastUrl, qr_data_url: await qrFor(gastUrl) }, bereitsOffen: false },
+    {
+      call: { ...call, gast_url: gastUrl, qr_data_url: await qrFor(gastUrl) },
+      einladungGesendet: einladen && !einladungFehler,
+      einladungFehler,
+    },
     { status: 201 }
   )
 }
 
-// ── PATCH ───────────────────────────────────────────────────────────────────
+// ── PATCH ───────────────────────────────────────────────────────────
 
 export async function PATCH(request: NextRequest) {
   const auth = await requireStaff()
@@ -239,23 +328,162 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Ungültiges JSON." }, { status: 400 })
   }
 
-  const parsed = beendenSchema.safeParse(body)
+  const parsed = patchSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ error: "Validierungsfehler." }, { status: 400 })
   }
+  const { id, aktion, notiz, grund } = parsed.data
 
-  const { data: call, error } = await auth.svc
+  const { data: call } = await auth.svc
+    .from("video_calls")
+    .select(
+      "id, room_name, gast_token, patient_id, anlass, status, geplant_at, dauer_minuten, hinweis"
+    )
+    .eq("id", id)
+    .maybeSingle()
+
+  if (!call) {
+    return NextResponse.json({ error: "Termin nicht gefunden." }, { status: 404 })
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+  const gastUrl = `${siteUrl}/sprechzimmer/${call.gast_token}`
+
+  // ── Einladung (erneut) verschicken ────────────────────────────────
+  if (aktion === "einladung") {
+    const { data: patient } = await auth.svc
+      .from("patients")
+      .select("vorname, email")
+      .eq("id", call.patient_id)
+      .maybeSingle()
+
+    if (!patient?.email) {
+      return NextResponse.json(
+        { error: "Der Patient hat keine E-Mail-Adresse hinterlegt." },
+        { status: 400 }
+      )
+    }
+
+    const { data: praxis } = await auth.svc
+      .from("praxis_settings")
+      .select("praxis_name, email")
+      .limit(1)
+      .maybeSingle()
+
+    const behandlerName =
+      [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") ||
+      "Dein Behandler"
+
+    const mail = sprechzimmerEinladung({
+      vorname: patient.vorname || "",
+      geplantAt: call.geplant_at,
+      dauerMinuten: call.dauer_minuten,
+      beitrittsUrl: gastUrl,
+      behandlerName,
+      praxisName: praxis?.praxis_name ?? "Physiotherapie Glawe",
+      siteUrl,
+      hinweis: call.hinweis,
+    })
+
+    const ics = kalendereintrag({
+      uid: call.id,
+      geplantAt: call.geplant_at,
+      dauerMinuten: call.dauer_minuten,
+      titel: "Video-Sprechstunde",
+      beschreibung: `Zum Sprechzimmer: ${gastUrl}`,
+      url: gastUrl,
+      organisator: behandlerName,
+      organisatorEmail: praxis?.email || process.env.SMTP_USER || "info@wwwpraxis-os.com",
+    })
+
+    const res = await sendEmail({
+      to: patient.email,
+      subject: mail.subject,
+      html: mail.html,
+      attachments: [{ filename: "Videotermin.ics", content: Buffer.from(ics, "utf-8") }],
+    })
+
+    if (!res.success) {
+      return NextResponse.json(
+        { error: res.error ?? "Die Einladung konnte nicht verschickt werden." },
+        { status: 502 }
+      )
+    }
+
+    await auth.svc
+      .from("video_calls")
+      .update({ einladung_gesendet_at: new Date().toISOString() })
+      .eq("id", id)
+
+    return NextResponse.json({ gesendet: true })
+  }
+
+  // ── Absagen ──────────────────────────────────────────────────
+  if (aktion === "absagen") {
+    const { error } = await auth.svc
+      .from("video_calls")
+      .update({
+        status: "abgesagt",
+        abgesagt_at: new Date().toISOString(),
+        abgesagt_grund: grund || null,
+        // Zugang sofort schliessen — ein abgesagter Termin darf keinen
+        // gültigen Link mehr haben.
+        schliesst_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .not("status", "in", "(abgesagt,beendet)")
+
+    if (error) {
+      console.error("[os/video-calls] Absagen:", error)
+      return NextResponse.json({ error: "Konnte nicht abgesagt werden." }, { status: 500 })
+    }
+
+    // Der Patient erfährt es. Scheitert die Mail, bleibt die Absage
+    // trotzdem bestehen — sonst stünde ein Termin wieder offen, den der
+    // Behandler bereits gestrichen hat.
+    const { data: patient } = await auth.svc
+      .from("patients")
+      .select("vorname, email")
+      .eq("id", call.patient_id)
+      .maybeSingle()
+
+    if (patient?.email) {
+      const wann = new Date(call.geplant_at).toLocaleString("de-DE", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+      void sendEmail({
+        to: patient.email,
+        subject: "Dein Videotermin wurde abgesagt",
+        html:
+          `<p style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#3a4038;">` +
+          `Hallo ${patient.vorname || ""},<br /><br />` +
+          `dein Videotermin am <strong>${wann} Uhr</strong> muss leider entfallen` +
+          (grund ? ` — ${grund}` : "") +
+          `.<br /><br />Antworte einfach auf diese Mail, dann finden wir einen neuen Termin.</p>`,
+      }).catch((err) => console.error("[os/video-calls] Absage-Mail:", err))
+    }
+
+    if (videoEingerichtet()) {
+      await videoAnbieter().raumSchliessen(call.room_name)
+    }
+    return NextResponse.json({ abgesagt: true })
+  }
+
+  // ── Beenden ──────────────────────────────────────────────────
+  const { data: beendet, error } = await auth.svc
     .from("video_calls")
     .update({
       status: "beendet",
       beendet_at: new Date().toISOString(),
-      notiz: parsed.data.notiz ?? null,
-      // Das Fenster sofort schliessen: Ein beendetes Gespräch darf keine
-      // neuen Token mehr hergeben, auch nicht in der verbleibenden Stunde.
+      notiz: notiz ?? null,
       schliesst_at: new Date().toISOString(),
     })
-    .eq("id", parsed.data.id)
-    .in("status", ["offen", "laeuft"])
+    .eq("id", id)
+    .in("status", ["geplant", "offen", "laeuft"])
     .select("id, room_name, status, beendet_at")
     .maybeSingle()
 
@@ -263,18 +491,16 @@ export async function PATCH(request: NextRequest) {
     console.error("[os/video-calls] PATCH:", error)
     return NextResponse.json({ error: "Konnte nicht beendet werden." }, { status: 500 })
   }
-  if (!call) {
+  if (!beendet) {
     return NextResponse.json(
-      { error: "Gespräch nicht gefunden oder bereits beendet." },
+      { error: "Termin nicht gefunden oder bereits beendet." },
       { status: 409 }
     )
   }
 
-  // Auch beim Anbieter schliessen — sonst bliebe ein Raum offen, in dem
-  // jemand mit einem noch gültigen Token weiter sitzen könnte.
   if (videoEingerichtet()) {
-    await videoAnbieter().raumSchliessen(call.room_name)
+    await videoAnbieter().raumSchliessen(beendet.room_name)
   }
 
-  return NextResponse.json({ call })
+  return NextResponse.json({ call: beendet })
 }

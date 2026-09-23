@@ -40,7 +40,7 @@ export async function GET(
 
   const { data: call } = await svc
     .from("video_calls")
-    .select("id, anlass, status, patient_id, schliesst_at")
+    .select("id, anlass, status, patient_id, gast_token, geplant_at, dauer_minuten, schliesst_at")
     .eq("id", id)
     .maybeSingle()
 
@@ -54,9 +54,14 @@ export async function GET(
     .eq("id", call.patient_id)
     .maybeSingle()
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+
   return NextResponse.json({
     id: call.id,
     titel: ANLASS_TEXT[call.anlass]?.kurz ?? "Videogespräch",
+    gast_url: `${siteUrl}/sprechzimmer/${call.gast_token}`,
+    geplant_at: call.geplant_at,
+    dauer_minuten: call.dauer_minuten,
     patient: [patient?.vorname, patient?.nachname].filter(Boolean).join(" ") || "Patient",
     status: call.status,
     schliesst_at: call.schliesst_at,

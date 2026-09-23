@@ -15,6 +15,7 @@ import {
   Link2,
   LogOut,
   Activity,
+  Video,
   ClipboardCheck,
   FileText,
   Calendar,
@@ -61,6 +62,7 @@ export function OsSidebar() {
     { label: "Dashboard", href: "/os/dashboard", icon: LayoutDashboard },
     { label: "Patienten-Ampel", href: "/os/ampel", icon: Activity },
     { label: "Patienten", href: "/os/patients", icon: Users },
+    { label: "Digitale Sprechstunde", href: "/os/sprechstunde", icon: Video },
   ]
 
   // Praxismanagement doesn't have Nachrichten write access, but can read

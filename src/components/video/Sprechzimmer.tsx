@@ -33,7 +33,7 @@ import { Steuerleiste } from "./Steuerleiste"
 import { ConnectionState, Track, RoomEvent, VideoPresets } from "livekit-client"
 import "@livekit/components-styles"
 import { Button } from "@/components/ui/button"
-import { Loader2, Mic, Video as VideoIcon, AlertTriangle, PhoneOff } from "lucide-react"
+import { Loader2, Mic, Video as VideoIcon, AlertTriangle, PhoneOff, QrCode } from "lucide-react"
 
 const PAPER = "#F8F5F0"
 const INK = "#12160f"
@@ -189,10 +189,98 @@ function Warteraum({
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   Einladungstafel — im Raum, nicht daneben
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Der Praxistest am 23.09.2026 endete daran: Um an den QR-Code zu kommen,
+ * musste der Behandler das Gespräch verlassen. Damit war der Patient allein
+ * im Raum, und der Weg zu ihm lag ausserhalb.
+ *
+ * Deshalb liegt die Tafel IM Raum. Sie ist gross genug, dass sie über die
+ * Bildschirmfreigabe lesbar ist — genau dafür ist sie da: Bildschirm teilen,
+ * der Patient scannt mit dem Handy, fertig.
+ */
+function Einladungstafel({
+  gastUrl,
+  qrUrl,
+  onSchliessen,
+}: {
+  gastUrl: string
+  qrUrl: string
+  onSchliessen: () => void
+}) {
+  const [kopiert, setKopiert] = useState(false)
+
+  return (
+    <div
+      className="absolute inset-0 z-20 flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(18,21,15,0.92)" }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl p-6 text-center"
+        style={{ backgroundColor: PAPER }}
+      >
+        <h2 className="text-xl" style={{ ...serif, color: INK }}>
+          So kommt dein Patient herein
+        </h2>
+        <p className="mt-1.5 text-[13.5px] leading-relaxed text-slate-600">
+          Teile deinen Bildschirm und lass ihn den Code mit der Handykamera scannen. Er braucht
+          dafür kein Konto.
+        </p>
+
+        <div className="mt-4 flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={qrUrl}
+            alt="QR-Code zum Sprechzimmer"
+            className="h-56 w-56 rounded-xl bg-white p-2"
+          />
+        </div>
+
+        <p className="mt-3 break-all font-mono text-[11.5px] text-slate-600">{gastUrl}</p>
+
+        <div className="mt-4 flex justify-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(gastUrl)
+                setKopiert(true)
+                setTimeout(() => setKopiert(false), 2000)
+              } catch {
+                /* Kopieren kann der Browser verweigern — der Link steht ja da. */
+              }
+            }}
+          >
+            {kopiert ? "Kopiert" : "Link kopieren"}
+          </Button>
+          <Button size="sm" onClick={onSchliessen} style={{ backgroundColor: GREEN }} className="text-white">
+            Zurück ins Gespräch
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    Im Gespräch
    ══════════════════════════════════════════════════════════════════════════ */
 
-function Buehne({ gegenueber, onEnde }: { gegenueber: string; onEnde: () => void }) {
+function Buehne({
+  gegenueber,
+  onEnde,
+  gastUrl,
+  qrUrl,
+}: {
+  gegenueber: string
+  onEnde: () => void
+  gastUrl?: string
+  qrUrl?: string
+}) {
+  const [tafelOffen, setTafelOffen] = useState(false)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   const spuren = useTracks(
@@ -233,6 +321,23 @@ function Buehne({ gegenueber, onEnde }: { gegenueber: string; onEnde: () => void
           </div>
         )}
 
+        {tafelOffen && gastUrl && qrUrl && (
+          <Einladungstafel gastUrl={gastUrl} qrUrl={qrUrl} onSchliessen={() => setTafelOffen(false)} />
+        )}
+
+        {/* Der Weg zum Patienten, ohne den Raum zu verlassen. */}
+        {gastUrl && qrUrl && !tafelOffen && (
+          <button
+            type="button"
+            onClick={() => setTafelOffen(true)}
+            className="absolute right-4 top-4 z-10 flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-medium"
+            style={{ backgroundColor: "rgba(248,245,240,0.92)", color: GREEN }}
+          >
+            <QrCode className="h-4 w-4" />
+            Patient einladen
+          </button>
+        )}
+
         {/* Ruhig, nicht alarmierend — siehe Kopfkommentar. */}
         {wackelt && (
           <div className="pointer-events-none absolute inset-x-0 top-4 flex justify-center px-4">
@@ -266,6 +371,8 @@ export function Sprechzimmer({
   anlassText,
   gegenueber,
   zurueckHref,
+  gastUrl,
+  qrUrl,
 }: {
   /** Zutritt ueber das angemeldete Konto. */
   callId?: string
@@ -279,6 +386,9 @@ export function Sprechzimmer({
   anlassText: string
   gegenueber: string
   zurueckHref: string
+  /** Nur die Therapeutenansicht: Einladungstafel im Raum. */
+  gastUrl?: string
+  qrUrl?: string
 }) {
   const [zutritt, setZutritt] = useState<Zutritt | null>(null)
   const [laedt, setLaedt] = useState(false)
@@ -389,7 +499,12 @@ export function Sprechzimmer({
         onError={(e) => setFehler(e.message)}
         style={{ height: "100%" }}
       >
-        <Buehne gegenueber={gegenueber} onEnde={() => setBeendet(true)} />
+        <Buehne
+          gegenueber={gegenueber}
+          onEnde={() => setBeendet(true)}
+          gastUrl={gastUrl}
+          qrUrl={qrUrl}
+        />
       </LiveKitRoom>
 
       {fehler && (
