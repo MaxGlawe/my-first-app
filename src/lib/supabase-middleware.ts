@@ -40,6 +40,12 @@ export async function updateSession(request: NextRequest) {
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
   const isContractSigningPage = pathname.startsWith('/vertrag/') || pathname.startsWith('/bgf-vertrag/')
+  // PROJ-27: Sprechzimmer ueber den Gast-Link. Muss oeffentlich sein — bei
+  // der Videokonsultation hat der Patient noch kein Konto, er bekommt es
+  // erst beim Kauf danach. Der Zutritt haengt am Token im Pfad, und der
+  // wird im Handler geprueft: richtiges Gespraech, offenes Zeitfenster.
+  const isGastSprechzimmer = pathname.startsWith('/sprechzimmer/')
+  const isGastVideoApi = pathname === '/api/video/gast' && request.method === 'POST'
   const isContractPublicApi = pathname.startsWith('/api/contracts/') || pathname.startsWith('/api/bgf-contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
   // B2B-Unternehmens-Kontaktformular (/unternehmen/kontakt) — öffentlicher Mailversand
@@ -94,7 +100,7 @@ export async function updateSession(request: NextRequest) {
   // kein User-Cookie. Auth läuft über INTERNAL_API_SECRET im Route-Handler selbst.
   const isBuyerAccountApi = pathname === '/api/buyer-accounts' && request.method === 'POST'
 
-  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isAbklaerungApi && !isRegionApi && !isRecheckApi && !isWartelisteApi && !isShopTrackApi && !isDevPreview && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
+  if (!user && !isPublicRoute && !isInviteRoute && !isInviteApi && !isContractSigningPage && !isGastSprechzimmer && !isGastVideoApi && !isContractPublicApi && !isIntakeApi && !isBgfAnfrageApi && !isSchmerzcheckLeadApi && !isSchmerzcheckConfirmApi && !isSchmerzcheckGoApi && !isAbklaerungApi && !isRegionApi && !isRecheckApi && !isWartelisteApi && !isShopTrackApi && !isDevPreview && !isCheckApi && !isUnsubscribeApi && !isPublicCheckoutApi && !isResendAccessApi && !isShopCatalogApi && !isAnalyticsTrackApi && !isLandingAnalyticsApi && !isClientErrorLogApi && !isRootPage && !isSeoRoute && !isStaticAsset && !isCronApi && !isPushSendApi && !isWebhookApi && !isBuyerAccountApi) {
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }

@@ -17,6 +17,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { sendPushToPatient } from "@/lib/push"
 import { videoAnbieter } from "@/lib/video/livekit"
 import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
+import QRCode from "qrcode"
 
 const STAFF_ROLES = ["admin", "heilpraktiker", "physiotherapeut"]
 
@@ -32,6 +33,20 @@ const beendenSchema = z.object({
   id: z.string().uuid(),
   notiz: z.string().trim().max(4000).optional().nullable(),
 })
+
+/** QR serverseitig erzeugen — im Call zaehlt, dass das Bild sofort da ist. */
+async function qrFor(url: string): Promise<string | null> {
+  try {
+    return await QRCode.toDataURL(url, {
+      width: 512,
+      margin: 1,
+      color: { dark: "#2C3E2D", light: "#FFFFFF" },
+    })
+  } catch (err) {
+    console.error("[os/video-calls] QR fehlgeschlagen:", err)
+    return null
+  }
+}
 
 async function requireStaff() {
   const supabase = await createSupabaseServerClient()
@@ -65,7 +80,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await auth.svc
     .from("video_calls")
     .select(
-      "id, room_name, anlass, status, oeffnet_at, schliesst_at, begonnen_at, beendet_at, notiz, created_at"
+      "id, room_name, gast_token, anlass, status, oeffnet_at, schliesst_at, begonnen_at, beendet_at, notiz, created_at"
     )
     .eq("patient_id", patientId)
     .order("created_at", { ascending: false })
@@ -79,16 +94,30 @@ export async function GET(request: NextRequest) {
   const calls = data ?? []
   const jetzt = Date.now()
 
+  // „Aktiv" heisst: noch im Zutrittsfenster und nicht abgeschlossen. Genau
+  // dieses Gespräch bekommt der Patient angeboten.
+  const aktiv =
+    calls.find(
+      (c) =>
+        (c.status === "offen" || c.status === "laeuft") &&
+        new Date(c.schliesst_at).getTime() > jetzt
+    ) ?? null
+
+  // Der Gast-Link ist der verlässliche Weg zum Patienten. Push funktioniert
+  // nur bei installierter App und erteilter Erlaubnis — im Praxistest am
+  // 23.09.2026 existierte im ganzen System genau eine solche Anmeldung.
+  // Darauf als einzigen Weg zu bauen, war ein Fehler.
+  let gastUrl: string | null = null
+  let qr: string | null = null
+  if (aktiv) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+    gastUrl = `${siteUrl}/sprechzimmer/${aktiv.gast_token}`
+    qr = await qrFor(gastUrl)
+  }
+
   return NextResponse.json({
     eingerichtet: videoEingerichtet(),
-    // „Aktiv" heisst: noch im Zutrittsfenster und nicht abgeschlossen. Genau
-    // dieses Gespräch bekommt der Patient angeboten.
-    aktiv:
-      calls.find(
-        (c) =>
-          (c.status === "offen" || c.status === "laeuft") &&
-          new Date(c.schliesst_at).getTime() > jetzt
-      ) ?? null,
+    aktiv: aktiv ? { ...aktiv, gast_url: gastUrl, qr_data_url: qr } : null,
     calls,
   })
 }
@@ -134,7 +163,7 @@ export async function POST(request: NextRequest) {
   // Art, dass Behandler und Patient in verschiedenen sitzen.
   const { data: offen } = await auth.svc
     .from("video_calls")
-    .select("id, room_name, anlass, oeffnet_at, schliesst_at, status")
+    .select("id, room_name, gast_token, anlass, oeffnet_at, schliesst_at, status")
     .eq("patient_id", patient_id)
     .in("status", ["offen", "laeuft"])
     .gt("schliesst_at", new Date().toISOString())
@@ -169,7 +198,7 @@ export async function POST(request: NextRequest) {
       contract_id: vertrag?.id ?? null,
       schliesst_at: schliesst.toISOString(),
     })
-    .select("id, room_name, anlass, status, oeffnet_at, schliesst_at")
+    .select("id, room_name, gast_token, anlass, status, oeffnet_at, schliesst_at")
     .single()
 
   if (error || !call) {
@@ -188,7 +217,13 @@ export async function POST(request: NextRequest) {
     tag: "sprechzimmer",
   }).catch((err) => console.error("[os/video-calls] Push fehlgeschlagen:", err))
 
-  return NextResponse.json({ call, bereitsOffen: false }, { status: 201 })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
+  const gastUrl = `${siteUrl}/sprechzimmer/${call.gast_token}`
+
+  return NextResponse.json(
+    { call: { ...call, gast_url: gastUrl, qr_data_url: await qrFor(gastUrl) }, bereitsOffen: false },
+    { status: 201 }
+  )
 }
 
 // ── PATCH ───────────────────────────────────────────────────────────────────

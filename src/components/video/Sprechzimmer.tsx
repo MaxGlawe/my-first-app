@@ -23,14 +23,14 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import {
   LiveKitRoom,
   RoomAudioRenderer,
-  ControlBar,
   GridLayout,
   ParticipantTile,
   useTracks,
   useConnectionState,
   useRoomContext,
 } from "@livekit/components-react"
-import { ConnectionState, Track, RoomEvent } from "livekit-client"
+import { Steuerleiste } from "./Steuerleiste"
+import { ConnectionState, Track, RoomEvent, VideoPresets } from "livekit-client"
 import "@livekit/components-styles"
 import { Button } from "@/components/ui/button"
 import { Loader2, Mic, Video as VideoIcon, AlertTriangle, PhoneOff } from "lucide-react"
@@ -250,10 +250,7 @@ function Buehne({ gegenueber, onEnde }: { gegenueber: string; onEnde: () => void
       <RoomAudioRenderer />
 
       <div className="shrink-0 border-t" style={{ borderColor: "#2b3226" }}>
-        <ControlBar
-          variation="minimal"
-          controls={{ camera: true, microphone: true, screenShare: true, chat: false, leave: true }}
-        />
+        <Steuerleiste onAuflegen={onEnde} />
       </div>
     </div>
   )
@@ -265,11 +262,20 @@ function Buehne({ gegenueber, onEnde }: { gegenueber: string; onEnde: () => void
 
 export function Sprechzimmer({
   callId,
+  gastToken,
   anlassText,
   gegenueber,
   zurueckHref,
 }: {
-  callId: string
+  /** Zutritt ueber das angemeldete Konto. */
+  callId?: string
+  /**
+   * Zutritt ueber den Gast-Link, ohne Praxis-OS-Konto.
+   *
+   * Noetig, weil der Patient bei der Videokonsultation noch gar kein Konto
+   * hat — er bekommt es erst, wenn er danach das Programm kauft.
+   */
+  gastToken?: string
   anlassText: string
   gegenueber: string
   zurueckHref: string
@@ -283,11 +289,17 @@ export function Sprechzimmer({
     setLaedt(true)
     setFehler(null)
     try {
-      const res = await fetch("/api/video/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ call_id: callId }),
-      })
+      const res = gastToken
+        ? await fetch("/api/video/gast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: gastToken }),
+          })
+        : await fetch("/api/video/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ call_id: callId }),
+          })
       const json = await res.json()
       if (!res.ok) {
         setFehler(json.error ?? "Der Zutritt wurde abgelehnt.")
@@ -299,7 +311,7 @@ export function Sprechzimmer({
     } finally {
       setLaedt(false)
     }
-  }, [callId])
+  }, [callId, gastToken])
 
   if (beendet) {
     return (
@@ -352,7 +364,16 @@ export function Sprechzimmer({
         options={{
           adaptiveStream: true,
           dynacast: true,
+          // 1080p statt der Voreinstellung 720p. In diesem Gespraech wird
+          // eine Bewegung beurteilt — ob eine Schulter ausweicht, sieht man
+          // bei 720p mit sparsamer Bitrate nicht mehr. Der Server traegt das
+          // muehelos: Ein Einzelgespraech macht auch so nur wenige Mbit/s.
+          videoCaptureDefaults: { resolution: VideoPresets.h1080.resolution },
           publishDefaults: {
+            videoEncoding: { maxBitrate: 2_500_000, maxFramerate: 30 },
+            // Drei Stufen: Bei schwachem Netz schaltet der Server herunter,
+            // statt das Bild einfrieren zu lassen.
+            videoSimulcastLayers: [VideoPresets.h360, VideoPresets.h720],
             degradationPreference: "maintain-framerate",
             audioPreset: { maxBitrate: 32_000 },
             red: true,

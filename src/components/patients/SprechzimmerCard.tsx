@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
-  Video, Loader2, AlertTriangle, Copy, Check, DoorOpen, PhoneOff,
+  Video, Loader2, AlertTriangle, Copy, Check, DoorOpen, PhoneOff, QrCode, Smartphone,
 } from "lucide-react"
 
 type Anlass = "konsultation" | "programm_sitzung" | "verschlechterung" | "sonstiges"
@@ -37,6 +37,9 @@ interface Call {
   anlass: Anlass
   status: string
   schliesst_at: string
+  /** Zutritt fuer den Patienten OHNE Praxis-OS-Konto. */
+  gast_url?: string | null
+  qr_data_url?: string | null
 }
 
 function fmt(iso: string): string {
@@ -50,6 +53,7 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
   const [busy, setBusy] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
   const [kopiert, setKopiert] = useState(false)
+  const [qrOffen, setQrOffen] = useState(false)
 
   const laden = useCallback(() => {
     fetch(`/api/os/video-calls?patient_id=${patientId}`)
@@ -78,8 +82,9 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
         return
       }
       setAktiv(json.call)
-      // Direkt hinein — der Patient sieht „kommt gleich dazu", bis du da bist.
-      window.location.href = `/os/sprechzimmer/${json.call.id}`
+      // BEWUSST kein Sprung in den Raum. Der erste Entwurf tat das — und
+      // damit sah der Behandler den QR-Code nie, den der Patient braucht,
+      // um ueberhaupt hineinzukommen. Erst teilen, dann eintreten.
     } catch {
       setFehler("Verbindungsfehler. Bitte erneut versuchen.")
     } finally {
@@ -110,8 +115,9 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
   }
 
   async function kopieren() {
+    if (!aktiv?.gast_url) return
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/app/sprechzimmer`)
+      await navigator.clipboard.writeText(aktiv.gast_url)
       setKopiert(true)
       setTimeout(() => setKopiert(false), 2000)
     } catch {
@@ -144,27 +150,65 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
 
         {aktiv ? (
           <div className="mt-3">
-            <p className="text-[13px] leading-relaxed text-slate-600">
-              Das Sprechzimmer ist offen. Der Patient wurde benachrichtigt und findet es unter
-              „Sprechzimmer" in seiner App.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               <a href={`/os/sprechzimmer/${aktiv.id}`}>
                 <Button size="sm" className="bg-[#2C3E2D] hover:bg-[#24321f]">
                   <DoorOpen className="mr-1.5 h-4 w-4" /> Eintreten
                 </Button>
               </a>
+              <Button size="sm" variant="outline" onClick={() => setQrOffen((v) => !v)}>
+                <QrCode className="mr-1.5 h-4 w-4" />
+                {qrOffen ? "QR ausblenden" : "QR-Code zeigen"}
+              </Button>
               <Button size="sm" variant="outline" onClick={kopieren}>
                 {kopiert ? (
                   <Check className="mr-1.5 h-4 w-4 text-emerald-600" />
                 ) : (
                   <Copy className="mr-1.5 h-4 w-4" />
                 )}
-                {kopiert ? "Kopiert" : "Link für den Patienten"}
+                {kopiert ? "Kopiert" : "Link kopieren"}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => beenden(aktiv.id)} disabled={busy}>
                 <PhoneOff className="mr-1.5 h-4 w-4" /> Beenden
               </Button>
+            </div>
+
+            {/* So kommt der Patient WIRKLICH hinein.
+                Push setzt eine installierte App und eine erteilte Erlaubnis
+                voraus — im Praxistest am 23.09.2026 gab es im ganzen System
+                genau eine solche Anmeldung. Und bei der Konsultation hat der
+                Patient ueberhaupt noch kein Konto. Der Link funktioniert
+                ohne beides. */}
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+              <p className="flex items-start gap-1.5 text-[12.5px] leading-relaxed text-slate-600">
+                <Smartphone className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2C3E2D]" />
+                <span>
+                  Schick dem Patienten diesen Link — er braucht dafür <strong>kein Konto</strong>.
+                  Im Gespräch kannst du auch den Bildschirm teilen und den QR-Code scannen lassen.
+                </span>
+              </p>
+              {aktiv.gast_url && (
+                <p className="mt-2 break-all rounded-lg bg-slate-50 px-2.5 py-2 font-mono text-[11.5px] text-slate-700">
+                  {aktiv.gast_url}
+                </p>
+              )}
+              <p className="mt-2 text-[12px] text-slate-500">
+                Gültig bis {fmt(aktiv.schliesst_at)} Uhr, danach ist er wertlos.
+              </p>
+
+              {qrOffen && aktiv.qr_data_url && (
+                <div className="mt-3 flex flex-col items-center rounded-xl border border-[#e7e1d6] bg-[#F8F5F0] p-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={aktiv.qr_data_url}
+                    alt="QR-Code zum Sprechzimmer"
+                    className="h-56 w-56"
+                  />
+                  <p className="mt-2 text-center text-[12px] text-slate-500">
+                    Mit der Handykamera scannen — der Patient landet direkt im Warteraum.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -203,8 +247,8 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
               )}
             </Button>
             <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
-              Der Patient bekommt sofort eine Benachrichtigung. Das Zutrittsfenster steht zwei
-              Stunden offen und schliesst sich beim Beenden.
+              Danach bekommst du Link und QR-Code für den Patienten. Das Zutrittsfenster steht
+              zwei Stunden offen und schliesst sich, sobald du beendest.
             </p>
           </div>
         )}
