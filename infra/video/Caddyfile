@@ -1,0 +1,15 @@
+# PROJ-27 — TLS fuer Signaling und TURN.
+#
+# Caddy holt und erneuert beide Zertifikate automatisch. Das TURN-Zertifikat
+# wird zusaetzlich in ./certs abgelegt, weil LiveKit es selbst braucht: Der
+# eingebaute TURN-Server spricht TLS direkt und laeuft nicht durch Caddy.
+
+video.wwwpraxis-os.com {
+    reverse_proxy 127.0.0.1:7880
+}
+
+turn.wwwpraxis-os.com {
+    # Nur fuer den Zertifikatsbezug. Der eigentliche TURN-Verkehr laeuft an
+    # Caddy vorbei direkt auf Port 5349.
+    respond "turn" 200
+}

@@ -1,0 +1,64 @@
+# PROJ-27 — LiveKit-Serverkonfiguration (Video-VPS, NICHT der Praxis-OS-Server)
+#
+# Bewusste Entscheidungen, damit sie beim nächsten Anfassen nicht rückgängig
+# gemacht werden:
+#
+#   — UDP-Mux auf EINEN Port statt eines Portbereichs. Ein Bereich von
+#     zehntausend Ports lässt sich in einer Firewall kaum sauber halten und
+#     verleitet dazu, sie ganz zu öffnen. Ein Port ist eine Regel.
+#
+#   — Eingebauter TURN über TLS auf 443. Genau dafür ist er da: Firmennetze
+#     und manche Mobilfunknetze lassen WebRTC nur über 443 durch. Ohne TURN
+#     scheitert das Gespräch bei genau den Patienten, die aus dem Büro
+#     anrufen — und die merken es erst, wenn es zählt.
+#
+#   — KEIN Egress, also keine Aufzeichnung. Nicht konfiguriert, nicht
+#     installiert. Ein Gespräch über Gesundheit wird nicht mitgeschnitten.
+#
+#   — Keine automatische Raumanlage durch Unbekannte: Räume entstehen beim
+#     Beitritt, und beitreten kann nur, wer ein Token aus Praxis OS hat.
+
+port: 7880
+
+rtc:
+  tcp_port: 7881
+  # Ein einziger UDP-Port für alle Medien. Siehe oben.
+  udp_port: 7882
+  use_external_ip: true
+
+redis:
+  address: redis:6379
+
+# Diese Werte gehören zugleich in die Env-Dateien von Praxis OS
+# (LIVEKIT_API_KEY / LIVEKIT_API_SECRET). Vor dem ersten Start ersetzen —
+# mit `openssl rand -hex 24` für das Secret.
+keys:
+  praxis-os: __SECRET_HIER_EINSETZEN__
+
+turn:
+  enabled: true
+  domain: turn.wwwpraxis-os.com
+  tls_port: 5349
+  # Caddy kümmert sich um das Zertifikat und reicht es hier herein.
+  cert_file: /etc/livekit/certs/turn.crt
+  key_file: /etc/livekit/certs/turn.key
+  # Kein UDP-TURN: Wer TURN braucht, sitzt hinter einer Firewall, die UDP
+  # ohnehin blockt. Ein zusätzlicher offener Port ohne Nutzen.
+  udp_port: 0
+
+# Räume schliessen sich von allein, wenn niemand mehr da ist. Das Gespräch
+# in Praxis OS beendet zusätzlich der Behandler — oder der room_finished-
+# Webhook, falls er es vergisst.
+room:
+  empty_timeout: 300
+  departure_timeout: 20
+  max_participants: 8
+
+webhook:
+  api_key: praxis-os
+  urls:
+    - https://wwwpraxis-os.com/api/webhooks/livekit
+
+logging:
+  level: info
+  json: false

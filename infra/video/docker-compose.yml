@@ -1,0 +1,41 @@
+# PROJ-27 — Video-VPS. Gehoert NICHT auf den Praxis-OS-Server:
+# der hat 2 vCPU, 3,8 GB RAM und traegt bereits die Anwendung, einen
+# Voice-Agent und einen fremden Docker-Stack.
+#
+# Start:  docker compose up -d
+# Logs:   docker compose logs -f livekit
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    network_mode: host          # noetig, damit Caddy die TURN-Zertifikate teilt
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./certs:/certs          # Caddy legt hier die TURN-Zertifikate ab
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save "" --appendonly no
+    # Bewusst NICHT nach aussen veroeffentlicht: Redis haelt hier nur
+    # fluechtigen Raumzustand und hat im offenen Netz nichts zu suchen.
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml
+    network_mode: host          # WebRTC braucht die echten Ports, kein NAT
+    depends_on:
+      - redis
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+      - ./certs:/etc/livekit/certs:ro
+
+volumes:
+  caddy_data:
+  caddy_config:
