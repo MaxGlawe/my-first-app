@@ -75,15 +75,29 @@ export function programmAngebotEmail(props: ProgrammAngebotMailProps): {
         <p style="font-size:15px;line-height:1.65;color:${BODY};margin:0 0 16px;">Hallo ${name},</p>
         <p style="font-size:15px;line-height:1.65;color:${BODY};margin:0 0 20px;">
           wie eben besprochen — hier ist dein Angebot für die ${PROGRAMM.tage}-tägige Betreuung.
-          Die Videokonsultation ist darin bereits angerechnet.
+          ${
+            props.bereitsBeglichen > 0
+              ? "Die bereits bezahlte Videokonsultation ist abgezogen."
+              : "Die Videokonsultation ist im Preis enthalten."
+          }
         </p>
 
         <div style="border:1px solid ${LINE};border-radius:14px;padding:18px 20px;background:${PAPER};margin:0 0 22px;">
           <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
-            ${zeile("Betreuung über " + PROGRAMM.tage + " Tage", formatEuro(v.preis))}
-            ${zeile("Videokonsultation — bereits beglichen", "− " + formatEuro(PROGRAMM.konsultation))}
-            <tr><td colspan="2" style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</td></tr>
-            ${zeile("Jetzt zu zahlen", formatEuro((v.preis - props.bereitsBeglichen)), true)}
+            ${zeile("Betreuung über " + PROGRAMM.tage + " Tage — " + v.name, formatEuro(v.preis))}
+            ${
+              // Nur zeigen, wenn wirklich etwas angerechnet wurde. Eine fest
+              // gerenderte Abzugszeile ergab im Normalfall die Rechnung
+              // „299 € − 69 € = 299 €" — sichtbar falsch fuer den Patienten.
+              props.bereitsBeglichen > 0
+                ? zeile(
+                    "Videokonsultation — bereits beglichen",
+                    "− " + formatEuro(props.bereitsBeglichen)
+                  ) +
+                  `<tr><td colspan="2" style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</td></tr>`
+                : ""
+            }
+            ${zeile("Jetzt zu zahlen", formatEuro(v.preis - props.bereitsBeglichen), true)}
           </table>
         </div>
 

@@ -65,7 +65,7 @@ export function generateVertragText(ctx: ContractContext): VertragText {
   const sitzungenText = ctx.sitzungenAnzahl
     ? `Der Vertrag umfasst ${ctx.sitzungenAnzahl} Video-Sitzungen à ca. 30 Minuten.`
     : ctx.contractType === "praxis_os_programm"
-    ? "Feste Video-Sitzungen sind in dieser Variante nicht vereinbart. Der einzige fest terminierte Videotermin ist die vorausgegangene Konsultation; die laufende Betreuung erfolgt ueber die Praxis-App und den persoenlichen Chat."
+    ? "Feste Video-Sitzungen sind in dieser Variante nicht vereinbart. Der einzige fest terminierte Videotermin ist die vorausgegangene Konsultation; die laufende Betreuung erfolgt über die Praxis-App und den persönlichen Chat."
     : ""
 
   // PROJ-26: Beim Praxis-OS-Programm weichen mehrere Klauseln bewusst vom
@@ -141,7 +141,7 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       sitzungenText
         ? isProgramm
           ? ctx.sitzungenAnzahl
-            ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die Sitzungen sind gestaffelt: ${CALL_TAKTUNG}. Bei einer Verschlechterung des Beschwerdebildes kann zusätzlich eine weitere Sitzung vereinbart werden. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
+            ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die Sitzungen sind gestaffelt: ${CALL_TAKTUNG}. Bei einer Verschlechterung des Beschwerdebildes wird kurzfristig eine zusätzliche Video-Sitzung vereinbart; sie ist im Vertragspreis enthalten. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
             : `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Bei einer Verschlechterung des Beschwerdebildes wird kurzfristig eine zusätzliche Video-Sitzung vereinbart; sie ist im Vertragspreis enthalten. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
           : `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die einzelnen Sitzungen werden individuell terminiert. Nicht wahrgenommene Sitzungen verfallen gemäß den Regelungen in §6 dieses Vertrages.`
         : "",
