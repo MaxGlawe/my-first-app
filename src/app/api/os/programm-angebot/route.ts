@@ -23,7 +23,7 @@ import { generateVertragText } from "@/lib/contract-templates"
 import { programmAngebotEmail } from "@/lib/email-templates/programm-angebot"
 import { sendEmail } from "@/lib/email"
 import { getBegleitungStatus } from "@/lib/app-access"
-import { PROGRAMM, PROGRAMM_CALLS, PROGRAMM_LEISTUNGEN } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, leistungenFuer } from "@/lib/programm"
 import { CONTRACT_TYPE_CONFIG } from "@/types/contract"
 import type { PraxisSettings } from "@/types/billing"
 
@@ -43,6 +43,12 @@ const bodySchema = z.object({
    * Konsultation im Gesamtpreis enthalten und es bleibt bei 499 €.
    */
   konsultation_angerechnet: z.boolean().optional().default(false),
+  /**
+   * Welche Variante wurde im Gespraech vereinbart? Die Wahl auf der Website
+   * ist nur eine Voranmeldung — entschieden wird in der Konsultation, und
+   * genau diese Entscheidung landet hier im Vertrag.
+   */
+  variante: z.enum(["begleitet", "intensiv"]).default("intensiv"),
 })
 
 async function requireStaff() {
@@ -147,7 +153,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Ungültige Eingabe." }, { status: 422 })
   }
-  const { patient_id, neu_ausstellen, konsultation_angerechnet } = parsed.data
+  const { patient_id, neu_ausstellen, konsultation_angerechnet, variante } = parsed.data
   const svc = auth.svc
 
   // ── Patient laden ─────────────────────────────────────────────────────────
@@ -249,16 +255,18 @@ export async function POST(request: NextRequest) {
   const dauerWochen = Math.round(PROGRAMM.tage / 7)
 
   const angerechnet = konsultation_angerechnet ? PROGRAMM.konsultation : 0
+  const v = VARIANTEN[variante]
+  const leistungen = leistungenFuer(variante)
 
   const vertragText = generateVertragText({
     contractType: "praxis_os_programm",
-    leistungen: PROGRAMM_LEISTUNGEN,
-    gesamtpreis: PROGRAMM.gesamtpreis,
+    leistungen,
+    gesamtpreis: v.preis,
     bereitsBeglichen: angerechnet,
     programmTage: PROGRAMM.tage,
     zahlungsweise: "einmalig",
     dauerWochen,
-    sitzungenAnzahl: PROGRAMM_CALLS,
+    sitzungenAnzahl: v.calls || null,
     praxis: praxis as PraxisSettings,
     patientName,
     patientAddress,
@@ -278,13 +286,14 @@ export async function POST(request: NextRequest) {
       patient_id,
       created_by: auth.user.id,
       contract_type: "praxis_os_programm",
-      leistungen: PROGRAMM_LEISTUNGEN,
-      gesamtpreis: PROGRAMM.gesamtpreis,
+      leistungen,
+      gesamtpreis: v.preis,
+      programm_variante: variante,
       bereits_beglichen: angerechnet,
       programm_tage: PROGRAMM.tage,
       zahlungsweise: "einmalig",
       dauer_wochen: dauerWochen,
-      sitzungen_anzahl: PROGRAMM_CALLS,
+      sitzungen_anzahl: v.calls || null,
       vertrag_text: vertragText,
       praxis_name: praxis.praxis_name,
       praxis_address: `${praxis.strasse}, ${praxis.plz} ${praxis.ort}`,
@@ -312,6 +321,8 @@ export async function POST(request: NextRequest) {
   const angebotUrl = `${siteUrl}/vertrag/${signingToken}`
   const mail = programmAngebotEmail({
     patientName: patient.vorname,
+    variante,
+    bereitsBeglichen: angerechnet,
     angebotUrl,
     contractNumber: contract.contract_number,
     gueltigBis: formatDateTime(expiresAt),
@@ -337,7 +348,8 @@ export async function POST(request: NextRequest) {
     qr_data_url: await qrFor(angebotUrl),
     expires_at: expiresAt,
     mail_versendet: !!sent?.success,
-    zu_zahlen: PROGRAMM.gesamtpreis - angerechnet,
+    variante,
+    zu_zahlen: v.preis - angerechnet,
     label: CONTRACT_TYPE_CONFIG.praxis_os_programm.label,
   })
 }

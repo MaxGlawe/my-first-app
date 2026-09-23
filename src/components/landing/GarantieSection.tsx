@@ -20,7 +20,10 @@
  */
 
 import { ScrollReveal } from "./ScrollReveal"
-import { PROGRAMM, PROGRAMM_CALLS } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -63,7 +66,7 @@ const GRUPPEN: Gruppe[] = [
         text: "Deine Nachricht im Chat wird an Werktagen innerhalb eines Arbeitstages beantwortet. Kein vages Später, keine Hotline.",
       },
       {
-        titel: `${PROGRAMM_CALLS} Video-Sitzungen, fest eingeplant`,
+        titel: `${INTENSIV.calls} Video-Sitzungen, fest eingeplant`,
         text: "Wöchentlich, dann vierzehntägig, zum Schluss Zwischen- und Abschlussgespräch. Fällt eine aus, wird sie nachgeholt.",
       },
       {

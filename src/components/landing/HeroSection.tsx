@@ -17,7 +17,10 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { BetreuungsbogenGrafik } from "./BetreuungsbogenGrafik"
-import { PROGRAMM, PROGRAMM_CALLS, buchungsUrl } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, buchungsUrl } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -133,7 +136,7 @@ export function HeroSection() {
           </div>
           <BetreuungsbogenGrafik />
           <p className="mt-5 text-center text-[13.5px] leading-relaxed" style={{ color: MUTED }}>
-            {PROGRAMM_CALLS} Video-Sitzungen, am Anfang eng getaktet, zum Ende hin seltener.
+            {INTENSIV.calls} Video-Sitzungen, am Anfang eng getaktet, zum Ende hin seltener.
             Dazwischen täglich ein kurzes Check-in und ein Chat, der werktags innerhalb von{" "}
             {PROGRAMM.chatAntwortStunden} Stunden beantwortet wird.
           </p>

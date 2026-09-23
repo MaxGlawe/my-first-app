@@ -28,6 +28,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
 
 const angebot = programmAngebotEmail({
   patientName: "Max",
+  variante: "intensiv",
+  bereitsBeglichen: 0,
   angebotUrl: `${siteUrl}/vertrag/BEISPIEL-LINK-NUR-ZUR-ANSICHT`,
   contractNumber: "V-2026-0099",
   gueltigBis: "24.09.2026 um 14:30",
@@ -38,6 +40,7 @@ const angebot = programmAngebotEmail({
 
 const willkommen = programmWillkommenEmail({
   firstName: "Max",
+  variante: "intensiv",
   appUrl: `${siteUrl}/app/dashboard`,
   endetAm: "21.12.2026",
   behandlerName: "Max Glawe",

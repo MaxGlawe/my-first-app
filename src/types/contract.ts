@@ -2,7 +2,7 @@
 // PROJ-18: Treatment Contract Types
 // ============================================================
 
-import { PROGRAMM_LEISTUNGEN } from "@/lib/programm"
+import { leistungenFuer } from "@/lib/programm"
 
 export type ContractType =
   | "einzelsitzung"
@@ -90,6 +90,12 @@ export interface TreatmentContract {
   /** Idempotenz-Anker: eine Stripe-Session kann nur einmal bezahlen. */
   stripe_session_id: string | null
   paid_at: string | null
+  /**
+   * Gewaehlte Programm-Variante. Steht am Vertrag und nicht nur im Preis:
+   * Rechnung, Willkommensmail und App muessen wissen, ob Video-Sitzungen
+   * zugesagt sind. Aus dem Betrag laesst sich das nicht ableiten.
+   */
+  programm_variante: "begleitet" | "intensiv" | null
 }
 
 /** Beim Programm ist der zu zahlende Betrag die Differenz zum Gesamtpreis. */
@@ -152,11 +158,13 @@ export const CONTRACT_TYPE_CONFIG: Record<ContractType, {
     defaultZahlungsweise: "einmalig",
   },
   // PROJ-26 — Leistungen und Preise kommen aus lib/programm.ts (einzige Quelle).
+  // Die Vorgabe zeigt „Intensiv"; die tatsaechliche Variante waehlt der
+  // Therapeut beim Erstellen des Angebots, und sie steht dann am Vertrag.
   praxis_os_programm: {
     label: "Praxis-OS-Programm (90 Tage Betreuung)",
     description:
       "Physiotherapeutische Fernbetreuung über 90 Tage — Annahme per Zahlung, keine Verlängerung",
-    defaultLeistungen: PROGRAMM_LEISTUNGEN,
+    defaultLeistungen: leistungenFuer("intensiv"),
     defaultZahlungsweise: "einmalig",
   },
   chronik_programm: {

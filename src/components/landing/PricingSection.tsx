@@ -20,7 +20,10 @@
 import { ScrollReveal } from "./ScrollReveal"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { PROGRAMM, PROGRAMM_CALLS, buchungsUrl, formatEuro } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, buchungsUrl, formatEuro } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -50,7 +53,7 @@ export function PricingSection() {
               className="block text-[4.5rem] leading-none sm:text-[6rem]"
               style={{ ...serif, color: INK }}
             >
-              {formatEuro(PROGRAMM.gesamtpreis)}
+              {formatEuro(INTENSIV.preis)}
             </span>
             <p className="mt-4 text-[17px]" style={{ color: MUTED }}>
               einmalig für {PROGRAMM.tage} Tage Betreuung · Videokonsultation inbegriffen
@@ -61,7 +64,7 @@ export function PricingSection() {
         <ScrollReveal>
           <p className="mx-auto mt-8 max-w-xl text-[16px] leading-relaxed" style={{ color: BODY }}>
             Enthalten ist alles, was oben steht: dein persönlicher Plan, das tägliche Check-in,
-            der Chat mit deinem Behandler und alle {PROGRAMM_CALLS} Video-Sitzungen.
+            der Chat mit deinem Behandler und alle {INTENSIV.calls} Video-Sitzungen.
           </p>
         </ScrollReveal>
 
@@ -79,7 +82,7 @@ export function PricingSection() {
             </a>
             <p className="mx-auto mt-4 max-w-md text-[14px] leading-relaxed" style={{ color: MUTED }}>
               Bei der Buchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch:{" "}
-              {formatEuro(PROGRAMM.gesamtpreis)} für das Programm — oder{" "}
+              {formatEuro(INTENSIV.preis)} für das Programm — oder{" "}
               {formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn du dich
               dagegen entscheidest.
             </p>

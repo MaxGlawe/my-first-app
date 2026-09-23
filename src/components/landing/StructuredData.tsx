@@ -20,7 +20,10 @@
  * „Physiotherapie Glawe" und gehoeren damit der Praxis.
  */
 
-import { PROGRAMM, PROGRAMM_CALLS } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const SITE = "https://wwwpraxis-os.com"
 
@@ -128,7 +131,7 @@ export function StructuredData() {
       "geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Danach erhalten " +
       "Patientinnen und Patienten einen persönlichen Plan aus täglichen Micro-Übungen und einem " +
       "Trainingsplan, checken täglich kurz in der App ein und haben durchgehend denselben " +
-      `Behandler im Chat. Enthalten sind ${PROGRAMM_CALLS} Video-Sitzungen, anfangs wöchentlich, ` +
+      `Behandler im Chat. Enthalten sind ${INTENSIV.calls} Video-Sitzungen, anfangs wöchentlich, ` +
       `zum Ende hin seltener. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch; ein ` +
       "Abonnement entsteht nicht.",
     provider: { "@id": `${SITE}/#praxis` },
@@ -137,12 +140,12 @@ export function StructuredData() {
     offers: {
       "@type": "Offer",
       name: `${PROGRAMM.tage}-Tage-Programm inklusive Videokonsultation`,
-      price: String(PROGRAMM.gesamtpreis),
+      price: String(INTENSIV.preis),
       priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
       url: `${SITE}/#preis`,
       description:
-        `Einmalzahlung von ${PROGRAMM.gesamtpreis} €. Die vorausgegangene Videokonsultation ist ` +
+        `Einmalzahlung von ${INTENSIV.preis} €. Die vorausgegangene Videokonsultation ist ` +
         `enthalten. Wird das Programm nach dem Gespräch nicht begonnen, fallen nur ` +
         `${PROGRAMM.konsultation} € für die Konsultation an. Heilkundliche Leistung, ` +
         "umsatzsteuerfrei nach § 4 Nr. 14a UStG.",

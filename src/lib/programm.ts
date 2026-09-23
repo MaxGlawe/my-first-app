@@ -1,9 +1,23 @@
 /**
- * PROJ-26 — Praxis-OS-Programm: die EINZIGE Preisquelle.
+ * PROJ-26 — Praxis-OS-Programm: die EINZIGE Preis- und Leistungsquelle.
  *
  * Wie `lib/bgf-pakete.ts` für die BGF-Seite: Angebot, Vertrag, Checkout,
- * Rechnung und Landingpage lesen ihre Zahlen ausschließlich hier. Ein Preis,
- * der an zwei Stellen steht, steht irgendwann an zwei Stellen verschieden.
+ * Rechnung, Willkommensmail und Landingpage lesen ihre Zahlen ausschliesslich
+ * hier. Ein Preis, der an zwei Stellen steht, steht irgendwann an zwei Stellen
+ * verschieden — und auf einem Behandlungsvertrag ist das teuer.
+ *
+ * ZWEI VARIANTEN (seit 23.09.2026):
+ *
+ *   begleitet — 299 €, ohne feste Video-Sitzungen. Der einzige feste
+ *               Videotermin ist die Konsultation. Für alle, die ihren Weg
+ *               eigenständig gehen und den Therapeuten im Chat haben wollen.
+ *
+ *   intensiv  — 499 €, alles aus „begleitet“ plus acht gestaffelte
+ *               Video-Sitzungen. Das bisherige Programm.
+ *
+ * Was BEIDE teilen, steht in PROGRAMM und BASIS_LEISTUNGEN. Was sie
+ * unterscheidet, steht in VARIANTEN. Wer etwas ergänzt, muss sich also
+ * entscheiden, wo es hingehört — und genau das ist der Zweck der Trennung.
  *
  * Steuerlich: Konsultation und Programm sind heilkundliche Leistungen und
  * damit nach § 4 Nr. 14a UStG umsatzsteuerfrei. Der Checkout darf deshalb
@@ -13,21 +27,14 @@
 
 import type { Leistung } from "@/types/contract"
 
+export type ProgrammVariante = "begleitet" | "intensiv"
+
+/** Gilt für beide Varianten. */
 export const PROGRAMM = {
-  /** Vertragswert gesamt — die Konsultation ist darin enthalten. */
-  gesamtpreis: 499,
-  /**
-   * Preis der Videokonsultation, wenn der Patient NICHT ins Programm startet.
-   * Startet er direkt, ist sie im Gesamtpreis enthalten und wird nie separat
-   * berechnet. Hat er sie vorher einzeln bezahlt, wird sie angerechnet.
-   */
-  konsultation: 69,
-  /** Voller Programmbetrag, wenn noch nichts bezahlt wurde. */
-  zuZahlen: 499,
-  /** Restbetrag, wenn die Konsultation bereits einzeln bezahlt wurde. */
-  zuZahlenNachKonsultation: 499 - 69,
   /** Dauer der Betreuung. */
   tage: 90,
+  /** Preis der Videokonsultation, wenn KEIN Programm zustande kommt. */
+  konsultation: 69,
   /** Gültigkeit des Angebots-Links. */
   angebotGueltigStunden: 48,
   /**
@@ -39,27 +46,63 @@ export const PROGRAMM = {
   chatAntwortStunden: 24,
 } as const
 
-/**
- * Anzahl fest zugesagter Video-Sitzungen (werden bei Absage nachgeholt).
- *
- * Ergibt sich zwingend aus der Taktung: Woche 1-4 woechentlich = 4,
- * Woche 5-8 vierzehntaegig = 2, Woche 9-12 Zwischen- und Abschlussgespraech
- * = 2. Wer die Taktung aendert, muss diese Zahl mitaendern - sie steht als
- * zugesicherte Leistung im Behandlungsvertrag.
- */
-export const PROGRAMM_CALLS = 8
+export interface VariantenDefinition {
+  id: ProgrammVariante
+  /** Anzeigename, z. B. „Intensiv“. */
+  name: string
+  /** Vollständige Bezeichnung für Vertrag und Rechnung. */
+  vertragsname: string
+  untertitel: string
+  kurztext: string
+  preis: number
+  /** Fest zugesagte Video-Sitzungen (0 = keine ausser der Konsultation). */
+  calls: number
+  /** Auf der Angebotsseite hervorheben? */
+  hervorgehoben: boolean
+  /** Label über der hervorgehobenen Karte. */
+  label?: string
+}
+
+export const VARIANTEN: Record<ProgrammVariante, VariantenDefinition> = {
+  begleitet: {
+    id: "begleitet",
+    name: "Begleitet",
+    vertragsname: "Praxis-OS-Programm „Begleitet“ (90 Tage Fernbetreuung)",
+    untertitel: "In deinem Tempo — per Chat",
+    kurztext:
+      "Für alle, die ihren Weg lieber eigenständig gehen — mit deinem Therapeuten jederzeit im Chat an deiner Seite.",
+    preis: 299,
+    calls: 0,
+    hervorgehoben: false,
+  },
+  intensiv: {
+    id: "intensiv",
+    name: "Intensiv",
+    vertragsname: "Praxis-OS-Programm „Intensiv“ (90 Tage Fernbetreuung)",
+    untertitel: "Mit regelmäßigen Video-Sitzungen",
+    kurztext: "Für alle, die regelmäßig mit ihrem Therapeuten sprechen möchten.",
+    preis: 499,
+    calls: 8,
+    hervorgehoben: true,
+    label: "Am engsten begleitet",
+  },
+}
+
+/** Reihenfolge auf der Angebotsseite: die günstigere zuerst. */
+export const VARIANTEN_REIHENFOLGE: ProgrammVariante[] = ["begleitet", "intensiv"]
+
+/** Taktung der Video-Sitzungen — nur „Intensiv“. */
+export const CALL_TAKTUNG =
+  "Woche 1 bis 4 wöchentlich, Woche 5 bis 8 vierzehntägig, Woche 9 bis 12 eine Zwischensitzung sowie ein Abschlussgespräch"
 
 /**
- * Vertragspositionen. Die erste Zeile macht die Anrechnung sichtbar: Sie steht
- * mit ihrem Preis im Vertrag, ist aber bereits beglichen — dadurch liest sich
- * „später entscheiden" wie derselbe Deal, nicht wie eine zweite Rechnung.
+ * Leistungen, die BEIDE Varianten enthalten.
+ *
+ * Der zusätzliche Video-Termin bei Verschlechterung steht bewusst hier und
+ * nicht nur bei „Intensiv“: Wer sich verschlechtert, darf nicht erst über
+ * Geld reden müssen. Das ist die Grundlage des Red-Flag-Versprechens.
  */
-export const PROGRAMM_LEISTUNGEN: Leistung[] = [
-  {
-    beschreibung: `Physiotherapeutische Fernbetreuung über ${PROGRAMM.tage} Tage`,
-    preis: PROGRAMM.gesamtpreis,
-    details: `Einschließlich der vorausgegangenen Videokonsultation und ${PROGRAMM_CALLS} Video-Sitzungen à ca. 30 Minuten`,
-  },
+export const BASIS_LEISTUNGEN: Leistung[] = [
   {
     beschreibung: "Videokonsultation (30 Min.) mit Eignungsprüfung",
     preis: 0,
@@ -80,7 +123,7 @@ export const PROGRAMM_LEISTUNGEN: Leistung[] = [
   },
   {
     beschreibung:
-      "Zusätzliche Video-Sitzung bei Verschlechterung (Rückmeldung am nächsten Werktag)",
+      "Kurzfristige zusätzliche Video-Sitzung bei Verschlechterung (Rückmeldung am nächsten Werktag)",
     preis: 0,
   },
   {
@@ -89,28 +132,60 @@ export const PROGRAMM_LEISTUNGEN: Leistung[] = [
   },
 ]
 
-/** Taktung der Video-Sitzungen — für Vertragstext und Landingpage. */
-export const PROGRAMM_CALL_TAKTUNG =
-  "Woche 1 bis 4 wöchentlich, Woche 5 bis 8 vierzehntägig, Woche 9 bis 12 eine Zwischensitzung sowie ein Abschlussgespräch"
+/** Vertragspositionen einer Variante: die bezahlte Position plus die Inklusivleistungen. */
+export function leistungenFuer(variante: ProgrammVariante): Leistung[] {
+  const v = VARIANTEN[variante]
 
-export function formatEuro(amount: number): string {
-  return amount.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+  const hauptposition: Leistung = {
+    beschreibung: `Physiotherapeutische Fernbetreuung über ${PROGRAMM.tage} Tage — ${v.name}`,
+    preis: v.preis,
+    details:
+      v.calls > 0
+        ? `Einschließlich der vorausgegangenen Videokonsultation und ${v.calls} Video-Sitzungen à ca. 30 Minuten`
+        : "Einschließlich der vorausgegangenen Videokonsultation; laufende Betreuung per Chat",
+  }
+
+  const calls: Leistung[] =
+    v.calls > 0
+      ? [
+          {
+            beschreibung: `${v.calls} Video-Sitzungen à ca. 30 Minuten`,
+            preis: 0,
+            details: CALL_TAKTUNG,
+          },
+        ]
+      : []
+
+  return [hauptposition, ...calls, ...BASIS_LEISTUNGEN]
+}
+
+/** Preis der Variante. */
+export function preisFuer(variante: ProgrammVariante): number {
+  return VARIANTEN[variante].preis
 }
 
 /**
- * Einstieg in den Buchungskalender. Bewusst ein Link auf physiotherapie-glawe.de
- * statt eines eingebetteten iframes: Der Kalender lebt dort, wir haetten im
- * Rahmen weder Layout-Kontrolle noch verlaessliches Verhalten auf
- * Mobilgeraeten. `abschnitt` landet als utm_content in der Statistik und sagt,
- * welcher Teil der Seite die Buchung gebracht hat.
+ * Einstieg in den Buchungskalender. Bewusst ein Link auf
+ * physiotherapie-glawe.de statt eines eingebetteten iframes: Der Kalender lebt
+ * dort, wir haetten im Rahmen weder Layout-Kontrolle noch verlaessliches
+ * Verhalten auf Mobilgeraeten.
+ *
+ * `abschnitt` landet als utm_content in der Statistik und sagt, welcher Teil
+ * der Seite die Buchung gebracht hat. `variante` gibt die im Voraus gewaehlte
+ * Programm-Variante mit — entschieden wird endgueltig erst im Gespraech.
  */
-export function buchungsUrl(abschnitt: string): string {
+export function buchungsUrl(abschnitt: string, variante?: ProgrammVariante): string {
   const params = new URLSearchParams({
     service: "video-sprechstunde-praxis-os",
     utm_source: "praxis-os",
     utm_medium: "website",
     utm_campaign: "programm-90-tage",
-    utm_content: abschnitt,
+    utm_content: variante ? `${abschnitt}-${variante}` : abschnitt,
   })
+  if (variante) params.set("programm", variante)
   return `https://physiotherapie-glawe.de/termin-buchen.html?${params.toString()}`
+}
+
+export function formatEuro(amount: number): string {
+  return amount.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
 }

@@ -9,7 +9,8 @@
  */
 
 import { escapeHtml } from "@/lib/html-escape"
-import { PROGRAMM, PROGRAMM_CALLS, PROGRAMM_CALL_TAKTUNG } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, CALL_TAKTUNG } from "@/lib/programm"
+import type { ProgrammVariante } from "@/lib/programm"
 
 const PAPER = "#F8F5F0"
 const CARD = "#FFFFFF"
@@ -24,6 +25,8 @@ const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
 
 export interface ProgrammWillkommenProps {
   firstName: string
+  /** Bestimmt, ob die Mail Video-Sitzungen ankuendigt. */
+  variante: ProgrammVariante
   /** Magiclink in die App. */
   appUrl: string
   /** Ende der Betreuung, bereits formatiert (TT.MM.JJJJ). */
@@ -37,6 +40,7 @@ export function programmWillkommenEmail(props: ProgrammWillkommenProps): {
   subject: string
   html: string
 } {
+  const v = VARIANTEN[props.variante]
   const name = escapeHtml(props.firstName)
   const behandler = escapeHtml(props.behandlerName)
   const praxis = escapeHtml(props.praxisName)
@@ -54,10 +58,15 @@ export function programmWillkommenEmail(props: ProgrammWillkommenProps): {
       "Chat mit deinem Behandler",
       `Fragen zwischendurch gehen direkt an ${behandler}. Antwort innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden an Werktagen.`,
     ],
-    [
-      `${PROGRAMM_CALLS} Video-Sitzungen`,
-      `${PROGRAMM_CALL_TAKTUNG.charAt(0).toUpperCase() + PROGRAMM_CALL_TAKTUNG.slice(1)}. Termine vereinbart ihr gemeinsam.`,
-    ],
+    v.calls > 0
+      ? ([
+          `${v.calls} Video-Sitzungen`,
+          `${CALL_TAKTUNG.charAt(0).toUpperCase() + CALL_TAKTUNG.slice(1)}. Termine vereinbart ihr gemeinsam.`,
+        ] as [string, string])
+      : ([
+          "Betreuung per Chat",
+          "Feste Video-Sitzungen sind in deiner Variante nicht vorgesehen — du gehst deinen Weg im eigenen Tempo, dein Behandler liest mit und ist im Chat erreichbar.",
+        ] as [string, string]),
     [
       "Wenn es schlechter wird",
       "Melde dich — dann schieben wir eine zusätzliche Sitzung ein. Rückmeldung spätestens am nächsten Werktag.",

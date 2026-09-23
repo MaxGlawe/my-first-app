@@ -1,6 +1,6 @@
 import type { ContractType, Leistung, VertragText } from "@/types/contract"
 import type { PraxisSettings } from "@/types/billing"
-import { PROGRAMM_CALL_TAKTUNG } from "@/lib/programm"
+import { CALL_TAKTUNG } from "@/lib/programm"
 
 interface ContractContext {
   contractType: ContractType
@@ -59,8 +59,13 @@ export function generateVertragText(ctx: ContractContext): VertragText {
     ? `Die Behandlung erstreckt sich über einen voraussichtlichen Zeitraum von ca. ${ctx.dauerWochen} Wochen. Der tatsächliche Behandlungszeitraum kann je nach individuellem Therapieverlauf und medizinischer Notwendigkeit abweichen.`
     : ""
 
+  // Bei der Variante „Begleitet" sind KEINE festen Video-Sitzungen zugesagt.
+  // Der Satz muss das ausdruecklich sagen, statt zu schweigen — sonst laesst
+  // sich aus dem Vertrag nicht ablesen, was vereinbart wurde.
   const sitzungenText = ctx.sitzungenAnzahl
     ? `Der Vertrag umfasst ${ctx.sitzungenAnzahl} Video-Sitzungen à ca. 30 Minuten.`
+    : ctx.contractType === "praxis_os_programm"
+    ? "Feste Video-Sitzungen sind in dieser Variante nicht vereinbart. Der einzige fest terminierte Videotermin ist die vorausgegangene Konsultation; die laufende Betreuung erfolgt ueber die Praxis-App und den persoenlichen Chat."
     : ""
 
   // PROJ-26: Beim Praxis-OS-Programm weichen mehrere Klauseln bewusst vom
@@ -135,7 +140,9 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       dauerText ? `(${inklusivleistungen ? "4" : "3"}) ${dauerText}` : "",
       sitzungenText
         ? isProgramm
-          ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die Sitzungen sind gestaffelt: ${PROGRAMM_CALL_TAKTUNG}. Bei einer Verschlechterung des Beschwerdebildes kann zusätzlich eine weitere Sitzung vereinbart werden. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
+          ? ctx.sitzungenAnzahl
+            ? `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die Sitzungen sind gestaffelt: ${CALL_TAKTUNG}. Bei einer Verschlechterung des Beschwerdebildes kann zusätzlich eine weitere Sitzung vereinbart werden. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
+            : `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Bei einer Verschlechterung des Beschwerdebildes wird kurzfristig eine zusätzliche Video-Sitzung vereinbart; sie ist im Vertragspreis enthalten. Die Terminregelung richtet sich nach §6 dieses Vertrages.`
           : `(${inklusivleistungen ? "5" : "4"}) ${sitzungenText} Die einzelnen Sitzungen werden individuell terminiert. Nicht wahrgenommene Sitzungen verfallen gemäß den Regelungen in §6 dieses Vertrages.`
         : "",
       ``,

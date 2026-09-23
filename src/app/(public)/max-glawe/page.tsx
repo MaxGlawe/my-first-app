@@ -20,7 +20,10 @@ import Image from "next/image"
 import Link from "next/link"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { LandingFooter } from "@/components/landing/LandingFooter"
-import { PROGRAMM, PROGRAMM_CALLS, buchungsUrl } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, buchungsUrl } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const SITE = "https://wwwpraxis-os.com"
 
@@ -218,7 +221,7 @@ export default function MaxGlawePage() {
             Check-in in der App lese ich mit und passe den Plan daran an. Über die
             {" "}{PROGRAMM.tage} Tage bleibe ich derselbe Ansprechpartner — im Chat mit einer
             Antwortzusage von {PROGRAMM.chatAntwortStunden} Stunden an Werktagen und in{" "}
-            {PROGRAMM_CALLS} Video-Sitzungen, die anfangs wöchentlich stattfinden und zum Ende
+            {INTENSIV.calls} Video-Sitzungen, die anfangs wöchentlich stattfinden und zum Ende
             hin seltener werden.
           </p>
           <p className="mt-4 text-[16px] leading-relaxed" style={{ color: BODY }}>

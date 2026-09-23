@@ -30,7 +30,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { PROGRAMM, PROGRAMM_CALLS, formatEuro } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, formatEuro } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -43,7 +46,7 @@ const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 const FRAGEN: { frage: string; antwort: string }[] = [
   {
     frage: "Wie läuft das 90-Tage-Programm von Praxis OS ab?",
-    antwort: `Das 90-Tage-Programm beginnt mit einer 30-minütigen Videokonsultation, in der Beschwerden, Vorgeschichte und Ziele besprochen werden und geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der App wird täglich kurz eingecheckt, der Plan wird laufend angepasst. Über die gesamte Zeit gibt es ${PROGRAMM_CALLS} Video-Sitzungen: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 alle zwei Wochen, in den Wochen 9 bis 12 ein Zwischengespräch und ein Abschlussgespräch. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch.`,
+    antwort: `Das 90-Tage-Programm beginnt mit einer 30-minütigen Videokonsultation, in der Beschwerden, Vorgeschichte und Ziele besprochen werden und geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der App wird täglich kurz eingecheckt, der Plan wird laufend angepasst. Über die gesamte Zeit gibt es ${INTENSIV.calls} Video-Sitzungen: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 alle zwei Wochen, in den Wochen 9 bis 12 ein Zwischengespräch und ein Abschlussgespräch. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch.`,
   },
   {
     frage: "Brauche ich eine ärztliche Verordnung oder eine Überweisung?",
@@ -52,7 +55,7 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   },
   {
     frage: "Was kostet das Programm, und wann wird abgerechnet?",
-    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(PROGRAMM.gesamtpreis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder ${formatEuro(PROGRAMM.gesamtpreis)} für das Programm, in denen die Konsultation enthalten ist, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
+    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(INTENSIV.preis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder ${formatEuro(INTENSIV.preis)} für das Programm, in denen die Konsultation enthalten ist, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
   },
   {
     frage: "Was passiert, wenn ihr mein Beschwerdebild nicht betreuen könnt?",

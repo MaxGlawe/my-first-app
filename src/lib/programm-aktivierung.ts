@@ -22,6 +22,7 @@ import { ensurePatientLogin, createMagicLink } from "@/lib/patient-provisioning"
 import { createProgrammInvoiceDraft } from "@/lib/billing/programm-invoice"
 import { sendEmail } from "@/lib/email"
 import { programmWillkommenEmail } from "@/lib/email-templates/programm-willkommen"
+import type { ProgrammVariante } from "@/lib/programm"
 import type { Leistung } from "@/types/contract"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
@@ -52,7 +53,7 @@ export async function aktiviereProgramm(
   const { data: contract } = await supabase
     .from("treatment_contracts")
     .select(
-      "id, contract_number, patient_id, created_by, programm_tage, gesamtpreis, bereits_beglichen, leistungen, paid_at, patient_name, patient_email"
+      "id, contract_number, patient_id, created_by, programm_tage, programm_variante, gesamtpreis, bereits_beglichen, leistungen, paid_at, patient_name, patient_email"
     )
     .eq("id", contractId)
     .maybeSingle()
@@ -169,6 +170,9 @@ export async function aktiviereProgramm(
     firstName: patient?.vorname ?? contract.patient_name.split(" ")[0],
     expiresAt: expiresAt ?? null,
     therapeutId: contract.created_by,
+    // Bestandsvertraege ohne Variante sind samtlich die alte, einzige — also
+    // "intensiv". Dieselbe Annahme wie in der Migration.
+    variante: (contract.programm_variante ?? "intensiv") as ProgrammVariante,
   }).catch((err) => console.error("[programm] Willkommensmail fehlgeschlagen:", err))
 
   void benachrichtige({
@@ -314,6 +318,7 @@ async function sendeWillkommensmail(
     firstName: string
     expiresAt: string | null
     therapeutId: string
+    variante: ProgrammVariante
   }
 ): Promise<void> {
   if (!args.email) return
@@ -342,6 +347,7 @@ async function sendeWillkommensmail(
 
   const mail = programmWillkommenEmail({
     firstName: args.firstName,
+    variante: args.variante,
     appUrl: link,
     endetAm,
     behandlerName,

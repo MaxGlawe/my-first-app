@@ -10,7 +10,8 @@
  */
 
 import { escapeHtml } from "@/lib/html-escape"
-import { PROGRAMM, formatEuro } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, formatEuro } from "@/lib/programm"
+import type { ProgrammVariante } from "@/lib/programm"
 
 const PAPER = "#F8F5F0"
 const CARD = "#FFFFFF"
@@ -25,6 +26,10 @@ const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
 
 export interface ProgrammAngebotMailProps {
   patientName: string
+  /** Gewaehlte Variante — bestimmt Name, Preis und ob Sitzungen zugesagt sind. */
+  variante: ProgrammVariante
+  /** Bereits beglichener Anteil (Konsultation), 0 wenn nichts angerechnet wird. */
+  bereitsBeglichen: number
   /** Öffentlicher Link auf die Angebotsseite (/vertrag/<token>). */
   angebotUrl: string
   contractNumber: string
@@ -39,6 +44,7 @@ export function programmAngebotEmail(props: ProgrammAngebotMailProps): {
   subject: string
   html: string
 } {
+  const v = VARIANTEN[props.variante]
   const name = escapeHtml(props.patientName)
   const behandler = escapeHtml(props.behandlerName)
   const praxis = escapeHtml(props.praxisName)
@@ -74,10 +80,10 @@ export function programmAngebotEmail(props: ProgrammAngebotMailProps): {
 
         <div style="border:1px solid ${LINE};border-radius:14px;padding:18px 20px;background:${PAPER};margin:0 0 22px;">
           <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;">
-            ${zeile("Betreuung über " + PROGRAMM.tage + " Tage", formatEuro(PROGRAMM.gesamtpreis))}
+            ${zeile("Betreuung über " + PROGRAMM.tage + " Tage", formatEuro(v.preis))}
             ${zeile("Videokonsultation — bereits beglichen", "− " + formatEuro(PROGRAMM.konsultation))}
             <tr><td colspan="2" style="border-top:1px solid ${LINE};font-size:0;line-height:0;">&nbsp;</td></tr>
-            ${zeile("Jetzt zu zahlen", formatEuro(PROGRAMM.zuZahlen), true)}
+            ${zeile("Jetzt zu zahlen", formatEuro((v.preis - props.bereitsBeglichen)), true)}
           </table>
         </div>
 

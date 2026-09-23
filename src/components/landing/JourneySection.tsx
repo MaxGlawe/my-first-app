@@ -20,7 +20,10 @@
 
 import Image from "next/image"
 import { ScrollReveal } from "./ScrollReveal"
-import { PROGRAMM, PROGRAMM_CALLS } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+
+// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -160,7 +163,7 @@ export function JourneySection() {
             className="mx-auto mt-20 max-w-2xl rounded-2xl border p-5 text-center text-[14.5px] leading-relaxed sm:mt-28 sm:p-6"
             style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)", color: BODY }}
           >
-            Insgesamt {PROGRAMM_CALLS} Video-Sitzungen, fest eingeplant. Fällt eine aus, wird sie
+            Insgesamt {INTENSIV.calls} Video-Sitzungen, fest eingeplant. Fällt eine aus, wird sie
             nachgeholt. Praxis OS ist kein Notdienst — bei akuten Beschwerden wende dich bitte an
             den ärztlichen Notdienst oder die 112.
           </p>
