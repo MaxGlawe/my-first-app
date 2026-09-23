@@ -47,13 +47,15 @@ export function LandingFooter() {
             </h3>
             <ul className="space-y-2.5">
               {[
-                { label: "Features", href: "#features" },
-                { label: "Ablauf", href: "#ablauf" },
-                { label: "Vorteile", href: "#vorteile" },
-                { label: "Preise", href: "#preise" },
+                // Beim Menue-Umbau uebersehen: "#features", "#vorteile" und
+                // "#preise" zeigten auf Sektionen, die es nicht mehr gibt
+                // (der Preis heisst "#preis", ohne e). Tote Anker scrollen ins
+                // Leere und fallen dem auf, der die Seite NICHT gebaut hat.
+                { label: "Ablauf", href: "/#ablauf" },
+                { label: "Preis", href: "/#preis" },
+                { label: "Fragen", href: "/#faq" },
+                { label: "Über Max Glawe", href: "/max-glawe" },
                 { label: "Shop", href: "/kurse" },
-                { label: "FAQ", href: "#faq" },
-                { label: "Anfrage stellen", href: "/anfrage" },
               ].map((l) => (
                 <li key={l.label}>
                   <Link
