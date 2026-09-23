@@ -48,8 +48,14 @@ Dazu `LIVEKIT_API_KEY=praxis-os` und
 
 ## 3. Starten
 
+> Ubuntu bringt Compose als `docker-compose-v2` mit. Die Anleitungen auf
+> docker.com nennen `docker-compose-plugin` — das stammt aus Dockers eigenem
+> Paketarchiv und existiert in Ubuntus Quellen nicht.
+
+
 ```bash
-apt update && apt install -y docker.io docker-compose-plugin ufw
+apt update && apt install -y docker.io docker-compose-v2 ufw
+systemctl enable --now docker
 ./firewall.sh
 docker compose up -d
 docker compose logs -f livekit
