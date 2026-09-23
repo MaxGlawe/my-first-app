@@ -33,6 +33,25 @@ git pull origin main || { echo "git pull fehlgeschlagen — Abbruch, nichts geae
 rm -rf .next.bak
 [ -d .next ] && cp -r .next .next.bak
 
+# Abhaengigkeiten nachziehen, wenn sich package-lock.json geaendert hat.
+#
+# Am 23.09.2026 schlug ein Deploy fehl, weil neue Pakete (LiveKit) im Repo
+# standen, auf dem Server aber nie installiert wurden — das Skript hat nur
+# gebaut. Der Rollback hat gegriffen, aber der Fehler kommt bei jedem neuen
+# Paket wieder.
+#
+# PUPPETEER_SKIP_DOWNLOAD ist Pflicht: Puppeteer versucht sonst, Chromium
+# herunterzuladen, scheitert daran auf diesem Server und laesst node_modules
+# unvollstaendig zurueck — dann fehlen auch next und typescript.
+if ! git diff --quiet HEAD@{1} HEAD -- package-lock.json 2>/dev/null; then
+  echo "── Abhaengigkeiten haben sich geaendert ────────────────────"
+  export PUPPETEER_SKIP_DOWNLOAD=true PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+  if ! npm ci --no-audit --no-fund; then
+    echo "npm ci fehlgeschlagen — Abbruch, alter Stand laeuft weiter."
+    exit 1
+  fi
+fi
+
 echo "── Bauen ───────────────────────────────────────────────────"
 # Der Cache ist die Ursache der Chunk-Fehler ("Cannot find module
 # .next/server/chunks/..."), deshalb bewusst von vorn.
@@ -41,7 +60,7 @@ rm -rf .next
 ERFOLG=1
 for versuch in $(seq 1 $BUILD_VERSUCHE); do
   echo "Versuch $versuch von $BUILD_VERSUCHE ..."
-  if npm run build; then
+  if PUPPETEER_SKIP_DOWNLOAD=true npm run build; then
     ERFOLG=0
     break
   fi
