@@ -125,16 +125,33 @@ export async function GET(request: NextRequest) {
     query = query.is("archived_at", null)
   }
 
-  // Volltext-Suche nach Name oder Geburtsdatum
+  // Volltext-Suche nach Name, E-Mail oder Geburtsdatum.
+  //
+  // WORTWEISE, nicht als ganzer Begriff. Vorher wurde der komplette Suchtext
+  // gegen jedes Feld einzeln geprüft — „Max Mustermann1" fand deshalb nichts,
+  // weil der Vorname „Max" und der Nachname „Mustermann1" heisst und kein
+  // einzelnes Feld beides enthält. Einen vollen Namen einzutippen ist aber
+  // der Normalfall, nicht die Ausnahme.
+  //
+  // Jedes Wort muss irgendwo vorkommen: UND zwischen den Wörtern, ODER
+  // zwischen den Feldern. Mehrere `.or()`-Aufrufe verknüpft PostgREST mit
+  // UND — genau das wird hier gebraucht.
   if (search.trim()) {
-    // Sanitize: remove PostgREST delimiters, escape LIKE wildcards
-    const term = search.trim()
-      .replace(/[,().]/g, "")  // Remove PostgREST filter delimiters (incl. dots)
-      .replace(/%/g, "\\%")    // Escape LIKE wildcard %
-      .replace(/_/g, "\\_")    // Escape LIKE wildcard _
-    if (term) {
+    const woerter = search
+      .trim()
+      .split(/\s+/)
+      .map((w) =>
+        w
+          .replace(/[,().]/g, "") // PostgREST-Trennzeichen entfernen
+          .replace(/%/g, "\\%") // LIKE-Platzhalter entschärfen
+          .replace(/_/g, "\\_")
+      )
+      .filter(Boolean)
+      .slice(0, 5) // Schutz vor absurd langen Eingaben
+
+    for (const wort of woerter) {
       query = query.or(
-        `vorname.ilike.%${term}%,nachname.ilike.%${term}%,geburtsdatum.ilike.%${term}%`
+        `vorname.ilike.%${wort}%,nachname.ilike.%${wort}%,email.ilike.%${wort}%,geburtsdatum.ilike.%${wort}%`
       )
     }
   }
