@@ -170,19 +170,33 @@ export function preisFuer(variante: ProgrammVariante): number {
  * dort, wir haetten im Rahmen weder Layout-Kontrolle noch verlaessliches
  * Verhalten auf Mobilgeraeten.
  *
- * `abschnitt` landet als utm_content in der Statistik und sagt, welcher Teil
- * der Seite die Buchung gebracht hat. `variante` gibt die im Voraus gewaehlte
- * Programm-Variante mit — entschieden wird endgueltig erst im Gespraech.
+ * `abschnitt` sagt, welcher Teil der Seite die Buchung gebracht hat.
+ * `variante` gibt die im Voraus gewaehlte Programm-Variante mit — entschieden
+ * wird endgueltig erst im Gespraech.
+ *
+ * WARUM DIE VARIANTE IN utm_campaign STECKT (23.09.2026):
+ * Das Buchungs-Widget liest beim Laden ausschliesslich utm_source,
+ * utm_medium und utm_campaign aus der URL. Alles andere verwirft es sofort —
+ * es landet nie in der Datenbank und kann folglich auch nicht im Webhook
+ * ankommen. Ein eigener Parameter `programm=…` waere also stumm gewesen:
+ * sichtbar in der Adresszeile, wirkungslos in der Auswertung.
+ *
+ * utm_content bleibt trotzdem gesetzt. Es kostet nichts, es ist der richtige
+ * Ort fuer den Seitenabschnitt, und sobald die Gegenseite es durchreicht,
+ * wirkt es ohne weitere Aenderung hier.
+ *
+ * Bewusst NICHT zusaetzlich `programm=…`: Dieselbe Tatsache an zwei Stellen
+ * driftet irgendwann auseinander, und dann steht in der Auswertung zweimal
+ * etwas Verschiedenes ueber dieselbe Buchung.
  */
 export function buchungsUrl(abschnitt: string, variante?: ProgrammVariante): string {
   const params = new URLSearchParams({
     service: "video-sprechstunde-praxis-os",
     utm_source: "praxis-os",
     utm_medium: "website",
-    utm_campaign: "programm-90-tage",
-    utm_content: variante ? `${abschnitt}-${variante}` : abschnitt,
+    utm_campaign: variante ? `programm-90-tage-${variante}` : "programm-90-tage",
+    utm_content: abschnitt,
   })
-  if (variante) params.set("programm", variante)
   return `https://physiotherapie-glawe.de/termin-buchen.html?${params.toString()}`
 }
 
