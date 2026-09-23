@@ -15,23 +15,19 @@ const LINE = "#e7e1d6"
 const PAPER = "#F8F5F0"
 
 /**
- * PROJ-26: Menue auf das Programm ausgerichtet.
+ * PROJ-26: Menue fuehrt ausschliesslich durch das Programm.
  *
- * Die alte Fassung zeigte auf "#features", "#vorteile" und "#preise" — alles
- * Sektionen, die es nach dem Umbau nicht mehr gibt. Tote Anker im Hauptmenue
- * scrollen ins Leere und faellt niemandem auf, der die Seite gebaut hat.
- *
- * `sekundaer` markiert die Angebote NEBEN dem Programm: Shop (dort liegen
- * Masterclass, Challenges und Kartendecks) und die B2B-Seite. Sie bleiben
- * erreichbar, treten aber optisch zurueck — die Startseite verkauft eine Sache.
+ * Shop und "Fuer Unternehmen" stehen bewusst NICHT hier. Eine Startseite, die
+ * ein Angebot verkauft, sollte im Menue nicht auf drei weitere zeigen. Beide
+ * bleiben ueber den Fussbereich erreichbar — abgeschaltet sind sie nicht:
+ * Die Masterclass-Kampagne verlinkt laufend in den Shop, und eine Mail, die
+ * auf eine Fehlerseite fuehrt, ist teurer als ein Menuepunkt weniger.
  */
-const NAV: { label: string; href: string; sekundaer?: boolean }[] = [
+const NAV: { label: string; href: string }[] = [
   { label: "Ablauf", href: "/#ablauf" },
   { label: "Preis", href: "/#preis" },
   { label: "Fragen", href: "/#faq" },
   { label: "Über mich", href: "/max-glawe" },
-  { label: "Shop", href: "/kurse", sekundaer: true },
-  { label: "Für Unternehmen", href: "/unternehmen", sekundaer: true },
 ]
 
 export function LandingHeader() {
@@ -81,19 +77,15 @@ export function LandingHeader() {
           </Link>
 
           <nav className="hidden sm:flex items-center gap-6 text-sm">
-            {NAV.map((link, i) => (
-              <span key={link.label} className="flex items-center gap-6">
-                {link.sekundaer && !NAV[i - 1]?.sekundaer && (
-                  <span aria-hidden className="h-4 w-px" style={{ backgroundColor: LINE }} />
-                )}
-                <a
-                  href={link.href}
-                  className="transition-opacity hover:opacity-70"
-                  style={{ color: link.sekundaer ? MUTED : INK }}
-                >
-                  {link.label}
-                </a>
-              </span>
+            {NAV.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="transition-opacity hover:opacity-70"
+                style={{ color: INK }}
+              >
+                {link.label}
+              </a>
             ))}
           </nav>
 

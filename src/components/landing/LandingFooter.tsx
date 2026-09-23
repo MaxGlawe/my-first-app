@@ -55,7 +55,10 @@ export function LandingFooter() {
                 { label: "Preis", href: "/#preis" },
                 { label: "Fragen", href: "/#faq" },
                 { label: "Über Max Glawe", href: "/max-glawe" },
+                // Shop und B2B stehen bewusst nur hier und nicht im Menue:
+                // erreichbar fuer bestehende Kampagnen-Links, aber nicht im Weg.
                 { label: "Shop", href: "/kurse" },
+                { label: "Für Unternehmen", href: "/unternehmen" },
               ].map((l) => (
                 <li key={l.label}>
                   <Link
