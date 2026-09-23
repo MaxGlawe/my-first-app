@@ -57,24 +57,44 @@ export default function AgbPage() {
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 2 Leistungsbeschreibung</h2>
             <p>
               (1) Kernleistung des Anbieters ist das <span className="font-medium" style={{ color: INK }}>90-Tage-Programm
-              „Praxis OS"</span> — eine physiotherapeutische Fernbetreuung über 90 Tage. Es umfasst:
+              „Praxis OS"</span> — eine physiotherapeutische Fernbetreuung über 90 Tage. Es wird in zwei Varianten
+              angeboten. In beiden Varianten umfasst es:
             </p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>Eine Videokonsultation von ca. 30 Minuten mit Befunderhebung und Prüfung, ob sich das Beschwerdebild für eine Fernbetreuung eignet</li>
               <li>Einen individuellen Plan aus täglichen Kurzübungen und einem Trainingsplan für vereinbarte Trainingstage, mit Video-Anleitungen</li>
-              <li>Acht Video-Sitzungen von je ca. 30 Minuten: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 vierzehntägig, in den Wochen 9 bis 12 ein Zwischen- und ein Abschlussgespräch</li>
               <li>Tägliches Befindlichkeits-Tracking über die App und Anpassung des Plans anhand dieser Angaben</li>
               <li>Chat-Kommunikation mit dem behandelnden Therapeuten; Antwort an Werktagen innerhalb von 24 Stunden</li>
               <li>Eine zusätzliche Video-Sitzung bei Verschlechterung des Beschwerdebildes; Rückmeldung spätestens am nächsten Werktag</li>
               <li>Die Nutzung der Patienten-App für die Dauer der Betreuung, ohne gesonderte Berechnung</li>
             </ul>
             <p className="mt-3">
-              (1a) Die Betreuung endet nach 90 Tagen automatisch. Es entsteht kein Abonnement, es erfolgt keine
+              (1a) Die Varianten unterscheiden sich ausschließlich im Umfang der fest vereinbarten Video-Sitzungen:
+            </p>
+            <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
+              <li>
+                <span className="font-medium" style={{ color: INK }}>„Begleitet"</span> (299 €): Über die
+                Videokonsultation nach Absatz 1 hinaus werden keine Video-Sitzungen vereinbart. Die laufende
+                Betreuung erfolgt über Chat und App.
+              </li>
+              <li>
+                <span className="font-medium" style={{ color: INK }}>„Intensiv"</span> (499 €): Zusätzlich acht
+                Video-Sitzungen von je ca. 30 Minuten: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8
+                vierzehntägig, in den Wochen 9 bis 12 ein Zwischen- und ein Abschlussgespräch. Fällt eine Sitzung
+                aus, wird sie nachgeholt.
+              </li>
+            </ul>
+            <p className="mt-3">
+              Die Variante wird am Ende der Videokonsultation vereinbart und ergibt sich aus dem
+              Behandlungsvertrag.
+            </p>
+            <p className="mt-3">
+              (1b) Die Betreuung endet nach 90 Tagen automatisch. Es entsteht kein Abonnement, es erfolgt keine
               Verlängerung und keine weitere Abbuchung. Eine Weiternutzung der App über diesen Zeitraum hinaus ist
               nur auf ausdrückliche gesonderte Beauftragung möglich und nicht Gegenstand des Programms.
             </p>
             <p className="mt-3">
-              (1b) Daneben bietet der Anbieter Einzelsitzungen sowie strukturierte Reha-Programme an. Für diese
+              (1c) Daneben bietet der Anbieter Einzelsitzungen sowie strukturierte Reha-Programme an. Für diese
               gelten die Regelungen dieser AGB entsprechend; Leistungsumfang, Laufzeit und Vergütung ergeben sich
               aus dem jeweiligen Behandlungsvertrag.
             </p>

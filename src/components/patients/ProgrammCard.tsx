@@ -18,6 +18,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   CalendarRange, QrCode, Copy, Check, Loader2, AlertTriangle, RefreshCw, ExternalLink,
 } from "lucide-react"
+import {
+  PROGRAMM,
+  VARIANTEN,
+  VARIANTEN_REIHENFOLGE,
+  formatEuro,
+  type ProgrammVariante,
+} from "@/lib/programm"
 
 interface Betreuung {
   active: boolean
@@ -34,6 +41,8 @@ interface Angebot {
   token_expires_at: string | null
   paid_at: string | null
   abgelaufen: boolean
+  /** Altverträge von vor dem 23.09.2026 haben noch keine. */
+  programm_variante: ProgrammVariante | null
 }
 
 interface State {
@@ -64,6 +73,10 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
   const [qrOffen, setQrOffen] = useState(false)
   const [ladeFehler, setLadeFehler] = useState<string | null>(null)
   const [konsultationBezahlt, setKonsultationBezahlt] = useState(false)
+  // Vorauswahl bewusst „Intensiv“: Wer im Call nicht aktiv umstellt, hat die
+  // Frage nicht besprochen — und dann ist die Variante mit den festen
+  // Sitzungen die, die der Patient auf der Website als Standard gesehen hat.
+  const [variante, setVariante] = useState<ProgrammVariante>("intensiv")
 
   const load = useCallback(() => {
     setLoading(true)
@@ -97,6 +110,7 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
           patient_id: patientId,
           neu_ausstellen: neuAusstellen,
           konsultation_angerechnet: konsultationBezahlt,
+          variante,
         }),
       })
       const json = await res.json()
@@ -158,6 +172,8 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
 
   const { betreuung, offenes_angebot: angebot, qr_data_url: qr } = state
   const letztesAbgelaufen = state.angebote?.find((a) => a.abgelaufen && !a.paid_at)
+  const gewaehlt = VARIANTEN[variante]
+  const restbetrag = gewaehlt.preis - PROGRAMM.konsultation
 
   return (
     <Card className="mb-6 border-[#e7e1d6] bg-[#F8F5F0]">
@@ -196,8 +212,11 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
         {!betreuung.active && angebot?.url && (
           <div className="mt-3">
             <p className="text-[13px] leading-relaxed text-slate-600">
-              Angebot <strong>{angebot.contract_number}</strong> liegt offen — gültig bis{" "}
-              {fmtDateTime(angebot.token_expires_at)}.
+              Angebot <strong>{angebot.contract_number}</strong>
+              {angebot.programm_variante && (
+                <> über <strong>{VARIANTEN[angebot.programm_variante].name}</strong></>
+              )}{" "}
+              liegt offen — gültig bis {fmtDateTime(angebot.token_expires_at)}.
             </p>
 
             <div className="mt-3 flex flex-wrap gap-2">
@@ -237,7 +256,46 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
                 ? `Das letzte Angebot (${letztesAbgelaufen.contract_number}) ist abgelaufen.`
                 : "Noch kein Angebot erstellt. Der Patient kann sich nicht selbst freischalten."}
             </p>
-            <label className="mt-3 flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-white/70 p-3">
+            {/* Variante zuerst — sie bestimmt den Betrag, auf den sich die
+                Anrechnung darunter bezieht. */}
+            <fieldset className="mt-3">
+              <legend className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+                Variante
+              </legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {VARIANTEN_REIHENFOLGE.map((id) => {
+                  const v = VARIANTEN[id]
+                  const aktiv = variante === id
+                  return (
+                    <label
+                      key={v.id}
+                      className={`flex cursor-pointer items-start gap-2.5 rounded-xl border p-3 transition-colors ${
+                        aktiv ? "border-[#2C3E2D] bg-white" : "border-slate-200 bg-white/70"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="programm-variante"
+                        value={v.id}
+                        checked={aktiv}
+                        onChange={() => setVariante(v.id)}
+                        className="mt-0.5 h-4 w-4 accent-[#2C3E2D]"
+                      />
+                      <span className="text-[12.5px] leading-relaxed text-slate-600">
+                        <strong className="text-slate-900">{v.name}</strong> ·{" "}
+                        {formatEuro(v.preis)}
+                        <br />
+                        {v.calls > 0
+                          ? `${v.calls} feste Video-Sitzungen`
+                          : "keine festen Video-Sitzungen"}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </fieldset>
+
+            <label className="mt-2 flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-white/70 p-3">
               <input
                 type="checkbox"
                 checked={konsultationBezahlt}
@@ -245,9 +303,11 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
                 className="mt-0.5 h-4 w-4 accent-[#2C3E2D]"
               />
               <span className="text-[12.5px] leading-relaxed text-slate-600">
-                Der Patient hat die Videokonsultation bereits einzeln bezahlt (69 €) — dann
-                anrechnen, es sind noch <strong>430 €</strong> offen. Ohne Haken gilt der volle
-                Programmpreis von <strong>499 €</strong>, die Konsultation ist darin enthalten.
+                Der Patient hat die Videokonsultation bereits einzeln bezahlt (
+                {formatEuro(PROGRAMM.konsultation)}) — dann anrechnen, es sind noch{" "}
+                <strong>{formatEuro(restbetrag)}</strong> offen. Ohne Haken gilt der volle Preis
+                von <strong>{formatEuro(gewaehlt.preis)}</strong> für {gewaehlt.name}, die
+                Konsultation ist darin enthalten.
               </span>
             </label>
 
@@ -267,7 +327,7 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
                 </>
               ) : (
                 <>
-                  <CalendarRange className="mr-1.5 h-4 w-4" /> Programm-Angebot erstellen
+                  <CalendarRange className="mr-1.5 h-4 w-4" /> Angebot „{gewaehlt.name}“ erstellen
                 </>
               )}
             </Button>

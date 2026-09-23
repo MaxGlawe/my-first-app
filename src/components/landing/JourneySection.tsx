@@ -22,7 +22,6 @@ import Image from "next/image"
 import { ScrollReveal } from "./ScrollReveal"
 import { PROGRAMM, VARIANTEN } from "@/lib/programm"
 
-// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
 const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
@@ -60,22 +59,22 @@ const ETAPPEN: Etappe[] = [
   },
   {
     marke: "Woche 1 – 4",
-    titel: "Wöchentlich im Gespräch",
-    text: "Einmal pro Woche sehen wir uns per Video. Dazwischen checkst du täglich kurz ein — Schmerz, Schlaf, Belastung, in unter einer Minute. Dein Therapeut liest den Verlauf mit und passt den Plan an, statt ihn stehen zu lassen.",
+    titel: "Die engste Phase",
+    text: "Du checkst täglich kurz ein — Schmerz, Schlaf, Belastung, in unter einer Minute. Dein Therapeut liest den Verlauf mit und passt den Plan an, statt ihn stehen zu lassen. In „Intensiv“ sehen wir uns zusätzlich einmal pro Woche per Video.",
     bild: "/images/journey/3-gestuetzt.webp",
     alt: "Eine junge Pflanze, eng an einen Holzstab gebunden — der Halt liegt dicht am Stamm.",
   },
   {
     marke: "Woche 5 – 8",
     titel: "Die Leine wird länger",
-    text: "Jetzt alle zwei Wochen. Du kennst deine Übungen, du weißt, worauf du achtest. Der Chat bleibt offen, Antwort werktags innerhalb von 24 Stunden. Und wenn es schlechter wird, schieben wir eine zusätzliche Sitzung ein.",
+    text: "Du kennst deine Übungen, du weißt, worauf du achtest. Der Chat bleibt offen, Antwort werktags innerhalb von 24 Stunden; die Video-Sitzungen in „Intensiv“ rücken auf alle zwei Wochen auseinander. Und wenn es schlechter wird, schieben wir eine zusätzliche Sitzung ein — in beiden Varianten.",
     bild: "/images/journey/4-gelockert.webp",
     alt: "Eine kräftigere Pflanze, die sich vom Stab wegneigt — nur noch eine lockere Bindung hält sie.",
   },
   {
     marke: `Tag ${PROGRAMM.tage}`,
-    titel: "Das Abschlussgespräch",
-    text: "Ein Zwischen-Call und zum Schluss das Abschlussgespräch: Was hat getragen, was nimmst du mit, wie machst du allein weiter. Danach endet die Betreuung automatisch — kein Abo, keine Verlängerung, keine Abbuchung.",
+    titel: "Der Abschluss",
+    text: "Was hat getragen, was nimmst du mit, wie machst du allein weiter — in „Intensiv“ in einem Zwischen-Call und einem Abschlussgespräch, in „Begleitet“ im Chat. Danach endet die Betreuung automatisch — kein Abo, keine Verlängerung, keine Abbuchung.",
     bild: "/images/journey/5-frei.webp",
     alt: "Die Pflanze steht aufrecht ohne Stütze, der Holzstab liegt daneben auf dem Tisch.",
   },
@@ -163,9 +162,10 @@ export function JourneySection() {
             className="mx-auto mt-20 max-w-2xl rounded-2xl border p-5 text-center text-[14.5px] leading-relaxed sm:mt-28 sm:p-6"
             style={{ borderColor: LINE, backgroundColor: "rgba(255,255,255,0.6)", color: BODY }}
           >
-            Insgesamt {INTENSIV.calls} Video-Sitzungen, fest eingeplant. Fällt eine aus, wird sie
-            nachgeholt. Praxis OS ist kein Notdienst — bei akuten Beschwerden wende dich bitte an
-            den ärztlichen Notdienst oder die 112.
+            In „Intensiv“ sind {INTENSIV.calls} Video-Sitzungen fest eingeplant; fällt eine aus,
+            wird sie nachgeholt. In „Begleitet“ läuft die Begleitung über den Chat. Praxis OS ist
+            kein Notdienst — bei akuten Beschwerden wende dich bitte an den ärztlichen Notdienst
+            oder die 112.
           </p>
         </ScrollReveal>
       </div>

@@ -20,9 +20,9 @@
  * „Physiotherapie Glawe" und gehoeren damit der Praxis.
  */
 
-import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, VARIANTEN_REIHENFOLGE } from "@/lib/programm"
 
-// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const BEGLEITET = VARIANTEN.begleitet
 const INTENSIV = VARIANTEN.intensiv
 
 const SITE = "https://wwwpraxis-os.com"
@@ -65,7 +65,7 @@ export function StructuredData() {
     description:
       `Physiotherapeutische Fernbetreuung als ${PROGRAMM.tage}-Tage-Programm: Videokonsultation mit ` +
       "Eignungsprüfung, persönlicher Trainingsplan, tägliches Check-in in der App, Chat mit dem " +
-      "Behandler und gestaffelte Video-Sitzungen. Behandlung durch einen Heilpraktiker für " +
+      "Behandler, wahlweise mit gestaffelten Video-Sitzungen. Behandlung durch einen Heilpraktiker für " +
       "Physiotherapie — ohne ärztliche Verordnung.",
     url: SITE,
     logo: `${SITE}/images/physio-logo.png`,
@@ -131,25 +131,34 @@ export function StructuredData() {
       "geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Danach erhalten " +
       "Patientinnen und Patienten einen persönlichen Plan aus täglichen Micro-Übungen und einem " +
       "Trainingsplan, checken täglich kurz in der App ein und haben durchgehend denselben " +
-      `Behandler im Chat. Enthalten sind ${INTENSIV.calls} Video-Sitzungen, anfangs wöchentlich, ` +
-      `zum Ende hin seltener. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch; ein ` +
-      "Abonnement entsteht nicht.",
+      `Behandler im Chat. Es gibt zwei Varianten: „${BEGLEITET.name}“ für ${BEGLEITET.preis} € ` +
+      `läuft über den Chat, „${INTENSIV.name}“ für ${INTENSIV.preis} € enthält zusätzlich ` +
+      `${INTENSIV.calls} Video-Sitzungen, anfangs wöchentlich und zum Ende hin seltener. Nach ` +
+      `${PROGRAMM.tage} Tagen endet die Betreuung automatisch; ein Abonnement entsteht nicht.`,
     provider: { "@id": `${SITE}/#praxis` },
     areaServed: { "@type": "Country", name: "Deutschland" },
     termsOfService: `${SITE}/agb`,
-    offers: {
-      "@type": "Offer",
-      name: `${PROGRAMM.tage}-Tage-Programm inklusive Videokonsultation`,
-      price: String(INTENSIV.preis),
-      priceCurrency: "EUR",
-      availability: "https://schema.org/InStock",
-      url: `${SITE}/#preis`,
-      description:
-        `Einmalzahlung von ${INTENSIV.preis} €. Die vorausgegangene Videokonsultation ist ` +
-        `enthalten. Wird das Programm nach dem Gespräch nicht begonnen, fallen nur ` +
-        `${PROGRAMM.konsultation} € für die Konsultation an. Heilkundliche Leistung, ` +
-        "umsatzsteuerfrei nach § 4 Nr. 14a UStG.",
-    },
+    // Ein Offer je Variante. Die guenstigere zuerst, damit sie als Einstiegs-
+    // preis gelesen wird — sie ist der ehrliche Einstieg, nicht ein Koeder.
+    offers: VARIANTEN_REIHENFOLGE.map((id) => {
+      const v = VARIANTEN[id]
+      return {
+        "@type": "Offer",
+        name: `${PROGRAMM.tage}-Tage-Programm „${v.name}“ inklusive Videokonsultation`,
+        price: String(v.preis),
+        priceCurrency: "EUR",
+        availability: "https://schema.org/InStock",
+        url: `${SITE}/#preis`,
+        description:
+          `Einmalzahlung von ${v.preis} €. Die vorausgegangene Videokonsultation ist enthalten. ` +
+          (v.calls > 0
+            ? `Enthält ${v.calls} feste Video-Sitzungen. `
+            : "Die Begleitung läuft über den Chat; feste Video-Sitzungen sind nicht enthalten. ") +
+          `Wird das Programm nach dem Gespräch nicht begonnen, fallen nur ` +
+          `${PROGRAMM.konsultation} € für die Konsultation an. Heilkundliche Leistung, ` +
+          "umsatzsteuerfrei nach § 4 Nr. 14a UStG.",
+      }
+    }),
   }
 
   return (

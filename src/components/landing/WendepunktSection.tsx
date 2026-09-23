@@ -22,9 +22,9 @@
  */
 
 import { ScrollReveal } from "./ScrollReveal"
-import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN, formatEuro } from "@/lib/programm"
 
-// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const BEGLEITET = VARIANTEN.begleitet
 const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
@@ -84,10 +84,12 @@ export function WendepunktSection() {
             wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Danach erhältst du
             einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für
             festgelegte Trainingstage, checkst täglich kurz in der App ein und hast über die
-            gesamte Zeit denselben Behandler — im Chat erreichbar, mit {INTENSIV.calls}{" "}
-            Video-Sitzungen, die anfangs wöchentlich stattfinden und zum Ende hin seltener
-            werden. Behandelt wird von Max Glawe, Heilpraktiker für Physiotherapie, mit Praxis in
-            Wildau. Die Betreuung endet nach {PROGRAMM.tage} Tagen automatisch; ein Abonnement
+            gesamte Zeit denselben Behandler, im Chat erreichbar. Es gibt zwei Varianten:
+            {" "}„{BEGLEITET.name}“ für {formatEuro(BEGLEITET.preis)} läuft über den Chat,
+            {" "}„{INTENSIV.name}“ für {formatEuro(INTENSIV.preis)} enthält zusätzlich{" "}
+            {INTENSIV.calls} Video-Sitzungen, die anfangs wöchentlich stattfinden und zum Ende hin
+            seltener werden. Behandelt wird von Max Glawe, Heilpraktiker für Physiotherapie, mit
+            Praxis in Wildau. Die Betreuung endet nach {PROGRAMM.tage} Tagen automatisch; ein Abonnement
             entsteht nicht.
           </p>
         </ScrollReveal>

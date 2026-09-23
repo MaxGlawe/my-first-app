@@ -19,7 +19,23 @@ Plan wird anhand dieser Rückmeldungen laufend angepasst. Über die gesamte Zeit
 begleitet derselbe Behandler, erreichbar im Chat mit einer Antwortzusage von
 24 Stunden an Werktagen.
 
-## Taktung der Video-Sitzungen
+## Die beiden Varianten
+
+Beide enthalten dieselbe Betreuung: Videokonsultation zu Beginn, persönlicher
+Plan, tägliches Check-in, laufende Anpassung durch den Behandler, Chat mit
+24-Stunden-Antwortzusage an Werktagen, App-Zugang ohne gesonderte Kosten und
+das automatische Ende nach 90 Tagen. Der Unterschied sind allein die festen
+Video-Sitzungen.
+
+- Begleitet, 299 Euro: außer der Konsultation ist kein Videotermin vereinbart;
+  die Begleitung läuft über den Chat.
+- Intensiv, 499 Euro: zusätzlich acht Video-Sitzungen von je ca. 30 Minuten.
+
+Verschlechtern sich die Beschwerden, wird in BEIDEN Varianten kurzfristig eine
+zusätzliche Video-Sitzung eingeschoben; eine Rückmeldung erfolgt spätestens am
+nächsten Werktag.
+
+## Taktung der Video-Sitzungen in „Intensiv“
 
 Insgesamt acht Sitzungen, fest eingeplant:
 
@@ -27,13 +43,13 @@ Insgesamt acht Sitzungen, fest eingeplant:
 - Woche 5 bis 8: alle zwei Wochen
 - Woche 9 bis 12: ein Zwischengespräch und ein Abschlussgespräch
 
-Verschlechtern sich die Beschwerden, kann zusätzlich eine weitere Sitzung
-vereinbart werden; eine Rückmeldung erfolgt spätestens am nächsten Werktag.
 Fällt eine Sitzung aus, wird sie nachgeholt.
 
 ## Preis und Abrechnung
 
-- Programm: 499 Euro einmalig, die Videokonsultation ist darin enthalten.
+- Begleitet: 299 Euro einmalig, die Videokonsultation ist darin enthalten.
+- Intensiv: 499 Euro einmalig, die Videokonsultation ist darin enthalten.
+- Welche Variante passt, wird am Ende der Konsultation gemeinsam entschieden.
 - Wird nach dem Gespräch kein Programm begonnen: 69 Euro für die Konsultation.
 - Bei der Terminbuchung wird noch nichts abgebucht; abgerechnet wird nach dem Gespräch.
 - Zahlung per Karte oder Klarna. Ob Klarna eine Ratenzahlung anbietet,

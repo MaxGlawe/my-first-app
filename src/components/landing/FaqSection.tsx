@@ -33,6 +33,7 @@ import {
 import { PROGRAMM, VARIANTEN, formatEuro } from "@/lib/programm"
 
 // Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
+const BEGLEITET = VARIANTEN.begleitet
 const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
@@ -46,7 +47,11 @@ const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 const FRAGEN: { frage: string; antwort: string }[] = [
   {
     frage: "Wie läuft das 90-Tage-Programm von Praxis OS ab?",
-    antwort: `Das 90-Tage-Programm beginnt mit einer 30-minütigen Videokonsultation, in der Beschwerden, Vorgeschichte und Ziele besprochen werden und geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der App wird täglich kurz eingecheckt, der Plan wird laufend angepasst. Über die gesamte Zeit gibt es ${INTENSIV.calls} Video-Sitzungen: in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 alle zwei Wochen, in den Wochen 9 bis 12 ein Zwischengespräch und ein Abschlussgespräch. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch.`,
+    antwort: `Das 90-Tage-Programm beginnt mit einer 30-minütigen Videokonsultation, in der Beschwerden, Vorgeschichte und Ziele besprochen werden und geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Passt es, erstellt der Behandler einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für festgelegte Trainingstage. In der App wird täglich kurz eingecheckt, der Plan wird laufend angepasst, und der Behandler ist durchgehend im Chat erreichbar. Es gibt zwei Varianten: In „${BEGLEITET.name}“ läuft die Begleitung über den Chat, in „${INTENSIV.name}“ kommen ${INTENSIV.calls} Video-Sitzungen dazu — in den Wochen 1 bis 4 wöchentlich, in den Wochen 5 bis 8 alle zwei Wochen, in den Wochen 9 bis 12 ein Zwischengespräch und ein Abschlussgespräch. Nach ${PROGRAMM.tage} Tagen endet die Betreuung automatisch.`,
+  },
+  {
+    frage: "Was ist der Unterschied zwischen „Begleitet“ und „Intensiv“?",
+    antwort: `Beide Varianten des 90-Tage-Programms von Praxis OS enthalten dieselbe Betreuung: die Videokonsultation zu Beginn, den persönlichen Plan aus täglichen Micro-Übungen und Trainingsplan, das tägliche Check-in, die laufende Anpassung durch den Behandler und den Chat mit Antwort innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden an Werktagen. Der Unterschied sind die festen Video-Sitzungen: „${INTENSIV.name}“ (${formatEuro(INTENSIV.preis)}) enthält ${INTENSIV.calls} davon, anfangs wöchentlich und zum Ende hin seltener; bei „${BEGLEITET.name}“ (${formatEuro(BEGLEITET.preis)}) ist außer der Konsultation kein Videotermin vereinbart. Verschlechtern sich die Beschwerden, wird in beiden Varianten kurzfristig eine zusätzliche Sitzung eingeschoben. Welche Variante passt, wird am Ende der Konsultation gemeinsam entschieden.`,
   },
   {
     frage: "Brauche ich eine ärztliche Verordnung oder eine Überweisung?",
@@ -55,7 +60,7 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   },
   {
     frage: "Was kostet das Programm, und wann wird abgerechnet?",
-    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(INTENSIV.preis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder ${formatEuro(INTENSIV.preis)} für das Programm, in denen die Konsultation enthalten ist, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
+    antwort: `Das 90-Tage-Programm von Praxis OS gibt es in zwei Varianten: „${BEGLEITET.name}“ kostet ${formatEuro(BEGLEITET.preis)} einmalig, „${INTENSIV.name}“ mit ${INTENSIV.calls} Video-Sitzungen ${formatEuro(INTENSIV.preis)} einmalig. Die vorausgegangene Videokonsultation ist in beiden enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder der Betrag der gewählten Variante oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
   },
   {
     frage: "Was passiert, wenn ihr mein Beschwerdebild nicht betreuen könnt?",

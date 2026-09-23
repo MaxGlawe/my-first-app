@@ -120,6 +120,23 @@ Quartals-Reports); der Preis richtet sich nur nach der Teamgröße.
   abgeleitetes Label würde einem 50 × 39 € = 1.950 €-Vertrag das Paket „bis 50"
   (Listenpreis 1.190 €) zuschreiben und dem gespeicherten Vertragstext widersprechen.
 
+## Praxis-OS-Programm: EIN Produkt, zwei Varianten
+
+- **Preis-Quelle (einzige!):** `src/lib/programm.ts`. Geteiltes in `PROGRAMM` +
+  `BASIS_LEISTUNGEN`, Unterschiedliches in `VARIANTEN` — Begleitet 299 EUR (keine festen
+  Video-Sitzungen), Intensiv 499 EUR (8 Sitzungen). Konsultation 69 EUR, 90 Tage.
+  Genutzt von Landing, Angebots-API, Vertrag, Checkout, Rechnung, Willkommensmail.
+- **Der Unterschied ist GENAU ein Punkt:** die fest vereinbarten Video-Sitzungen. Die
+  Zusatzsitzung bei Verschlechterung steht in `BASIS_LEISTUNGEN`, also in BEIDEN —
+  wer sich verschlechtert, darf nicht erst ueber Geld reden muessen.
+- **Variante gehoert an den Vertrag:** `treatment_contracts.programm_variante`
+  (Migration `20260923000001`). Aus dem Betrag laesst sich nicht ableiten, ob
+  Sitzungen zugesagt wurden. Altvertraege: `'intensiv'`.
+- **Keine festen Ratenbetraege in Texten** — Ratenzahlung laeuft ueber Klarna, Klarna
+  entscheidet ueber Raten.
+- **Heilkundliche Leistung:** nach Paragraf 4 Nr. 14a UStG umsatzsteuerfrei. Der Checkout
+  darf NIEMALS `UST_TAX_RATE_ID` mitgeben (der haengt an den Shop-Produkten).
+
 ## Claude API Gotchas (IMPORTANT)
 
 - **tool_use with German text:** Claude writes `„Wort"` where closing `"` is ASCII U+0022, breaks JSON.parse. Use `repairAndParseJson()`.

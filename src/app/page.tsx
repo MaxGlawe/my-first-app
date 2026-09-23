@@ -23,7 +23,8 @@ export const metadata: Metadata = {
   title: "90 Tage Physiotherapie per Video | Praxis OS — Physiotherapie Glawe",
   description:
     "Physiotherapeutische Fernbetreuung über 90 Tage: Videokonsultation mit ehrlicher " +
-    "Eignungsprüfung, persönlicher Trainingsplan, tägliches Check-in und acht Video-Sitzungen. " +
+    "Eignungsprüfung, persönlicher Trainingsplan, tägliches Check-in und Chat mit dem Behandler — "
+    + "wahlweise mit acht Video-Sitzungen. " +
     "Heilpraktiker für Physiotherapie — ohne ärztliche Verordnung, ohne Wartezeit.",
   keywords: [
     "Online Physiotherapie",

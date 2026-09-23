@@ -22,7 +22,6 @@
 import { ScrollReveal } from "./ScrollReveal"
 import { PROGRAMM, VARIANTEN } from "@/lib/programm"
 
-// Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
 const INTENSIV = VARIANTEN.intensiv
 
 const PAPER = "#F8F5F0"
@@ -66,8 +65,8 @@ const GRUPPEN: Gruppe[] = [
         text: "Deine Nachricht im Chat wird an Werktagen innerhalb eines Arbeitstages beantwortet. Kein vages Später, keine Hotline.",
       },
       {
-        titel: `${INTENSIV.calls} Video-Sitzungen, fest eingeplant`,
-        text: "Wöchentlich, dann vierzehntägig, zum Schluss Zwischen- und Abschlussgespräch. Fällt eine aus, wird sie nachgeholt.",
+        titel: `In „${INTENSIV.name}“: ${INTENSIV.calls} Video-Sitzungen, fest eingeplant`,
+        text: `Wöchentlich, dann vierzehntägig, zum Schluss Zwischen- und Abschlussgespräch. Fällt eine aus, wird sie nachgeholt. In „${VARIANTEN.begleitet.name}“ ist außer der Konsultation kein Videotermin vereinbart — dafür ist diese Variante günstiger.`,
       },
       {
         titel: "Anpassung statt Zettel",

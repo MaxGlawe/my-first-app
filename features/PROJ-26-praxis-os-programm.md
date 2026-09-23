@@ -143,3 +143,47 @@ Erhaltungsphase verdrahten — **erst nach** Trennung der Rechnungsart in
 - **Bestandsdaten vor Deploy prüfen:** Gibt es bereits abgelaufene
   `app_access_grants` (Masterclass-Käufer)? Das sind die ersten Nutzer des
   neuen Lese-Zustands.
+
+---
+
+## 6 · Zwei Varianten (23.09.2026)
+
+Das bisherige Programm heißt ab jetzt **„Intensiv"**. Daneben steht **„Begleitet"**.
+Der Unterschied ist **genau ein Punkt** — die fest vereinbarten Video-Sitzungen.
+
+| | Begleitet | Intensiv |
+|---|---|---|
+| Preis | 299 € | 499 € |
+| Feste Video-Sitzungen | keine | 8 (W1–4 wöchentlich, W5–8 vierzehntägig, W9–12 Zwischen- + Abschlussgespräch) |
+| Videokonsultation | inklusive | inklusive |
+| Plan, Check-in, Chat (24 h werktags), App-Zugang | inklusive | inklusive |
+| Zusatzsitzung bei Verschlechterung | **inklusive** | **inklusive** |
+| Ende nach 90 Tagen, kein Abo | ja | ja |
+
+**Warum die Zusatzsitzung in beiden steckt:** Wenn es schlechter wird, sind wir in der
+Bringschuld. Wer sich verschlechtert, darf nicht erst über Geld reden müssen —
+sonst wird aus dem Red-Flag-Versprechen ein Verkaufsanlass.
+
+**Keine festen Ratenbeträge in den Texten.** Ratenzahlung läuft vollständig über
+Klarna; ob und in welchen Raten Klarna anbietet, entscheidet Klarna. Auf der Seite
+stehen deshalb nur die Einmalbeträge.
+
+### Technisch
+
+- **`lib/programm.ts`** bleibt die einzige Quelle. Geteiltes steht in `PROGRAMM` +
+  `BASIS_LEISTUNGEN`, Unterschiedliches in `VARIANTEN`. `leistungenFuer(variante)`
+  baut die Vertragspositionen, `buchungsUrl(abschnitt, variante)` hängt
+  `?programm=` und ein variantenspezifisches `utm_content` an.
+- **Migration `20260923000001_programm_varianten.sql`** — `treatment_contracts.programm_variante`
+  mit CHECK, Bestandsverträge auf `'intensiv'` zurückgefüllt, Partial Index für
+  die Auswertung. Die Variante gehört an den Vertrag, nicht nur in den Preis:
+  aus dem Betrag lässt sich nicht ableiten, ob Sitzungen zugesagt wurden.
+- **Therapeuten-UI** (`ProgrammCard`): Radio-Auswahl vor dem Anrechnungs-Haken,
+  Vorauswahl „Intensiv". Der Anrechnungstext rechnet gegen den Preis der
+  gewählten Variante (nicht mehr fest 430 €).
+- **Strukturierte Daten**: `Service.offers` ist jetzt ein Array mit zwei `Offer`
+  (299 / 499), günstigere zuerst.
+- **Landingpage**: Angebotssektion zeigt beide Karten; was beide enthalten, steht
+  EINMAL darunter statt zweimal nebeneinander. Journey, Versprechen, Hero, FAQ,
+  AGB § 2 und `llms.txt` kennzeichnen die Sitzungen als „Intensiv"-Leistung.
+- **Neue FAQ** „Was ist der Unterschied …" — speist zugleich das FAQPage-Markup.

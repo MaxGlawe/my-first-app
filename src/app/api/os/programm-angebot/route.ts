@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
   const { data } = await auth.svc
     .from("treatment_contracts")
     .select(
-      "id, contract_number, status, signing_token, token_expires_at, gesamtpreis, bereits_beglichen, paid_at, created_at"
+      "id, contract_number, status, signing_token, token_expires_at, gesamtpreis, bereits_beglichen, programm_variante, paid_at, created_at"
     )
     .eq("patient_id", patientId)
     .eq("contract_type", "praxis_os_programm")
