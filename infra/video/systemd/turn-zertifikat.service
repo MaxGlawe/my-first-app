@@ -1,0 +1,8 @@
+[Unit]
+Description=TURN-Zertifikat aus Caddys Speicher holen (PROJ-27)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/sprechzimmer/turn-zertifikat.sh

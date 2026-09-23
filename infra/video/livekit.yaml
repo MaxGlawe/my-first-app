@@ -27,7 +27,11 @@ rtc:
   use_external_ip: true
 
 redis:
-  address: redis:6379
+  # 127.0.0.1 und NICHT der Compose-Name "redis": LiveKit laeuft mit
+  # network_mode: host — WebRTC braucht die echten Ports ohne NAT — und haengt
+  # damit nicht am Compose-Netz. Der Dienstname ist von dort aus nicht
+  # aufloesbar. Redis ist genau deshalb auf 127.0.0.1:6379 veroeffentlicht.
+  address: 127.0.0.1:6379
 
 # Diese Werte gehören zugleich in die Env-Dateien von Praxis OS
 # (LIVEKIT_API_KEY / LIVEKIT_API_SECRET). Vor dem ersten Start ersetzen —

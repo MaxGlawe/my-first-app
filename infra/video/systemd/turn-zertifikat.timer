@@ -1,0 +1,12 @@
+[Unit]
+Description=Taeglich pruefen, ob Caddy das TURN-Zertifikat erneuert hat
+
+[Timer]
+# Nach dem Hochfahren und danach taeglich. Let's Encrypt erneuert alle 60
+# Tage; taeglich pruefen kostet nichts und faengt die Erneuerung sicher ab.
+OnBootSec=3min
+OnUnitActiveSec=24h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

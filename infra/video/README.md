@@ -63,6 +63,26 @@ docker compose logs -f livekit
 
 Im Log muss `starting LiveKit server` und die öffentliche IP erscheinen.
 
+## 3a. TURN-Zertifikat bereitstellen
+
+Caddy besorgt die Zertifikate, legt sie aber in seinem eigenen Speicher ab.
+LiveKits eingebauter TURN-Server spricht TLS selbst — er laeuft nicht durch
+Caddy, weil TURN kein HTTP ist — und braucht die Dateien direkt:
+
+```bash
+/opt/sprechzimmer/turn-zertifikat.sh
+```
+
+Das Skript sucht den Pfad in Caddys Speicher, statt ihn fest zu verdrahten:
+Der Pfad enthaelt den ACME-Anbieter, und ein fest eingetragener waere nach
+einem Anbieterwechsel still veraltet — TURN liefe dann mit einem abgelaufenen
+Zertifikat weiter, bis es jemandem auffaellt.
+
+Damit die Erneuerung nach 60 Tagen nicht vergessen wird, laeuft es taeglich
+per systemd-Timer (`turn-zertifikat.timer`). Kopiert und neu gestartet wird
+nur bei einer echten Aenderung — ein Neustart mitten im Gespraech waere sonst
+der Preis fuer nichts.
+
 ## 4. Gegenprobe
 
 ```bash
