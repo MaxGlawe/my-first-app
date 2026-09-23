@@ -45,7 +45,11 @@ export async function updateSession(request: NextRequest) {
   // erst beim Kauf danach. Der Zutritt haengt am Token im Pfad, und der
   // wird im Handler geprueft: richtiges Gespraech, offenes Zeitfenster.
   const isGastSprechzimmer = pathname.startsWith('/sprechzimmer/')
-  const isGastVideoApi = pathname === '/api/video/gast' && request.method === 'POST'
+  // GET beantwortet „wann ist mein Termin?", POST gibt den Videozugang.
+  // Beide muessen oeffentlich sein — der Patient hat kein Konto. Anfangs
+  // war nur POST freigegeben, und die Gastseite lief still ins Login.
+  const isGastVideoApi =
+    pathname === '/api/video/gast' && (request.method === 'POST' || request.method === 'GET')
   const isContractPublicApi = pathname.startsWith('/api/contracts/') || pathname.startsWith('/api/bgf-contracts/')
   const isIntakeApi = pathname === '/api/intake' && request.method === 'POST'
   // B2B-Unternehmens-Kontaktformular (/unternehmen/kontakt) — öffentlicher Mailversand
