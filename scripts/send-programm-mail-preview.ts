@@ -45,7 +45,17 @@ if (nurVariante && !VARIANTEN[nurVariante]) {
   process.exit(1)
 }
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
+/**
+ * Bewusst NICHT NEXT_PUBLIC_SITE_URL: Das Skript laeuft auf dem Rechner des
+ * Behandlers, dort steht dort `http://localhost:3000` — und dann stehen in der
+ * Vorschau localhost-Links an genau der Stelle, an der der Patient spaeter sein
+ * Passwort setzt. Das sieht nach einem Fehler in der echten Mail aus, ist aber
+ * nur ein Artefakt der Vorschau. Eine Vorschau muss zeigen, was der Patient
+ * sieht, also die Produktionsadresse.
+ *
+ * Fuer einen bewussten Test gegen die lokale Instanz: PREVIEW_SITE_URL setzen.
+ */
+const siteUrl = process.env.PREVIEW_SITE_URL ?? "https://wwwpraxis-os.com"
 const varianten = nurVariante ? [nurVariante] : VARIANTEN_REIHENFOLGE
 
 interface Versand {
@@ -119,6 +129,7 @@ async function main() {
 
   console.log(`Empfänger: ${empfaenger}`)
   console.log(`Absender:  ${from}`)
+  console.log(`Basis-URL: ${siteUrl}${process.env.PREVIEW_SITE_URL ? " (per PREVIEW_SITE_URL)" : ""}`)
   console.log(`Mails:     ${mails.length}\n`)
 
   for (const m of mails) {
