@@ -1,0 +1,11 @@
+# Shell-Skripte und Serverkonfiguration IMMER mit LF.
+#
+# Am 23.09.2026 kam der Deploy nicht durch: scripts/deploy.sh lag mit
+# CRLF auf dem Linux-Server, und bash bricht bei \r mit
+# "invalid option name" und "syntax error" ab. Ursache war die Uebertragung
+# von einem Windows-Rechner.
+*.sh      text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+Caddyfile text eol=lf
+*.sql     text eol=lf
