@@ -60,6 +60,18 @@ const nextConfig: NextConfig = {
       { source: "/app/courses/:path*", destination: "/app/kurse", permanent: false },
       { source: "/os/courses", destination: "/os/dashboard", permanent: false },
       { source: "/os/courses/:path*", destination: "/os/dashboard", permanent: false },
+
+      // PROJ-26: Masterclass auf Eis gelegt (Produkt archiviert). Die
+      // Verkaufsseite leitet auf das Programm um statt eine Fehlerseite zu
+      // zeigen: 215 Leads haben im Juli und August Mails mit diesem Link
+      // bekommen, und wer den Newsletter noch im Postfach hat und klickt,
+      // soll beim aktuellen Angebot landen.
+      //
+      // Bewusst `permanent: false` (307) — die Masterclass kommt spaeter
+      // moeglicherweise gebuendelt zurueck. Eine 301 wuerde Browser und
+      // Suchmaschinen die Umleitung dauerhaft einbrennen.
+      { source: "/kurse/chronischer-kreuzschmerz", destination: "/", permanent: false },
+      { source: "/shop/chronischer-kreuzschmerz", destination: "/", permanent: false },
     ]
   },
 }
