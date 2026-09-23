@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProgrammCard } from "@/components/patients/ProgrammCard"
 import { VerschlechterungPanel } from "@/components/patients/VerschlechterungPanel"
 import { SprechzimmerCard } from "@/components/patients/SprechzimmerCard"
+import { DokumenteCard } from "@/components/patients/DokumenteCard"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -98,6 +99,7 @@ export default function PatientDetailPage({ params }: PatientDetailPageProps) {
       {/* PROJ-26: Kontrollpunkt des 90-Tage-Programms — nur klinische Rollen. */}
       {isClinicalRole && !readOnly && <VerschlechterungPanel patientId={patient.id} />}
       {isClinicalRole && !readOnly && <SprechzimmerCard patientId={patient.id} />}
+      {isClinicalRole && <DokumenteCard patientId={patient.id} />}
       {isClinicalRole && !readOnly && <ProgrammCard patientId={patient.id} />}
 
       <Tabs defaultValue={searchParams.get("tab") ?? "stammdaten"} className="mt-2">

@@ -40,6 +40,7 @@ import {
   TrendingUp,
   CreditCard,
   ShoppingBag,
+  FolderOpen,
 } from "lucide-react"
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -354,6 +355,13 @@ export default function PatientDashboardPage() {
 
             {/* ── Bottom Links ───────────────────────────────────── */}
             <div className="space-y-3 animate-fade-in-up animation-delay-600">
+              <LinkCard
+                href="/app/dokumente"
+                icon={<FolderOpen className="h-5 w-5 text-amber-600" />}
+                iconBg="bg-amber-100"
+                title="Meine Unterlagen"
+                subtitle="Arztbriefe und Befunde abfotografieren"
+              />
               <LinkCard
                 href="/app/abo"
                 icon={<CreditCard className="h-5 w-5 text-teal-600" />}
