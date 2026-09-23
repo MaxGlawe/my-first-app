@@ -1,11 +1,27 @@
 "use client"
 
-// PROJ-7 BUG-4: Patient-facing appointments card for /app/dashboard
+/**
+ * PROJ-7 BUG-4: Patient-facing appointments card for /app/dashboard
+ *
+ * PROJ-26 (23.09.2026): Die Karte blendet sich aus, wenn es nichts zu zeigen
+ * gibt.
+ *
+ * Hintergrund: Die Termine kommen ausschliesslich ueber den Buchungs-Webhook
+ * herein, und die Anbindung ruht. Fuer den heutigen Ablauf wird sie auch nicht
+ * gebraucht — Konten entstehen beim Kauf des Programms, nicht beim Buchen.
+ * Bis das wieder anders ist, stand hier dauerhaft „Noch keine
+ * Terminverknuepfung vorhanden", und das ist schlechter als gar keine Karte:
+ * Es liest sich wie ein Fehler, den der Patient beheben soll, obwohl es bei
+ * ihm nichts zu beheben gibt.
+ *
+ * Bewusst nur eine Anzeigeentscheidung und kein Ausbau: Sobald wieder Termine
+ * synchronisiert werden, erscheint die Karte von allein. Der Code muss dafuer
+ * nicht angefasst werden.
+ */
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Calendar, Clock, User, AlertTriangle } from "lucide-react"
 
@@ -33,7 +49,6 @@ function formatDateTime(iso: string) {
 
 export function MeineTermineKarte() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [linked, setLinked] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -45,7 +60,6 @@ export function MeineTermineKarte() {
           setError(data.error)
         } else {
           setAppointments(data.appointments ?? [])
-          setLinked(data.linked ?? false)
         }
       })
       .catch(() => setError("Termine konnten nicht geladen werden."))
@@ -56,6 +70,12 @@ export function MeineTermineKarte() {
     (a) => a.status === "scheduled" && new Date(a.scheduled_at) >= new Date()
   )
 
+  // Nichts zu zeigen → nichts zeigen. Das Laden bleibt still: Ein Skelett,
+  // das jedes Mal zu einer leeren Meldung zerfaellt, ist ein Versprechen,
+  // das die Karte nicht einloesen kann.
+  if (isLoading) return null
+  if (!error && upcoming.length === 0) return null
+
   return (
     <Card>
       <CardHeader>
@@ -63,30 +83,11 @@ export function MeineTermineKarte() {
         <CardDescription>Nächste Termine in der Praxis</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading && (
-          <div className="space-y-2">
-            <Skeleton className="h-12 w-full rounded-lg" />
-            <Skeleton className="h-12 w-full rounded-lg" />
-          </div>
-        )}
-
         {!isLoading && error && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        )}
-
-        {!isLoading && !error && !linked && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Noch keine Terminverknüpfung vorhanden.
-          </p>
-        )}
-
-        {!isLoading && !error && linked && upcoming.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Keine kommenden Termine.
-          </p>
         )}
 
         {!isLoading && !error && upcoming.length > 0 && (
