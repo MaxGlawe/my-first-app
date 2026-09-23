@@ -17,17 +17,19 @@
  *   hat, soll nicht erst etwas abfotografieren müssen — und `capture` würde
  *   ihm die Auswahl verbauen.
  *
- * Ein einzelner Knopf hätte immer eine der beiden Gruppen verärgert.
- *
- * Die Bildaufbereitung — Kanten, Entzerrung, Mehrseiten-PDF — kommt in
- * Etappe 5. Hier geht es erst darum, dass ein Dokument sicher ankommt.
+ * Dazu kam in Etappe 5 ein dritter Weg: „Mehrseitig scannen" mit Entzerrung
+ * und Zusammenfassung zu einem PDF. Bewusst als eigener Knopf und nicht als
+ * Ersatz für „Fotografieren" — ein einzelnes, gerade liegendes Blatt braucht
+ * die Eckenzieherei nicht, und wer sie aufgezwungen bekommt, empfindet sie
+ * als Umweg.
  */
 
 import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Camera, Upload, Loader2, AlertTriangle, X } from "lucide-react"
+import { Camera, Upload, Loader2, AlertTriangle, X, ScanLine } from "lucide-react"
+import { DokumentScanner } from "./DokumentScanner"
 import { KATEGORIEN, MAX_BYTES, formatBytes, type Kategorie } from "@/lib/dokumente"
 
 const GREEN = "#2C3E2D"
@@ -50,6 +52,7 @@ export function DokumentUpload({
   const [notiz, setNotiz] = useState("")
   const [laedt, setLaedt] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
+  const [scannt, setScannt] = useState(false)
 
   function auswaehlen(f: File | null) {
     setFehler(null)
@@ -119,7 +122,15 @@ export function DokumentUpload({
         onChange={(e) => auswaehlen(e.target.files?.[0] ?? null)}
       />
 
-      {!datei ? (
+      {scannt ? (
+        <DokumentScanner
+          onAbbruch={() => setScannt(false)}
+          onFertig={(pdf) => {
+            setScannt(false)
+            auswaehlen(pdf)
+          }}
+        />
+      ) : !datei ? (
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
@@ -128,6 +139,9 @@ export function DokumentUpload({
             style={{ backgroundColor: GREEN }}
           >
             <Camera className="mr-1.5 h-4 w-4" /> Fotografieren
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setScannt(true)}>
+            <ScanLine className="mr-1.5 h-4 w-4" /> Mehrseitig scannen
           </Button>
           <Button size="sm" variant="outline" onClick={() => dateiRef.current?.click()}>
             <Upload className="mr-1.5 h-4 w-4" /> Datei wählen
