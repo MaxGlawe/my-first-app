@@ -4,7 +4,12 @@
  * Rendert beide Vorlagen mit Beispieldaten und schickt sie an eine Adresse.
  * Gedacht zum Gegenlesen von Text, Layout und Darstellung im echten Postfach.
  *
- *   npx tsx --tsconfig tsconfig.json scripts/send-programm-mail-preview.ts <empfaenger>
+ *   npx tsx --tsconfig tsconfig.json scripts/send-programm-mail-preview.ts <empfaenger> [variante]
+ *
+ * Ohne Variante werden BEIDE geschickt — „Begleitet" und „Intensiv" —, und die
+ * Angebotsmail jeweils in beiden Zahlungsfällen (Konsultation angerechnet oder
+ * nicht). Genau in diesem Zusammenspiel steckte der Abzugsfehler vom 23.09.2026,
+ * deshalb ist der Vollversand die Vorgabe.
  *
  * Verschickt über dieselbe SMTP-Konfiguration wie die App (.env.local).
  * Die Links in den Mails sind Beispiel-Links und führen ins Leere — es wird
@@ -15,38 +20,91 @@ import { config } from "dotenv"
 import nodemailer from "nodemailer"
 import { programmAngebotEmail } from "../src/lib/email-templates/programm-angebot"
 import { programmWillkommenEmail } from "../src/lib/email-templates/programm-willkommen"
+import {
+  PROGRAMM,
+  VARIANTEN,
+  VARIANTEN_REIHENFOLGE,
+  formatEuro,
+  type ProgrammVariante,
+} from "../src/lib/programm"
 
 config({ path: ".env.local" })
 
 const empfaenger = process.argv[2]
+const nurVariante = process.argv[3] as ProgrammVariante | undefined
+
 if (!empfaenger) {
-  console.error("Empfängeradresse fehlt.\n  npx tsx scripts/send-programm-mail-preview.ts du@example.com")
+  console.error(
+    "Empfängeradresse fehlt.\n" +
+      "  npx tsx scripts/send-programm-mail-preview.ts du@example.com [begleitet|intensiv]"
+  )
+  process.exit(1)
+}
+if (nurVariante && !VARIANTEN[nurVariante]) {
+  console.error(`Unbekannte Variante „${nurVariante}“ — erlaubt: begleitet, intensiv`)
   process.exit(1)
 }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
+const varianten = nurVariante ? [nurVariante] : VARIANTEN_REIHENFOLGE
 
-const angebot = programmAngebotEmail({
-  patientName: "Max",
-  variante: "intensiv",
-  bereitsBeglichen: 0,
-  angebotUrl: `${siteUrl}/vertrag/BEISPIEL-LINK-NUR-ZUR-ANSICHT`,
-  contractNumber: "V-2026-0099",
-  gueltigBis: "24.09.2026 um 14:30",
-  praxisName: "Physiotherapie Glawe",
-  behandlerName: "Max Glawe",
-  siteUrl,
-})
+interface Versand {
+  label: string
+  subject: string
+  html: string
+}
 
-const willkommen = programmWillkommenEmail({
-  firstName: "Max",
-  variante: "intensiv",
-  appUrl: `${siteUrl}/app/dashboard`,
-  endetAm: "21.12.2026",
-  behandlerName: "Max Glawe",
-  praxisName: "Physiotherapie Glawe",
-  siteUrl,
-})
+function bauen(): Versand[] {
+  const raus: Versand[] = []
+
+  for (const id of varianten) {
+    const v = VARIANTEN[id]
+
+    // Angebotsmail in beiden Zahlungsfällen. Die Vertragsnummer trägt die
+    // Variante, weil der Betreff sonst bei beiden identisch wäre und sich die
+    // Mails im Postfach nicht auseinanderhalten liessen.
+    for (const bereitsBeglichen of [0, PROGRAMM.konsultation]) {
+      const suffix = bereitsBeglichen > 0 ? "MIT-ANRECHNUNG" : "OHNE-ANRECHNUNG"
+      const mail = programmAngebotEmail({
+        patientName: "Max",
+        variante: id,
+        bereitsBeglichen,
+        angebotUrl: `${siteUrl}/vertrag/BEISPIEL-LINK-NUR-ZUR-ANSICHT`,
+        contractNumber: `${v.name.toUpperCase()}-${suffix}`,
+        gueltigBis: "25.09.2026 um 14:30",
+        praxisName: "Physiotherapie Glawe",
+        behandlerName: "Max Glawe",
+        siteUrl,
+      })
+      raus.push({
+        label:
+          `Angebot · ${v.name} · ` +
+          (bereitsBeglichen > 0
+            ? `${formatEuro(bereitsBeglichen)} angerechnet → ${formatEuro(v.preis - bereitsBeglichen)}`
+            : `nichts angerechnet → ${formatEuro(v.preis)}`),
+        subject: mail.subject,
+        html: mail.html,
+      })
+    }
+
+    const willkommen = programmWillkommenEmail({
+      firstName: "Max",
+      variante: id,
+      appUrl: `${siteUrl}/app/dashboard`,
+      endetAm: "22.12.2026",
+      behandlerName: "Max Glawe",
+      praxisName: "Physiotherapie Glawe",
+      siteUrl,
+    })
+    raus.push({
+      label: `Willkommen · ${v.name}`,
+      subject: `${willkommen.subject} (${v.name})`,
+      html: willkommen.html,
+    })
+  }
+
+  return raus
+}
 
 async function main() {
   const transporter = nodemailer.createTransport({
@@ -57,19 +115,24 @@ async function main() {
   })
 
   const from = `${process.env.EMAIL_FROM_NAME || "Physiotherapie Glawe"} <${process.env.SMTP_USER}>`
+  const mails = bauen()
 
-  for (const [label, mail] of [
-    ["Angebot", angebot],
-    ["Willkommen", willkommen],
-  ] as const) {
+  console.log(`Empfänger: ${empfaenger}`)
+  console.log(`Absender:  ${from}`)
+  console.log(`Mails:     ${mails.length}\n`)
+
+  for (const m of mails) {
     const info = await transporter.sendMail({
       from,
       to: empfaenger,
-      subject: `[VORSCHAU] ${mail.subject}`,
-      html: mail.html,
+      subject: `[VORSCHAU] ${m.subject}`,
+      html: m.html,
     })
-    console.log(`${label}: gesendet (${info.messageId})`)
+    console.log(`  gesendet — ${m.label}`)
+    console.log(`             ${info.messageId}`)
   }
+
+  console.log("\nHinweis: Es wurde kein Vertrag angelegt und kein Zugang gewährt.")
 }
 
 main().catch((err) => {
