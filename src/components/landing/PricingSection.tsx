@@ -78,9 +78,10 @@ export function PricingSection() {
               </Button>
             </a>
             <p className="mx-auto mt-4 max-w-md text-[14px] leading-relaxed" style={{ color: MUTED }}>
-              Die Buchung selbst kostet nichts. Abgerechnet wird erst nach dem Gespräch — das
-              Programm, oder {formatEuro(PROGRAMM.konsultation)} für die Konsultation, wenn du
-              dich dagegen entscheidest.
+              Bei der Buchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch:{" "}
+              {formatEuro(PROGRAMM.gesamtpreis)} für das Programm — oder{" "}
+              {formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn du dich
+              dagegen entscheidest.
             </p>
           </div>
         </ScrollReveal>

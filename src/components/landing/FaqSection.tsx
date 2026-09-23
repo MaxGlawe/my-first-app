@@ -52,7 +52,7 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   },
   {
     frage: "Was kostet das Programm, und wann wird abgerechnet?",
-    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(PROGRAMM.gesamtpreis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Die Terminbuchung selbst kostet nichts und es wird dabei nichts abgebucht. Abgerechnet wird erst nach dem Gespräch: entweder das Programm, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
+    antwort: `Das 90-Tage-Programm von Praxis OS kostet ${formatEuro(PROGRAMM.gesamtpreis)} einmalig; die vorausgegangene Videokonsultation ist darin enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder ${formatEuro(PROGRAMM.gesamtpreis)} für das Programm, in denen die Konsultation enthalten ist, oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
   },
   {
     frage: "Was passiert, wenn ihr mein Beschwerdebild nicht betreuen könnt?",

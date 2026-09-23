@@ -35,7 +35,7 @@ Fällt eine Sitzung aus, wird sie nachgeholt.
 
 - Programm: 499 Euro einmalig, die Videokonsultation ist darin enthalten.
 - Wird nach dem Gespräch kein Programm begonnen: 69 Euro für die Konsultation.
-- Die Terminbuchung selbst kostet nichts; abgerechnet wird erst nach dem Gespräch.
+- Bei der Terminbuchung wird noch nichts abgebucht; abgerechnet wird nach dem Gespräch.
 - Zahlung per Karte oder Klarna. Ob Klarna eine Ratenzahlung anbietet,
   entscheidet Klarna.
 - Abgerechnet wird über eine Heilpraktiker-Rechnung. Als heilkundliche Leistung

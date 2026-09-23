@@ -20,7 +20,7 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { PROGRAMM, buchungsUrl } from "@/lib/programm"
+import { PROGRAMM, buchungsUrl, formatEuro } from "@/lib/programm"
 
 const INK = "#0f172a"
 const GREEN = "#2C3E2D"
@@ -86,8 +86,8 @@ export function CtaSection() {
               </Button>
             </a>
             <p className="mt-4 max-w-sm text-[14px] leading-relaxed" style={{ color: "#64748b" }}>
-              30 Minuten per Video. Wir klären ehrlich, ob wir dich aus der Ferne betreuen
-              können — die Buchung selbst kostet nichts.
+              30 Minuten per Video für {formatEuro(PROGRAMM.konsultation)}, abgerechnet nach dem
+              Gespräch. Startest du danach das Programm, ist die Konsultation darin enthalten.
             </p>
           </div>
         </div>

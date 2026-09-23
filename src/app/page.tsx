@@ -83,7 +83,7 @@ export default function LandingPage() {
         <CtaBand
           abschnitt="nach-ablauf"
           satz="Klingt das nach dem, was dir bisher gefehlt hat?"
-          zusatz="Dann lass uns 30 Minuten sprechen. Die Buchung kostet nichts, und wir sagen dir ehrlich, ob wir dich aus der Ferne betreuen können."
+          zusatz="Dann lass uns 30 Minuten sprechen — für 69 €, abgerechnet nach dem Gespräch. Startest du danach das Programm, ist die Konsultation darin enthalten."
         />
         <GarantieSection />
         <CredentialsSection />
