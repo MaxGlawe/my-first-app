@@ -38,6 +38,25 @@ const createPatientSchema = z.object({
   interne_notizen: z.string().max(5000).optional().nullable(),
 })
 
+/**
+ * Erkennt ein Geburtsdatum in gaengigen Schreibweisen und gibt es als
+ * ISO-Datum zurueck — sonst null.
+ *
+ * Gebraucht, weil `geburtsdatum` eine DATE-Spalte ist und sich deshalb nicht
+ * per `ilike` durchsuchen laesst. Wer „12.03.1980" eintippt, meint aber
+ * genau dieses Datum; eine Gleichheitsabfrage ist hier ohnehin das
+ * Richtige.
+ */
+function parseGeburtsdatum(wort: string): string | null {
+  const deutsch = wort.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (deutsch) {
+    const [, t, m, j] = deutsch
+    return `${j}-${m.padStart(2, "0")}-${t.padStart(2, "0")}`
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(wort)) return wort
+  return null
+}
+
 // ----------------------------------------------------------------
 // GET /api/patients
 // ----------------------------------------------------------------
@@ -137,22 +156,34 @@ export async function GET(request: NextRequest) {
   // zwischen den Feldern. Mehrere `.or()`-Aufrufe verknüpft PostgREST mit
   // UND — genau das wird hier gebraucht.
   if (search.trim()) {
-    const woerter = search
-      .trim()
-      .split(/\s+/)
-      .map((w) =>
-        w
-          .replace(/[,().]/g, "") // PostgREST-Trennzeichen entfernen
-          .replace(/%/g, "\\%") // LIKE-Platzhalter entschärfen
-          .replace(/_/g, "\\_")
-      )
-      .filter(Boolean)
-      .slice(0, 5) // Schutz vor absurd langen Eingaben
+    for (const roh of search.trim().split(/\s+/).slice(0, 5)) {
+      // Das Geburtsdatum ist eine DATE-Spalte. `ilike` darauf gibt es in
+      // Postgres nicht — die Abfrage bricht mit „operator does not exist:
+      // date ~~* unknown" ab, und zwar bei JEDER Suche, unabhängig vom
+      // Suchbegriff. Genau das tat sie hier bis zum 23.09.2026: Die
+      // Patientensuche lief durchgehend in einen Serverfehler, sichtbar nur
+      // als „keine Treffer".
+      //
+      // Deshalb wird das Datum nur dann abgefragt, wenn das Wort wie eines
+      // aussieht — und dann per Gleichheit statt per Textvergleich.
+      const alsDatum = parseGeburtsdatum(roh)
 
-    for (const wort of woerter) {
-      query = query.or(
-        `vorname.ilike.%${wort}%,nachname.ilike.%${wort}%,email.ilike.%${wort}%,geburtsdatum.ilike.%${wort}%`
-      )
+      const wort = roh
+        .replace(/[,().]/g, "") // PostgREST-Trennzeichen entfernen
+        .replace(/%/g, "\\%") // LIKE-Platzhalter entschärfen
+        .replace(/_/g, "\\_")
+
+      const bedingungen: string[] = []
+      if (wort) {
+        bedingungen.push(
+          `vorname.ilike.%${wort}%`,
+          `nachname.ilike.%${wort}%`,
+          `email.ilike.%${wort}%`
+        )
+      }
+      if (alsDatum) bedingungen.push(`geburtsdatum.eq.${alsDatum}`)
+
+      if (bedingungen.length > 0) query = query.or(bedingungen.join(","))
     }
   }
 
