@@ -265,7 +265,13 @@ async function logWebhookEvent(
 
 async function handlePatientCreated(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
-  rawPayload: Record<string, unknown>
+  rawPayload: Record<string, unknown>,
+  /**
+   * Nachlieferung historischer Ereignisse statt Echtzeit-Zustellung.
+   * Unterdrueckt ausschliesslich die Zugangsmail — angelegt und verknuepft
+   * wird genauso. Siehe Kommentar am ensurePatientLogin-Aufruf.
+   */
+  backfill = false
 ): Promise<{ status: "success" | "error" | "duplicate"; errorMessage?: string }> {
   const parsed = patientCreatedRawSchema.safeParse(rawPayload)
   if (!parsed.success) {
@@ -440,6 +446,12 @@ async function handlePatientCreated(
     email: data.email,
     firstName: data.vorname,
     lastName: data.nachname,
+    // Beim Nachsenden historischer Ereignisse NIEMALS die Zugangsmail
+    // ausloesen. Sonst wird aus einer technischen Nachlieferung ein
+    // Massenversand an Menschen, die vor Monaten einmal gebucht haben und
+    // heute nichts von uns erwarten. Das Konto entsteht trotzdem; die
+    // Zugangsmail kann jederzeit gezielt nachgeholt werden.
+    sendAccessMail: !backfill,
   })
   if (provision.status === "error") {
     console.error("[webhook/booking] PROJ-34 Login-Provisionierung fehlgeschlagen:", provision.error)
@@ -557,6 +569,16 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // ---- Nachlieferung? ----
+  // Bewusst ein Header und kein Feld im Payload: Das Ereignis selbst ist
+  // identisch mit dem, was damals in Echtzeit gekommen waere. Nur der
+  // Zustellweg ist ein anderer, und nur der darf sich auf Nebenwirkungen
+  // auswirken. Der Header liegt INNERHALB der signierten Anfrage nicht mit
+  // drin — er kann also nur von jemandem gesetzt werden, der ohnehin gueltig
+  // signiert. Missbrauch waere folglich hoechstens das Unterdruecken einer
+  // Mail, nicht das Erzeugen von Daten.
+  const isBackfill = request.headers.get("x-webhook-backfill") === "true"
+
   // ---- Parse JSON ----
   let body: unknown
   try {
@@ -584,7 +606,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (event_type === "patient.created") {
-      result = await handlePatientCreated(supabase, payload)
+      result = await handlePatientCreated(supabase, payload, isBackfill)
     } else if (
       event_type === "appointment.created" ||
       event_type === "appointment.updated" ||
