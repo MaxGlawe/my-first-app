@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { HeuteKarte, NoAssignmentState } from "@/components/app/HeuteKarte"
 import { HydrationCard } from "@/components/app/HydrationCard"
 import { MeineTermineKarte } from "@/components/app/MeineTermineKarte"
+import { VerschlechterungKarte } from "@/components/app/VerschlechterungKarte"
 import { DailyInsightCard } from "@/components/app/DailyInsightCard"
 import { WeeklySummaryCard } from "@/components/app/WeeklySummaryCard"
 import { GlassCard } from "@/components/app/GlassCard"
@@ -342,6 +343,13 @@ export default function PatientDashboardPage() {
             </div>
             <div className="animate-fade-in-up animation-delay-600">
               <MeineTermineKarte />
+            </div>
+
+            {/* PROJ-26: Direkt unter den Terminen — wer hier nach einem Termin
+                sucht, weil es schlechter geworden ist, findet den Weg dazu
+                genau dort, wo er ohnehin gerade hinschaut. */}
+            <div className="animate-fade-in-up animation-delay-600">
+              <VerschlechterungKarte />
             </div>
 
             {/* ── Bottom Links ───────────────────────────────────── */}

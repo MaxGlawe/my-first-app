@@ -28,6 +28,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { formatFrist, fristUeberschritten } from "@/lib/werktag"
 
 // -- Types --------------------------------------------------------------------
 
@@ -254,6 +255,27 @@ export async function GET(_request: NextRequest) {
     .in("status", ["trial", "active"])
   const subscribedPatientIds = new Set((subRows ?? []).map((s) => s.patient_id))
 
+  // -- 3c. Offene Verschlechterungsmeldungen (PROJ-26) ------------------------
+  // Die einzige Zusage aus dem Behandlungsvertrag, die eine FRIST trägt:
+  // Rückmeldung spätestens am nächsten Werktag, danach kurzfristig eine
+  // zusätzliche Video-Sitzung — und zwar in beiden Programm-Varianten.
+  // Deshalb steht sie hier ganz oben und nicht als Nebenbedingung.
+  const { data: verschlechterungen } = await serviceClient
+    .from("programm_verschlechterungen")
+    .select("id, patient_id, beschreibung, gemeldet_at, frist_at")
+    .in("patient_id", patientIds)
+    .is("erledigt_at", null)
+    .order("gemeldet_at", { ascending: false })
+    .limit(500)
+
+  const verschlechterungByPatient = new Map<string, NonNullable<typeof verschlechterungen>[number]>()
+  for (const v of verschlechterungen ?? []) {
+    // Erste gewinnt — die Liste ist absteigend sortiert, also die jüngste.
+    if (!verschlechterungByPatient.has(v.patient_id)) {
+      verschlechterungByPatient.set(v.patient_id, v)
+    }
+  }
+
   // -- 4. Group data by patient -----------------------------------------------
 
   // Pain entries grouped by patient
@@ -294,23 +316,45 @@ export async function GET(_request: NextRequest) {
     const patientAssignments = assignmentsByPatient.get(patient.id) ?? []
     const gruende: AlertGrund[] = []
 
+    // PROJ-26: Gemeldete Verschlechterung — VOR allen anderen Regeln und vor
+    // dem Abbruch weiter unten. Ein Patient ohne Trainingsplan ist meist der
+    // frischeste; ausgerechnet dessen Meldung darf nicht durchrutschen, nur
+    // weil die Schleife ihn sonst überspringt.
+    const meldung = verschlechterungByPatient.get(patient.id)
+    if (meldung) {
+      const ueberfaellig = fristUeberschritten(meldung.frist_at)
+      gruende.push({
+        key: "verschlechterung-gemeldet",
+        label: ueberfaellig
+          ? `Verschlechterung gemeldet — Rückmeldefrist seit ${formatFrist(meldung.frist_at)} überschritten`
+          : `Verschlechterung gemeldet — Rückmeldung zugesagt bis ${formatFrist(meldung.frist_at)}`,
+        severity: "ROT",
+        empfehlung:
+          "Der Patient hat selbst gemeldet, dass es schlechter geworden ist. Vertraglich zugesagt sind eine Rückmeldung bis zur genannten Frist und eine kurzfristige zusätzliche Video-Sitzung — in beiden Varianten inklusive." +
+          (meldung.beschreibung ? ` Angabe des Patienten: „${meldung.beschreibung}"` : ""),
+      })
+    }
+
     // PROJ-34: Voll-Abo-Patient ohne aktiven Trainingsplan → Handoff-Signal
     // ("Plan erstellen / anbinden"). Solche Patienten haben keine Assignments
     // und würden sonst übersprungen — wir surfacen sie hier gezielt.
     if (patientAssignments.length === 0) {
       if (subscribedPatientIds.has(patient.id)) {
+        gruende.push({
+          key: "plan-ausstehend",
+          label: "Voll-Abo aktiv — noch kein Trainingsplan",
+          severity: "ROT",
+          empfehlung: "Neuer Abo-Patient: bitte anbinden und einen persönlichen Trainingsplan erstellen.",
+        })
+      }
+      if (gruende.length > 0) {
         alerts.push({
           patientId: patient.id,
           vorname: patient.vorname,
           nachname: patient.nachname,
           avatarUrl: patient.avatar_url ?? null,
           status: "ROT",
-          gruende: [{
-            key: "plan-ausstehend",
-            label: "Voll-Abo aktiv — noch kein Trainingsplan",
-            severity: "ROT",
-            empfehlung: "Neuer Abo-Patient: bitte anbinden und einen persönlichen Trainingsplan erstellen.",
-          }],
+          gruende,
           letzterCheckIn: null,
           userId: patient.user_id ?? null,
           painHistory: [],
