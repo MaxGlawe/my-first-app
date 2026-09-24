@@ -197,6 +197,26 @@ seit demselben Commit mit einem sprechenden Hinweis statt mit 500.
 
 ---
 
+### Phase 5 — Nachrichten im Gespräch ✓ *(aus der ersten echten Konsultation)*
+
+Der QR-Code für das 90-Tage-Programm hat einen eingebauten Widerspruch: **Er
+setzt ein zweites Gerät voraus.** Wer mit dem Handy im Gespräch sitzt, kann
+seinen eigenen Bildschirm nicht abfotografieren — und genau dort steht der
+Kaufabschluss.
+
+Deshalb ein kleiner Chat, den beide Seiten über die Steuerleiste öffnen:
+Nachrichten und **antippbare Links**, mit ungelesen-Zähler. Für den Behandler
+zusätzlich ein Knopf, der den Link zum 90-Tage-Programm direkt hineinlegt — er
+nimmt das offene Angebot aus PROJ-26; ein neues entsteht nur nach
+ausdrücklicher Bestätigung, denn das legt einen Vertrag an und verschickt eine
+Mail.
+
+**Der Chat ist flüchtig, und das mit Absicht.** Die Nachrichten laufen über
+denselben Datenkanal wie alles andere und werden nirgends gespeichert. Ein
+Chat, der das Gespräch überlebt, wäre ein zweiter Posteingang neben dem in der
+App — und niemand pflegt zwei. Was bleiben soll, gehört in die Notiz; das
+Angebot geht ohnehin zusätzlich per Mail hinaus.
+
 ## 4a · Was der Echtbetrieb am 24.09.2026 gekostet hat
 
 Vier Fehler, die alle erst im Gebrauch sichtbar wurden — und alle dieselbe

@@ -24,6 +24,7 @@ import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzen
 import { EntwurfStreifen, type EntwurfsUebung } from "@/components/video/PlanImGespraech"
 import { HandyGezeigt, type HandyDaten } from "@/components/video/HandyVorschau"
 import { Bewegungsbild, AufbauHilfe } from "@/components/video/Bewegungsbild"
+import { Gespraechschat, type ChatNachricht } from "@/components/video/Gespraechschat"
 import { useSchwebefenster } from "@/components/video/Schwebefenster"
 import {
   LiveKitRoom,
@@ -324,6 +325,14 @@ function Buehne({
   /** Standbild-Werkzeug (nur Behandler) und die Aufbau-Hilfe auf beiden Seiten. */
   const [bewegungsbild, setBewegungsbild] = useState(false)
   const [aufbau, setAufbau] = useState<"seitlich" | "frontal" | null>(null)
+  /**
+   * Nachrichten fuer DIESES Gespraech. Bewusst fluechtig: Ein Chat, der das
+   * Gespraech ueberlebt, waere ein zweiter Posteingang neben dem in der App —
+   * und niemand pflegt zwei.
+   */
+  const [chat, setChat] = useState<ChatNachricht[]>([])
+  const [chatOffen, setChatOffen] = useState(false)
+  const [ungelesen, setUngelesen] = useState(0)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   /**
@@ -366,6 +375,7 @@ function Buehne({
           gesendet?: boolean
           handy?: HandyDaten | null
           ansicht?: "seitlich" | "frontal"
+          text?: string
         }
         if (nachricht.art === "zeigen" && nachricht.wurf) setEmpfangen(nachricht.wurf)
         else if (nachricht.art === "zeigen-ende") setEmpfangen(null)
@@ -374,7 +384,22 @@ function Buehne({
           setPlanGesendet(Boolean(nachricht.gesendet))
         } else if (nachricht.art === "handy") setHandy(nachricht.handy ?? null)
         else if (nachricht.art === "handy-ende") setHandy(null)
-        else if (nachricht.art === "aufbau") setAufbau(nachricht.ansicht ?? "seitlich")
+        else if (nachricht.art === "chat" && nachricht.text) {
+          setChat((bisher) => [
+            ...bisher,
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              text: String(nachricht.text).slice(0, 500),
+              vonMir: false,
+              zeit: new Date().toLocaleTimeString("de-DE", {
+                timeZone: "Europe/Berlin",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            },
+          ])
+          setUngelesen((n) => n + 1)
+        } else if (nachricht.art === "aufbau") setAufbau(nachricht.ansicht ?? "seitlich")
         else if (nachricht.art === "aufbau-ende") setAufbau(null)
       } catch {
         /* Nicht unsere Nachricht. */
@@ -474,6 +499,26 @@ function Buehne({
     setEntwurf(u)
     setPlanGesendet(false)
   }, [])
+
+  const chatSenden = useCallback(
+    (text: string) => {
+      setChat((bisher) => [
+        ...bisher,
+        {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          text,
+          vonMir: true,
+          zeit: new Date().toLocaleTimeString("de-DE", {
+            timeZone: "Europe/Berlin",
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ])
+      senden({ art: "chat", text })
+    },
+    [senden]
+  )
 
   const aufbauZeigen = useCallback(
     (ansicht: "seitlich" | "frontal" | null) => {
@@ -673,6 +718,18 @@ function Buehne({
             Behandler sieht ihn ohnehin in der Schublade. */}
         {!hatSchublade && <EntwurfStreifen uebungen={entwurf} gesendet={planGesendet} />}
 
+        {/* Der Zettel zum Hinueberschieben. Beide Seiten, denn Links sind in
+            beide Richtungen nuetzlich — und auf dem Handy ist ein antippbarer
+            Link der einzige Weg, der ohne zweites Geraet auskommt. */}
+        <Gespraechschat
+          nachrichten={chat}
+          onSenden={chatSenden}
+          gegenueber={gegenueber}
+          patientId={hatSchublade ? patientId : undefined}
+          offen={chatOffen}
+          onSchliessen={() => setChatOffen(false)}
+        />
+
         {/* Was mir gezeigt wird — formatfuellend, mit Absender. */}
         {empfangen && <Gezeigt wurf={empfangen} gegenueber={gegenueber} />}
 
@@ -723,6 +780,12 @@ function Buehne({
           onAuflegen={onEnde}
           onSchublade={hatSchublade ? () => setSchubladeOffen((o) => !o) : undefined}
           schubladeOffen={schubladeOffen}
+          onChat={() => {
+            setChatOffen((o) => !o)
+            setUngelesen(0)
+          }}
+          chatOffen={chatOffen}
+          ungelesen={ungelesen}
           onStandbild={hatSchublade ? () => setBewegungsbild((o) => !o) : undefined}
           standbildOffen={bewegungsbild}
           onFenster={

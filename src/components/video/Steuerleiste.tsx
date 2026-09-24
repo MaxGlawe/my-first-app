@@ -42,6 +42,7 @@ import {
   FolderClosed,
   PictureInPicture2,
   Camera,
+  MessageSquare,
 } from "lucide-react"
 
 const PAPER = "#F8F5F0"
@@ -89,6 +90,9 @@ export function Steuerleiste({
   fensterOffen,
   onStandbild,
   standbildOffen,
+  onChat,
+  chatOffen,
+  ungelesen,
 }: {
   onAuflegen: () => void
   /** Nur die Therapeutenseite hat eine Schublade — sonst bleibt der Knopf weg. */
@@ -100,6 +104,10 @@ export function Steuerleiste({
   /** Standbild aus dem Bild des Gegenuebers — nur Therapeutenseite. */
   onStandbild?: () => void
   standbildOffen?: boolean
+  /** Nachrichten im Gespraech — beide Seiten. */
+  onChat?: () => void
+  chatOffen?: boolean
+  ungelesen?: number
 }) {
   const raum = useRoomContext()
   const { localParticipant } = useLocalParticipant()
@@ -175,6 +183,26 @@ export function Steuerleiste({
           disabled={busy}
           onClick={onSchublade}
         />
+      )}
+
+      {onChat && (
+        <div className="relative">
+          <Knopf
+            label={chatOffen ? "Schliessen" : "Nachricht"}
+            an={<MessageSquare className="h-5 w-5" style={chatOffen ? { color: SAND } : undefined} />}
+            aus={<MessageSquare className="h-5 w-5" />}
+            disabled={busy}
+            onClick={onChat}
+          />
+          {!chatOffen && (ungelesen ?? 0) > 0 && (
+            <span
+              className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
+              style={{ backgroundColor: "#8c3a2b" }}
+            >
+              {ungelesen}
+            </span>
+          )}
+        </div>
       )}
 
       {onStandbild && (
