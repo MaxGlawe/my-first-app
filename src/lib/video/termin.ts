@@ -87,8 +87,21 @@ export type TerminZustand = "vorbei" | "laeuft" | "offen" | "wartet"
 export function zustand(
   geplant: string,
   dauerMinuten: number,
-  jetzt: Date = new Date()
+  jetzt: Date = new Date(),
+  status?: string
 ): TerminZustand {
+  // Ein beendetes Gespraech ist beendet, auch wenn die Uhr noch laeuft.
+  //
+  // Ohne diese Zeile log die Uebersicht: Am 24.09.2026 stand ein um 11:24
+  // sauber beendetes Gespraech bis 12:20 als "laeuft" in der Liste, weil das
+  // Zutrittsfenster erst dann endet. Der Behandler fragte sich, ob er es
+  // ueberhaupt richtig beenden kann - er hatte alles richtig gemacht, nur die
+  // Anzeige sah nicht hin.
+  //
+  // Die Zeit sagt, ob der Zutritt OFFEN ist (zutrittOffen). Ob das Gespraech
+  // noch LAEUFT, sagt sie nicht - das weiss nur der Status.
+  if (status && ABGESCHLOSSEN.includes(status)) return "vorbei"
+
   const t = jetzt.getTime()
   if (t > schliesstAm(geplant, dauerMinuten).getTime()) return "vorbei"
   if (t >= new Date(geplant).getTime()) return "laeuft"

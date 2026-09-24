@@ -68,7 +68,11 @@ export function SprechzimmerCard({ patientId }: { patientId: string }) {
     .sort((a, b) => +new Date(a.geplant_at) - +new Date(b.geplant_at))
 
   const naechster = kommend[0]
-  const z = naechster ? zustand(naechster.geplant_at, naechster.dauer_minuten) : null
+  // Status mitgeben: Ein beendetes oder abgebrochenes Gespraech ist vorbei,
+  // auch wenn sein Zeitfenster noch laeuft.
+  const z = naechster
+    ? zustand(naechster.geplant_at, naechster.dauer_minuten, new Date(), naechster.status)
+    : null
   const offen = z === "offen" || z === "laeuft"
 
   return (

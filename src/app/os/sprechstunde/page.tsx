@@ -22,6 +22,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Video, Plus, AlertTriangle, DoorOpen, QrCode, Copy, Check, Mail, X, Loader2, CalendarDays,
+  PhoneOff,
 } from "lucide-react"
 import { TerminAnlegen } from "@/components/sprechstunde/TerminAnlegen"
 import { formatKurz, formatUhrzeit, relativ, zustand } from "@/lib/video/termin"
@@ -125,6 +126,33 @@ export default function SprechstundePage() {
     }
   }
 
+  /**
+   * Ein Gespraech von Hand schliessen.
+   *
+   * Normalerweise erledigt das der Videodienst selbst, sobald der Raum leer
+   * ist. Aber "normalerweise" reicht nicht: Klappt jemand den Laptop zu,
+   * bricht die Verbindung weg oder geht die Meldung des Dienstes verloren,
+   * bleibt das Gespraech offen stehen - und der Behandler hatte bisher keinen
+   * Weg, es zuzumachen. Die Aktion gab es in der Schnittstelle von Anfang an;
+   * nur ruefen hat sie nie jemand.
+   */
+  async function beenden(id: string, name: string) {
+    if (!confirm(`Gespräch mit ${name} beenden? Der Raum wird geschlossen.`)) return
+    setBusy(id)
+    try {
+      const res = await fetch("/api/os/video-calls", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, aktion: "beenden" }),
+      })
+      const j = await res.json()
+      if (!res.ok) setFehler(j.error ?? "Konnte nicht beendet werden.")
+      else laden()
+    } finally {
+      setBusy(null)
+    }
+  }
+
   async function absagen(id: string, name: string) {
     if (!confirm(`Termin mit ${name} wirklich absagen? Der Patient wird benachrichtigt.`)) return
     setBusy(id)
@@ -144,7 +172,7 @@ export default function SprechstundePage() {
 
   function Zeile({ t }: { t: Termin }) {
     const name = [t.patients?.vorname, t.patients?.nachname].filter(Boolean).join(" ") || "Patient"
-    const z = zustand(t.geplant_at, t.dauer_minuten)
+    const z = zustand(t.geplant_at, t.dauer_minuten, new Date(), t.status)
     const offen = z === "offen" || z === "laeuft"
 
     return (
@@ -167,7 +195,7 @@ export default function SprechstundePage() {
               )}
               {z === "vorbei" && (
                 <Badge variant="outline" className="text-[11px]">
-                  vorbei
+                  {t.status === "beendet" ? "beendet" : "vorbei"}
                 </Badge>
               )}
             </div>
@@ -220,7 +248,17 @@ export default function SprechstundePage() {
               )}
               {t.einladung_gesendet_at ? "Erneut senden" : "Einladen"}
             </Button>
-            {z !== "vorbei" && (
+            {t.status === "laeuft" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => beenden(t.id, name)}
+                disabled={busy === t.id}
+              >
+                <PhoneOff className="mr-1.5 h-4 w-4" /> Beenden
+              </Button>
+            )}
+            {z !== "vorbei" && t.status !== "laeuft" && (
               <Button
                 size="sm"
                 variant="ghost"
