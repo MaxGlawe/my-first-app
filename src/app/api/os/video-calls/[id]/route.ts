@@ -40,7 +40,7 @@ export async function GET(
 
   const { data: call } = await svc
     .from("video_calls")
-    .select("id, anlass, status, patient_id, gast_token, geplant_at, dauer_minuten, schliesst_at")
+    .select("id, anlass, status, patient_id, gast_token, geplant_at, dauer_minuten, schliesst_at, notiz")
     .eq("id", id)
     .maybeSingle()
 
@@ -63,6 +63,10 @@ export async function GET(
     geplant_at: call.geplant_at,
     dauer_minuten: call.dauer_minuten,
     patient: [patient?.vorname, patient?.nachname].filter(Boolean).join(" ") || "Patient",
+    // Fuer die Akte in der Schublade (PROJ-28). Nur die Praxis sieht diese
+    // Antwort — der Gast-Endpunkt gibt sie nicht heraus.
+    patient_id: call.patient_id,
+    notiz: call.notiz ?? "",
     status: call.status,
     schliesst_at: call.schliesst_at,
   })

@@ -3,11 +3,10 @@
 /**
  * PROJ-27 — Sprechzimmer, Therapeutenseite.
  *
- * Etappe 1 bringt bewusst nur das Gespräch. Die Seitenleiste mit Akte,
- * Check-in-Verlauf und Notizfeld steht in Etappe 6 — sie ist erst dann
- * sinnvoll, wenn das Gespräch selbst auf jedem Gerät zuverlässig steht.
- * Ein Sprechzimmer mit schöner Seitenleiste und wackeligem Bild wäre die
- * falsche Reihenfolge.
+ * Das Gespräch kam zuerst, die Schaltzentrale danach — ein Sprechzimmer mit
+ * schöner Seitenleiste und wackeligem Bild wäre die falsche Reihenfolge
+ * gewesen. Seit PROJ-28 steht beides: Akte und Notiz liegen als Schublade im
+ * Raum, damit der Behandler ihn zum Arbeiten nicht verlassen muss.
  */
 
 import { useCallback, useEffect, useState } from "react"
@@ -22,6 +21,7 @@ const serif = { fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 600
 interface Daten {
   titel: string
   patient: string
+  patientId: string
   gastUrl?: string
 }
 
@@ -40,7 +40,14 @@ export default function TherapeutSprechzimmerPage() {
         if (!r.ok) throw new Error(j.error ?? `Serverantwort ${r.status}`)
         return j
       })
-      .then((d) => setDaten({ titel: d.titel, patient: d.patient, gastUrl: d.gast_url }))
+      .then((d) =>
+        setDaten({
+          titel: d.titel,
+          patient: d.patient,
+          patientId: d.patient_id,
+          gastUrl: d.gast_url,
+        })
+      )
       .catch((e: Error) => setFehler(e.message))
       .finally(() => setLaedt(false))
   }, [callId])
@@ -72,6 +79,7 @@ export default function TherapeutSprechzimmerPage() {
       callId={callId!}
       anlassText={daten.titel}
       gegenueber={daten.patient}
+      patientId={daten.patientId}
       zurueckHref="/os/sprechstunde"
       gastUrl={daten.gastUrl}
       qrUrl={`/api/os/video-calls/${callId}/qr`}

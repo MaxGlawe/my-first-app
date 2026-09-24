@@ -30,7 +30,7 @@
 import { useState } from "react"
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react"
 import { Track } from "livekit-client"
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorX, PhoneOff } from "lucide-react"
+import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorX, PhoneOff, FolderOpen, FolderClosed } from "lucide-react"
 
 const PAPER = "#F8F5F0"
 const SAND = "#C9B79C"
@@ -69,7 +69,16 @@ function Knopf({
   )
 }
 
-export function Steuerleiste({ onAuflegen }: { onAuflegen: () => void }) {
+export function Steuerleiste({
+  onAuflegen,
+  onSchublade,
+  schubladeOffen,
+}: {
+  onAuflegen: () => void
+  /** Nur die Therapeutenseite hat eine Schublade — sonst bleibt der Knopf weg. */
+  onSchublade?: () => void
+  schubladeOffen?: boolean
+}) {
   const raum = useRoomContext()
   const { localParticipant } = useLocalParticipant()
   const [busy, setBusy] = useState(false)
@@ -133,6 +142,16 @@ export function Steuerleiste({ onAuflegen }: { onAuflegen: () => void }) {
               localParticipant.setScreenShareEnabled(!teiltBildschirm, { audio: true })
             )
           }
+        />
+      )}
+
+      {onSchublade && (
+        <Knopf
+          label={schubladeOffen ? "Akte schliessen" : "Akte"}
+          an={schubladeOffen ? <FolderOpen className="h-5 w-5" /> : <FolderClosed className="h-5 w-5" />}
+          aus={<FolderClosed className="h-5 w-5" />}
+          disabled={busy}
+          onClick={onSchublade}
         />
       )}
 

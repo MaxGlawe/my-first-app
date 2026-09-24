@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzentrale"
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -292,13 +293,23 @@ function Buehne({
   onEnde,
   gastUrl,
   qrUrl,
+  callId,
+  patientId,
 }: {
   gegenueber: string
   onEnde: () => void
   gastUrl?: string
   qrUrl?: string
+  /** Beide nur auf der Therapeutenseite — nur dort gibt es die Schublade. */
+  callId?: string
+  patientId?: string
 }) {
   const [tafelOffen, setTafelOffen] = useState(false)
+  const [schubladeOffen, setSchubladeOffen] = useState(false)
+  /** Was ICH gerade zeige (Therapeutenseite). */
+  const [gezeigt, setGezeigt] = useState<Wurf | null>(null)
+  /** Was MIR gerade gezeigt wird (Patientenseite). */
+  const [empfangen, setEmpfangen] = useState<Wurf | null>(null)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   const spuren = useTracks(
@@ -317,13 +328,83 @@ function Buehne({
     }
   }, [raum, onEnde])
 
+  /**
+   * Der Datenkanal des Raums. Ueber ihn wird geworfen — kein zweiter Weg,
+   * kein eigener Server: Beide sitzen ohnehin schon im selben Raum.
+   *
+   * Empfangen wird nur, was von der Gegenseite kommt; der eigene Wurf kommt
+   * nicht zurueck. Unbekannte Nachrichten werden still verworfen, damit eine
+   * spaetere Erweiterung eine aeltere Sitzung nicht aus dem Tritt bringt.
+   */
+  useEffect(() => {
+    const empfangenHandler = (nutzlast: Uint8Array) => {
+      try {
+        const nachricht = JSON.parse(new TextDecoder().decode(nutzlast)) as {
+          art?: string
+          wurf?: Wurf
+        }
+        if (nachricht.art === "zeigen" && nachricht.wurf) setEmpfangen(nachricht.wurf)
+        else if (nachricht.art === "zeigen-ende") setEmpfangen(null)
+      } catch {
+        /* Nicht unsere Nachricht. */
+      }
+    }
+    raum.on(RoomEvent.DataReceived, empfangenHandler)
+    return () => {
+      raum.off(RoomEvent.DataReceived, empfangenHandler)
+    }
+  }, [raum])
+
+  const senden = useCallback(
+    (nachricht: Record<string, unknown>) => {
+      const daten = new TextEncoder().encode(JSON.stringify(nachricht))
+      void raum.localParticipant.publishData(daten, { reliable: true })
+    },
+    [raum]
+  )
+
+  const zeigen = useCallback(
+    (w: Wurf) => {
+      setGezeigt(w)
+      senden({ art: "zeigen", wurf: w })
+    },
+    [senden]
+  )
+
+  const zeigenBeenden = useCallback(() => {
+    setGezeigt(null)
+    senden({ art: "zeigen-ende" })
+  }, [senden])
+
+  /**
+   * Auflegen beendet auch das Zeigen. Sonst bliebe beim Patienten ein Befund
+   * stehen, waehrend niemand mehr im Raum ist, der ihn wegnehmen koennte.
+   */
+  useEffect(() => {
+    if (!gezeigt) return
+    const aufraeumen = () => senden({ art: "zeigen-ende" })
+    raum.on(RoomEvent.Disconnected, aufraeumen)
+    return () => {
+      raum.off(RoomEvent.Disconnected, aufraeumen)
+    }
+  }, [raum, gezeigt, senden])
+
   const alleine = spuren.filter((s) => !s.participant.isLocal).length === 0
   const wackelt =
     zustand === ConnectionState.Reconnecting || zustand === ConnectionState.Connecting
 
+  const hatSchublade = Boolean(callId && patientId)
+
   return (
     <div className="flex h-full flex-col" style={{ backgroundColor: "#12150f" }}>
-      <div className="relative flex-1 overflow-hidden">
+      {/*
+        Nebeneinander statt uebereinander: Die Schublade schiebt das Bild zur
+        Seite, sie legt sich nicht darueber. Wer arbeitet, soll den Menschen
+        weiter sehen — sonst spricht man mit einer Akte statt mit einem
+        Patienten. Auf dem Handy wird aus der Spalte ein Blatt von unten.
+      */}
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <GridLayout tracks={spuren} style={{ height: "100%" }}>
           <ParticipantTile />
         </GridLayout>
@@ -368,12 +449,31 @@ function Buehne({
             </p>
           </div>
         )}
+        {/* Was mir gezeigt wird — formatfuellend, mit Absender. */}
+        {empfangen && <Gezeigt wurf={empfangen} gegenueber={gegenueber} />}
+      </div>
+
+        {hatSchublade && (
+          <Schaltzentrale
+            callId={callId!}
+            patientId={patientId!}
+            offen={schubladeOffen}
+            onSchliessen={() => setSchubladeOffen(false)}
+            gezeigt={gezeigt}
+            onZeigen={zeigen}
+            onZeigenBeenden={zeigenBeenden}
+          />
+        )}
       </div>
 
       <RoomAudioRenderer />
 
       <div className="shrink-0 border-t" style={{ borderColor: "#2b3226" }}>
-        <Steuerleiste onAuflegen={onEnde} />
+        <Steuerleiste
+          onAuflegen={onEnde}
+          onSchublade={hatSchublade ? () => setSchubladeOffen((o) => !o) : undefined}
+          schubladeOffen={schubladeOffen}
+        />
       </div>
     </div>
   )
@@ -389,6 +489,7 @@ export function Sprechzimmer({
   anlassText,
   gegenueber,
   praxisName,
+  patientId,
   zurueckHref,
   gastUrl,
   qrUrl,
@@ -406,6 +507,11 @@ export function Sprechzimmer({
   gegenueber: string
   /** Absender im Warteraum. Nur die Gastseite setzt ihn. */
   praxisName?: string
+  /**
+   * Wessen Akte in der Schublade liegt. Nur die Therapeutenseite setzt ihn —
+   * und nur mit ihm gibt es ueberhaupt eine Schublade.
+   */
+  patientId?: string
   zurueckHref: string
   /** Nur die Therapeutenansicht: Einladungstafel im Raum. */
   gastUrl?: string
@@ -526,6 +632,8 @@ export function Sprechzimmer({
           onEnde={() => setBeendet(true)}
           gastUrl={gastUrl}
           qrUrl={qrUrl}
+          callId={callId}
+          patientId={patientId}
         />
       </LiveKitRoom>
 

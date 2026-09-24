@@ -20,7 +20,14 @@ import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
 import QRCode from "qrcode"
 import { sendEmail } from "@/lib/email"
 import { sprechzimmerEinladung } from "@/lib/email-templates/sprechzimmer-einladung"
-import { oeffnetAm, schliesstAm, kalendereintrag, zutrittOffen } from "@/lib/video/termin"
+import {
+  oeffnetAm,
+  schliesstAm,
+  kalendereintrag,
+  zutrittOffen,
+  formatDatum,
+  formatUhrzeit,
+} from "@/lib/video/termin"
 
 const STAFF_ROLES = ["admin", "heilpraktiker", "physiotherapeut"]
 
@@ -39,7 +46,7 @@ const anlegenSchema = z.object({
 
 const patchSchema = z.object({
   id: z.string().uuid(),
-  aktion: z.enum(["beenden", "einladung", "absagen"]).default("beenden"),
+  aktion: z.enum(["beenden", "einladung", "absagen", "notiz"]).default("beenden"),
   notiz: z.string().trim().max(4000).optional().nullable(),
   grund: z.string().trim().max(500).optional().nullable(),
 })
@@ -412,6 +419,24 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ gesendet: true })
   }
 
+  // ── Notiz sichern, ohne zu beenden ───────────────────────────
+  //
+  // Die Schaltzentrale (PROJ-28) sichert still waehrend des Gespraechs. Ein
+  // Speichern-Knopf waere einer, den jemand vergisst, waehrend er zuhoert —
+  // und der Text waere weg, sobald der Raum zugeht.
+  if (aktion === "notiz") {
+    const { error } = await auth.svc
+      .from("video_calls")
+      .update({ notiz: notiz ?? null })
+      .eq("id", id)
+
+    if (error) {
+      console.error("[os/video-calls] Notiz:", error)
+      return NextResponse.json({ error: "Notiz konnte nicht gesichert werden." }, { status: 500 })
+    }
+    return NextResponse.json({ gesichert: true })
+  }
+
   // ── Absagen ──────────────────────────────────────────────────
   if (aktion === "absagen") {
     const { error } = await auth.svc
@@ -442,13 +467,9 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle()
 
     if (patient?.email) {
-      const wann = new Date(call.geplant_at).toLocaleString("de-DE", {
-        weekday: "long",
-        day: "2-digit",
-        month: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+      // Ueber die gemeinsame Formatierung, sonst nennt der Server die Zeit
+      // in UTC — derselbe Fehler, der am 24.09.2026 in der Einladung stand.
+      const wann = `${formatDatum(call.geplant_at)} um ${formatUhrzeit(call.geplant_at)}`
       void sendEmail({
         to: patient.email,
         subject: "Dein Videotermin wurde abgesagt",
