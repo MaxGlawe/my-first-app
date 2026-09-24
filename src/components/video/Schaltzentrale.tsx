@@ -400,7 +400,9 @@ export function Schaltzentrale({
   setEntwurf: (u: EntwurfsUebung[]) => void
   onGesendet: () => void
   handy: boolean
-  onHandy: (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => void
+  onHandy: (
+    daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number; aktiv: number } | null
+  ) => void
 }) {
   const [reiter, setReiter] = useState<"akte" | "plan" | "notiz">("akte")
 
@@ -491,6 +493,13 @@ export function Schaltzentrale({
 export function Gezeigt({ wurf, gegenueber }: { wurf: Wurf; gegenueber: string }) {
   const istBild = wurf.mime.startsWith("image/")
   const istVideo = wurf.mime.startsWith("video/")
+  /**
+   * Ein leerer schwarzer Schirm ist die schlechteste Fehlermeldung. Laedt das
+   * Bild nicht — abgelaufener Link, blockierter Rahmen, kaputte Datei —, dann
+   * soll der Patient das lesen koennen, statt zu glauben, er habe etwas
+   * falsch gemacht.
+   */
+  const [ladefehler, setLadefehler] = useState(false)
   return (
     <div className="absolute inset-0 z-20 flex flex-col" style={{ backgroundColor: "#12150f" }}>
       <div
@@ -503,7 +512,17 @@ export function Gezeigt({ wurf, gegenueber }: { wurf: Wurf; gegenueber: string }
         </p>
       </div>
       <div className="flex-1 overflow-auto bg-white">
-        {istVideo ? (
+        {ladefehler ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            <AlertTriangle className="h-6 w-6" style={{ color: "#8c3a2b" }} />
+            <p className="text-[14px] font-medium" style={{ color: INK }}>
+              Das lässt sich auf diesem Gerät nicht anzeigen
+            </p>
+            <p className="text-[12.5px] leading-relaxed text-slate-500">
+              Sag deinem Behandler Bescheid — er kann es dir noch einmal schicken.
+            </p>
+          </div>
+        ) : istVideo ? (
           /*
            * Stumm und in Schleife: Eine Übung sieht man, man hört sie nicht —
            * und der Ton des Gesprächs hat Vorrang. Wer sie noch einmal sehen
@@ -516,13 +535,24 @@ export function Gezeigt({ wurf, gegenueber }: { wurf: Wurf; gegenueber: string }
             muted
             playsInline
             controls
+            onError={() => setLadefehler(true)}
             className="mx-auto h-full w-full max-w-3xl bg-black object-contain"
           />
         ) : istBild ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={wurf.url} alt={wurf.titel} className="mx-auto w-full max-w-3xl" />
+          <img
+            src={wurf.url}
+            alt={wurf.titel}
+            onError={() => setLadefehler(true)}
+            className="mx-auto w-full max-w-3xl"
+          />
         ) : (
-          <iframe src={wurf.url} title={wurf.titel} className="h-full w-full" />
+          <iframe
+            src={wurf.url}
+            title={wurf.titel}
+            onError={() => setLadefehler(true)}
+            className="h-full w-full"
+          />
         )}
       </div>
     </div>

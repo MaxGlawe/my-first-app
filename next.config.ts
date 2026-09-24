@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' https://*.supabase.co data: blob:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://www.facebook.com https://connect.facebook.net https://video.wwwpraxis-os.com wss://video.wwwpraxis-os.com https://turn.wwwpraxis-os.com wss://turn.wwwpraxis-os.com; frame-src 'self' https://js.stripe.com https://www.facebook.com; frame-ancestors 'none'",
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' https://*.supabase.co data: blob:; worker-src 'self' blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://api.anthropic.com https://www.facebook.com https://connect.facebook.net https://video.wwwpraxis-os.com wss://video.wwwpraxis-os.com https://turn.wwwpraxis-os.com wss://turn.wwwpraxis-os.com; frame-src 'self' https://js.stripe.com https://www.facebook.com https://*.supabase.co; frame-ancestors 'none'",
           },
         ],
       },

@@ -379,10 +379,25 @@ function Buehne({
     }
   }, [raum])
 
+  /**
+   * Fehler beim Senden waren bisher unsichtbar: `void publishData(...)` warf
+   * eine abgelehnte Zusage in den Wind. Wenn beim Patienten nichts ankommt,
+   * steht der Behandler dann vor einem Raetsel — und genau das ist am
+   * 24.09.2026 passiert. Jetzt sagt es der Raum.
+   */
+  const [kanalFehler, setKanalFehler] = useState<string | null>(null)
+
   const senden = useCallback(
     (nachricht: Record<string, unknown>) => {
       const daten = new TextEncoder().encode(JSON.stringify(nachricht))
-      void raum.localParticipant.publishData(daten, { reliable: true })
+      raum.localParticipant
+        .publishData(daten, { reliable: true })
+        .then(() => setKanalFehler(null))
+        .catch((err: unknown) => {
+          const text = err instanceof Error ? err.message : String(err)
+          console.error("[sprechzimmer] Senden fehlgeschlagen:", err)
+          setKanalFehler(text)
+        })
     },
     [raum]
   )
@@ -390,9 +405,14 @@ function Buehne({
   const zeigen = useCallback(
     (w: Wurf) => {
       setGezeigt(w)
+      // Ein Wurf in einen leeren Raum ist der haeufigste Grund, warum "beim
+      // Patienten kommt nichts an": Er ist noch gar nicht drin.
+      if (raum.numParticipants === 0) {
+        setKanalFehler("Niemand sonst ist im Raum — er sieht es erst, wenn er beitritt.")
+      }
       senden({ art: "zeigen", wurf: w })
     },
-    [senden]
+    [senden, raum]
   )
 
   const zeigenBeenden = useCallback(() => {
@@ -422,7 +442,7 @@ function Buehne({
   )
 
   const handyZeigen = useCallback(
-    (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => {
+    (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number; aktiv: number } | null) => {
       if (!daten) {
         setHandy(null)
         senden({ art: "handy-ende" })
@@ -549,6 +569,20 @@ function Buehne({
             <QrCode className="h-4 w-4" />
             Patient einladen
           </button>
+        )}
+
+        {/* Kommt beim Patienten nichts an, soll es hier stehen und nicht im
+            Verborgenen bleiben. */}
+        {hatSchublade && kanalFehler && (
+          <div className="absolute inset-x-0 top-4 z-10 flex justify-center px-4">
+            <p
+              className="flex items-center gap-2 rounded-full px-4 py-2 text-[12.5px]"
+              style={{ backgroundColor: "rgba(140,58,43,0.95)", color: "#fff" }}
+            >
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Nichts an {gegenueber} gesendet: {kanalFehler}
+            </p>
+          </div>
         )}
 
         {/* Ruhig, nicht alarmierend — siehe Kopfkommentar. */}

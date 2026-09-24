@@ -38,6 +38,10 @@ const LINE = "#e3ddd1"
 export interface EntwurfsUebung {
   exercise_id: string
   name: string
+  /** Bild oder Video der Uebung. Ohne das waere die Handy-Vorschau nur eine
+   *  Liste — und genau daran ist die erste Demo gescheitert. */
+  media_url?: string | null
+  media_type?: "image" | "video" | null
   saetze: number
   wiederholungen: number | null
   dauer_sekunden: number | null
@@ -102,7 +106,9 @@ export function PlanImGespraech({
   /** Laeuft die Handy-Vorschau beim Patienten gerade? */
   handy: boolean
   /** null beendet die Vorschau. */
-  onHandy: (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => void
+  onHandy: (
+    daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number; aktiv: number } | null
+  ) => void
   gezeigt: Wurf | null
   onZeigen: (w: Wurf) => void
   onZeigenBeenden: () => void
@@ -115,6 +121,8 @@ export function PlanImGespraech({
   const [sendet, setSendet] = useState(false)
   const [gesendet, setGesendet] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
+  /** Welche Uebung gross auf seinem Handy steht. */
+  const [aktiv, setAktiv] = useState(0)
 
   // Gesucht wird erst, wenn die Finger stillstehen. Im Gespräch tippt man
   // nebenbei, und jede Taste eine Abfrage wäre Lärm auf der Leitung.
@@ -142,6 +150,8 @@ export function PlanImGespraech({
       {
         exercise_id: u.id,
         name: u.name,
+        media_url: u.media_url,
+        media_type: u.media_type,
         saetze: u.standard_saetze ?? 3,
         // Entweder Wiederholungen oder Dauer — eine Übung ist das eine oder
         // das andere. Fehlt beides, sind zehn Wiederholungen die ehrlichste
@@ -161,9 +171,9 @@ export function PlanImGespraech({
    * nicht mehr gibt.
    */
   useEffect(() => {
-    if (handy) onHandy({ uebungen: entwurf, tage, wochen })
+    if (handy) onHandy({ uebungen: entwurf, tage, wochen, aktiv })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entwurf, tage, wochen])
+  }, [entwurf, tage, wochen, aktiv])
 
   const senden = async () => {
     setSendet(true)
@@ -440,15 +450,47 @@ export function PlanImGespraech({
                 Das sieht {gegenueber} gerade
               </p>
               <HandyVorschau
-                daten={{ uebungen: entwurf, tage, wochen, gesendet }}
+                daten={{ uebungen: entwurf, tage, wochen, gesendet, aktiv }}
                 klein
               />
+
+              {/* Durchblaettern — er blaettert mit. Genau so zeigt man im
+                  Gespraech, was ihn erwartet: eine Uebung nach der anderen. */}
+              {entwurf.length > 1 && (
+                <div className="mt-2.5 flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAktiv((i) => Math.max(0, i - 1))}
+                    disabled={aktiv === 0}
+                    aria-label="Vorherige Übung"
+                    className="rounded-lg px-2.5 py-1.5 text-[13px] font-semibold disabled:opacity-30"
+                    style={{ backgroundColor: "#fff", color: GREEN, border: `1px solid ${LINE}` }}
+                  >
+                    ‹
+                  </button>
+                  <span className="text-[11.5px] text-slate-500">
+                    Übung {aktiv + 1} von {entwurf.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAktiv((i) => Math.min(entwurf.length - 1, i + 1))}
+                    disabled={aktiv >= entwurf.length - 1}
+                    aria-label="Nächste Übung"
+                    className="rounded-lg px-2.5 py-1.5 text-[13px] font-semibold disabled:opacity-30"
+                    style={{ backgroundColor: "#fff", color: GREEN, border: `1px solid ${LINE}` }}
+                  >
+                    ›
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
           <button
             type="button"
-            onClick={() => (handy ? onHandy(null) : onHandy({ uebungen: entwurf, tage, wochen }))}
+            onClick={() =>
+              handy ? onHandy(null) : onHandy({ uebungen: entwurf, tage, wochen, aktiv })
+            }
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold"
             style={
               handy

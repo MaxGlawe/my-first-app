@@ -3,23 +3,26 @@
 /**
  * PROJ-28 — „So sieht es bei dir aus."
  *
- * Der Behandler nach dem ersten Plan im Gespräch: „Ich wollte das Feature so
- * haben, dass ich es dem Klienten im Call geben kann, dass er dann das Handy
- * sieht und ich ihm schon vorab zeigen kann, was er bekommt."
+ * Der Behandler nach der ersten Demo: „Er sieht nicht die Übung, die ich
+ * reingetan habe, sondern nur, dass er heute ein Training hat. Es müsste die
+ * Übung zu sehen sein und wie sie aussieht, wenn er das Training startet."
  *
- * Der Punkt dahinter ist ein verkäuferischer und ein therapeutischer zugleich.
- * Eine Liste mit vier Übungsnamen ist eine Ankündigung. Ein Handy, auf dem
- * „Heute trainieren — 4 Übungen, ca. 12 Minuten" steht, ist ein Versprechen,
- * das man anfassen kann. Der Patient muss sich nicht vorstellen, was er kauft;
- * er sieht es, bevor er zustimmt.
+ * Der erste Entwurf zeigte die Übersichtskarte der App — vier Namen und eine
+ * Minutenzahl. Das ist die Ankündigung eines Trainings, nicht das Training.
+ * Wer etwas verkauft, das man tun soll, muss das TUN zeigen: die Übung, wie
+ * sie aussieht, mit Bild.
  *
- * DIE VORSCHAU IST EHRLICH. Sie ist der Karte aus der Patienten-App
- * nachgebaut (components/app/HeuteKarte.tsx) — dieselbe Farbe, dieselbe
- * Aufteilung, dieselbe Rechnung für die Dauer. Eine hübschere Vorschau als die
+ * Deshalb zeigt die Vorschau jetzt den ÜBUNGSSCHIRM — was er sieht, wenn er
+ * auf „Training starten" tippt. Der Behandler blättert durch, der Patient
+ * blättert mit; oben bleibt die Karte als kleiner Streifen, damit klar ist,
+ * wo das hier in der App liegt.
+ *
+ * DIE VORSCHAU BLEIBT EHRLICH. Farben, Aufbau und die Rechnung für die Dauer
+ * stammen aus components/app/HeuteKarte.tsx. Eine hübschere Vorschau als die
  * Wirklichkeit wäre ein Versprechen, das die App am nächsten Morgen bricht.
  */
 
-import { Dumbbell, Clock, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Dumbbell, Clock, ArrowRight, CheckCircle2, ImageOff } from "lucide-react"
 import type { EntwurfsUebung } from "./PlanImGespraech"
 
 const INK = "#12160f"
@@ -30,6 +33,8 @@ export interface HandyDaten {
   tage: string[]
   wochen: number
   gesendet: boolean
+  /** Welche Übung gerade grossformatig zu sehen ist. */
+  aktiv?: number
 }
 
 const TAG_TEXT: Record<string, string> = {
@@ -56,6 +61,10 @@ function dauerMinuten(uebungen: EntwurfsUebung[]): number {
   return summe || uebungen.length * 3
 }
 
+function vorgabe(u: EntwurfsUebung): string {
+  return u.dauer_sekunden ? `${u.dauer_sekunden} Sek. halten` : `${u.wiederholungen ?? 10} Wdh.`
+}
+
 export function HandyVorschau({
   daten,
   klein = false,
@@ -66,10 +75,12 @@ export function HandyVorschau({
 }) {
   const anzahl = daten.uebungen.length
   const dauer = dauerMinuten(daten.uebungen)
+  const index = Math.min(Math.max(daten.aktiv ?? 0, 0), Math.max(anzahl - 1, 0))
+  const uebung = daten.uebungen[index]
 
   return (
     <div
-      className={`mx-auto w-full ${klein ? "max-w-[220px]" : "max-w-[300px]"}`}
+      className={`mx-auto w-full ${klein ? "max-w-[210px]" : "max-w-[300px]"}`}
       aria-label="Vorschau der Patienten-App"
     >
       {/* Gehäuse. Kein Spielzeug-Rahmen mit Knöpfen und Kamera — nur so viel,
@@ -79,7 +90,6 @@ export function HandyVorschau({
         style={{ backgroundColor: "#0f120d" }}
       >
         <div className="overflow-hidden rounded-[1.6rem] bg-white">
-          {/* Kopfzeile des Telefons */}
           <div className="flex items-center justify-between px-4 pb-1 pt-2.5">
             <span className="text-[10px] font-semibold" style={{ color: INK }}>
               {new Date().toLocaleTimeString("de-DE", {
@@ -95,91 +105,89 @@ export function HandyVorschau({
             </span>
           </div>
 
-          <div className="px-3.5 pb-4 pt-1">
-            <p className="text-[11px] font-medium text-slate-400">Praxis OS</p>
-
-            {/* Die Karte aus der App — Farbe und Aufbau übernommen. */}
-            <div className="mt-2 overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 shadow-lg">
-              <div className="p-3.5">
-                <div className="mb-3 flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20">
-                    <Dumbbell className="h-4 w-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-[9.5px] font-medium uppercase tracking-wide text-white/70">
-                      Heute trainieren
-                    </p>
-                    <p className="text-[13px] font-bold leading-tight text-white">Training</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-white/80">
-                  <span className="flex items-center gap-1">
-                    <Dumbbell className="h-3 w-3" />
-                    {anzahl} Übung{anzahl !== 1 ? "en" : ""}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    ca. {dauer} Min.
-                  </span>
-                </div>
-              </div>
-              <div className="px-3.5 pb-3.5">
-                <div className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-white text-[12px] font-semibold text-emerald-700">
-                  Training starten
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </div>
-              </div>
-            </div>
-
-            {/* Die Übungen darunter, so wie er sie durchgeht. */}
-            <ul className="mt-3 space-y-1.5">
-              {daten.uebungen.map((u, i) => (
-                <li
-                  key={u.exercise_id}
-                  className="flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-2.5 py-2"
-                >
-                  <span
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                    style={{ backgroundColor: GREEN }}
-                  >
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[11.5px] font-medium" style={{ color: INK }}>
-                      {u.name}
-                    </span>
-                    <span className="block text-[10px] text-slate-500">
-                      {u.saetze} ×{" "}
-                      {u.dauer_sekunden ? `${u.dauer_sekunden} Sek. halten` : `${u.wiederholungen ?? 10} Wdh.`}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Wann. Das ist die Frage, die direkt nach „was" kommt. */}
-            <div className="mt-3 flex items-center justify-center gap-1">
-              {(["mo", "di", "mi", "do", "fr", "sa", "so"] as const).map((t) => {
-                const an = daten.tage.includes(t)
-                return (
-                  <span
-                    key={t}
-                    className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-semibold"
-                    style={
-                      an
-                        ? { backgroundColor: GREEN, color: "#fff" }
-                        : { backgroundColor: "#f1f5f9", color: "#94a3b8" }
-                    }
-                  >
-                    {TAG_TEXT[t]}
-                  </span>
-                )
-              })}
-            </div>
-            <p className="mt-1.5 text-center text-[9.5px] text-slate-400">
-              {daten.wochen} {daten.wochen === 1 ? "Woche" : "Wochen"} lang
-            </p>
+          {/* Kopfstreifen: wo in der App bin ich hier? */}
+          <div className="mx-3 mt-1 flex items-center gap-2 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 px-3 py-2">
+            <Dumbbell className="h-3.5 w-3.5 shrink-0 text-white" />
+            <span className="text-[10.5px] font-semibold text-white">
+              {anzahl} Übung{anzahl !== 1 ? "en" : ""}
+            </span>
+            <span className="flex items-center gap-1 text-[10.5px] text-white/80">
+              <Clock className="h-3 w-3" />
+              ca. {dauer} Min.
+            </span>
           </div>
+
+          {/* DER ÜBUNGSSCHIRM — das, was er beim Training sieht. */}
+          {uebung ? (
+            <div className="px-3 pb-3 pt-2.5">
+              <div className="flex items-baseline justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  Übung {index + 1} von {anzahl}
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  {daten.tage.map((t) => TAG_TEXT[t]).join(" · ")}
+                </p>
+              </div>
+
+              <div className="mt-1.5 overflow-hidden rounded-2xl bg-slate-100">
+                {uebung.media_url ? (
+                  uebung.media_type === "video" ? (
+                    <video
+                      src={uebung.media_url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="aspect-[4/3] w-full bg-black object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={uebung.media_url}
+                      alt={uebung.name}
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                  )
+                ) : (
+                  <div className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-1 text-slate-400">
+                    <ImageOff className="h-5 w-5" />
+                    <span className="text-[9.5px]">Ohne Bild hinterlegt</span>
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-2 text-[13px] font-bold leading-tight" style={{ color: INK }}>
+                {uebung.name}
+              </p>
+              <p className="mt-0.5 text-[11.5px]" style={{ color: GREEN }}>
+                {uebung.saetze} Sätze × {vorgabe(uebung)}
+                <span className="text-slate-400"> · {uebung.pause_sekunden} Sek. Pause</span>
+              </p>
+
+              {/* Fortschrittspunkte wie im Trainingsablauf. */}
+              <div className="mt-2.5 flex items-center justify-center gap-1">
+                {daten.uebungen.map((u, i) => (
+                  <span
+                    key={u.exercise_id}
+                    className="h-1.5 rounded-full transition-all"
+                    style={{
+                      width: i === index ? 16 : 6,
+                      backgroundColor: i === index ? GREEN : "#cbd5e1",
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="mt-2.5 flex h-9 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-[12px] font-semibold text-white">
+                {index === 0 ? "Training starten" : "Weiter"}
+                <ArrowRight className="h-3.5 w-3.5" />
+              </div>
+            </div>
+          ) : (
+            <div className="px-4 py-8 text-center text-[11.5px] text-slate-400">
+              Noch keine Übung im Plan.
+            </div>
+          )}
         </div>
       </div>
 
