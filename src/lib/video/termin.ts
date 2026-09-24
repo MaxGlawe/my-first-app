@@ -8,6 +8,24 @@
  * leicht verschieden lautet.
  */
 
+/**
+ * Die Praxis steht in Wildau, die Patienten sitzen in Deutschland, und der
+ * Server läuft in UTC. Ohne feste Zone rendert jede serverseitig erzeugte
+ * Zeit in der Zeitzone der Maschine — im Sommer zwei Stunden zu früh.
+ *
+ * Genau das stand am 24.09.2026 in der ersten echten Einladung: „um 08:00
+ * Uhr" für einen Termin um 10:00. Im Browser fiel es nicht auf, weil der
+ * Rechner des Behandlers ohnehin auf Berlin steht — die Mail entsteht aber
+ * auf dem Server.
+ *
+ * Die Zone ist bewusst fest und nicht die des Empfängers: Ein Termin in
+ * einer deutschen Praxis findet zur deutschen Ortszeit statt, auch wenn
+ * jemand die Mail im Urlaub öffnet. Der Kalendereintrag trägt echte
+ * UTC-Zeitstempel und rechnet für den, der wirklich woanders sitzt, selbst
+ * um.
+ */
+export const ZONE = "Europe/Berlin"
+
 export const VORLAUF_MINUTEN = 5
 /**
  * Nachlauf. Faengt ab, dass ein Gespraech laenger dauert als geplant. Ein
@@ -43,6 +61,7 @@ export function zustand(
 /** „Mittwoch, 24. September 2026" */
 export function formatDatum(iso: string): string {
   return new Date(iso).toLocaleDateString("de-DE", {
+    timeZone: ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -52,14 +71,23 @@ export function formatDatum(iso: string): string {
 
 /** „14:00" */
 export function formatUhrzeit(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+  return new Date(iso).toLocaleTimeString("de-DE", {
+    timeZone: ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 /** „Mi, 24.09. um 14:00 Uhr" — kompakt für Listen. */
 export function formatKurz(iso: string): string {
   const d = new Date(iso)
   return (
-    d.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }) +
+    d.toLocaleDateString("de-DE", {
+      timeZone: ZONE,
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+    }) +
     " um " +
     formatUhrzeit(iso) +
     " Uhr"
