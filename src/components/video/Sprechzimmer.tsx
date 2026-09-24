@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzentrale"
+import { useSchwebefenster } from "@/components/video/Schwebefenster"
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -29,6 +30,7 @@ import {
   useTracks,
   useConnectionState,
   useRoomContext,
+  useLocalParticipant,
 } from "@livekit/components-react"
 import { Steuerleiste } from "./Steuerleiste"
 import { ConnectionState, Track, RoomEvent, VideoPresets } from "livekit-client"
@@ -395,6 +397,27 @@ function Buehne({
 
   const hatSchublade = Boolean(callId && patientId)
 
+  /**
+   * Das Bild des Gegenuebers fuer das schwebende Fenster. Kein Platzhalter und
+   * keine geteilte Flaeche — wer nebenher arbeitet, will den Menschen sehen.
+   */
+  const { localParticipant } = useLocalParticipant()
+  const gegenueberSpur = spuren.find(
+    (s) => !s.participant.isLocal && s.source === Track.Source.Camera && s.publication?.track
+  )?.publication?.track
+
+  const fenster = useSchwebefenster({
+    spur: gegenueberSpur,
+    gegenueber,
+    mikroAn: localParticipant.isMicrophoneEnabled,
+    onMikro: () =>
+      void localParticipant.setMicrophoneEnabled(!localParticipant.isMicrophoneEnabled),
+    onAuflegen: () => {
+      void raum.disconnect()
+      onEnde()
+    },
+  })
+
   return (
     <div className="flex h-full flex-col" style={{ backgroundColor: "#12150f" }}>
       {/*
@@ -473,6 +496,12 @@ function Buehne({
           onAuflegen={onEnde}
           onSchublade={hatSchublade ? () => setSchubladeOffen((o) => !o) : undefined}
           schubladeOffen={schubladeOffen}
+          onFenster={
+            fenster.verfuegbar
+              ? () => (fenster.offen ? fenster.schliessen() : void fenster.oeffnen())
+              : undefined
+          }
+          fensterOffen={fenster.offen}
         />
       </div>
     </div>

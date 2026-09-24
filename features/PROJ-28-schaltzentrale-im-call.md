@@ -2,7 +2,7 @@
 
 > **Der Raum ist heute eine Seite. Er muss ein Arbeitsplatz werden.**
 
-**Status:** Planned
+**Status:** In Progress — Phase 0, 1 und 2 gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 3 und 4 offen
 **Stand:** 24.09.2026
 **Baut auf:** PROJ-27 (Sprechzimmer, Dokumentenakte), PROJ-8/9/10 (Übungen, Pläne, Hausaufgaben), PROJ-26 (Programm-Abschluss im Call)
 
@@ -57,7 +57,7 @@ schon im selben Raum, es braucht keinen zweiten Weg.
 
 ## 3 · Phasen
 
-### Phase 0 — Wartezimmer mit Absender *(klein, unabhängig, sofort spürbar)*
+### Phase 0 — Wartezimmer mit Absender ✓ *(deployt 24.09.2026, Commit 2efc16d)*
 
 Betrifft beide Wartezustände: die Countdown-Seite vor der Öffnung
 (`/sprechzimmer/[token]`) und den Geräte-Check direkt davor (`Warteraum` in
@@ -77,7 +77,7 @@ Betrifft beide Wartezustände: die Countdown-Seite vor der Öffnung
 * **Telefonnummer der Praxis** für den Fall, dass etwas klemmt. Wer im
   Wartezimmer festhängt und keinen Ausweg sieht, legt auf.
 
-### Phase 1 — Arbeitsfläche im Raum
+### Phase 1 — Arbeitsfläche im Raum ✓ *(Commit 89b35f4 — Akte und Notiz; „Anfordern" verschoben, siehe Offen)*
 
 Der Raum bekommt eine zweite Spalte. Video links, Schaltzentrale rechts;
 auf dem Handy wird daraus ein Blatt, das von unten hochzieht.
@@ -91,7 +91,7 @@ Reiter zum Start:
 | **Anfordern** | „Befund jetzt abfotografieren" — öffnet auf seinem Gerät den mehrseitigen Scanner aus PROJ-27. Der Hinweis „denke an deine Befunde" wird damit vom Wunsch zum Knopf. |
 | **Notiz** | Was hier getippt wird, landet nach dem Auflegen im Behandlungseintrag — nicht in einem zweiten Formular. Zweimal tippt niemand; beim dritten Mal lässt man es. |
 
-### Phase 2 — Das Fenster lösen
+### Phase 2 — Das Fenster lösen ✓
 
 **Document Picture-in-Picture** (Chrome/Edge ab 116; der Behandler arbeitet mit
 Edge 153): Das Patientenbild **samt Mikrofon- und Auflegen-Knopf** schwebt als
@@ -141,8 +141,16 @@ einer *Videokonferenz* unterscheidet — und handwerklich billiger, als es kling
 
 ## 5 · Offen
 
-* Wohin genau der Notiz-Text nach dem Auflegen geschrieben wird — braucht einen
-  Blick auf die Behandlungsdokumentation aus PROJ-5.
+* **„Anfordern" fehlt noch.** Der Scanner liegt in der Patienten-App und setzt
+  ein Konto voraus; bei der Erstkonsultation hat der Patient keines. Ein Wurf,
+  der beim Gast ins Leere führt, wäre schlimmer als kein Knopf. Braucht einen
+  Upload-Weg über den Gast-Token — eigenes Stück Arbeit.
+* **Der gezeigte Link gilt fünf Minuten.** Wer ein Dokument länger bespricht,
+  sieht es weiter (es ist geladen), aber ein Neuladen beim Patienten liefe ins
+  Leere. Auffrischen, sobald es jemandem auffällt.
+* Notiz liegt vorerst am Gespräch (`video_calls.notiz`) und erscheint dort beim
+  Beenden. Der Weg in die Behandlungsdokumentation aus PROJ-5 kommt, wenn
+  Phase 3 die Pläne anfasst.
 * Ob der Patient sehen soll, **dass** gerade etwas geworfen wird, bevor es
   erscheint (kurzer Hinweis statt Sprung).
 * Foto des Behandlers: Feld, Upload, Zuschnitt — lohnt erst mit vorhandenem Foto.

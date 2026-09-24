@@ -39,7 +39,7 @@
 | PROJ-25 | Masterclass + 3 Monate Begleitung (löst Video-Analyse ab) | Ruhend | [Spec](PROJ-25-masterclass-begleitung.md) | 2026-07-12 |
 | PROJ-26 | Praxis OS als 90-Tage-Programm (Neupositionierung) | In Review | [Spec](PROJ-26-praxis-os-programm.md) | 2026-09-22 |
 | PROJ-27 | Digitales Sprechzimmer (Video, Dokumentenakte, Befund-Scan) | In Review | [Spec](PROJ-27-digitales-sprechzimmer.md) | 2026-09-23 |
-| PROJ-28 | Schaltzentrale im Call + gebrandetes Wartezimmer | Planned | [Spec](PROJ-28-schaltzentrale-im-call.md) | 2026-09-24 |
+| PROJ-28 | Schaltzentrale im Call + gebrandetes Wartezimmer | In Progress | [Spec](PROJ-28-schaltzentrale-im-call.md) | 2026-09-24 |
 | PROJ-34 | Patienten-Terminkoordination (Termine sehen/umbuchen/stornieren) | Ruhend | [Spec](PROJ-34-patienten-terminkoordination.md) | 2026-06-20 |
 
 <!-- Add features above this line -->

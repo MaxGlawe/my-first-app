@@ -30,7 +30,18 @@
 import { useState } from "react"
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react"
 import { Track } from "livekit-client"
-import { Mic, MicOff, Video, VideoOff, MonitorUp, MonitorX, PhoneOff, FolderOpen, FolderClosed } from "lucide-react"
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  MonitorUp,
+  MonitorX,
+  PhoneOff,
+  FolderOpen,
+  FolderClosed,
+  PictureInPicture2,
+} from "lucide-react"
 
 const PAPER = "#F8F5F0"
 const SAND = "#C9B79C"
@@ -73,11 +84,16 @@ export function Steuerleiste({
   onAuflegen,
   onSchublade,
   schubladeOffen,
+  onFenster,
+  fensterOffen,
 }: {
   onAuflegen: () => void
   /** Nur die Therapeutenseite hat eine Schublade — sonst bleibt der Knopf weg. */
   onSchublade?: () => void
   schubladeOffen?: boolean
+  /** Nur wo der Browser Document-PiP kann — sonst bleibt der Knopf weg. */
+  onFenster?: () => void
+  fensterOffen?: boolean
 }) {
   const raum = useRoomContext()
   const { localParticipant } = useLocalParticipant()
@@ -152,6 +168,22 @@ export function Steuerleiste({
           aus={<FolderClosed className="h-5 w-5" />}
           disabled={busy}
           onClick={onSchublade}
+        />
+      )}
+
+      {onFenster && (
+        <Knopf
+          label={fensterOffen ? "Zurueckholen" : "Loesen"}
+          an={
+            fensterOffen ? (
+              <PictureInPicture2 className="h-5 w-5" style={{ color: SAND }} />
+            ) : (
+              <PictureInPicture2 className="h-5 w-5" />
+            )
+          }
+          aus={<PictureInPicture2 className="h-5 w-5" />}
+          disabled={busy}
+          onClick={onFenster}
         />
       )}
 
