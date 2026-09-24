@@ -34,6 +34,7 @@ import {
   useConnectionState,
   useRoomContext,
   useLocalParticipant,
+  useRemoteParticipants,
 } from "@livekit/components-react"
 import { Steuerleiste } from "./Steuerleiste"
 import { ConnectionState, Track, RoomEvent, VideoPresets } from "livekit-client"
@@ -325,6 +326,12 @@ function Buehne({
   const [aufbau, setAufbau] = useState<"seitlich" | "frontal" | null>(null)
   const zustand = useConnectionState()
   const raum = useRoomContext()
+  /**
+   * Ist ueberhaupt jemand da, der etwas sehen koennte? Das war bisher nur am
+   * Videobild zu erraten — und wer in einen leeren Raum wirft, wartet
+   * vergeblich auf eine Reaktion, die nie kommen kann.
+   */
+  const andere = useRemoteParticipants()
   const spuren = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -387,8 +394,32 @@ function Buehne({
    */
   const [kanalFehler, setKanalFehler] = useState<string | null>(null)
 
+  /**
+   * DER FEHLER VOM 24.09.2026, IN EINEM SATZ: Ich habe gesendet, bevor die
+   * Verbindung stand — „PC manager is closed" —, und nie nachgeholt.
+   *
+   * Der Planentwurf geht schon beim Betreten des Raums hinaus, da verbindet
+   * LiveKit noch. Die Zusage wurde abgelehnt, die Nachricht war weg, und alles
+   * Spaetere lief ins Leere, weil der Patient den Anfang nie bekommen hatte.
+   *
+   * Deshalb zwei Regeln:
+   *
+   *   1. Es wird nur gesendet, wenn die Verbindung wirklich steht. Sonst wird
+   *      gemerkt, dass etwas aussteht.
+   *   2. Sobald sie steht — beim Verbinden, beim Wiederverbinden, wenn jemand
+   *      eintritt —, geht der GANZE Zustand erneut hinaus. Nicht die verpasste
+   *      Nachricht, sondern das, was jetzt gilt. Wer nachtraeglich eine
+   *      Warteschlange abspielt, zeigt dem Patienten ein Dokument, das laengst
+   *      weggenommen wurde.
+   */
+  const ausstehend = useRef(false)
+
   const senden = useCallback(
     (nachricht: Record<string, unknown>) => {
+      if (raum.state !== ConnectionState.Connected) {
+        ausstehend.current = true
+        return
+      }
       const daten = new TextEncoder().encode(JSON.stringify(nachricht))
       raum.localParticipant
         .publishData(daten, { reliable: true })
@@ -396,7 +427,18 @@ function Buehne({
         .catch((err: unknown) => {
           const text = err instanceof Error ? err.message : String(err)
           console.error("[sprechzimmer] Senden fehlgeschlagen:", err)
-          setKanalFehler(text)
+          // Ein einzelner Fehlschlag ist meistens ein Wackler. Erst wenn auch
+          // der zweite Versuch scheitert, soll es jemanden beunruhigen.
+          setTimeout(() => {
+            if (raum.state !== ConnectionState.Connected) {
+              ausstehend.current = true
+              return
+            }
+            raum.localParticipant
+              .publishData(daten, { reliable: true })
+              .then(() => setKanalFehler(null))
+              .catch(() => setKanalFehler(text))
+          }, 600)
         })
     },
     [raum]
@@ -469,6 +511,39 @@ function Buehne({
   }, [entwurf, planGesendet, callId, patientId, senden])
 
   /**
+   * Alles, was der Patient sehen soll, in einem Rutsch. Wird gebraucht, sobald
+   * die Verbindung steht, nach jedem Wiederverbinden und wenn jemand eintritt.
+   */
+  const standSenden = useCallback(() => {
+    if (!callId || !patientId) return
+    if (raum.state !== ConnectionState.Connected) return
+    ausstehend.current = false
+    senden({ art: "plan", entwurf, gesendet: planGesendet })
+    senden(gezeigt ? { art: "zeigen", wurf: gezeigt } : { art: "zeigen-ende" })
+    senden(handy ? { art: "handy", handy } : { art: "handy-ende" })
+    senden(aufbau ? { art: "aufbau", ansicht: aufbau } : { art: "aufbau-ende" })
+  }, [raum, senden, callId, patientId, entwurf, planGesendet, gezeigt, handy, aufbau])
+
+  /**
+   * Sobald die Verbindung steht, geht der Stand hinaus — auch der, der vorher
+   * nicht rausging. Ohne das bliebe ein Wurf fuer immer verloren, der eine
+   * Sekunde zu frueh kam.
+   */
+  useEffect(() => {
+    if (zustand !== ConnectionState.Connected) return
+    if (!ausstehend.current) return
+    standSenden()
+  }, [zustand, standSenden])
+
+  useEffect(() => {
+    const wieder = () => standSenden()
+    raum.on(RoomEvent.Reconnected, wieder)
+    return () => {
+      raum.off(RoomEvent.Reconnected, wieder)
+    }
+  }, [raum, standSenden])
+
+  /**
    * Wer neu dazukommt, hat nichts von dem mitbekommen, was vorher ueber den
    * Kanal ging — Nachrichten gehen nur an den, der gerade drin ist. Nach einem
    * Verbindungsabbruch saehe der Patient also ein leeres Bild, waehrend der
@@ -477,17 +552,14 @@ function Buehne({
    */
   useEffect(() => {
     if (!callId || !patientId) return
-    const eingetreten = () => {
-      senden({ art: "plan", entwurf, gesendet: planGesendet })
-      if (gezeigt) senden({ art: "zeigen", wurf: gezeigt })
-      if (handy) senden({ art: "handy", handy })
-      if (aufbau) senden({ art: "aufbau", ansicht: aufbau })
-    }
+    // Kurz warten: Wer gerade erst eingetreten ist, hat seinen Datenkanal
+    // noch nicht offen. Eine Nachricht in dieser Sekunde faellt ins Nichts.
+    const eingetreten = () => setTimeout(standSenden, 800)
     raum.on(RoomEvent.ParticipantConnected, eingetreten)
     return () => {
       raum.off(RoomEvent.ParticipantConnected, eingetreten)
     }
-  }, [raum, senden, entwurf, planGesendet, gezeigt, handy, aufbau, callId, patientId])
+  }, [raum, standSenden, callId, patientId])
 
   /**
    * Auflegen beendet auch das Zeigen. Sonst bliebe beim Patienten ein Befund
@@ -630,6 +702,7 @@ function Buehne({
             callId={callId!}
             patientId={patientId!}
             gegenueber={gegenueber}
+            gegenueberDa={andere.length > 0}
             offen={schubladeOffen}
             onSchliessen={() => setSchubladeOffen(false)}
             gezeigt={gezeigt}

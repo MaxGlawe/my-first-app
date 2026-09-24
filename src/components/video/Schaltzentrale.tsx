@@ -376,6 +376,7 @@ export function Schaltzentrale({
   callId,
   patientId,
   gegenueber,
+  gegenueberDa,
   offen,
   onSchliessen,
   gezeigt,
@@ -390,6 +391,8 @@ export function Schaltzentrale({
   callId: string
   patientId: string
   gegenueber: string
+  /** Sitzt er gerade im Raum? Sonst geht jeder Wurf ins Leere. */
+  gegenueberDa: boolean
   offen: boolean
   onSchliessen: () => void
   gezeigt: Wurf | null
@@ -448,6 +451,21 @@ export function Schaltzentrale({
         >
           <X className="h-4 w-4" />
         </button>
+      </div>
+
+      {/* Anwesenheit, klein und staendig sichtbar. Wer etwas zeigt, soll
+          nicht raten muessen, ob jemand hinschaut. */}
+      <div
+        className="flex items-center gap-2 px-3 py-1.5"
+        style={{ backgroundColor: gegenueberDa ? "#eef2ec" : "#f6f1e7" }}
+      >
+        <span
+          className="h-2 w-2 shrink-0 rounded-full"
+          style={{ backgroundColor: gegenueberDa ? GREEN : SAND }}
+        />
+        <span className="text-[11.5px]" style={{ color: gegenueberDa ? GREEN : INK }}>
+          {gegenueberDa ? `${gegenueber} ist im Raum` : `${gegenueber} ist noch nicht da`}
+        </span>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
