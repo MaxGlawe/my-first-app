@@ -2,7 +2,7 @@
 
 > **Der Raum ist heute eine Seite. Er muss ein Arbeitsplatz werden.**
 
-**Status:** In Progress — Phase 0 bis 4 gebaut am 24.09.2026; Phasen 0–3a im Echtbetrieb bestaetigt, Phase 4 noch ungetestet
+**Status:** In Review — Phase 0 bis 4 gebaut und am 24.09.2026 **vollstaendig im Echtbetrieb bestaetigt** (Akte, Zeigen, Notiz, geloestes Fenster, Plan mit Handy-Vorschau, Bewegungsbild)
 **Stand:** 24.09.2026
 **Baut auf:** PROJ-27 (Sprechzimmer, Dokumentenakte), PROJ-8/9/10 (Übungen, Pläne, Hausaufgaben), PROJ-26 (Programm-Abschluss im Call)
 
@@ -196,6 +196,23 @@ seit demselben Commit mit einem sprechenden Hinweis statt mit 500.
 | Reihenfolge | Phase 0 und 1 lösen das heutige Problem. 3 und 4 sind eigene Vorhaben |
 
 ---
+
+## 4a · Was der Echtbetrieb am 24.09.2026 gekostet hat
+
+Vier Fehler, die alle erst im Gebrauch sichtbar wurden — und alle dieselbe
+Bauart hatten: **etwas schlug fehl, ohne es zu sagen.**
+
+| Fehler | Ursache | Lehre |
+|---|---|---|
+| 502 auf dem Handy | Nginx `proxy_buffer_size` 4 KB, CSP + Supabase-Cookies passten nicht hinein | Erst `error.log` lesen, dann die App verdaechtigen |
+| „PC manager is closed" | Gesendet, bevor die Verbindung stand — und nie nachgeholt | Nur bei stehender Verbindung senden, danach den **ganzen Zustand** nachreichen |
+| Standbild schwarz | Abgezeichnet von einem Element, das niemand sieht — der Browser malt es nicht | Von der Kachel abzeichnen, die ohnehin laeuft |
+| Warnung „fast schwarz" blieb stumm | Helligkeit in der **Ecke** gemessen; bei Hochkant-Video sind das schwarze Balken | Proben gehoeren in die Mitte |
+
+Seitdem gilt im Raum: Jeder Fehlschlag wird sichtbar — roter Balken beim
+Sender, Klartext beim Empfaenger, und ein staendiger Anwesenheitspunkt
+(„Max ist im Raum"), damit niemand in einen leeren Raum wirft und auf eine
+Reaktion wartet, die nicht kommen kann.
 
 ## 5 · Offen
 
