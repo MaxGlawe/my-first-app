@@ -686,7 +686,6 @@ function Buehne({
         {/* Das Standbild-Werkzeug liegt ueber allem, weil darauf gearbeitet wird. */}
         {hatSchublade && bewegungsbild && (
           <Bewegungsbild
-            spur={gegenueberSpur}
             patientId={patientId!}
             gegenueber={gegenueber}
             onSchliessen={() => setBewegungsbild(false)}

@@ -54,7 +54,6 @@ import {
   MonitorSmartphone,
 } from "lucide-react"
 import type { Wurf } from "./Schaltzentrale"
-import type { Track } from "livekit-client"
 
 const INK = "#12160f"
 const GREEN = "#2C3E2D"
@@ -105,7 +104,6 @@ function neigungZurSenkrechten(a: Punkt, b: Punkt): number {
 }
 
 export function Bewegungsbild({
-  spur,
   patientId,
   gegenueber,
   onSchliessen,
@@ -113,7 +111,6 @@ export function Bewegungsbild({
   onAufbau,
   aufbauAn,
 }: {
-  spur: Track | undefined
   patientId: string
   gegenueber: string
   onSchliessen: () => void
@@ -156,99 +153,109 @@ export function Bewegungsbild({
   // die Aufnahme am Ende selbst nach, ob ueberhaupt Helligkeit im Bild ist.
   const [nimmtAuf, setNimmtAuf] = useState(true)
   const [schwarz, setSchwarz] = useState(false)
+  /** Zaehlt jede neue Aufnahme. Loest das Neuzeichnen aus, ohne dass die
+   *  Aufnahme die Zeichenfunktion kennen muss — sonst haetten beide einander
+   *  als Abhaengigkeit, und eine muesste vor der anderen stehen. */
+  const [aufnahmeStand, setAufnahmeStand] = useState(0)
 
+  /**
+   * DAS BILD KOMMT AUS DEM ELEMENT, DAS OHNEHIN LAEUFT.
+   *
+   * Mein erster Versuch haengte die Spur an ein eigenes, unsichtbares
+   * Videoelement. Das Ergebnis war zweimal schwarz — und der Grund ist
+   * einfacher, als die Theorie war: Ein Element, das niemand sieht, malt der
+   * Browser auch nicht zuverlaessig. Zwei Pixel gross und durchsichtig reicht
+   * ihm nicht als Grund, Bilder zu zeichnen.
+   *
+   * Das Videobild des Patienten laeuft aber bereits gross im Raum. Von dort
+   * wird abgezeichnet. Gelesen wird nur — das Element bleibt React's Element,
+   * es wird nicht verschoben und nicht veraendert.
+   *
+   * Erkannt wird es am Merkmal, das LiveKit an die Kachel schreibt:
+   * data-lk-local-participant="false". Das eigene Bild traegt "true" — und
+   * genau das haette man sonst abgezeichnet: sich selbst.
+   */
   const aufnehmen = useCallback(() => {
-    if (!spur) {
-      setFehler("Es kommt gerade kein Bild von deinem Gegenüber an.")
-      setNimmtAuf(false)
-      return
-    }
     setNimmtAuf(true)
     setFehler(null)
     setSchwarz(false)
 
-    const video = document.createElement("video")
-    video.muted = true
-    video.playsInline = true
-    video.autoplay = true
-    video.setAttribute("aria-hidden", "true")
-    video.style.cssText =
-      "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1"
-    document.body.appendChild(video)
-    spur.attach(video)
-
-    let fertig = false
-    const aufraeumen = () => {
-      try {
-        spur.detach(video)
-      } catch {
-        /* Spur schon weg. */
+    const fremdes = (): HTMLVideoElement | null => {
+      const kacheln = Array.from(
+        document.querySelectorAll<HTMLVideoElement>('[data-lk-local-participant="false"] video')
+      ).filter((v) => v.videoWidth > 0 && v.readyState >= 2)
+      if (kacheln.length > 0) {
+        // Das groesste: Bildschirmfreigabe und Kamera koennen beide da sein.
+        return kacheln.sort((a, b) => b.videoWidth * b.videoHeight - a.videoWidth * a.videoHeight)[0]
       }
-      video.remove()
+      // Notnagel: irgendein laufendes Video, das nicht die eigene Kachel ist.
+      return (
+        Array.from(document.querySelectorAll<HTMLVideoElement>("video")).find(
+          (v) =>
+            v.videoWidth > 0 &&
+            v.readyState >= 2 &&
+            !v.closest('[data-lk-local-participant="true"]')
+        ) ?? null
+      )
     }
 
-    const abzeichnen = () => {
-      if (fertig) return
-      fertig = true
+    const abzeichnen = (video: HTMLVideoElement) => {
       const breite = video.videoWidth
       const hoehe = video.videoHeight
-      if (!breite || !hoehe) {
-        setFehler("Von deinem Gegenüber kommt gerade kein Bild an.")
-        setNimmtAuf(false)
-        aufraeumen()
-        return
-      }
       const c = document.createElement("canvas")
       c.width = breite
       c.height = hoehe
       const ctx = c.getContext("2d")
-      ctx?.drawImage(video, 0, 0, breite, hoehe)
-
-      // Gegenprobe: Ist ueberhaupt Licht im Bild? Ein schwarzes Standbild
-      // sieht aus wie ein Fehler des Patienten und ist keiner.
-      if (ctx) {
-        const probe = ctx.getImageData(0, 0, Math.min(breite, 64), Math.min(hoehe, 64)).data
-        let summe = 0
-        for (let i = 0; i < probe.length; i += 4) summe += probe[i] + probe[i + 1] + probe[i + 2]
-        setSchwarz(summe / (probe.length / 4) < 12)
+      if (!ctx) {
+        setFehler("Das Standbild konnte nicht erzeugt werden.")
+        setNimmtAuf(false)
+        return
       }
+      ctx.drawImage(video, 0, 0, breite, hoehe)
+
+      // Gegenprobe aus der MITTE des Bildes. Die Ecken sind bei einem
+      // Hochkant-Video im Querformat schwarze Balken — wer dort misst, haelt
+      // jedes zweite Bild faelschlich fuer schwarz.
+      const kante = Math.max(8, Math.min(64, Math.floor(Math.min(breite, hoehe) / 4)))
+      const probe = ctx.getImageData(
+        Math.floor(breite / 2 - kante / 2),
+        Math.floor(hoehe / 2 - kante / 2),
+        kante,
+        kante
+      ).data
+      let summe = 0
+      for (let i = 0; i < probe.length; i += 4) summe += probe[i] + probe[i + 1] + probe[i + 2]
+      setSchwarz(summe / (probe.length / 4) < 12)
 
       const bild = new Image()
       bild.onload = () => {
         bildRef.current = bild
         setNimmtAuf(false)
-        neuZeichnen()
-        aufraeumen()
+        setAufnahmeStand((n) => n + 1)
       }
       bild.src = c.toDataURL("image/jpeg", 0.92)
     }
 
-    type MitFrameRueckruf = HTMLVideoElement & {
-      requestVideoFrameCallback?: (cb: () => void) => number
-    }
-    const v = video as MitFrameRueckruf
-
-    void video.play().catch(() => {
-      /* Autoplay-Sperre greift bei stummem Video nicht, aber sicher ist sicher. */
-    })
-
-    if (typeof v.requestVideoFrameCallback === "function") {
-      v.requestVideoFrameCallback(() => abzeichnen())
-    } else {
-      video.addEventListener("playing", () => setTimeout(abzeichnen, 120), { once: true })
-    }
-    // Notbremse: Kommt binnen drei Sekunden kein Frame, sagen wir es, statt
-    // ewig einen Kreisel zu drehen.
-    setTimeout(() => {
-      if (!fertig) {
-        fertig = true
-        setFehler("Es kam kein Bild an. Läuft die Kamera deines Gegenübers?")
-        setNimmtAuf(false)
-        aufraeumen()
+    // Bis zu zwei Sekunden auf ein laufendes Bild warten — etwa direkt nach
+    // dem Beitritt, wenn die erste Kachel noch aufbaut.
+    const beginn = Date.now()
+    const versuchen = () => {
+      const video = fremdes()
+      if (video) {
+        abzeichnen(video)
+        return
       }
-    }, 3000)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spur])
+      if (Date.now() - beginn > 2000) {
+        setFehler(
+          "Von deinem Gegenüber kommt gerade kein Bild an. Ist seine Kamera an und ist er im Raum?"
+        )
+        setNimmtAuf(false)
+        return
+      }
+      setTimeout(versuchen, 150)
+    }
+    versuchen()
+  }, [])
 
   useEffect(() => {
     aufnehmen()
@@ -288,7 +295,7 @@ export function Bewegungsbild({
       })
       setFormen([])
       setOffen([])
-      neuZeichnen()
+      setAufnahmeStand((n) => n + 1)
     } catch (e) {
       setFehler((e as Error).message)
     } finally {
@@ -345,7 +352,7 @@ export function Bewegungsbild({
 
   useEffect(() => {
     neuZeichnen()
-  }, [neuZeichnen])
+  }, [neuZeichnen, aufnahmeStand])
 
   function beschriften(
     ctx: CanvasRenderingContext2D,
