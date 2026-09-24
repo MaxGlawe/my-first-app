@@ -139,54 +139,121 @@ export function Bewegungsbild({
 
   // ── Standbild ziehen ────────────────────────────────────────────────────
   //
-  // Das Bild des Gegenuebers wird an ein eigenes, unsichtbares Videoelement
-  // gehaengt und daraus abgezeichnet. Das Element aus der Buehne anzuzapfen
-  // waere kuerzer und falsch: Es gehoert React, und wer daran zieht, streitet
-  // beim naechsten Rendern um denselben Knoten.
-  useEffect(() => {
+  // Zwei Fallen stecken hier, und ich bin in beide getreten:
+  //
+  //   1. EIN VIDEOELEMENT, DAS NICHT IM DOKUMENT HAENGT, WIRD OFT NICHT
+  //      GEMALT. Der Browser dekodiert dann zwar, rendert aber nicht — und
+  //      drawImage liefert Schwarz. Deshalb haengt das Element jetzt im
+  //      Dokument, nur winzig und durchsichtig. Nicht `display:none`: Das
+  //      stellt das Rendern genauso ein.
+  //
+  //   2. `videoWidth` IST GESETZT, BEVOR EIN BILD DA IST. Wer darauf wartet,
+  //      zeichnet zu frueh — wieder Schwarz. Richtig ist, auf einen echten
+  //      Frame zu warten: requestVideoFrameCallback, wo es das gibt, sonst
+  //      das `playing`-Ereignis plus zwei Bildlaengen Vorsprung.
+  //
+  // Beide Fehler sehen gleich aus: ein schwarzes Standbild. Deshalb prueft
+  // die Aufnahme am Ende selbst nach, ob ueberhaupt Helligkeit im Bild ist.
+  const [nimmtAuf, setNimmtAuf] = useState(true)
+  const [schwarz, setSchwarz] = useState(false)
+
+  const aufnehmen = useCallback(() => {
     if (!spur) {
       setFehler("Es kommt gerade kein Bild von deinem Gegenüber an.")
+      setNimmtAuf(false)
       return
     }
+    setNimmtAuf(true)
+    setFehler(null)
+    setSchwarz(false)
+
     const video = document.createElement("video")
     video.muted = true
     video.playsInline = true
     video.autoplay = true
+    video.setAttribute("aria-hidden", "true")
+    video.style.cssText =
+      "position:fixed;left:0;top:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1"
+    document.body.appendChild(video)
     spur.attach(video)
 
-    let abgebrochen = false
-    const zeichnen = () => {
-      if (abgebrochen) return
-      const breite = video.videoWidth
-      const hoehe = video.videoHeight
-      if (!breite || !hoehe) {
-        setTimeout(zeichnen, 120)
-        return
-      }
-      const c = document.createElement("canvas")
-      c.width = breite
-      c.height = hoehe
-      c.getContext("2d")?.drawImage(video, 0, 0, breite, hoehe)
-      const bild = new Image()
-      bild.onload = () => {
-        if (abgebrochen) return
-        bildRef.current = bild
-        neuZeichnen()
-      }
-      bild.src = c.toDataURL("image/jpeg", 0.92)
-    }
-    void video.play().then(zeichnen).catch(zeichnen)
-
-    return () => {
-      abgebrochen = true
+    let fertig = false
+    const aufraeumen = () => {
       try {
         spur.detach(video)
       } catch {
         /* Spur schon weg. */
       }
+      video.remove()
     }
+
+    const abzeichnen = () => {
+      if (fertig) return
+      fertig = true
+      const breite = video.videoWidth
+      const hoehe = video.videoHeight
+      if (!breite || !hoehe) {
+        setFehler("Von deinem Gegenüber kommt gerade kein Bild an.")
+        setNimmtAuf(false)
+        aufraeumen()
+        return
+      }
+      const c = document.createElement("canvas")
+      c.width = breite
+      c.height = hoehe
+      const ctx = c.getContext("2d")
+      ctx?.drawImage(video, 0, 0, breite, hoehe)
+
+      // Gegenprobe: Ist ueberhaupt Licht im Bild? Ein schwarzes Standbild
+      // sieht aus wie ein Fehler des Patienten und ist keiner.
+      if (ctx) {
+        const probe = ctx.getImageData(0, 0, Math.min(breite, 64), Math.min(hoehe, 64)).data
+        let summe = 0
+        for (let i = 0; i < probe.length; i += 4) summe += probe[i] + probe[i + 1] + probe[i + 2]
+        setSchwarz(summe / (probe.length / 4) < 12)
+      }
+
+      const bild = new Image()
+      bild.onload = () => {
+        bildRef.current = bild
+        setNimmtAuf(false)
+        neuZeichnen()
+        aufraeumen()
+      }
+      bild.src = c.toDataURL("image/jpeg", 0.92)
+    }
+
+    type MitFrameRueckruf = HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number
+    }
+    const v = video as MitFrameRueckruf
+
+    void video.play().catch(() => {
+      /* Autoplay-Sperre greift bei stummem Video nicht, aber sicher ist sicher. */
+    })
+
+    if (typeof v.requestVideoFrameCallback === "function") {
+      v.requestVideoFrameCallback(() => abzeichnen())
+    } else {
+      video.addEventListener("playing", () => setTimeout(abzeichnen, 120), { once: true })
+    }
+    // Notbremse: Kommt binnen drei Sekunden kein Frame, sagen wir es, statt
+    // ewig einen Kreisel zu drehen.
+    setTimeout(() => {
+      if (!fertig) {
+        fertig = true
+        setFehler("Es kam kein Bild an. Läuft die Kamera deines Gegenübers?")
+        setNimmtAuf(false)
+        aufraeumen()
+      }
+    }, 3000)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spur])
+
+  useEffect(() => {
+    aufnehmen()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Frühere Aufnahmen für den Vergleich ─────────────────────────────────
   useEffect(() => {
@@ -444,7 +511,7 @@ export function Bewegungsbild({
 
       {/* Bild */}
       <div className="min-h-0 flex-1 overflow-auto p-3">
-        {bildRef.current ? (
+        {bildRef.current && !nimmtAuf ? (
           <canvas
             ref={canvasRef}
             onClick={klick}
@@ -490,6 +557,22 @@ export function Bewegungsbild({
               {text}
             </button>
           ))}
+
+          <button
+            type="button"
+            onClick={() => {
+              setFormen([])
+              setOffen([])
+              setGespeichert(false)
+              aufnehmen()
+            }}
+            disabled={nimmtAuf}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold disabled:opacity-35"
+            style={{ backgroundColor: "rgba(248,245,240,0.1)", color: "#F8F5F0" }}
+          >
+            {nimmtAuf ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            Neu aufnehmen
+          </button>
 
           <button
             type="button"
@@ -554,6 +637,16 @@ export function Bewegungsbild({
 
         {fehler && bildRef.current && (
           <p className="mt-2 text-[12px] text-red-300">{fehler}</p>
+        )}
+
+        {/* Ein schwarzes Standbild sieht aus wie ein Fehler des Patienten und
+            ist keiner — meistens hatte die Kamera schlicht noch kein Bild
+            geliefert. */}
+        {schwarz && (
+          <p className="mt-2 flex items-center gap-1.5 text-[12px]" style={{ color: SAND }}>
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            Das Standbild ist fast schwarz. Läuft seine Kamera? Sonst einfach „Neu aufnehmen".
+          </p>
         )}
         <p className="mt-2 text-[11px] leading-relaxed" style={{ color: "rgba(248,245,240,0.55)" }}>
           Winkel in der Bildebene. Keine Kraft-, Gewichts- oder Längenmessung — und Rotationen
