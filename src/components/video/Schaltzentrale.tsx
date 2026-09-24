@@ -472,9 +472,34 @@ export function Schaltzentrale({
           className="h-2 w-2 shrink-0 rounded-full"
           style={{ backgroundColor: gegenueberDa ? GREEN : SAND }}
         />
-        <span className="text-[11.5px]" style={{ color: gegenueberDa ? GREEN : INK }}>
+        <span className="truncate text-[11.5px]" style={{ color: gegenueberDa ? GREEN : INK }}>
           {gegenueberDa ? `${gegenueber} ist im Raum` : `${gegenueber} ist noch nicht da`}
         </span>
+
+        {/*
+          WAS LAEUFT, MUSS MAN IMMER ABSCHALTEN KOENNEN. Der Knopf stand
+          bisher unter der Vorschau — und die waechst beim Blaettern, bis sie
+          ihn aus dem Bild schiebt. Am 24.09.2026 in einer echten Konsultation
+          passiert: Die Vorschau lief auf dem Handy der Patientin weiter, und
+          der Weg, sie zu beenden, war weggerutscht.
+
+          Deshalb liegt der Ausschalter jetzt in der Zeile, die sich nie
+          bewegt, und ist nur da, wenn tatsaechlich etwas laeuft.
+        */}
+        {(handy || gezeigt) && (
+          <button
+            type="button"
+            onClick={() => {
+              if (handy) onHandy(null)
+              if (gezeigt) onZeigenBeenden()
+            }}
+            className="ml-auto flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold text-white"
+            style={{ backgroundColor: "#8c3a2b" }}
+          >
+            <EyeOff className="h-3.5 w-3.5" />
+            Anzeige beenden
+          </button>
+        )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">

@@ -394,7 +394,10 @@ export function PlanImGespraech({
       </div>
 
       {entwurf.length > 0 && (
-        <div className="border-t p-3" style={{ borderColor: LINE }}>
+        <div
+          className="max-h-[60%] shrink-0 overflow-auto border-t p-3"
+          style={{ borderColor: LINE }}
+        >
           <div className="flex items-center gap-2 text-[12px]" style={{ color: INK }}>
             <span>Für</span>
             <select
@@ -441,6 +444,22 @@ export function PlanImGespraech({
             Handy, auf dem "Heute trainieren, ca. 12 Minuten" steht, ist ein
             Versprechen, das man anfassen kann.
           */}
+          <button
+            type="button"
+            onClick={() =>
+              handy ? onHandy(null) : onHandy({ uebungen: entwurf, tage, wochen, aktiv })
+            }
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold"
+            style={
+              handy
+                ? { backgroundColor: GREEN, color: "#fff" }
+                : { backgroundColor: "#fff", color: GREEN, border: `1px solid ${GREEN}` }
+            }
+          >
+            <Smartphone className="h-4 w-4" />
+            {handy ? "Vorschau beenden" : "Auf seinem Handy zeigen"}
+          </button>
+
           {/* Was er gerade sieht, sieht der Behandler auch - verkleinert.
               Ohne Gegenkontrolle zeigt man irgendwann etwas, von dem man
               glaubt, es sei etwas anderes. */}
@@ -486,21 +505,6 @@ export function PlanImGespraech({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() =>
-              handy ? onHandy(null) : onHandy({ uebungen: entwurf, tage, wochen, aktiv })
-            }
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold"
-            style={
-              handy
-                ? { backgroundColor: GREEN, color: "#fff" }
-                : { backgroundColor: "#fff", color: GREEN, border: `1px solid ${GREEN}` }
-            }
-          >
-            <Smartphone className="h-4 w-4" />
-            {handy ? "Vorschau beenden" : "Auf seinem Handy zeigen"}
-          </button>
 
           <button
             type="button"
