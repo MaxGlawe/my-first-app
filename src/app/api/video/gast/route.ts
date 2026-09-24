@@ -151,12 +151,13 @@ export async function POST(request: NextRequest) {
     gueltigBis: new Date(schliesst),
   })
 
-  if (call.status === "offen") {
+  // Auch aus `geplant` heraus — siehe zutrittOffen in lib/video/termin.ts.
+  if (call.status === "geplant" || call.status === "offen") {
     await svc
       .from("video_calls")
       .update({ status: "laeuft", begonnen_at: new Date().toISOString() })
       .eq("id", call.id)
-      .eq("status", "offen")
+      .in("status", ["geplant", "offen"])
   }
 
   return NextResponse.json({

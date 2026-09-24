@@ -71,12 +71,16 @@ export async function POST(request: NextRequest) {
 
       // Raum zu Ende → Gespräch abschliessen. Nur, wenn es noch offen steht:
       // Ein bereits vom Behandler beendetes Gespräch behält seinen Zeitstempel.
-      if (event === "room_finished" && data && (data.status === "offen" || data.status === "laeuft")) {
+      //
+      // `geplant` gehört dazu: Bricht die Verbindung, bevor der Beitritt den
+      // Status weiterschalten konnte, waere das Gespraech sonst nie zu Ende.
+      const OFFENE = ["geplant", "offen", "laeuft"]
+      if (event === "room_finished" && data && OFFENE.includes(data.status)) {
         await svc
           .from("video_calls")
           .update({ status: "beendet", beendet_at: new Date().toISOString() })
           .eq("id", data.id)
-          .in("status", ["offen", "laeuft"])
+          .in("status", OFFENE)
       }
     }
 

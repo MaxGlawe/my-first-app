@@ -144,12 +144,16 @@ export async function POST(request: NextRequest) {
   // schreiben die Anbieter-Webhooks — hier geht es nur darum, dass die
   // Oberfläche den Zustand sofort richtig zeigt, ohne auf den Webhook zu
   // warten.
-  if (call.status === "offen") {
+  //
+  // Auch aus `geplant` heraus: Ein Termin bleibt geplant, bis jemand kommt.
+  // Vorher wurde nur `offen` befördert — und weil nichts je auf `offen`
+  // schaltete, blieb jedes Gespraech für immer geplant (siehe zutrittOffen).
+  if (call.status === "geplant" || call.status === "offen") {
     await svc
       .from("video_calls")
       .update({ status: "laeuft", begonnen_at: new Date().toISOString() })
       .eq("id", call.id)
-      .eq("status", "offen")
+      .in("status", ["geplant", "offen"])
   }
 
   return NextResponse.json({

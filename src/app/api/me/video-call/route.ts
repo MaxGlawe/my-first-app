@@ -13,6 +13,7 @@ import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
+import { ABGESCHLOSSEN_FILTER } from "@/lib/video/termin"
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -35,12 +36,18 @@ export async function GET() {
     return NextResponse.json({ aktiv: null, eingerichtet: videoEingerichtet() })
   }
 
+  // Gefragt wird nach dem ZEITFENSTER, nicht nach dem Status: Ein Termin
+  // steht auf `geplant`, bis jemand beitritt. Diese Abfrage suchte frueher
+  // nach `offen`/`laeuft` — und fand deshalb nie etwas. Ein Patient MIT Konto
+  // sah seinen Call in der App also nie, waehrend der Gast-Link funktionierte.
+  const jetzt = new Date().toISOString()
   const { data: call } = await svc
     .from("video_calls")
     .select("id, anlass, status, oeffnet_at, schliesst_at, therapist_id")
     .eq("patient_id", patient.id)
-    .in("status", ["offen", "laeuft"])
-    .gt("schliesst_at", new Date().toISOString())
+    .not("status", "in", ABGESCHLOSSEN_FILTER)
+    .lte("oeffnet_at", jetzt)
+    .gt("schliesst_at", jetzt)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()

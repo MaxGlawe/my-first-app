@@ -20,7 +20,7 @@ import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
 import QRCode from "qrcode"
 import { sendEmail } from "@/lib/email"
 import { sprechzimmerEinladung } from "@/lib/email-templates/sprechzimmer-einladung"
-import { oeffnetAm, schliesstAm, kalendereintrag } from "@/lib/video/termin"
+import { oeffnetAm, schliesstAm, kalendereintrag, zutrittOffen } from "@/lib/video/termin"
 
 const STAFF_ROLES = ["admin", "heilpraktiker", "physiotherapeut"]
 
@@ -129,16 +129,10 @@ export async function GET(request: NextRequest) {
   }
 
   const calls = data ?? []
-  const jetzt = Date.now()
 
-  // „Aktiv" heisst: noch im Zutrittsfenster und nicht abgeschlossen. Genau
-  // dieses Gespräch bekommt der Patient angeboten.
-  const aktiv =
-    calls.find(
-      (c) =>
-        (c.status === "offen" || c.status === "laeuft") &&
-        new Date(c.schliesst_at).getTime() > jetzt
-    ) ?? null
+  // „Aktiv" heisst: im Zutrittsfenster und nicht abgeschlossen — eine Frage
+  // der Uhrzeit, nicht des Status (siehe zutrittOffen).
+  const aktiv = calls.find((c) => zutrittOffen(c)) ?? null
 
   // Der Gast-Link ist der verlässliche Weg zum Patienten. Push funktioniert
   // nur bei installierter App und erteilter Erlaubnis — im Praxistest am

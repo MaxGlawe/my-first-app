@@ -44,6 +44,44 @@ export function schliesstAm(geplant: Date | string, dauerMinuten: number): Date 
   )
 }
 
+/**
+ * Zustände, aus denen kein Zutritt mehr wird. Alles andere ist eine Frage der
+ * Uhrzeit, nicht des Status.
+ */
+export const ABGESCHLOSSEN: readonly string[] = ["beendet", "abgebrochen", "abgesagt"]
+
+/** Dieselbe Liste in der Schreibweise, die PostgREST für `not.in` erwartet. */
+export const ABGESCHLOSSEN_FILTER = "(beendet,abgebrochen,abgesagt)"
+
+/**
+ * Steht der Zutritt offen?
+ *
+ * DIE ZEIT ENTSCHEIDET, NICHT DER STATUS. Das klingt nach einer Feinheit und
+ * war am 24.09.2026 ein stiller Totalausfall:
+ *
+ * Aus dem alten Ad-hoc-Modell kamen Gespräche direkt als `offen` auf die Welt.
+ * Seit sie Termine sind, beginnen sie als `geplant` — und niemand schaltete
+ * sie je weiter. Beitritt, Patienten-App und der LiveKit-Haken fragten alle
+ * nach `offen`, und bekamen es nie zu sehen. Das erste echte Gespräch lief
+ * trotzdem, weil ausgerechnet der Gast-Link sich seinen Zustand aus der
+ * Uhrzeit ausrechnete — der Weg für Leute OHNE Konto funktionierte, der für
+ * Leute MIT Konto nicht.
+ *
+ * Seitdem gilt: Ob der Zugang offen ist, sagt das Zeitfenster. Der Status hält
+ * nur fest, was die Uhr nicht wissen kann — dass jemand drin ist (`laeuft`),
+ * dass es vorbei ist (`beendet`), dass abgesagt wurde.
+ */
+export function zutrittOffen(
+  call: { status: string; oeffnet_at: string; schliesst_at: string },
+  jetzt: Date = new Date()
+): boolean {
+  if (ABGESCHLOSSEN.includes(call.status)) return false
+  const t = jetzt.getTime()
+  return (
+    t >= new Date(call.oeffnet_at).getTime() && t <= new Date(call.schliesst_at).getTime()
+  )
+}
+
 export type TerminZustand = "vorbei" | "laeuft" | "offen" | "wartet"
 
 export function zustand(
