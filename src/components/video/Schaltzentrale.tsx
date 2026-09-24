@@ -301,12 +301,17 @@ function Notiz({ callId }: { callId: string }) {
   const [geladen, setGeladen] = useState(false)
   const [stand, setStand] = useState<"ruht" | "speichert" | "gesichert" | "fehler">("ruht")
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Was beim Oeffnen schon dastand — Massstab dafuer, ob sich etwas aenderte. */
+  const geladenerText = useRef("")
 
   useEffect(() => {
     fetch(`/api/os/video-calls/${callId}`)
       .then((r) => r.json())
       .then((d) => {
-        if (typeof d.notiz === "string") setText(d.notiz)
+        if (typeof d.notiz === "string") {
+          setText(d.notiz)
+          geladenerText.current = d.notiz
+        }
       })
       .catch(() => {})
       .finally(() => setGeladen(true))
@@ -322,6 +327,7 @@ function Notiz({ callId }: { callId: string }) {
           body: JSON.stringify({ id: callId, aktion: "notiz", notiz: wert }),
         })
         setStand(r.ok ? "gesichert" : "fehler")
+        if (r.ok) geladenerText.current = wert
       } catch {
         setStand("fehler")
       }
@@ -349,7 +355,10 @@ function Notiz({ callId }: { callId: string }) {
         onChange={(e) => tippen(e.target.value)}
         onBlur={() => {
           if (timer.current) clearTimeout(timer.current)
-          if (geladen) void sichern(text)
+          // Nur sichern, wenn sich wirklich etwas geaendert hat. Wer nur ins
+          // Feld tippt und wieder herausklickt, soll keinen leeren Text ueber
+          // eine bestehende Notiz schreiben.
+          if (geladen && text !== geladenerText.current) void sichern(text)
         }}
         placeholder="Was im Gespräch auffällt: Beobachtungen, Absprachen, was als Nächstes ansteht."
         className="flex-1 resize-none rounded-xl border p-3 text-[13.5px] leading-relaxed outline-none focus:ring-2"

@@ -489,14 +489,26 @@ export async function PATCH(request: NextRequest) {
   }
 
   // ── Beenden ──────────────────────────────────────────────────
+  //
+  // DIE NOTIZ WIRD NUR ANGEFASST, WENN EINE MITKOMMT. Vorher stand hier
+  // `notiz: notiz ?? null` — und der neue Knopf "Beenden" in der Uebersicht
+  // schickt keine. Damit loeschte das Beenden genau den Text, den der
+  // Behandler waehrend des Gespraechs getippt hatte. Am 24.09.2026 im
+  // Protokoll gesehen: notiz "" -> null im selben Moment wie status ->
+  // beendet.
+  //
+  // Eine Behandlungsnotiz ist Dokumentation. Sie verschwindet nicht als
+  // Nebenwirkung eines Knopfes, der etwas anderes tun soll.
+  const aenderung: Record<string, unknown> = {
+    status: "beendet",
+    beendet_at: new Date().toISOString(),
+    schliesst_at: new Date().toISOString(),
+  }
+  if (typeof notiz === "string") aenderung.notiz = notiz.trim() || null
+
   const { data: beendet, error } = await auth.svc
     .from("video_calls")
-    .update({
-      status: "beendet",
-      beendet_at: new Date().toISOString(),
-      notiz: notiz ?? null,
-      schliesst_at: new Date().toISOString(),
-    })
+    .update(aenderung)
     .eq("id", id)
     .in("status", ["geplant", "offen", "laeuft"])
     .select("id, room_name, status, beendet_at")
