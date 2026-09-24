@@ -15,8 +15,20 @@
  */
 
 import { useEffect, useState } from "react"
-import { Loader2, Check, Search, Plus, Send, Dumbbell, Eye, EyeOff, X } from "lucide-react"
+import {
+  Loader2,
+  Check,
+  Search,
+  Plus,
+  Send,
+  Dumbbell,
+  Eye,
+  EyeOff,
+  X,
+  Smartphone,
+} from "lucide-react"
 import type { Wurf } from "./Schaltzentrale"
+import { HandyVorschau } from "./HandyVorschau"
 
 const INK = "#12160f"
 const GREEN = "#2C3E2D"
@@ -75,6 +87,8 @@ export function PlanImGespraech({
   entwurf,
   setEntwurf,
   onGesendet,
+  handy,
+  onHandy,
   gezeigt,
   onZeigen,
   onZeigenBeenden,
@@ -85,6 +99,10 @@ export function PlanImGespraech({
   setEntwurf: (u: EntwurfsUebung[]) => void
   /** Damit der Patient den Vermerk "liegt in deiner App" mitbekommt. */
   onGesendet: () => void
+  /** Laeuft die Handy-Vorschau beim Patienten gerade? */
+  handy: boolean
+  /** null beendet die Vorschau. */
+  onHandy: (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => void
   gezeigt: Wurf | null
   onZeigen: (w: Wurf) => void
   onZeigenBeenden: () => void
@@ -135,6 +153,17 @@ export function PlanImGespraech({
     ])
     setGesendet(false)
   }
+
+  /**
+   * Laeuft die Vorschau, waechst sie mit: Legt der Behandler waehrenddessen
+   * eine Uebung dazu, erscheint sie auf dem Handy des Patienten, ohne dass
+   * jemand einen Knopf drueckt. Sonst zeigte die Vorschau einen Stand, den es
+   * nicht mehr gibt.
+   */
+  useEffect(() => {
+    if (handy) onHandy({ uebungen: entwurf, tage, wochen })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entwurf, tage, wochen])
 
   const senden = async () => {
     setSendet(true)
@@ -395,6 +424,41 @@ export function PlanImGespraech({
           </div>
 
           {fehler && <p className="mt-2 text-[12px] leading-relaxed text-red-700">{fehler}</p>}
+
+          {/*
+            Zuerst zeigen, dann senden - in dieser Reihenfolge stehen die
+            Knoepfe auch. Eine Liste mit vier Namen ist eine Ankuendigung; ein
+            Handy, auf dem "Heute trainieren, ca. 12 Minuten" steht, ist ein
+            Versprechen, das man anfassen kann.
+          */}
+          {/* Was er gerade sieht, sieht der Behandler auch - verkleinert.
+              Ohne Gegenkontrolle zeigt man irgendwann etwas, von dem man
+              glaubt, es sei etwas anderes. */}
+          {handy && (
+            <div className="mt-3 rounded-xl p-3" style={{ backgroundColor: "#eef2ec" }}>
+              <p className="mb-2 text-center text-[10.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: GREEN }}>
+                Das sieht {gegenueber} gerade
+              </p>
+              <HandyVorschau
+                daten={{ uebungen: entwurf, tage, wochen, gesendet }}
+                klein
+              />
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => (handy ? onHandy(null) : onHandy({ uebungen: entwurf, tage, wochen }))}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-[13.5px] font-semibold"
+            style={
+              handy
+                ? { backgroundColor: GREEN, color: "#fff" }
+                : { backgroundColor: "#fff", color: GREEN, border: `1px solid ${GREEN}` }
+            }
+          >
+            <Smartphone className="h-4 w-4" />
+            {handy ? "Vorschau beenden" : "Auf seinem Handy zeigen"}
+          </button>
 
           <button
             type="button"

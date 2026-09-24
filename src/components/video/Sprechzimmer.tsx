@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzentrale"
 import { EntwurfStreifen, type EntwurfsUebung } from "@/components/video/PlanImGespraech"
+import { HandyGezeigt, type HandyDaten } from "@/components/video/HandyVorschau"
 import { useSchwebefenster } from "@/components/video/Schwebefenster"
 import {
   LiveKitRoom,
@@ -316,6 +317,8 @@ function Buehne({
   /** Der Planentwurf — beim Behandler die Quelle, beim Patienten das Echo. */
   const [entwurf, setEntwurf] = useState<EntwurfsUebung[]>([])
   const [planGesendet, setPlanGesendet] = useState(false)
+  /** „So sieht es bei dir aus" — beim Behandler der Schalter, beim Patienten das Bild. */
+  const [handy, setHandy] = useState<HandyDaten | null>(null)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   const spuren = useTracks(
@@ -350,13 +353,15 @@ function Buehne({
           wurf?: Wurf
           entwurf?: EntwurfsUebung[]
           gesendet?: boolean
+          handy?: HandyDaten | null
         }
         if (nachricht.art === "zeigen" && nachricht.wurf) setEmpfangen(nachricht.wurf)
         else if (nachricht.art === "zeigen-ende") setEmpfangen(null)
         else if (nachricht.art === "plan") {
           setEntwurf(nachricht.entwurf ?? [])
           setPlanGesendet(Boolean(nachricht.gesendet))
-        }
+        } else if (nachricht.art === "handy") setHandy(nachricht.handy ?? null)
+        else if (nachricht.art === "handy-ende") setHandy(null)
       } catch {
         /* Nicht unsere Nachricht. */
       }
@@ -401,9 +406,31 @@ function Buehne({
     setPlanGesendet(false)
   }, [])
 
+  const handyZeigen = useCallback(
+    (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => {
+      if (!daten) {
+        setHandy(null)
+        senden({ art: "handy-ende" })
+        return
+      }
+      const voll: HandyDaten = { ...daten, gesendet: planGesendet }
+      setHandy(voll)
+      senden({ art: "handy", handy: voll })
+    },
+    [senden, planGesendet]
+  )
+
   useEffect(() => {
     if (!callId || !patientId) return
     senden({ art: "plan", entwurf, gesendet: planGesendet })
+    // Laeuft die Handy-Vorschau, traegt sie den Vermerk "liegt in deiner App"
+    // sofort mit - das ist der Moment, auf den der Patient wartet.
+    if (handy) {
+      const voll: HandyDaten = { ...handy, uebungen: entwurf, gesendet: planGesendet }
+      setHandy(voll)
+      senden({ art: "handy", handy: voll })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entwurf, planGesendet, callId, patientId, senden])
 
   /**
@@ -418,12 +445,13 @@ function Buehne({
     const eingetreten = () => {
       senden({ art: "plan", entwurf, gesendet: planGesendet })
       if (gezeigt) senden({ art: "zeigen", wurf: gezeigt })
+      if (handy) senden({ art: "handy", handy })
     }
     raum.on(RoomEvent.ParticipantConnected, eingetreten)
     return () => {
       raum.off(RoomEvent.ParticipantConnected, eingetreten)
     }
-  }, [raum, senden, entwurf, planGesendet, gezeigt, callId, patientId])
+  }, [raum, senden, entwurf, planGesendet, gezeigt, handy, callId, patientId])
 
   /**
    * Auflegen beendet auch das Zeigen. Sonst bliebe beim Patienten ein Befund
@@ -525,6 +553,10 @@ function Buehne({
 
         {/* Was mir gezeigt wird — formatfuellend, mit Absender. */}
         {empfangen && <Gezeigt wurf={empfangen} gegenueber={gegenueber} />}
+
+        {/* „So sieht es bei dir aus." Nur beim Patienten: Der Behandler hat
+            die Vorschau in seiner Schublade. */}
+        {!hatSchublade && handy && <HandyGezeigt daten={handy} gegenueber={gegenueber} />}
       </div>
 
         {hatSchublade && (
@@ -540,6 +572,8 @@ function Buehne({
             entwurf={entwurf}
             setEntwurf={entwurfSetzen}
             onGesendet={() => setPlanGesendet(true)}
+            handy={Boolean(handy)}
+            onHandy={handyZeigen}
           />
         )}
       </div>

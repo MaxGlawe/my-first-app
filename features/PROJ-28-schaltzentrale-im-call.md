@@ -2,7 +2,7 @@
 
 > **Der Raum ist heute eine Seite. Er muss ein Arbeitsplatz werden.**
 
-**Status:** In Progress — Phase 0 bis 3 gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 4 offen
+**Status:** In Progress — Phase 0 bis 3a gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 4 offen
 **Stand:** 24.09.2026
 **Baut auf:** PROJ-27 (Sprechzimmer, Dokumentenakte), PROJ-8/9/10 (Übungen, Pläne, Hausaufgaben), PROJ-26 (Programm-Abschluss im Call)
 
@@ -124,6 +124,28 @@ den er von allen anderen Hausaufgaben kennt.
 Zeitraum (Wochen ab heute) und Trainingstage stehen im Fuss der Schublade;
 Voreinstellung vier Wochen, Mo/Mi/Fr. Sätze und Wiederholungen kommen aus den
 Standardwerten der Übung und sind im Entwurf überschreibbar.
+
+### Phase 3a — „So sieht es bei dir aus" ✓
+
+Der Plan landet in der App — aber der Patient sieht davon im Gespräch nichts
+außer vier Namen. Deshalb eine **Handy-Vorschau**, die der Behandler ihm auf
+den Schirm wirft: das Telefon mit der Karte „Heute trainieren — 4 Übungen, ca.
+12 Minuten", den Übungen darunter, den Trainingstagen.
+
+Eine Liste mit vier Namen ist eine Ankündigung. Ein Handy, auf dem das Training
+steht, ist ein Versprechen, das man anfassen kann — der Patient muss sich nicht
+vorstellen, was er bekommt, er sieht es, **bevor** er zustimmt.
+
+Die Vorschau ist der Karte aus `components/app/HeuteKarte.tsx` nachgebaut:
+dieselbe Farbe, dieselbe Aufteilung, dieselbe Rechnung für die Dauer. Eine
+hübschere Vorschau als die Wirklichkeit wäre ein Versprechen, das die App am
+nächsten Morgen bricht.
+
+Sie wächst mit: Kommt eine Übung dazu, erscheint sie sofort auf seinem Handy.
+Wird der Plan gesendet, wechselt die Zeile darunter auf „Das liegt jetzt in
+deiner App". Der Behandler sieht dieselbe Vorschau verkleinert in seiner
+Schublade — ohne Gegenkontrolle zeigt man irgendwann etwas, von dem man glaubt,
+es sei etwas anderes.
 
 ### Phase 4 — Bewegung festhalten *(das eigentlich Physiotherapeutische)*
 

@@ -383,6 +383,8 @@ export function Schaltzentrale({
   entwurf,
   setEntwurf,
   onGesendet,
+  handy,
+  onHandy,
 }: {
   callId: string
   patientId: string
@@ -396,6 +398,8 @@ export function Schaltzentrale({
   entwurf: EntwurfsUebung[]
   setEntwurf: (u: EntwurfsUebung[]) => void
   onGesendet: () => void
+  handy: boolean
+  onHandy: (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => void
 }) {
   const [reiter, setReiter] = useState<"akte" | "plan" | "notiz">("akte")
 
@@ -458,6 +462,8 @@ export function Schaltzentrale({
             entwurf={entwurf}
             setEntwurf={setEntwurf}
             onGesendet={onGesendet}
+            handy={handy}
+            onHandy={onHandy}
             gezeigt={gezeigt}
             onZeigen={onZeigen}
             onZeigenBeenden={onZeigenBeenden}
