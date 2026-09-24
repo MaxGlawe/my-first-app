@@ -2,7 +2,7 @@
 
 > **Der Raum ist heute eine Seite. Er muss ein Arbeitsplatz werden.**
 
-**Status:** In Progress — Phase 0 bis 3a gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 4 offen
+**Status:** In Progress — Phase 0 bis 4 gebaut am 24.09.2026; Phasen 0–3a im Echtbetrieb bestaetigt, Phase 4 noch ungetestet
 **Stand:** 24.09.2026
 **Baut auf:** PROJ-27 (Sprechzimmer, Dokumentenakte), PROJ-8/9/10 (Übungen, Pläne, Hausaufgaben), PROJ-26 (Programm-Abschluss im Call)
 
@@ -147,14 +147,40 @@ deiner App". Der Behandler sieht dieselbe Vorschau verkleinert in seiner
 Schublade — ohne Gegenkontrolle zeigt man irgendwann etwas, von dem man glaubt,
 es sei etwas anderes.
 
-### Phase 4 — Bewegung festhalten *(das eigentlich Physiotherapeutische)*
+### Phase 4 — Bewegung festhalten ✓ *(das eigentlich Physiotherapeutische)*
 
-Standbild aus dem laufenden Bild des Patienten einfrieren, Linien und Winkel
-einzeichnen, als Befund in seine Akte legen, später nebeneinanderlegen
-(„Termin 1 gegen Termin 5").
+Standbild aus dem laufenden Bild des Patienten einfrieren, **Winkel über drei
+Punkte** und **Linien mit Neigung zur Senkrechten** einzeichnen, als
+Bewegungsbild in seine Akte legen, mit einer früheren Aufnahme
+nebeneinanderlegen („Termin 1 gegen Termin 5").
 
-Das kann kein Zoom und kein Teams. Es ist der Teil, der ein *Sprechzimmer* von
-einer *Videokonferenz* unterscheidet — und handwerklich billiger, als es klingt.
+Dazu die **Aufbau-Hilfe**: vier Schritte auf dem Schirm des Patienten (Gerät
+hüfthoch, seitlich oder frontal, ganz ins Bild, Standort merken). Ohne
+standardisierten Aufbau misst der Vergleich in acht Wochen die Kamerahöhe
+statt den Fortschritt.
+
+**Was das Werkzeug ausdrücklich NICHT tut** — und warum das eine Entscheidung
+ist, keine Lücke:
+
+| Nicht möglich | Warum |
+|---|---|
+| **Kraft und Last** („das rechte Bein trägt 43 kg") | Kraft steckt nicht im Bild. Auch Ganglabore mit acht Kameras brauchen Kraftmessplatten im Boden. Eine geschätzte Zahl stünde erfunden in einer Patientenakte |
+| **Rotationen** (HWS-Drehung, Hüft-IRO, Pro-/Supination) | Gehen in die Tiefe; eine Bildebene fasst sie nicht |
+| **Strecken in Zentimetern** | Kein Maßstab im Bild. Deshalb misst eine Linie ihren Winkel zur Senkrechten — die Zahl stimmt auch ohne Maßstab |
+| **Beckenschiefstand in Millimetern** | Wird von Kameraneigung, Standrotation und Kleidung dominiert. Auch die Palpation in der Praxis ist hier unzuverlässig; ein Foto macht den Fehler nur reproduzierbar |
+
+Messbar sind Winkel **in der Bildebene**: Knieflexion sagittal, Schulter- und
+Hüftelevation frontal, HWS-Flexion/Seitneigung, Rumpfneigung, Dorsalextension.
+Nicht messbar ist alles Feine (Hand, Finger, Rückfußachse) auf Webcam-Abstand.
+
+**Der eigentliche Wert liegt im Vergleich, nicht im Einzelwert.** Absolute
+Zahlen aus einem Handybild sind fehleranfällig; Veränderungen bei gleichem
+Aufbau sind robust. Dazu kommt, was die Praxis nicht kann: Der Patient steht
+in seiner Wohnung, in seinen Schuhen — und er sieht seinen Fortschritt selbst.
+
+Migration `20260924000001_bewegungsbild.sql` (neue Kategorie `bewegungsbild`)
+muss **von Hand im Supabase-Editor** laufen. Fehlt sie, antwortet der Upload
+seit demselben Commit mit einem sprechenden Hinweis statt mit 500.
 
 ---
 

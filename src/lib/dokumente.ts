@@ -29,6 +29,7 @@ export type Kategorie =
   | "op_bericht"
   | "labor"
   | "verordnung"
+  | "bewegungsbild"
   | "sonstiges"
 
 export const KATEGORIEN: { id: Kategorie; label: string; hinweis: string }[] = [
@@ -37,6 +38,11 @@ export const KATEGORIEN: { id: Kategorie; label: string; hinweis: string }[] = [
   { id: "op_bericht", label: "OP-Bericht", hinweis: "Operationsbericht, Nachsorgeplan" },
   { id: "labor", label: "Laborwerte", hinweis: "Blutbild, Entzündungswerte" },
   { id: "verordnung", label: "Verordnung", hinweis: "Rezept, Heilmittelverordnung" },
+  {
+    id: "bewegungsbild",
+    label: "Bewegungsbild",
+    hinweis: "Standbild aus dem Videogespräch, mit gemessenen Winkeln (PROJ-28)",
+  },
   { id: "sonstiges", label: "Sonstiges", hinweis: "Alles andere" },
 ]
 

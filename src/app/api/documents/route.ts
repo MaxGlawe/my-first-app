@@ -164,6 +164,18 @@ export async function POST(request: NextRequest) {
 
   if (insertError || !doc) {
     console.error("[documents] Insert:", insertError)
+    // 23514 = CHECK-Verletzung. Praktisch immer eine Kategorie, die der Code
+    // schon kennt und die Datenbank noch nicht — also eine Migration, die
+    // nicht gelaufen ist. Ein blankes "konnte nicht angelegt werden" schickt
+    // einen dafuer auf die Suche im falschen Stockwerk.
+    if (insertError?.code === "23514") {
+      return NextResponse.json(
+        {
+          error: `Die Kategorie „${kategorie}" ist in der Datenbank noch nicht freigeschaltet. Es fehlt eine Migration aus supabase/migrations/.`,
+        },
+        { status: 400 }
+      )
+    }
     return NextResponse.json({ error: "Dokument konnte nicht angelegt werden." }, { status: 500 })
   }
 

@@ -23,6 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzentrale"
 import { EntwurfStreifen, type EntwurfsUebung } from "@/components/video/PlanImGespraech"
 import { HandyGezeigt, type HandyDaten } from "@/components/video/HandyVorschau"
+import { Bewegungsbild, AufbauHilfe } from "@/components/video/Bewegungsbild"
 import { useSchwebefenster } from "@/components/video/Schwebefenster"
 import {
   LiveKitRoom,
@@ -319,6 +320,9 @@ function Buehne({
   const [planGesendet, setPlanGesendet] = useState(false)
   /** „So sieht es bei dir aus" — beim Behandler der Schalter, beim Patienten das Bild. */
   const [handy, setHandy] = useState<HandyDaten | null>(null)
+  /** Standbild-Werkzeug (nur Behandler) und die Aufbau-Hilfe auf beiden Seiten. */
+  const [bewegungsbild, setBewegungsbild] = useState(false)
+  const [aufbau, setAufbau] = useState<"seitlich" | "frontal" | null>(null)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   const spuren = useTracks(
@@ -354,6 +358,7 @@ function Buehne({
           entwurf?: EntwurfsUebung[]
           gesendet?: boolean
           handy?: HandyDaten | null
+          ansicht?: "seitlich" | "frontal"
         }
         if (nachricht.art === "zeigen" && nachricht.wurf) setEmpfangen(nachricht.wurf)
         else if (nachricht.art === "zeigen-ende") setEmpfangen(null)
@@ -362,6 +367,8 @@ function Buehne({
           setPlanGesendet(Boolean(nachricht.gesendet))
         } else if (nachricht.art === "handy") setHandy(nachricht.handy ?? null)
         else if (nachricht.art === "handy-ende") setHandy(null)
+        else if (nachricht.art === "aufbau") setAufbau(nachricht.ansicht ?? "seitlich")
+        else if (nachricht.art === "aufbau-ende") setAufbau(null)
       } catch {
         /* Nicht unsere Nachricht. */
       }
@@ -406,6 +413,14 @@ function Buehne({
     setPlanGesendet(false)
   }, [])
 
+  const aufbauZeigen = useCallback(
+    (ansicht: "seitlich" | "frontal" | null) => {
+      setAufbau(ansicht)
+      senden(ansicht ? { art: "aufbau", ansicht } : { art: "aufbau-ende" })
+    },
+    [senden]
+  )
+
   const handyZeigen = useCallback(
     (daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number } | null) => {
       if (!daten) {
@@ -446,12 +461,13 @@ function Buehne({
       senden({ art: "plan", entwurf, gesendet: planGesendet })
       if (gezeigt) senden({ art: "zeigen", wurf: gezeigt })
       if (handy) senden({ art: "handy", handy })
+      if (aufbau) senden({ art: "aufbau", ansicht: aufbau })
     }
     raum.on(RoomEvent.ParticipantConnected, eingetreten)
     return () => {
       raum.off(RoomEvent.ParticipantConnected, eingetreten)
     }
-  }, [raum, senden, entwurf, planGesendet, gezeigt, handy, callId, patientId])
+  }, [raum, senden, entwurf, planGesendet, gezeigt, handy, aufbau, callId, patientId])
 
   /**
    * Auflegen beendet auch das Zeigen. Sonst bliebe beim Patienten ein Befund
@@ -557,6 +573,22 @@ function Buehne({
         {/* „So sieht es bei dir aus." Nur beim Patienten: Der Behandler hat
             die Vorschau in seiner Schublade. */}
         {!hatSchublade && handy && <HandyGezeigt daten={handy} gegenueber={gegenueber} />}
+
+        {/* Aufbau-Hilfe sieht nur der Patient — der Behandler hat den Schalter. */}
+        {!hatSchublade && aufbau && <AufbauHilfe ansicht={aufbau} gegenueber={gegenueber} />}
+
+        {/* Das Standbild-Werkzeug liegt ueber allem, weil darauf gearbeitet wird. */}
+        {hatSchublade && bewegungsbild && (
+          <Bewegungsbild
+            spur={gegenueberSpur}
+            patientId={patientId!}
+            gegenueber={gegenueber}
+            onSchliessen={() => setBewegungsbild(false)}
+            onZeigen={zeigen}
+            onAufbau={aufbauZeigen}
+            aufbauAn={aufbau !== null}
+          />
+        )}
       </div>
 
         {hatSchublade && (
@@ -585,6 +617,8 @@ function Buehne({
           onAuflegen={onEnde}
           onSchublade={hatSchublade ? () => setSchubladeOffen((o) => !o) : undefined}
           schubladeOffen={schubladeOffen}
+          onStandbild={hatSchublade ? () => setBewegungsbild((o) => !o) : undefined}
+          standbildOffen={bewegungsbild}
           onFenster={
             fenster.verfuegbar
               ? () => (fenster.offen ? fenster.schliessen() : void fenster.oeffnen())

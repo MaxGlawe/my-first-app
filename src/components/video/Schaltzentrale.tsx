@@ -69,6 +69,7 @@ const KATEGORIE_TEXT: Record<string, string> = {
   bildgebung: "Bildgebung",
   labor: "Labor",
   verordnung: "Verordnung",
+  bewegungsbild: "Bewegungsbild",
   sonstiges: "Sonstiges",
 }
 

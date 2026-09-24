@@ -41,6 +41,7 @@ import {
   FolderOpen,
   FolderClosed,
   PictureInPicture2,
+  Camera,
 } from "lucide-react"
 
 const PAPER = "#F8F5F0"
@@ -86,6 +87,8 @@ export function Steuerleiste({
   schubladeOffen,
   onFenster,
   fensterOffen,
+  onStandbild,
+  standbildOffen,
 }: {
   onAuflegen: () => void
   /** Nur die Therapeutenseite hat eine Schublade — sonst bleibt der Knopf weg. */
@@ -94,6 +97,9 @@ export function Steuerleiste({
   /** Nur wo der Browser Document-PiP kann — sonst bleibt der Knopf weg. */
   onFenster?: () => void
   fensterOffen?: boolean
+  /** Standbild aus dem Bild des Gegenuebers — nur Therapeutenseite. */
+  onStandbild?: () => void
+  standbildOffen?: boolean
 }) {
   const raum = useRoomContext()
   const { localParticipant } = useLocalParticipant()
@@ -168,6 +174,16 @@ export function Steuerleiste({
           aus={<FolderClosed className="h-5 w-5" />}
           disabled={busy}
           onClick={onSchublade}
+        />
+      )}
+
+      {onStandbild && (
+        <Knopf
+          label={standbildOffen ? "Schliessen" : "Standbild"}
+          an={<Camera className="h-5 w-5" style={standbildOffen ? { color: SAND } : undefined} />}
+          aus={<Camera className="h-5 w-5" />}
+          disabled={busy}
+          onClick={onStandbild}
         />
       )}
 
