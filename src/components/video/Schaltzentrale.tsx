@@ -26,6 +26,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { PlanImGespraech, type EntwurfsUebung } from "./PlanImGespraech"
 import {
   FileText,
   ImageIcon,
@@ -36,6 +37,7 @@ import {
   EyeOff,
   AlertTriangle,
   Check,
+  Dumbbell,
 } from "lucide-react"
 
 const PAPER = "#F8F5F0"
@@ -372,21 +374,30 @@ function Notiz({ callId }: { callId: string }) {
 export function Schaltzentrale({
   callId,
   patientId,
+  gegenueber,
   offen,
   onSchliessen,
   gezeigt,
   onZeigen,
   onZeigenBeenden,
+  entwurf,
+  setEntwurf,
+  onGesendet,
 }: {
   callId: string
   patientId: string
+  gegenueber: string
   offen: boolean
   onSchliessen: () => void
   gezeigt: Wurf | null
   onZeigen: (w: Wurf) => void
   onZeigenBeenden: () => void
+  /** Der Planentwurf liegt oben, weil der Patient ihn mitwachsen sieht. */
+  entwurf: EntwurfsUebung[]
+  setEntwurf: (u: EntwurfsUebung[]) => void
+  onGesendet: () => void
 }) {
-  const [reiter, setReiter] = useState<"akte" | "notiz">("akte")
+  const [reiter, setReiter] = useState<"akte" | "plan" | "notiz">("akte")
 
   if (!offen) return null
 
@@ -401,6 +412,7 @@ export function Schaltzentrale({
           {(
             [
               ["akte", "Akte", FileText],
+              ["plan", "Plan", Dumbbell],
               ["notiz", "Notiz", NotebookPen],
             ] as const
           ).map(([wert, text, Icon]) => (
@@ -439,6 +451,17 @@ export function Schaltzentrale({
             onZeigen={onZeigen}
             onZeigenBeenden={onZeigenBeenden}
           />
+        ) : reiter === "plan" ? (
+          <PlanImGespraech
+            patientId={patientId}
+            gegenueber={gegenueber}
+            entwurf={entwurf}
+            setEntwurf={setEntwurf}
+            onGesendet={onGesendet}
+            gezeigt={gezeigt}
+            onZeigen={onZeigen}
+            onZeigenBeenden={onZeigenBeenden}
+          />
         ) : (
           <Notiz callId={callId} />
         )}
@@ -460,6 +483,7 @@ export function Schaltzentrale({
  */
 export function Gezeigt({ wurf, gegenueber }: { wurf: Wurf; gegenueber: string }) {
   const istBild = wurf.mime.startsWith("image/")
+  const istVideo = wurf.mime.startsWith("video/")
   return (
     <div className="absolute inset-0 z-20 flex flex-col" style={{ backgroundColor: "#12150f" }}>
       <div
@@ -472,7 +496,22 @@ export function Gezeigt({ wurf, gegenueber }: { wurf: Wurf; gegenueber: string }
         </p>
       </div>
       <div className="flex-1 overflow-auto bg-white">
-        {istBild ? (
+        {istVideo ? (
+          /*
+           * Stumm und in Schleife: Eine Übung sieht man, man hört sie nicht —
+           * und der Ton des Gesprächs hat Vorrang. Wer sie noch einmal sehen
+           * will, muss nicht bitten; sie läuft weiter.
+           */
+          <video
+            src={wurf.url}
+            autoPlay
+            loop
+            muted
+            playsInline
+            controls
+            className="mx-auto h-full w-full max-w-3xl bg-black object-contain"
+          />
+        ) : istBild ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={wurf.url} alt={wurf.titel} className="mx-auto w-full max-w-3xl" />
         ) : (

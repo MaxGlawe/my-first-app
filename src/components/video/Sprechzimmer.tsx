@@ -21,6 +21,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Schaltzentrale, Gezeigt, type Wurf } from "@/components/video/Schaltzentrale"
+import { EntwurfStreifen, type EntwurfsUebung } from "@/components/video/PlanImGespraech"
 import { useSchwebefenster } from "@/components/video/Schwebefenster"
 import {
   LiveKitRoom,
@@ -312,6 +313,9 @@ function Buehne({
   const [gezeigt, setGezeigt] = useState<Wurf | null>(null)
   /** Was MIR gerade gezeigt wird (Patientenseite). */
   const [empfangen, setEmpfangen] = useState<Wurf | null>(null)
+  /** Der Planentwurf — beim Behandler die Quelle, beim Patienten das Echo. */
+  const [entwurf, setEntwurf] = useState<EntwurfsUebung[]>([])
+  const [planGesendet, setPlanGesendet] = useState(false)
   const zustand = useConnectionState()
   const raum = useRoomContext()
   const spuren = useTracks(
@@ -344,9 +348,15 @@ function Buehne({
         const nachricht = JSON.parse(new TextDecoder().decode(nutzlast)) as {
           art?: string
           wurf?: Wurf
+          entwurf?: EntwurfsUebung[]
+          gesendet?: boolean
         }
         if (nachricht.art === "zeigen" && nachricht.wurf) setEmpfangen(nachricht.wurf)
         else if (nachricht.art === "zeigen-ende") setEmpfangen(null)
+        else if (nachricht.art === "plan") {
+          setEntwurf(nachricht.entwurf ?? [])
+          setPlanGesendet(Boolean(nachricht.gesendet))
+        }
       } catch {
         /* Nicht unsere Nachricht. */
       }
@@ -377,6 +387,43 @@ function Buehne({
     setGezeigt(null)
     senden({ art: "zeigen-ende" })
   }, [senden])
+
+  /**
+   * Jede Aenderung am Entwurf geht sofort hinueber. Der Patient soll den Plan
+   * WACHSEN sehen — das ist der Unterschied zwischen "wir besprechen etwas"
+   * und "wir bauen gerade dein Programm".
+   *
+   * Eine Aenderung nach dem Senden setzt den Vermerk zurueck: Was er sieht,
+   * liegt dann nicht mehr so in seiner App.
+   */
+  const entwurfSetzen = useCallback((u: EntwurfsUebung[]) => {
+    setEntwurf(u)
+    setPlanGesendet(false)
+  }, [])
+
+  useEffect(() => {
+    if (!callId || !patientId) return
+    senden({ art: "plan", entwurf, gesendet: planGesendet })
+  }, [entwurf, planGesendet, callId, patientId, senden])
+
+  /**
+   * Wer neu dazukommt, hat nichts von dem mitbekommen, was vorher ueber den
+   * Kanal ging — Nachrichten gehen nur an den, der gerade drin ist. Nach einem
+   * Verbindungsabbruch saehe der Patient also ein leeres Bild, waehrend der
+   * Behandler ihm laengst etwas zeigt. Deshalb schickt die Therapeutenseite
+   * ihren Stand noch einmal, sobald jemand eintritt.
+   */
+  useEffect(() => {
+    if (!callId || !patientId) return
+    const eingetreten = () => {
+      senden({ art: "plan", entwurf, gesendet: planGesendet })
+      if (gezeigt) senden({ art: "zeigen", wurf: gezeigt })
+    }
+    raum.on(RoomEvent.ParticipantConnected, eingetreten)
+    return () => {
+      raum.off(RoomEvent.ParticipantConnected, eingetreten)
+    }
+  }, [raum, senden, entwurf, planGesendet, gezeigt, callId, patientId])
 
   /**
    * Auflegen beendet auch das Zeigen. Sonst bliebe beim Patienten ein Befund
@@ -472,6 +519,10 @@ function Buehne({
             </p>
           </div>
         )}
+        {/* Der Plan waechst am unteren Rand mit — nur beim Patienten; der
+            Behandler sieht ihn ohnehin in der Schublade. */}
+        {!hatSchublade && <EntwurfStreifen uebungen={entwurf} gesendet={planGesendet} />}
+
         {/* Was mir gezeigt wird — formatfuellend, mit Absender. */}
         {empfangen && <Gezeigt wurf={empfangen} gegenueber={gegenueber} />}
       </div>
@@ -480,11 +531,15 @@ function Buehne({
           <Schaltzentrale
             callId={callId!}
             patientId={patientId!}
+            gegenueber={gegenueber}
             offen={schubladeOffen}
             onSchliessen={() => setSchubladeOffen(false)}
             gezeigt={gezeigt}
             onZeigen={zeigen}
             onZeigenBeenden={zeigenBeenden}
+            entwurf={entwurf}
+            setEntwurf={entwurfSetzen}
+            onGesendet={() => setPlanGesendet(true)}
           />
         )}
       </div>

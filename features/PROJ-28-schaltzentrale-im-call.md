@@ -2,7 +2,7 @@
 
 > **Der Raum ist heute eine Seite. Er muss ein Arbeitsplatz werden.**
 
-**Status:** In Progress — Phase 0, 1 und 2 gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 3 und 4 offen
+**Status:** In Progress — Phase 0 bis 3 gebaut am 24.09.2026, noch nicht im Echtbetrieb erprobt; Phase 4 offen
 **Stand:** 24.09.2026
 **Baut auf:** PROJ-27 (Sprechzimmer, Dokumentenakte), PROJ-8/9/10 (Übungen, Pläne, Hausaufgaben), PROJ-26 (Programm-Abschluss im Call)
 
@@ -106,14 +106,24 @@ Stück Arbeit.
 Fällt zurück auf das gewöhnliche Bild-im-Bild (nur Video, keine Knöpfe), wo das
 Verfahren fehlt.
 
-### Phase 3 — Plan bauen im Gespräch *(eigenes Gewicht, danach)*
+### Phase 3 — Plan bauen im Gespräch ✓
 
-Übungen suchen, Video auf **beiden** Seiten gleichzeitig abspielen („schau, so
-sieht das aus"), Übungen in einen Entwurf legen, den der Patient mitwachsen
-sieht, am Ende mit einem Klick in seine App senden.
+Übungen suchen, das Übungsvideo dem Patienten zeigen („schau, so sieht das
+aus"), Übungen in einen Entwurf legen, den er **mitwachsen sieht**, am Ende mit
+einem Klick in seine App senden.
 
 Das ist der Moment, in dem aus einem Gespräch ein Programm wird — und der
 Moment, in dem der Patient begreift, wofür er zahlt (PROJ-26).
+
+Gesendet wird als **Ad-hoc-Zuweisung** (PROJ-10), nicht als Trainingsplan mit
+Phasen und Einheiten: Was im Gespräch entsteht, sind ein paar Übungen für die
+nächsten Wochen, kein Bauwerk. Der grosse Builder bleibt für das, wofür er
+gemacht ist — und der Patient bekommt die Übungen auf demselben Weg in die App,
+den er von allen anderen Hausaufgaben kennt.
+
+Zeitraum (Wochen ab heute) und Trainingstage stehen im Fuss der Schublade;
+Voreinstellung vier Wochen, Mo/Mi/Fr. Sätze und Wiederholungen kommen aus den
+Standardwerten der Übung und sind im Entwurf überschreibbar.
 
 ### Phase 4 — Bewegung festhalten *(das eigentlich Physiotherapeutische)*
 
