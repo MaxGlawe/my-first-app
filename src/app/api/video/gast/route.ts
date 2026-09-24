@@ -65,6 +65,17 @@ export async function GET(request: NextRequest) {
     .eq("id", call.therapist_id)
     .maybeSingle()
 
+  // Absender. Fuer viele Patienten ist dieser Link der erste Kontakt mit
+  // Praxis OS ueberhaupt — vor Konto, vor Vertrag. Eine namenlose Seite, auf
+  // der man auf ein Videogespraech ueber den eigenen Koerper wartet, nimmt
+  // niemandem die Angst. Die Telefonnummer steht dabei, weil jemand, der im
+  // Wartezimmer festhaengt und keinen Ausweg sieht, sonst einfach auflegt.
+  const { data: praxis } = await svc
+    .from("praxis_settings")
+    .select("praxis_name, telefon")
+    .limit(1)
+    .maybeSingle()
+
   const jetzt = Date.now()
   const zustand =
     call.status === "abgesagt"
@@ -77,6 +88,10 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     zustand,
+    praxis: {
+      name: praxis?.praxis_name ?? "Physiotherapie Glawe",
+      telefon: praxis?.telefon ?? null,
+    },
     titel: ANLASS_TEXT[call.anlass]?.kurz ?? "Videogespräch",
     geplant_at: call.geplant_at,
     dauer_minuten: call.dauer_minuten,

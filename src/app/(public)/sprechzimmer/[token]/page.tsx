@@ -21,16 +21,23 @@
 import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Sprechzimmer } from "@/components/video/Sprechzimmer"
-import { Loader2, CalendarClock, AlertTriangle } from "lucide-react"
+import { Loader2, CalendarClock, AlertTriangle, ShieldCheck } from "lucide-react"
 import { formatDatum, formatUhrzeit } from "@/lib/video/termin"
 
 const PAPER = "#F8F5F0"
 const INK = "#12160f"
 const GREEN = "#2C3E2D"
+const SAND = "#C9B79C"
 const serif = { fontFamily: "Georgia, 'Times New Roman', serif", fontWeight: 600 } as const
+
+interface Praxis {
+  name: string
+  telefon: string | null
+}
 
 interface Termin {
   zustand: "wartet" | "offen" | "vorbei" | "abgesagt"
+  praxis?: Praxis
   titel: string
   geplant_at: string
   dauer_minuten: number
@@ -39,10 +46,77 @@ interface Termin {
   behandler: string
 }
 
-function Rahmen({ children }: { children: React.ReactNode }) {
+/**
+ * Der Absender. Steht in JEDEM Zustand ganz oben — auch über „Zugang nicht
+ * gültig", denn genau dann braucht jemand die Gewissheit, bei wem er
+ * eigentlich gelandet ist.
+ *
+ * Bewusst gesetzt statt als Bilddatei: Die Marke ist Serife auf Papierton.
+ * Ein Schriftzug bleibt auf jedem Bildschirm scharf, muss nirgends gepflegt
+ * werden und kann nicht als kaputtes Bild enden — ausgerechnet auf der Seite,
+ * die Vertrauen herstellen soll.
+ */
+function Marke({ name }: { name?: string }) {
+  return (
+    <div className="mb-7">
+      <p className="text-[19px] leading-none" style={{ ...serif, color: INK }}>
+        {name ?? "Physiotherapie Glawe"}
+      </p>
+      <p
+        className="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[0.22em]"
+        style={{ color: GREEN }}
+      >
+        Digitales Sprechzimmer
+      </p>
+      <div className="mx-auto mt-4 h-px w-10" style={{ backgroundColor: SAND }} />
+    </div>
+  )
+}
+
+/**
+ * Was jeder still fragt, bevor er auf ein Videogespräch über den eigenen
+ * Körper klickt. Die Antworten stehen hier, bevor sie jemand stellen muss —
+ * und sie stimmen: Es ist kein Egress installiert, es wird nichts
+ * aufgezeichnet.
+ */
+function Zusicherungen({ gegenueber }: { gegenueber: string }) {
+  const punkte = [
+    "Das Gespräch wird nicht aufgezeichnet.",
+    `Im Raum sind nur du und ${gegenueber}.`,
+    "Nichts zu installieren — dieser Link genügt.",
+  ]
+  return (
+    <ul className="mt-6 space-y-2.5 text-left">
+      {punkte.map((p) => (
+        <li key={p} className="flex items-start gap-2.5">
+          <ShieldCheck className="mt-[3px] h-[15px] w-[15px] shrink-0" style={{ color: GREEN }} />
+          <span className="text-[13.5px] leading-relaxed text-slate-600">{p}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Der Ausweg, wenn doch etwas klemmt. */
+function Rueckfall({ praxis }: { praxis?: Praxis }) {
+  if (!praxis?.telefon) return null
+  return (
+    <p className="mt-7 text-[12.5px] leading-relaxed text-slate-500">
+      Klemmt etwas? Ruf uns an:{" "}
+      <a href={`tel:${praxis.telefon.replace(/\s/g, "")}`} className="font-semibold underline" style={{ color: GREEN }}>
+        {praxis.telefon}
+      </a>
+    </p>
+  )
+}
+
+function Rahmen({ children, praxis }: { children: React.ReactNode; praxis?: Praxis }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-5 py-10" style={{ backgroundColor: PAPER }}>
-      <div className="w-full max-w-md text-center">{children}</div>
+      <div className="w-full max-w-md text-center">
+        <Marke name={praxis?.name} />
+        {children}
+      </div>
     </div>
   )
 }
@@ -125,6 +199,7 @@ export default function GastSprechzimmerPage() {
           gastToken={token!}
           anlassText={termin.titel}
           gegenueber={termin.behandler}
+          praxisName={termin.praxis?.name}
           zurueckHref="/"
         />
       </div>
@@ -133,7 +208,7 @@ export default function GastSprechzimmerPage() {
 
   if (termin.zustand === "vorbei" || termin.zustand === "abgesagt") {
     return (
-      <Rahmen>
+      <Rahmen praxis={termin.praxis}>
         <h1 className="text-2xl" style={{ ...serif, color: INK }}>
           {termin.zustand === "abgesagt" ? "Der Termin wurde abgesagt" : "Der Termin ist vorbei"}
         </h1>
@@ -142,13 +217,14 @@ export default function GastSprechzimmerPage() {
             ? "Deine Praxis meldet sich bei dir, um einen neuen Termin zu finden."
             : "Falls ihr euch nicht gesprochen habt, melde dich einfach bei deiner Praxis — ihr findet einen neuen Termin."}
         </p>
+        <Rueckfall praxis={termin.praxis} />
       </Rahmen>
     )
   }
 
   // ── Wartet ───────────────────────────────────────────────────────────────
   return (
-    <Rahmen>
+    <Rahmen praxis={termin.praxis}>
       <CalendarClock className="mx-auto h-7 w-7" style={{ color: GREEN }} />
       <p className="mt-4 text-[12px] font-semibold uppercase tracking-[0.16em]" style={{ color: GREEN }}>
         {termin.titel}
@@ -186,10 +262,14 @@ export default function GastSprechzimmerPage() {
         </div>
       )}
 
+      <Zusicherungen gegenueber={termin.behandler} />
+
       <p className="mt-6 text-[12.5px] leading-relaxed text-slate-500">
-        Du brauchst nichts zu installieren — ein Handy, Tablet oder Computer mit Kamera und
-        Mikrofon genügt. Stell dein Gerät so auf, dass du gut zu sehen bist.
+        Ein Handy, Tablet oder Computer mit Kamera und Mikrofon genügt. Stell dein Gerät so
+        auf, dass du gut zu sehen bist.
       </p>
+
+      <Rueckfall praxis={termin.praxis} />
     </Rahmen>
   )
 }

@@ -56,11 +56,14 @@ interface Zutritt {
 function Warteraum({
   anlassText,
   gegenueber,
+  praxisName,
   onBeitreten,
   laedt,
 }: {
   anlassText: string
   gegenueber: string
+  /** Absender. Nur auf der Gastseite gesetzt — der Behandler weiss, wo er ist. */
+  praxisName?: string
   onBeitreten: () => void
   laedt: boolean
 }) {
@@ -118,6 +121,14 @@ function Warteraum({
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-8">
+      {praxisName && (
+        <div className="mb-6">
+          <p className="text-[17px] leading-none" style={{ ...serif, color: INK }}>
+            {praxisName}
+          </p>
+          <div className="mt-3.5 h-px w-10" style={{ backgroundColor: SAND }} />
+        </div>
+      )}
       <p className="text-[12px] font-semibold uppercase tracking-[0.16em]" style={{ color: GREEN }}>
         {anlassText}
       </p>
@@ -184,6 +195,13 @@ function Warteraum({
         Halte dein Handy so, dass du gut zu sehen bist, und such dir Licht von vorn. Ein
         stabiles WLAN ist besser als Mobilfunk.
       </p>
+
+      {/* Die letzte Sekunde vor dem Betreten ist die, in der jemand zögert. */}
+      {praxisName && (
+        <p className="mt-3 text-[12.5px] leading-relaxed" style={{ color: GREEN }}>
+          Das Gespräch wird nicht aufgezeichnet.
+        </p>
+      )}
     </div>
   )
 }
@@ -370,6 +388,7 @@ export function Sprechzimmer({
   gastToken,
   anlassText,
   gegenueber,
+  praxisName,
   zurueckHref,
   gastUrl,
   qrUrl,
@@ -385,6 +404,8 @@ export function Sprechzimmer({
   gastToken?: string
   anlassText: string
   gegenueber: string
+  /** Absender im Warteraum. Nur die Gastseite setzt ihn. */
+  praxisName?: string
   zurueckHref: string
   /** Nur die Therapeutenansicht: Einladungstafel im Raum. */
   gastUrl?: string
@@ -447,6 +468,7 @@ export function Sprechzimmer({
         <Warteraum
           anlassText={anlassText}
           gegenueber={gegenueber}
+          praxisName={praxisName}
           onBeitreten={beitreten}
           laedt={laedt}
         />
