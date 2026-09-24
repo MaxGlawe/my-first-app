@@ -78,7 +78,7 @@ npx tsc --noEmit   # TypeScript check (run before deploying)
 
 ## Key Conventions
 
-- **Feature IDs:** PROJ-1 through PROJ-18 (sequential), next: PROJ-19
+- **Feature IDs:** PROJ-1 through PROJ-27 (sequential), next: PROJ-28
 - **Commits:** `feat(PROJ-X): description`, `fix(PROJ-X): description`
 - **shadcn/ui first:** NEVER create custom versions of installed shadcn components
 - **German UI:** All user-facing text in German
