@@ -4,6 +4,20 @@
 > **Auftraggeber:** Praxis Glawe — Praxis OS
 > **Ziel-Domain:** wwwpraxis-os.com
 > **Erstellt:** April 2026
+> **Erledigt:** Der Link ist umgesetzt und seit 25.09.2026 in Betrieb. Die
+> Beispiel-Adressen weiter unten stammen aus dem Briefing und waren
+> Platzhalter — **gültig ist allein:**
+>
+> ```
+> https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os
+> ```
+>
+> Er springt direkt in den Kalender, ohne dass der Patient noch einen
+> Therapeuten wählen muss. Im Code entsteht er an drei Stellen, jeweils mit
+> eigener Kampagnen-Kennung: `lib/programm.ts` (Website),
+> `app/meine-termine/page.tsx` (Patienten-App) und
+> `lib/schmerzcheck/recommendations.ts` (Drip-Mails, über den Klick-Zähler
+> `/api/schmerzcheck/go`). Wer ihn ändert, ändert ihn an allen dreien.
 
 ---
 
