@@ -320,6 +320,18 @@ function Buehne({
   /** Der Planentwurf — beim Behandler die Quelle, beim Patienten das Echo. */
   const [entwurf, setEntwurf] = useState<EntwurfsUebung[]>([])
   const [planGesendet, setPlanGesendet] = useState(false)
+  /**
+   * Zeigt der Streifen mit dem wachsenden Plan beim Patienten?
+   *
+   * Er ist eine eigene Anzeige — und genau das war der Fehler: „Anzeige
+   * beenden" nahm ihn nicht mit, und die Patientin sass weiter vor „Euer Plan
+   * entsteht gerade", nachdem der Behandler laengst zugemacht hatte. Fuer
+   * ihn ist das EINE Anzeige; also muss ein Knopf sie beenden.
+   *
+   * Sichtbar ist er nur, solange am Plan gearbeitet wird: Reiter offen,
+   * Schublade offen. Wer die Akte aufschlaegt, arbeitet nicht am Plan.
+   */
+  const [planSichtbar, setPlanSichtbar] = useState(false)
   /** „So sieht es bei dir aus" — beim Behandler der Schalter, beim Patienten das Bild. */
   const [handy, setHandy] = useState<HandyDaten | null>(null)
   /** Standbild-Werkzeug (nur Behandler) und die Aufbau-Hilfe auf beiden Seiten. */
@@ -373,6 +385,7 @@ function Buehne({
           wurf?: Wurf
           entwurf?: EntwurfsUebung[]
           gesendet?: boolean
+          sichtbar?: boolean
           handy?: HandyDaten | null
           ansicht?: "seitlich" | "frontal"
           text?: string
@@ -382,6 +395,7 @@ function Buehne({
         else if (nachricht.art === "plan") {
           setEntwurf(nachricht.entwurf ?? [])
           setPlanGesendet(Boolean(nachricht.gesendet))
+          setPlanSichtbar(Boolean(nachricht.sichtbar))
         } else if (nachricht.art === "handy") setHandy(nachricht.handy ?? null)
         else if (nachricht.art === "handy-ende") setHandy(null)
         else if (nachricht.art === "chat" && nachricht.text) {
@@ -544,7 +558,7 @@ function Buehne({
 
   useEffect(() => {
     if (!callId || !patientId) return
-    senden({ art: "plan", entwurf, gesendet: planGesendet })
+    senden({ art: "plan", entwurf, gesendet: planGesendet, sichtbar: planSichtbar })
     // Laeuft die Handy-Vorschau, traegt sie den Vermerk "liegt in deiner App"
     // sofort mit - das ist der Moment, auf den der Patient wartet.
     if (handy) {
@@ -553,7 +567,7 @@ function Buehne({
       senden({ art: "handy", handy: voll })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entwurf, planGesendet, callId, patientId, senden])
+  }, [entwurf, planGesendet, planSichtbar, callId, patientId, senden])
 
   /**
    * Alles, was der Patient sehen soll, in einem Rutsch. Wird gebraucht, sobald
@@ -563,11 +577,11 @@ function Buehne({
     if (!callId || !patientId) return
     if (raum.state !== ConnectionState.Connected) return
     ausstehend.current = false
-    senden({ art: "plan", entwurf, gesendet: planGesendet })
+    senden({ art: "plan", entwurf, gesendet: planGesendet, sichtbar: planSichtbar })
     senden(gezeigt ? { art: "zeigen", wurf: gezeigt } : { art: "zeigen-ende" })
     senden(handy ? { art: "handy", handy } : { art: "handy-ende" })
     senden(aufbau ? { art: "aufbau", ansicht: aufbau } : { art: "aufbau-ende" })
-  }, [raum, senden, callId, patientId, entwurf, planGesendet, gezeigt, handy, aufbau])
+  }, [raum, senden, callId, patientId, entwurf, planGesendet, planSichtbar, gezeigt, handy, aufbau])
 
   /**
    * Sobald die Verbindung steht, geht der Stand hinaus — auch der, der vorher
@@ -716,7 +730,9 @@ function Buehne({
         )}
         {/* Der Plan waechst am unteren Rand mit — nur beim Patienten; der
             Behandler sieht ihn ohnehin in der Schublade. */}
-        {!hatSchublade && <EntwurfStreifen uebungen={entwurf} gesendet={planGesendet} />}
+        {!hatSchublade && planSichtbar && (
+          <EntwurfStreifen uebungen={entwurf} gesendet={planGesendet} />
+        )}
 
         {/* Der Zettel zum Hinueberschieben. Beide Seiten, denn Links sind in
             beide Richtungen nuetzlich — und auf dem Handy ist ein antippbarer
@@ -760,7 +776,12 @@ function Buehne({
             gegenueber={gegenueber}
             gegenueberDa={andere.length > 0}
             offen={schubladeOffen}
-            onSchliessen={() => setSchubladeOffen(false)}
+            onSchliessen={() => {
+              setSchubladeOffen(false)
+              setPlanSichtbar(false)
+            }}
+            planSichtbar={planSichtbar}
+            onPlanSichtbar={setPlanSichtbar}
             gezeigt={gezeigt}
             onZeigen={zeigen}
             onZeigenBeenden={zeigenBeenden}
@@ -778,7 +799,15 @@ function Buehne({
       <div className="shrink-0 border-t" style={{ borderColor: "#2b3226" }}>
         <Steuerleiste
           onAuflegen={onEnde}
-          onSchublade={hatSchublade ? () => setSchubladeOffen((o) => !o) : undefined}
+          onSchublade={
+            hatSchublade
+              ? () =>
+                  setSchubladeOffen((o) => {
+                    if (o) setPlanSichtbar(false)
+                    return !o
+                  })
+              : undefined
+          }
           schubladeOffen={schubladeOffen}
           onChat={() => {
             setChatOffen((o) => !o)

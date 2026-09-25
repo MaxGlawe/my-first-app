@@ -396,6 +396,8 @@ export function Schaltzentrale({
   onGesendet,
   handy,
   onHandy,
+  planSichtbar,
+  onPlanSichtbar,
 }: {
   callId: string
   patientId: string
@@ -415,8 +417,19 @@ export function Schaltzentrale({
   onHandy: (
     daten: { uebungen: EntwurfsUebung[]; tage: string[]; wochen: number; aktiv: number } | null
   ) => void
+  /** Sieht der Patient gerade den wachsenden Plan? */
+  planSichtbar: boolean
+  onPlanSichtbar: (sichtbar: boolean) => void
 }) {
   const [reiter, setReiter] = useState<"akte" | "plan" | "notiz">("akte")
+
+  // Beim Oeffnen gilt, was der Reiter sagt — auch wenn er vom letzten Mal
+  // noch auf „Plan" steht. Sonst waere die Schublade offen, der Plan-Reiter
+  // vorne, und beim Patienten stuende nichts.
+  useEffect(() => {
+    if (offen) onPlanSichtbar(reiter === "plan")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offen, reiter])
 
   if (!offen) return null
 
@@ -438,7 +451,10 @@ export function Schaltzentrale({
             <button
               key={wert}
               type="button"
-              onClick={() => setReiter(wert)}
+              onClick={() => {
+                setReiter(wert)
+                onPlanSichtbar(wert === "plan")
+              }}
               className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold"
               style={
                 reiter === wert
@@ -486,12 +502,13 @@ export function Schaltzentrale({
           Deshalb liegt der Ausschalter jetzt in der Zeile, die sich nie
           bewegt, und ist nur da, wenn tatsaechlich etwas laeuft.
         */}
-        {(handy || gezeigt) && (
+        {(handy || gezeigt || planSichtbar) && (
           <button
             type="button"
             onClick={() => {
               if (handy) onHandy(null)
               if (gezeigt) onZeigenBeenden()
+              onPlanSichtbar(false)
             }}
             className="ml-auto flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11.5px] font-semibold text-white"
             style={{ backgroundColor: "#8c3a2b" }}
