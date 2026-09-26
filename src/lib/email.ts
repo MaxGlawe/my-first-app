@@ -45,10 +45,52 @@ interface SendEmailOptions {
   to: string
   subject: string
   html: string
+  /**
+   * Textfassung. Fehlt sie, wird eine aus dem HTML abgeleitet — NIEMALS gar
+   * keine.
+   *
+   * Eine Mail ohne Textteil ist eines der aeltesten Spam-Merkmale ueberhaupt:
+   * Ein Mensch, der eine Mail schreibt, hat Text; ein Werkzeug, das
+   * Werbebilder verschickt, oft nur HTML. Bis zum 26.09.2026 ging JEDE Mail
+   * aus Praxis OS ohne Textteil hinaus - auch die Einladung, die ihre
+   * Textfassung sogar baut und dann verwarf.
+   */
+  text?: string
   attachments?: { filename: string; content: Buffer }[]
 }
 
-export async function sendEmail({ to, subject, html, attachments }: SendEmailOptions) {
+/**
+ * Notduerftige, aber ehrliche Textfassung aus dem HTML: Links behalten ihre
+ * Adresse, Absaetze ihre Umbrueche. Besser als nichts, und „nichts" war die
+ * Alternative.
+ */
+export function textAusHtml(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<head[\s\S]*?<\/head>/gi, "")
+    .replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_m, url, text) =>
+      `${String(text).replace(/<[^>]+>/g, "").trim()} (${url})`
+    )
+    .replace(/<\/(p|div|tr|li|h[1-6])>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_m, n) => String.fromCodePoint(Number(n)))
+    .replace(/&[a-z]+;/gi, (e) =>
+      ({ "&rarr;": "→", "&ndash;": "–", "&mdash;": "—", "&hellip;": "…", "&euro;": "€",
+         "&auml;": "ä", "&ouml;": "ö", "&uuml;": "ü", "&Auml;": "Ä", "&Ouml;": "Ö",
+         "&Uuml;": "Ü", "&szlig;": "ß", "&bull;": "·", "&middot;": "·" }[e] ?? "")
+    )
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+}
+
+export async function sendEmail({ to, subject, html, text, attachments }: SendEmailOptions) {
   const transporter = getTransporter()
   if (!transporter) {
     console.warn("[Email] SMTP_USER/SMTP_PASS not set — skipping email send")
@@ -63,6 +105,7 @@ export async function sendEmail({ to, subject, html, attachments }: SendEmailOpt
       from,
       to,
       subject,
+      text: text?.trim() || textAusHtml(html),
       html,
       attachments: attachments?.map((a) => ({
         filename: a.filename,

@@ -93,6 +93,8 @@ export async function sendeEinladung(args: {
     to: patient.email,
     subject: mail.subject,
     html: mail.html,
+    // Die Vorlage baut sie ohnehin — bisher wurde sie verworfen.
+    text: mail.text,
     // Als Buffer, so erwartet es sendEmail. utf-8 ist fuer .ics richtig:
     // Umlaute im Titel und im Behandlernamen muessen ankommen.
     attachments: [{ filename: "Videotermin.ics", content: Buffer.from(ics, "utf-8") }],
