@@ -264,6 +264,99 @@ async function logWebhookEvent(
 // Event handlers
 // ----------------------------------------------------------------
 
+/**
+ * Legt einen Patienten aus den Daten einer Buchung an — samt stillem Konto.
+ *
+ * WIRD NICHT MEHR BEI JEDER BUCHUNG AUFGERUFEN. Seit dem 26.09.2026 entsteht
+ * ein Patient nur noch, wenn eine VIDEOKONSULTATION gebucht wurde. Wer eine
+ * Krankengymnastik bucht, gehoert in den Praxiskalender und nicht zwingend in
+ * Praxis OS: Ein Datensatz und ein Konto fuer jemanden, der die App nie
+ * benutzt, ist Arbeit fuer niemanden und eine Datenkopie ohne Zweck.
+ */
+async function erstellePatientAusBuchung(
+  supabase: ReturnType<typeof createSupabaseServiceClient>,
+  data: {
+    booking_patient_id: string
+    vorname?: string | null
+    nachname?: string | null
+    geburtsdatum?: string | null
+    geschlecht: string
+    email: string
+    telefon?: string | null
+  },
+  backfill = false
+): Promise<{ id: string | null; hinweis: string }> {
+  // Der Standard-Behandler ist der erste Admin im System.
+  // The default therapist is the first admin in the system.
+  // In production this should be configurable via admin settings.
+  const { data: defaultTherapist, error: therapistError } = await supabase
+    .from("user_profiles")
+    .select("id")
+    .eq("role", "admin")
+    .limit(1)
+    .maybeSingle()
+
+  if (therapistError || !defaultTherapist) {
+    return { id: null, hinweis: "Kein Admin als Standard-Behandler gefunden." }
+  }
+
+  const newPatient = {
+    vorname: data.vorname ?? "Unbekannt",
+    nachname: data.nachname ?? "Unbekannt",
+    geburtsdatum: data.geburtsdatum ?? "1900-01-01",
+    geschlecht: data.geschlecht,
+    telefon: data.telefon ?? null,
+    email: data.email,
+    booking_system_id: data.booking_patient_id,
+    booking_email: data.email,
+    therapeut_id: defaultTherapist.id,
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("patients")
+    .insert(newPatient)
+    .select("id")
+    .single()
+
+  if (insertError || !inserted) {
+    console.error("[webhook/booking] Failed to create patient:", insertError?.message)
+    return { id: null, hinweis: `Patient konnte nicht angelegt werden: ${insertError?.message ?? "unbekannt"}` }
+  }
+
+  // PROJ-34: Login-Konto provisionieren (passwortlos, Magiclink-Zugangsmail).
+  // Gesperrter "Termine-only"-Zustand via app_metadata.account_origin='booking'.
+  // Nur für NEU angelegte Bucher — bestehende Patienten bleiben unberührt.
+  const provision = await ensurePatientLogin(supabase, {
+    patientId: inserted.id as string,
+    email: data.email,
+    firstName: data.vorname,
+    lastName: data.nachname,
+    // KEINE Zugangsmail an dieser Stelle.
+    //
+    // Sie ging bisher sofort beim Anlegen raus — und unmittelbar danach kam
+    // bei einer Videokonsultation unsere Einladung. Zusammen mit der
+    // Bestaetigung des Kalenders waren das DREI Mails in derselben Sekunde,
+    // zwei davon ueber dasselbe Gespraech (26.09.2026, erster echter Bucher).
+    //
+    // Beim Anlegen wissen wir noch nicht, welche Leistung gebucht wurde —
+    // das steht erst im Termin-Ereignis, das Sekunden spaeter kommt. Also
+    // entscheidet dort: Videokonsultation → die Einladung traegt Ablauf und
+    // Zugang mit; alles andere → die Zugangsmail, wie bisher.
+    //
+    // Das Konto entsteht hier trotzdem, nur eben still.
+    sendAccessMail: false,
+  })
+  if (provision.status === "error") {
+    console.error("[webhook/booking] PROJ-34 Login-Provisionierung fehlgeschlagen:", provision.error)
+    // Patient ist angelegt — Provisionierung kann später nachgeholt werden; kein Hard-Fail.
+  }
+
+  return {
+    id: inserted.id as string,
+    hinweis: `Patient angelegt (Buchungstool-ID: ${data.booking_patient_id}, Login: ${provision.status}).`,
+  }
+}
+
 async function handlePatientCreated(
   supabase: ReturnType<typeof createSupabaseServiceClient>,
   rawPayload: Record<string, unknown>,
@@ -398,79 +491,19 @@ async function handlePatientCreated(
     }
   }
 
-  // 2. New patient — auto-create with default therapist
-  // The default therapist is the first admin in the system.
-  // In production this should be configurable via admin settings.
-  const { data: defaultTherapist, error: therapistError } = await supabase
-    .from("user_profiles")
-    .select("id")
-    .eq("role", "admin")
-    .limit(1)
-    .maybeSingle()
-
-  if (therapistError || !defaultTherapist) {
-    return {
-      status: "error",
-      errorMessage:
-        "No admin/default therapist found. Cannot auto-create patient from webhook.",
-    }
-  }
-
-  const newPatient = {
-    vorname: data.vorname ?? "Unbekannt",
-    nachname: data.nachname ?? "Unbekannt",
-    geburtsdatum: data.geburtsdatum ?? "1900-01-01",
-    geschlecht: data.geschlecht,
-    telefon: data.telefon ?? null,
-    email: data.email,
-    booking_system_id: data.booking_patient_id,
-    booking_email: data.email,
-    therapeut_id: defaultTherapist.id,
-  }
-
-  const { data: inserted, error: insertError } = await supabase
-    .from("patients")
-    .insert(newPatient)
-    .select("id")
-    .single()
-
-  if (insertError || !inserted) {
-    console.error("[webhook/booking] Failed to create patient:", insertError?.message)
-    return { status: "error", errorMessage: "Patient konnte nicht angelegt werden." }
-  }
-
-  // PROJ-34: Login-Konto provisionieren (passwortlos, Magiclink-Zugangsmail).
-  // Gesperrter "Termine-only"-Zustand via app_metadata.account_origin='booking'.
-  // Nur für NEU angelegte Bucher — bestehende Patienten bleiben unberührt.
-  const provision = await ensurePatientLogin(supabase, {
-    patientId: inserted.id as string,
-    email: data.email,
-    firstName: data.vorname,
-    lastName: data.nachname,
-    // KEINE Zugangsmail an dieser Stelle.
-    //
-    // Sie ging bisher sofort beim Anlegen raus — und unmittelbar danach kam
-    // bei einer Videokonsultation unsere Einladung. Zusammen mit der
-    // Bestaetigung des Kalenders waren das DREI Mails in derselben Sekunde,
-    // zwei davon ueber dasselbe Gespraech (26.09.2026, erster echter Bucher).
-    //
-    // Beim Anlegen wissen wir noch nicht, welche Leistung gebucht wurde —
-    // das steht erst im Termin-Ereignis, das Sekunden spaeter kommt. Also
-    // entscheidet dort: Videokonsultation → die Einladung traegt Ablauf und
-    // Zugang mit; alles andere → die Zugangsmail, wie bisher.
-    //
-    // Das Konto entsteht hier trotzdem, nur eben still.
-    sendAccessMail: false,
-  })
-  if (provision.status === "error") {
-    console.error("[webhook/booking] PROJ-34 Login-Provisionierung fehlgeschlagen:", provision.error)
-    // Patient ist angelegt — Provisionierung kann später nachgeholt werden; kein Hard-Fail.
-  }
-
-  // BUG-3: Admin review note — new patient auto-created, manual duplicate check recommended
+  // KEIN ANLEGEN MEHR AN DIESER STELLE.
+  //
+  // Beim `patient.created` wissen wir noch nicht, WAS gebucht wurde — das
+  // steht erst im Termin-Ereignis. Wuerden wir hier anlegen, entstuende fuer
+  // jede Krankengymnastik ein Praxis-OS-Patient samt Konto, obwohl die
+  // Person die App nie benutzt.
+  //
+  // Das Ereignis bleibt im Protokoll stehen (webhook_events). Kommt Sekunden
+  // spaeter eine Videokonsultation, holt der Termin-Schritt die Daten von
+  // dort und legt den Patienten dann an.
   return {
     status: "success",
-    errorMessage: `Neuer Patient automatisch angelegt (Buchungstool-ID: ${data.booking_patient_id}, Login: ${provision.status}). Bitte im Admin-Bereich auf Duplikate prüfen.`,
+    errorMessage: `Neuer Bucher (${data.booking_patient_id}) vorgemerkt — Patient entsteht erst bei einer Videokonsultation.`,
   }
 }
 
@@ -501,19 +534,76 @@ async function handleAppointmentEvent(
     return { status: "error", errorMessage: "Patientensuche fehlgeschlagen." }
   }
 
-  if (!patient) {
+  /**
+   * Kein Patient? Dann entscheidet die gebuchte Leistung, ob einer entsteht.
+   *
+   *   Videokonsultation → Patient jetzt anlegen. Die Daten stehen im
+   *     `patient.created`, das Sekunden vorher kam und im Ereignisprotokoll
+   *     liegt — wir holen sie von dort. Kein zweiter Speicher noetig.
+   *
+   *   alles andere → nichts tun. Eine Krankengymnastik gehoert in den
+   *     Praxiskalender; ein Praxis-OS-Datensatz samt Konto fuer jemanden,
+   *     der die App nie benutzt, waere eine Datenkopie ohne Zweck.
+   *
+   * Wer bereits Patient ist, bekommt seine Termine weiterhin synchronisiert —
+   * gleich welche Leistung. Das ist der Sinn der Terminuebersicht in der
+   * Akte, und den wollen wir nicht verlieren.
+   */
+  let patientRef = patient
+  if (!patientRef) {
+    if (!istVideoKonsultation(data.service_name) || data.status !== "scheduled") {
+      return {
+        status: "success",
+        errorMessage: `Kein Praxis-OS-Patient zu Buchung '${data.booking_patient_id}' — und keine Videokonsultation. Nichts angelegt.`,
+      }
+    }
+
+    const { data: vormerkung } = await supabase
+      .from("webhook_events")
+      .select("payload")
+      .eq("event_type", "patient.created")
+      .eq("payload->>booking_patient_id", data.booking_patient_id)
+      .order("received_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const roh = vormerkung?.payload as Record<string, unknown> | undefined
+    const stamm = roh ? patientCreatedRawSchema.safeParse(roh) : null
+
+    if (!stamm?.success) {
+      return {
+        status: "error",
+        errorMessage: `Videokonsultation gebucht, aber zu '${data.booking_patient_id}' liegen keine Stammdaten vor (kein patient.created im Protokoll).`,
+      }
+    }
+
+    const angelegt = await erstellePatientAusBuchung(supabase, normalizePatientPayload(stamm.data))
+    if (!angelegt.id) {
+      return { status: "error", errorMessage: angelegt.hinweis }
+    }
+
+    const { data: frisch } = await supabase
+      .from("patients")
+      .select("id, email, vorname")
+      .eq("id", angelegt.id)
+      .maybeSingle()
+    patientRef = frisch ?? null
+  }
+
+  if (!patientRef) {
     return {
       status: "error",
-      errorMessage: `Patient with booking_system_id '${data.booking_patient_id}' not found in Praxis OS.`,
+      errorMessage: `Patient zu Buchung '${data.booking_patient_id}' konnte nicht ermittelt werden.`,
     }
   }
+  const patientFest = patientRef
 
   // Upsert appointment (idempotent via booking_system_appointment_id)
   const { error: upsertError } = await supabase
     .from("appointments")
     .upsert(
       {
-        patient_id: patient.id,
+        patient_id: patientFest.id,
         booking_system_appointment_id: data.booking_appointment_id,
         scheduled_at: data.scheduled_at,
         duration_minutes: data.duration_minutes,
@@ -538,7 +628,7 @@ async function handleAppointmentEvent(
 
   // PROJ-23: gebuchter Termin → Schmerzcheck-Drip stoppen + Meta-Purchase
   if (data.status === "scheduled") {
-    convertSchmerzcheckLead(supabase, patient.email)
+    convertSchmerzcheckLead(supabase, patientFest.email)
   }
 
   // PROJ-28: Ist es die Video-Konsultation, entsteht daraus sofort ein Termin
@@ -552,7 +642,7 @@ async function handleAppointmentEvent(
   try {
     const video = await videoterminAusBuchung({
       svc: supabase,
-      patientId: patient.id as string,
+      patientId: patientFest.id as string,
       buchung: {
         booking_appointment_id: data.booking_appointment_id,
         scheduled_at: data.scheduled_at,
@@ -588,17 +678,17 @@ async function handleAppointmentEvent(
       const { data: profil } = await supabase
         .from("user_profiles")
         .select("created_at")
-        .eq("email", patient.email ?? "")
+        .eq("email", patientFest.email ?? "")
         .maybeSingle()
 
       const neuAngelegt =
         profil?.created_at &&
         Date.now() - new Date(profil.created_at as string).getTime() < 15 * 60_000
 
-      if (neuAngelegt && patient.email) {
+      if (neuAngelegt && patientFest.email) {
         await sendPatientAccessMail(supabase, {
-          email: patient.email,
-          firstName: (patient.vorname as string) ?? "Patient",
+          email: patientFest.email,
+          firstName: (patientFest.vorname as string) ?? "Patient",
         })
         videoHinweis = `${videoHinweis} Zugangsmail verschickt.`.trim()
       }

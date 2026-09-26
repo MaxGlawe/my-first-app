@@ -149,5 +149,12 @@ kam nichts an; steht dort ein Fehler, sagt er, welcher.
 | `appointment.cancelled` | Termin absagen; Videozugang sofort schliessen |
 
 Bei allen anderen Leistungen — Krankengymnastik, Manuelle Therapie und so
-weiter — passiert **nichts** ausser dem Speichern des Termins. Das ist
-Absicht.
+weiter — gilt:
+
+* Ist die Person bereits Patient in Praxis OS, wird der Termin in ihrer Akte
+  gespeichert. Sonst passiert **nichts**: kein Datensatz, kein Konto, keine
+  Mail.
+
+Das ist Absicht: Praxis OS ist die digitale Betreuung, nicht die Zweitkopie
+des Praxiskalenders. Schickt trotzdem alle Ereignisse — wir entscheiden auf
+unserer Seite, was daraus wird.
