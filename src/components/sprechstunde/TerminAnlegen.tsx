@@ -69,6 +69,67 @@ export function TerminAnlegen({ onFertig }: { onFertig: () => void }) {
   const [busy, setBusy] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
 
+  /**
+   * SCHNELLANLAGE — der Weg fuer alle, die noch nicht in der Akte stehen.
+   *
+   * Wer die Videokonsultation auf der Website bucht, ist in Praxis OS
+   * niemand: Das Buchungstool schickt (Stand 26.09.2026) keine Ereignisse
+   * herueber, also entsteht kein Datensatz. Dasselbe gilt fuer jemanden aus
+   * der Krankengymnastik, den es hier noch nicht gibt.
+   *
+   * Ein KONTO braucht dafuer niemand — der Gast-Link kommt ohne Anmeldung
+   * aus. Was es braucht, ist ein PATIENTENDATENSATZ, denn an ihm haengt
+   * alles Klinische: Akte, Bewegungsbild, Plan, Notiz. Ein Termin ohne
+   * Datensatz waere ein Gespraech, das nirgends stattgefunden hat.
+   *
+   * Also: nicht den Datensatz abschaffen, sondern die Reibung. Vier Felder,
+   * hier, ohne die Seite zu wechseln.
+   */
+  const [neuOffen, setNeuOffen] = useState(false)
+  const [nVorname, setNVorname] = useState("")
+  const [nNachname, setNNachname] = useState("")
+  const [nEmail, setNEmail] = useState("")
+  const [nGeburt, setNGeburt] = useState("")
+  const [nGeschlecht, setNGeschlecht] = useState<
+    "weiblich" | "maennlich" | "divers" | "unbekannt"
+  >("unbekannt")
+  const [legtAn, setLegtAn] = useState(false)
+
+  async function neuAnlegen() {
+    setLegtAn(true)
+    setFehler(null)
+    try {
+      const res = await fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vorname: nVorname.trim(),
+          nachname: nNachname.trim(),
+          email: nEmail.trim(),
+          geburtsdatum: nGeburt,
+          geschlecht: nGeschlecht,
+        }),
+      })
+      const j = await res.json()
+      if (!res.ok) {
+        setFehler(j.error ?? "Der Patient konnte nicht angelegt werden.")
+        return
+      }
+      const angelegt = j.patient ?? j
+      setPatient({
+        id: angelegt.id,
+        vorname: angelegt.vorname ?? nVorname.trim(),
+        nachname: angelegt.nachname ?? nNachname.trim(),
+        email: angelegt.email ?? nEmail.trim(),
+      })
+      setNeuOffen(false)
+    } catch {
+      setFehler("Verbindungsfehler. Bitte erneut versuchen.")
+    } finally {
+      setLegtAn(false)
+    }
+  }
+
   useEffect(() => {
     if (patient || suche.trim().length < 2) {
       setTreffer([])
@@ -189,9 +250,109 @@ export function TerminAnlegen({ onFertig }: { onFertig: () => void }) {
               ))}
             </ul>
           )}
-          {!patient && suche.trim().length >= 2 && treffer.length === 0 && (
-            <p className="mt-1.5 text-[12.5px] text-slate-500">Kein Treffer.</p>
+          {!patient && !neuOffen && suche.trim().length >= 2 && treffer.length === 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <p className="text-[12.5px] text-slate-500">Kein Treffer.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  // Was schon getippt wurde, ist meistens der Name — oder die
+                  // Mailadresse. Uebernehmen statt abtippen lassen.
+                  const roh = suche.trim()
+                  if (roh.includes("@")) setNEmail(roh)
+                  else {
+                    const teile = roh.split(/\s+/)
+                    setNVorname(teile[0] ?? "")
+                    setNNachname(teile.slice(1).join(" "))
+                  }
+                  setNeuOffen(true)
+                }}
+                className="text-[12.5px] font-semibold underline"
+                style={{ color: "#2C3E2D" }}
+              >
+                Neuen Patienten anlegen
+              </button>
+            </div>
           )}
+        </div>
+      )}
+
+      {/* Schnellanlage — vier Felder, ohne die Seite zu wechseln. */}
+      {neuOffen && !patient && (
+        <div className="mt-2 rounded-xl border border-[#e7e1d6] bg-[#F8F5F0] p-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-500">
+              Neuer Patient
+            </p>
+            <button
+              type="button"
+              onClick={() => setNeuOffen(false)}
+              className="text-[12.5px] text-slate-500 underline"
+            >
+              abbrechen
+            </button>
+          </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Input
+              value={nVorname}
+              onChange={(e) => setNVorname(e.target.value)}
+              placeholder="Vorname"
+              className="bg-white"
+            />
+            <Input
+              value={nNachname}
+              onChange={(e) => setNNachname(e.target.value)}
+              placeholder="Nachname"
+              className="bg-white"
+            />
+            <Input
+              value={nEmail}
+              onChange={(e) => setNEmail(e.target.value)}
+              type="email"
+              placeholder="E-Mail"
+              className="col-span-2 bg-white"
+            />
+            <Input
+              value={nGeburt}
+              onChange={(e) => setNGeburt(e.target.value)}
+              type="date"
+              className="bg-white"
+            />
+            <select
+              value={nGeschlecht}
+              onChange={(e) =>
+                setNGeschlecht(e.target.value as "weiblich" | "maennlich" | "divers" | "unbekannt")
+              }
+              className="rounded-md border border-slate-200 bg-white px-2 text-[14px]"
+            >
+              <option value="unbekannt">Geschlecht (offen)</option>
+              <option value="weiblich">weiblich</option>
+              <option value="maennlich">männlich</option>
+              <option value="divers">divers</option>
+            </select>
+          </div>
+
+          <p className="mt-2 text-[11.5px] leading-relaxed text-slate-500">
+            Die E-Mail-Adresse braucht die Einladung. Das Geburtsdatum ist Pflichtfeld der
+            Akte — ein Konto bekommt er dadurch nicht, der Gast-Link kommt ohne aus.
+          </p>
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => void neuAnlegen()}
+            disabled={
+              legtAn ||
+              !nVorname.trim() ||
+              !nNachname.trim() ||
+              !nEmail.trim() ||
+              !/^\d{4}-\d{2}-\d{2}$/.test(nGeburt)
+            }
+            className="mt-2.5 w-full bg-[#2C3E2D] hover:bg-[#24321f]"
+          >
+            {legtAn ? "Wird angelegt…" : "Anlegen und Termin geben"}
+          </Button>
         </div>
       )}
 
