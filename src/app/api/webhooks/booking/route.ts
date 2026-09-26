@@ -196,8 +196,13 @@ const appointmentRawSchema = z.object({
   // Patient ID: booking tool sends "patient_id", we also accept "booking_patient_id"
   patient_id: z.string().min(1).optional(),
   booking_patient_id: z.string().min(1).optional(),
-  scheduled_at: z.string().datetime({ offset: true }),
-  duration_minutes: z.number().int().positive(),
+  // Bei einer ABSAGE duerfen beide fehlen. Am 26.09.2026 schickte der
+  // Kalender eine Absage nur mit der Termin-ID — voellig verstaendlich, denn
+  // zum Absagen braucht niemand Uhrzeit und Dauer. Unser Schema verlangte sie
+  // trotzdem und wies die Absage mit einem Validierungsfehler ab. Der Termin
+  // waere offen stehen geblieben.
+  scheduled_at: z.string().datetime({ offset: true }).optional(),
+  duration_minutes: z.number().int().positive().optional(),
   therapist_name: z.string().max(200).optional().nullable(),
   service_name: z.string().max(200).optional().nullable(),
   status: z.enum(["scheduled", "cancelled", "completed"]).default("scheduled"),
@@ -215,6 +220,13 @@ const appointmentRawSchema = z.object({
 ).refine(
   (d) => d.patient_id || d.booking_patient_id,
   { message: "Either 'patient_id' or 'booking_patient_id' is required", path: ["booking_patient_id"] }
+).refine(
+  // Nur wer einen Termin ANLEGT oder VERLEGT, muss sagen wann und wie lange.
+  (d) => d.status === "cancelled" || (d.scheduled_at && d.duration_minutes),
+  {
+    message: "'scheduled_at' und 'duration_minutes' sind ausser bei einer Absage Pflicht",
+    path: ["scheduled_at"],
+  }
 )
 
 function normalizeAppointmentPayload(raw: z.infer<typeof appointmentRawSchema>) {
@@ -599,14 +611,23 @@ async function handleAppointmentEvent(
   const patientFest = patientRef
 
   // Upsert appointment (idempotent via booking_system_appointment_id)
+  //
+  // Eine Absage ohne Termindaten darf Uhrzeit und Dauer NICHT ueberschreiben:
+  // Der Termin soll abgesagt in der Akte stehen bleiben, mit dem Zeitpunkt,
+  // den er hatte — sonst steht dort ein Eintrag ohne Datum.
+  const nurStatus = data.status === "cancelled" && !data.scheduled_at
   const { error: upsertError } = await supabase
     .from("appointments")
     .upsert(
       {
         patient_id: patientFest.id,
         booking_system_appointment_id: data.booking_appointment_id,
-        scheduled_at: data.scheduled_at,
-        duration_minutes: data.duration_minutes,
+        ...(nurStatus
+          ? {}
+          : {
+              scheduled_at: data.scheduled_at,
+              duration_minutes: data.duration_minutes,
+            }),
         therapist_name: data.therapist_name ?? null,
         service_name: data.service_name ?? null,
         status: data.status,
@@ -645,8 +666,9 @@ async function handleAppointmentEvent(
       patientId: patientFest.id as string,
       buchung: {
         booking_appointment_id: data.booking_appointment_id,
-        scheduled_at: data.scheduled_at,
-        duration_minutes: data.duration_minutes,
+        // Bei einer Absage unerheblich — der Termin wird nur geschlossen.
+        scheduled_at: data.scheduled_at ?? new Date().toISOString(),
+        duration_minutes: data.duration_minutes ?? 30,
         service_name: data.service_name,
         status: data.status,
       },
@@ -661,41 +683,18 @@ async function handleAppointmentEvent(
   }
 
   /**
-   * Die Zugangsmail — nur wenn die Einladung sie nicht schon ersetzt hat.
+   * KEINE ZUGANGSMAIL MEHR AN DIESER STELLE.
    *
-   * Bei der Videokonsultation traegt die Einladung Ablauf, Vorbereitung und
-   * den Terminlink; eine zweite Mail waere dieselbe Ankuendigung noch
-   * einmal. Bei jeder anderen Leistung gibt es keine Einladung — dann ist
-   * die Zugangsmail der einzige Weg, auf dem der Patient je von seiner
-   * Terminuebersicht erfaehrt.
+   * Sie war fuer den Fall gedacht: neuer Patient bucht etwas anderes als eine
+   * Videokonsultation. Seit ein Patient nur noch DURCH eine Videokonsultation
+   * entsteht, kann dieser Fall nicht mehr eintreten — und traefe er doch ein
+   * (jemand bucht binnen 15 Minuten noch eine KG dazu), waere die Mail eine
+   * zweite Ankuendigung desselben Gespraechs. Genau das wollten wir los.
    *
-   * Nur fuer NEUE Patienten: Wer schon laenger dabei ist, hat den Zugang
-   * bekommen, als er dazukam. Erkannt am Alter des Kontos, nicht an einem
-   * Merker — ein Konto, das vor Minuten entstand, gehoert zu dieser Buchung.
+   * Wer sein Konto ueber einen anderen Weg bekommt, bekommt die Zugangsmail
+   * dort — ensurePatientLogin verschickt sie weiterhin, nur eben nicht aus
+   * dem Buchungs-Webhook.
    */
-  if (data.status === "scheduled" && !istVideoKonsultation(data.service_name)) {
-    try {
-      const { data: profil } = await supabase
-        .from("user_profiles")
-        .select("created_at")
-        .eq("email", patientFest.email ?? "")
-        .maybeSingle()
-
-      const neuAngelegt =
-        profil?.created_at &&
-        Date.now() - new Date(profil.created_at as string).getTime() < 15 * 60_000
-
-      if (neuAngelegt && patientFest.email) {
-        await sendPatientAccessMail(supabase, {
-          email: patientFest.email,
-          firstName: (patientFest.vorname as string) ?? "Patient",
-        })
-        videoHinweis = `${videoHinweis} Zugangsmail verschickt.`.trim()
-      }
-    } catch (err) {
-      console.error("[webhook/booking] Zugangsmail fehlgeschlagen:", err)
-    }
-  }
 
   return { status: "success", errorMessage: videoHinweis || undefined }
 }
@@ -779,11 +778,13 @@ export async function POST(request: NextRequest) {
     ) {
       result = await handleAppointmentEvent(supabase, payload)
     } else {
-      // Unknown event type — log and acknowledge (don't fail)
-      result = {
-        status: "error",
-        errorMessage: `Unknown event_type: '${event_type}'`,
-      }
+      // Ein `ping` ist kein Fehler, sondern die Frage „hoerst du mich?".
+      // Als Fehler protokolliert faerbt er das Ereignisprotokoll rot und
+      // laesst eine funktionierende Verbindung kaputt aussehen.
+      result =
+        event_type === "ping"
+          ? { status: "success", errorMessage: "Ping empfangen — Verbindung steht." }
+          : { status: "error", errorMessage: `Unknown event_type: '${event_type}'` }
     }
   } catch (err) {
     result = {
