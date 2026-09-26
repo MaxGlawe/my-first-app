@@ -52,9 +52,9 @@ Drei Typen, mehr brauchen wir nicht:
 | `appointment.updated` | ein Termin wurde verlegt |
 | `appointment.cancelled` | ein Termin wurde abgesagt |
 
-`patient.created` ist optional: Kommt ein Termin für einen uns unbekannten
-Patienten, legen wir ihn aus den Termindaten an — vorausgesetzt, ihr schickt
-`patient.created` **vorher** oder der Patient existiert bereits.
+`patient.created` muss **vor** dem ersten Termin dieses Patienten kommen: Der
+Termin trägt nur eure Patienten-ID, nicht Name und E-Mail. Ohne das
+vorangegangene Ereignis können wir einen neuen Bucher niemandem zuordnen.
 
 ### 2.1 Patient
 
@@ -143,8 +143,8 @@ kam nichts an; steht dort ein Fehler, sagt er, welcher.
 
 | Ereignis | Praxis OS |
 |---|---|
-| `patient.created` | Patient anlegen oder mit bestehendem verknüpfen; passwortloser Zugang zur Termin-Ansicht |
-| `appointment.created` | Termin speichern; **bei der Video-Sprechstunde zusätzlich:** Videotermin anlegen + Einladung mit Zugangslink und .ics verschicken |
+| `patient.created` | mit einem bestehenden Patienten verknüpfen; sonst nur vormerken |
+| `appointment.created` | **Video-Sprechstunde:** Patient anlegen (falls neu), Videotermin anlegen, **eine** Einladung mit Zugangslink, .ics und Terminübersicht. **Andere Leistung:** Termin nur speichern, wenn die Person bereits Patient ist |
 | `appointment.updated` | Termin aktualisieren; Videotermin mitverlegen, neue Einladung |
 | `appointment.cancelled` | Termin absagen; Videozugang sofort schliessen |
 
