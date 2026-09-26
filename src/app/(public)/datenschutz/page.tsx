@@ -141,30 +141,34 @@ export default async function DatenschutzPage() {
               und Art. 9 Abs. 2 lit. h DSGVO (Gesundheitsversorgung).
             </p>
 
-            <h3 className="text-base font-semibold mt-5 mb-2" style={{ color: INK }}>d) Bei Video-Konsultationen über Doctolib</h3>
+            <h3 className="text-base font-semibold mt-5 mb-2" style={{ color: INK }}>d) Bei Video-Konsultationen im digitalen Sprechzimmer</h3>
             <p>
-              Die Video-Konsultationen werden über die Plattform <span className="font-medium" style={{ color: INK }}>Doctolib GmbH</span> (Mehringdamm 51, 10961 Berlin) durchgeführt. Im Rahmen der Terminbuchung und Videosprechstunde werden folgende Daten an Doctolib übermittelt:
+              Die Video-Konsultationen werden über das <span className="font-medium" style={{ color: INK }}>digitale
+              Sprechzimmer von Praxis OS</span> durchgeführt. Wir betreiben diesen Videodienst selbst auf einem
+              angemieteten Server in Deutschland; es ist kein Videoanbieter als Dritter beteiligt. Dabei
+              werden verarbeitet:
             </p>
             <ul className="list-disc list-inside space-y-1 mt-2">
-              <li>Vor- und Nachname</li>
-              <li>E-Mail-Adresse</li>
-              <li>Termindetails (Datum, Uhrzeit, Art der Konsultation)</li>
-              <li>Videodaten während der Sprechstunde (Ende-zu-Ende-verschlüsselt)</li>
+              <li>Vorname (Anzeigename im Gespräch) und Termindetails (Datum, Uhrzeit, Anlass)</li>
+              <li>Bild und Ton während des Gesprächs — ausschließlich zur Übertragung in Echtzeit</li>
+              <li>IP-Adresse und technische Verbindungsdaten (Gerätetyp, Browser, Verbindungsqualität)</li>
+              <li>Zeitpunkt von Beitritt und Ende des Gesprächs (Anwesenheitsnachweis)</li>
             </ul>
             <p className="mt-2">
-              Die Videokonsultationen sind <span className="font-medium" style={{ color: INK }}>Ende-zu-Ende verschlüsselt</span>.
-              Doctolib hat keinen Zugriff auf die Inhalte der Gespräche. Doctolib speichert Daten auf Servern
-              in der Europäischen Union und ist ISO 27001 und HDS (Hébergeur de Données de Santé) zertifiziert.
+              <span className="font-medium" style={{ color: INK }}>Die Gespräche werden nicht aufgezeichnet.</span> Eine
+              Aufzeichnungsfunktion ist auf unserem Videoserver nicht installiert. Bild und Ton werden
+              <span className="font-medium" style={{ color: INK }}> transportverschlüsselt</span> übertragen (DTLS-SRTP)
+              und vom Server lediglich zwischen den Teilnehmern weitergeleitet, nicht gespeichert.
+            </p>
+            <p className="mt-2">
+              Der Zugang zum Gespräch erfolgt über einen persönlichen Link, der nur für den jeweiligen
+              Termin und nur innerhalb seines Zeitfensters gültig ist.
             </p>
             <p className="mt-2">
               <span className="font-medium" style={{ color: INK }}>Rechtsgrundlage:</span> Art. 6 Abs. 1 lit. b DSGVO
-              (Vertragserfüllung) und Art. 28 DSGVO (Auftragsverarbeitung).
-            </p>
-            <p className="mt-2">
-              Datenschutzerklärung von Doctolib:{" "}
-              <a href="https://www.doctolib.de/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: GREEN }}>
-                www.doctolib.de/privacy-policy
-              </a>
+              (Vertragserfüllung), Art. 9 Abs. 2 lit. h DSGVO (Gesundheitsversorgung) sowie Art. 9 Abs. 2
+              lit. a DSGVO (ausdrückliche Einwilligung). Für den Serverbetrieb besteht ein
+              Auftragsverarbeitungsvertrag gemäß Art. 28 DSGVO mit dem Rechenzentrumsbetreiber.
             </p>
           </section>
 
@@ -187,19 +191,11 @@ export default async function DatenschutzPage() {
               </div>
 
               <div className="p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
-                <p className="font-medium" style={{ color: INK }}>Doctolib GmbH</p>
-                <p className="text-xs mb-2" style={{ color: MUTED }}>Videokonsultation, Terminbuchung</p>
-                <p>
-                  Daten werden auf Servern in der EU verarbeitet. Doctolib ist als Gesundheitsdaten-Hoster
-                  (HDS) zertifiziert und erfüllt die Anforderungen der DSGVO. Ein AVV liegt vor.
-                </p>
-              </div>
-
-              <div className="p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
                 <p className="font-medium" style={{ color: INK }}>Hetzner Online GmbH</p>
-                <p className="text-xs mb-2" style={{ color: MUTED }}>Webhosting, Server-Infrastruktur</p>
+                <p className="text-xs mb-2" style={{ color: MUTED }}>Webhosting, Server-Infrastruktur, Videoserver</p>
                 <p>
-                  Unsere Webseite wird auf Servern von Hetzner in Deutschland gehostet. Ein AVV liegt vor.
+                  Unsere Webseite, die Anwendung Praxis OS und der Videoserver des digitalen
+                  Sprechzimmers laufen auf Servern von Hetzner in Deutschland. Ein AVV liegt vor.
                   Hetzner ist ISO 27001 zertifiziert.
                 </p>
               </div>

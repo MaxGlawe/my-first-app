@@ -82,7 +82,7 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   {
     frage: "Was brauche ich technisch, um mitzumachen?",
     antwort:
-      "Für das 90-Tage-Programm von Praxis OS genügen ein Smartphone, Tablet oder Computer mit Kamera, Mikrofon und Internetverbindung sowie etwas Platz zum Bewegen. Die Video-Sitzungen laufen über Doctolib; dafür wird vor jedem Termin ein persönlicher Zugangslink verschickt, eine Installation ist nicht nötig. Plan, Check-in und Chat laufen über die Praxis-OS-App im Browser, die sich auf dem Startbildschirm ablegen lässt. Besondere Geräte oder Trainingsmittel werden nicht vorausgesetzt.",
+      "Für das 90-Tage-Programm von Praxis OS genügen ein Smartphone, Tablet oder Computer mit Kamera, Mikrofon und Internetverbindung sowie etwas Platz zum Bewegen. Die Video-Sitzungen laufen im digitalen Sprechzimmer von Praxis OS direkt im Browser; dafür wird vor jedem Termin ein persönlicher Zugangslink verschickt, eine Installation ist nicht nötig. Plan, Check-in und Chat laufen über die Praxis-OS-App im Browser, die sich auf dem Startbildschirm ablegen lässt. Besondere Geräte oder Trainingsmittel werden nicht vorausgesetzt.",
   },
   {
     frage: "Kann ich den Vertrag widerrufen?",

@@ -99,11 +99,12 @@ export default function AgbPage() {
               aus dem jeweiligen Behandlungsvertrag.
             </p>
             <p className="mt-3">
-              (2) Die <span className="font-medium" style={{ color: INK }}>Video-Konsultationen</span> werden über die
-              Plattform <span className="font-medium" style={{ color: INK }}>Doctolib GmbH</span> durchgeführt. Der Patient
-              erhält vor jedem Termin einen individuellen Zugangslink. Die Videogespräche sind Ende-zu-Ende
-              verschlüsselt. Für die Nutzung von Doctolib gelten ergänzend die Nutzungsbedingungen und
-              Datenschutzbestimmungen von Doctolib.
+              (2) Die <span className="font-medium" style={{ color: INK }}>Video-Konsultationen</span> werden über das
+              <span className="font-medium" style={{ color: INK }}> digitale Sprechzimmer von Praxis OS</span> durchgeführt,
+              das der Anbieter auf eigenen Servern in Deutschland betreibt. Der Patient erhält vor jedem
+              Termin einen individuellen Zugangslink; eine Installation oder ein Benutzerkonto ist dafür
+              nicht erforderlich. Die Übertragung von Bild und Ton erfolgt transportverschlüsselt. Die
+              Gespräche werden <span className="font-medium" style={{ color: INK }}>nicht aufgezeichnet</span>.
             </p>
             <p className="mt-2">
               (3) Die ergänzende Betreuung (Trainingspläne, Chat, Tracking, Wissens-Lektionen) erfolgt
@@ -186,14 +187,15 @@ export default function AgbPage() {
           <section>
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>§ 5 Termine und Absageregelung</h2>
             <p>
-              (1) Termine für Video-Konsultationen werden über Doctolib oder per Absprache mit dem
-              Anbieter vereinbart.
+              (1) Termine für Video-Konsultationen werden über den Online-Terminkalender des Anbieters
+              oder per Absprache mit dem Anbieter vereinbart.
             </p>
             <p className="mt-2">
               (2) <span className="font-medium" style={{ color: INK }}>Absagefrist:</span> Vereinbarte Termine können
               bis <span className="font-medium" style={{ color: INK }}>24 Stunden vor dem geplanten Termin</span> kostenfrei
-              abgesagt oder verschoben werden. Die Absage hat über Doctolib, per E-Mail oder per
-              Chat-Nachricht in der App zu erfolgen.
+              abgesagt oder verschoben werden. Die Absage kann über den persönlichen Terminlink, den der
+              Patient mit der Terminbestätigung erhält, per E-Mail oder per Chat-Nachricht in der App
+              erfolgen.
             </p>
             <p className="mt-2">
               (3) Bei Absagen, die weniger als 24 Stunden vor dem Termin erfolgen, oder bei
@@ -262,8 +264,8 @@ export default function AgbPage() {
             </p>
             <p className="mt-2">
               (6) Der Anbieter haftet nicht für Störungen, Unterbrechungen oder Ausfälle der
-              Plattform Praxis OS oder der Video-Plattform Doctolib, soweit diese nicht vom Anbieter
-              zu vertreten sind. Dies umfasst insbesondere technische Störungen der Internetverbindung,
+              Plattform Praxis OS einschließlich des digitalen Sprechzimmers, soweit diese nicht vom
+              Anbieter zu vertreten sind. Dies umfasst insbesondere technische Störungen der Internetverbindung,
               der Server oder Drittanbieter-Dienste.
             </p>
           </section>
@@ -308,8 +310,9 @@ export default function AgbPage() {
               </Link>.
             </p>
             <p className="mt-2">
-              (3) Im Rahmen der Video-Konsultationen werden Daten an die Doctolib GmbH übermittelt.
-              Näheres hierzu regelt die Datenschutzerklärung von Doctolib sowie unsere eigene
+              (3) Die Video-Konsultationen werden auf Servern verarbeitet, die der Anbieter bei einem
+              Rechenzentrumsbetreiber in Deutschland angemietet hat und selbst betreibt. Eine
+              Übermittlung der Gesprächsinhalte an Dritte findet nicht statt. Näheres regelt unsere
               Datenschutzerklärung.
             </p>
             <p className="mt-2">

@@ -116,19 +116,19 @@ export default async function ImpressumPage() {
           <section>
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>4. Plattform für Videokonsultationen</h2>
             <p>
-              Die Video-Konsultationen im Rahmen der Online-Physiotherapie werden über die Plattform
-              <span className="font-medium" style={{ color: INK }}> Doctolib </span> durchgeführt.
+              Die Video-Konsultationen im Rahmen der Online-Physiotherapie werden über das
+              <span className="font-medium" style={{ color: INK }}> digitale Sprechzimmer von Praxis OS</span>
+              durchgeführt. Wir betreiben diesen Dienst selbst; ein Videoanbieter als Dritter ist nicht
+              beteiligt.
             </p>
             <div className="mt-3 p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
-              <p className="font-medium" style={{ color: INK }}>Doctolib GmbH</p>
-              <p>Mehringdamm 51, 10961 Berlin, Deutschland</p>
-              <p className="mt-1">
-                Website: <a href="https://www.doctolib.de" target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: GREEN }}>www.doctolib.de</a>
-              </p>
+              <p className="font-medium" style={{ color: INK }}>Serverstandort</p>
+              <p>Hetzner Online GmbH, Industriestr. 25, 91710 Gunzenhausen, Deutschland</p>
               <p className="mt-2 text-xs" style={{ color: MUTED }}>
-                Doctolib ist ein nach EU-Recht zertifizierter Anbieter für Telemedizin-Dienste. Die
-                Videokonsultationen sind Ende-zu-Ende verschlüsselt und DSGVO-konform. Weitere
-                Informationen entnimmst du der Datenschutzerklärung von Doctolib.
+                Der Videoserver steht in einem deutschen Rechenzentrum. Bild und Ton werden
+                transportverschlüsselt übertragen und nicht aufgezeichnet — eine Aufzeichnungsfunktion
+                ist nicht installiert. Der Zugang erfolgt über einen persönlichen Link, der nur für den
+                jeweiligen Termin gilt. Einzelheiten stehen in unserer Datenschutzerklärung.
               </p>
             </div>
           </section>
