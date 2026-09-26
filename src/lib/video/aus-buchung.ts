@@ -31,6 +31,7 @@
 
 import { oeffnetAm, schliesstAm } from "@/lib/video/termin"
 import { sendeEinladung } from "@/lib/video/einladung"
+import { createMagicLink } from "@/lib/patient-provisioning"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Svc = { from: (t: string) => any }
 
@@ -195,6 +196,32 @@ export async function videoterminAusBuchung(args: {
     }
   }
 
+  /**
+   * EINE MAIL STATT ZWEI.
+   *
+   * Am 26.09.2026 bekam der erste echte Bucher drei Mails auf einmal: die
+   * Bestaetigung des Kalenders, unsere Zugangsmail und unsere Einladung. Die
+   * letzten beiden kuendigten dasselbe Gespraech an.
+   *
+   * Deshalb traegt die Einladung jetzt beides — Ablauf und Vorbereitung aus
+   * der Zugangsmail, dazu den passwortlosen Link zur Terminuebersicht — und
+   * die Zugangsmail entfaellt bei der Videokonsultation (siehe Webhook).
+   *
+   * Scheitert der Link, geht die Einladung trotzdem raus: ein fehlender
+   * Selbstverwaltungs-Link ist aergerlich, eine fehlende Einladung waere
+   * schlimmer.
+   */
+  let termineUrl: string | null = null
+  if (patient.email) {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wwwpraxis-os.com"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      termineUrl = await createMagicLink(svc as any, patient.email, `${siteUrl}/meine-termine`)
+    } catch (err) {
+      console.error("[video/aus-buchung] Magiclink fehlgeschlagen:", err)
+    }
+  }
+
   // ── Neu ─────────────────────────────────────────────────────────────────
   const { data: angelegt, error } = await svc
     .from("video_calls")
@@ -231,12 +258,14 @@ export async function videoterminAusBuchung(args: {
     },
     patient,
     behandlerName,
+    ersterKontakt: true,
+    termineUrl,
   })
 
   return {
     getan: true,
     hinweis: mail.ok
-      ? "Videotermin angelegt, Einladung verschickt."
+      ? "Videotermin angelegt, Einladung verschickt (mit Ablauf und Terminlink)."
       : `Videotermin angelegt, Einladung fehlgeschlagen: ${mail.fehler}`,
   }
 }

@@ -22,8 +22,8 @@ import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
 import { sendMetaEvent } from "@/lib/meta-capi"
-import { ensurePatientLogin } from "@/lib/patient-provisioning"
-import { videoterminAusBuchung } from "@/lib/video/aus-buchung"
+import { ensurePatientLogin, sendPatientAccessMail } from "@/lib/patient-provisioning"
+import { videoterminAusBuchung, istVideoKonsultation } from "@/lib/video/aus-buchung"
 
 /** Schmerzcheck-Lead bucht → Drip stoppen + Meta-Purchase (69 €) feuern. */
 function convertSchmerzcheckLead(
@@ -447,12 +447,20 @@ async function handlePatientCreated(
     email: data.email,
     firstName: data.vorname,
     lastName: data.nachname,
-    // Beim Nachsenden historischer Ereignisse NIEMALS die Zugangsmail
-    // ausloesen. Sonst wird aus einer technischen Nachlieferung ein
-    // Massenversand an Menschen, die vor Monaten einmal gebucht haben und
-    // heute nichts von uns erwarten. Das Konto entsteht trotzdem; die
-    // Zugangsmail kann jederzeit gezielt nachgeholt werden.
-    sendAccessMail: !backfill,
+    // KEINE Zugangsmail an dieser Stelle.
+    //
+    // Sie ging bisher sofort beim Anlegen raus — und unmittelbar danach kam
+    // bei einer Videokonsultation unsere Einladung. Zusammen mit der
+    // Bestaetigung des Kalenders waren das DREI Mails in derselben Sekunde,
+    // zwei davon ueber dasselbe Gespraech (26.09.2026, erster echter Bucher).
+    //
+    // Beim Anlegen wissen wir noch nicht, welche Leistung gebucht wurde —
+    // das steht erst im Termin-Ereignis, das Sekunden spaeter kommt. Also
+    // entscheidet dort: Videokonsultation → die Einladung traegt Ablauf und
+    // Zugang mit; alles andere → die Zugangsmail, wie bisher.
+    //
+    // Das Konto entsteht hier trotzdem, nur eben still.
+    sendAccessMail: false,
   })
   if (provision.status === "error") {
     console.error("[webhook/booking] PROJ-34 Login-Provisionierung fehlgeschlagen:", provision.error)
@@ -483,7 +491,7 @@ async function handleAppointmentEvent(
   // Find patient by booking_system_id
   const { data: patient, error: lookupError } = await supabase
     .from("patients")
-    .select("id, email")
+    .select("id, email, vorname")
     .eq("booking_system_id", data.booking_patient_id)
     .limit(1)
     .maybeSingle()
@@ -560,6 +568,43 @@ async function handleAppointmentEvent(
       err instanceof Error ? err.message : String(err)
     }`
     console.error("[webhook/booking]", videoHinweis)
+  }
+
+  /**
+   * Die Zugangsmail — nur wenn die Einladung sie nicht schon ersetzt hat.
+   *
+   * Bei der Videokonsultation traegt die Einladung Ablauf, Vorbereitung und
+   * den Terminlink; eine zweite Mail waere dieselbe Ankuendigung noch
+   * einmal. Bei jeder anderen Leistung gibt es keine Einladung — dann ist
+   * die Zugangsmail der einzige Weg, auf dem der Patient je von seiner
+   * Terminuebersicht erfaehrt.
+   *
+   * Nur fuer NEUE Patienten: Wer schon laenger dabei ist, hat den Zugang
+   * bekommen, als er dazukam. Erkannt am Alter des Kontos, nicht an einem
+   * Merker — ein Konto, das vor Minuten entstand, gehoert zu dieser Buchung.
+   */
+  if (data.status === "scheduled" && !istVideoKonsultation(data.service_name)) {
+    try {
+      const { data: profil } = await supabase
+        .from("user_profiles")
+        .select("created_at")
+        .eq("email", patient.email ?? "")
+        .maybeSingle()
+
+      const neuAngelegt =
+        profil?.created_at &&
+        Date.now() - new Date(profil.created_at as string).getTime() < 15 * 60_000
+
+      if (neuAngelegt && patient.email) {
+        await sendPatientAccessMail(supabase, {
+          email: patient.email,
+          firstName: (patient.vorname as string) ?? "Patient",
+        })
+        videoHinweis = `${videoHinweis} Zugangsmail verschickt.`.trim()
+      }
+    } catch (err) {
+      console.error("[webhook/booking] Zugangsmail fehlgeschlagen:", err)
+    }
   }
 
   return { status: "success", errorMessage: videoHinweis || undefined }

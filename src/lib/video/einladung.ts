@@ -44,8 +44,12 @@ export async function sendeEinladung(args: {
   behandlerName: string
   /** „24h" oder „1h" machen daraus eine Erinnerung statt einer Ersteinladung. */
   erinnerung?: "24h" | "1h"
+  /** Erste Mail nach einer Buchung: traegt dann auch Ablauf und Vorbereitung. */
+  ersterKontakt?: boolean
+  /** Passwortloser Link zur eigenen Terminuebersicht. */
+  termineUrl?: string | null
 }): Promise<{ ok: boolean; fehler?: string }> {
-  const { svc, termin, patient, behandlerName, erinnerung } = args
+  const { svc, termin, patient, behandlerName, erinnerung, ersterKontakt, termineUrl } = args
 
   if (!patient.email) {
     return { ok: false, fehler: "Der Patient hat keine E-Mail-Adresse hinterlegt." }
@@ -70,6 +74,8 @@ export async function sendeEinladung(args: {
     siteUrl,
     hinweis: termin.hinweis ?? null,
     erinnerung,
+    ersterKontakt,
+    termineUrl,
   })
 
   const ics = kalendereintrag({

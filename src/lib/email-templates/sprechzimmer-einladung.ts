@@ -34,6 +34,15 @@ export interface EinladungProps {
   praxisName: string
   siteUrl: string
   hinweis?: string | null
+  /**
+   * Erster Kontakt nach einer Buchung: Dann traegt diese Mail auch, was
+   * bisher in der Zugangsmail stand — Ablauf der 30 Minuten und was
+   * bereitliegen sollte. Sonst bekaeme der Patient zwei Mails, die
+   * dasselbe Gespraech ankuendigen.
+   */
+  ersterKontakt?: boolean
+  /** Passwortloser Link zur eigenen Terminuebersicht (umbuchen, stornieren). */
+  termineUrl?: string | null
   /** Erinnerung statt Ersteinladung — ändert Betreff und Einstieg. */
   erinnerung?: "24h" | "1h"
 }
@@ -142,10 +151,36 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
           </p>`
               : ""
           }
-          <p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 18px;">
+          ${
+            props.ersterKontakt
+              ? `<p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 8px;">
+            <strong style="color:${INK};">Worum es in den 30 Minuten geht:</strong>
+          </p>
+          <ul style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 12px;padding-left:20px;">
+            <li>Was deine Beschwerden auslöst und wo du gerade stehst</li>
+            <li>Ob sich dein Beschwerdebild aus der Ferne sinnvoll betreuen lässt</li>
+            <li>Wie eine Betreuung über Praxis OS in deinem Fall konkret aussehen würde</li>
+          </ul>
+          <p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 12px;">
+            <strong style="color:${INK};">Leg dir kurz bereit:</strong> vorhandene Befunde oder
+            Bildgebung und deine aktuellen Medikamente.
+          </p>`
+              : ""
+          }
+          <p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 ${props.termineUrl ? "12" : "18"}px;">
             <strong style="color:${INK};">Du kannst nicht?</strong> Antworte einfach auf diese
             Mail, dann finden wir einen neuen Termin.
           </p>
+          ${
+            props.termineUrl
+              ? `<p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 18px;">
+            <strong style="color:${INK};">Selbst umbuchen oder absagen:</strong> Unter
+            <a href="${props.termineUrl}" style="color:${GREEN};font-weight:600;">deiner
+            Terminübersicht</a> siehst du diesen und alle weiteren Termine — ohne Passwort,
+            ein Klick genügt.
+          </p>`
+              : ""
+          }
         </div>
       </div>
 
@@ -175,7 +210,11 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
     "Der Zugang öffnet sich fünf Minuten vor Beginn. Du brauchst nichts zu installieren.",
     props.hinweis ? `\nBitte vorbereiten: ${props.hinweis}` : "",
     "",
+    props.ersterKontakt
+      ? "In den 30 Minuten: was deine Beschwerden auslöst, ob sich das aus der Ferne betreuen lässt, und wie eine Betreuung über Praxis OS bei dir aussähe. Leg dir Befunde und Medikamente bereit."
+      : "",
     "Du kannst nicht? Antworte einfach auf diese Mail.",
+    props.termineUrl ? `Termine selbst verwalten: ${props.termineUrl}` : "",
     "",
     `${props.praxisName} — kein Notdienst. Bei akuten Beschwerden: ärztlicher Notdienst oder 112.`,
   ]
