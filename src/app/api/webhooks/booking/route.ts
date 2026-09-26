@@ -23,6 +23,7 @@ import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
 import { sendMetaEvent } from "@/lib/meta-capi"
 import { ensurePatientLogin } from "@/lib/patient-provisioning"
+import { videoterminAusBuchung } from "@/lib/video/aus-buchung"
 
 /** Schmerzcheck-Lead bucht → Drip stoppen + Meta-Purchase (69 €) feuern. */
 function convertSchmerzcheckLead(
@@ -532,7 +533,36 @@ async function handleAppointmentEvent(
     convertSchmerzcheckLead(supabase, patient.email)
   }
 
-  return { status: "success" }
+  // PROJ-28: Ist es die Video-Konsultation, entsteht daraus sofort ein Termin
+  // im Sprechzimmer — samt Einladung. Nur dafuer; eine gebuchte
+  // Krankengymnastik bekommt kein Sprechzimmer.
+  //
+  // Ein Fehler hier darf die Buchung nicht scheitern lassen: Der Termin im
+  // Kalender ist gespeichert, der Patient existiert, und das Videogespraech
+  // laesst sich von Hand nachtragen. Was schiefging, steht im Protokoll.
+  let videoHinweis = ""
+  try {
+    const video = await videoterminAusBuchung({
+      svc: supabase,
+      patientId: patient.id as string,
+      buchung: {
+        booking_appointment_id: data.booking_appointment_id,
+        scheduled_at: data.scheduled_at,
+        duration_minutes: data.duration_minutes,
+        service_name: data.service_name,
+        status: data.status,
+      },
+    })
+    videoHinweis = video.hinweis
+    console.log("[webhook/booking] Sprechzimmer:", video.hinweis)
+  } catch (err) {
+    videoHinweis = `Sprechzimmer-Schritt fehlgeschlagen: ${
+      err instanceof Error ? err.message : String(err)
+    }`
+    console.error("[webhook/booking]", videoHinweis)
+  }
+
+  return { status: "success", errorMessage: videoHinweis || undefined }
 }
 
 // ----------------------------------------------------------------

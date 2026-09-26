@@ -20,6 +20,7 @@ import { ANLASS_TEXT, videoEingerichtet } from "@/lib/video"
 import QRCode from "qrcode"
 import { sendEmail } from "@/lib/email"
 import { sprechzimmerEinladung } from "@/lib/email-templates/sprechzimmer-einladung"
+import { sendeEinladung } from "@/lib/video/einladung"
 import {
   oeffnetAm,
   schliesstAm,
@@ -251,59 +252,22 @@ export async function POST(request: NextRequest) {
   // verlorener Termin waere schlimmer.
   let einladungFehler: string | null = null
   if (einladen) {
-    if (!patient.email) {
-      einladungFehler = "Der Patient hat keine E-Mail-Adresse hinterlegt."
-    } else {
-      const behandlerName =
-        [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") || "Dein Behandler"
-      const { data: praxis } = await auth.svc
-        .from("praxis_settings")
-        .select("praxis_name, email")
-        .limit(1)
-        .maybeSingle()
-
-      const mail = sprechzimmerEinladung({
-        vorname: patient.vorname || "",
-        geplantAt: geplant_at,
-        dauerMinuten: dauer_minuten,
-        beitrittsUrl: gastUrl,
-        behandlerName,
-        praxisName: praxis?.praxis_name ?? "Physiotherapie Glawe",
-        siteUrl,
+    const behandlerName =
+      [auth.profile.first_name, auth.profile.last_name].filter(Boolean).join(" ") ||
+      "Dein Behandler"
+    const versand = await sendeEinladung({
+      svc: auth.svc,
+      termin: {
+        id: call.id,
+        gast_token: call.gast_token,
+        geplant_at: geplant_at,
+        dauer_minuten: dauer_minuten,
         hinweis: hinweis || null,
-      })
-
-      const ics = kalendereintrag({
-        uid: call.id,
-        geplantAt: geplant_at,
-        dauerMinuten: dauer_minuten,
-        titel: "Video-Sprechstunde",
-        beschreibung: `Zum Sprechzimmer: ${gastUrl}
-
-Der Zugang öffnet sich 5 Minuten vor Beginn.`,
-        url: gastUrl,
-        organisator: behandlerName,
-        organisatorEmail: praxis?.email || process.env.SMTP_USER || "info@wwwpraxis-os.com",
-      })
-
-      const res = await sendEmail({
-        to: patient.email,
-        subject: mail.subject,
-        html: mail.html,
-        // Als Buffer, so erwartet es sendEmail. utf-8 ist fuer .ics richtig:
-        // Umlaute im Titel und im Behandlernamen muessen ankommen.
-        attachments: [{ filename: "Videotermin.ics", content: Buffer.from(ics, "utf-8") }],
-      })
-
-      if (res.success) {
-        await auth.svc
-          .from("video_calls")
-          .update({ einladung_gesendet_at: new Date().toISOString() })
-          .eq("id", call.id)
-      } else {
-        einladungFehler = res.error ?? "Die Einladung konnte nicht verschickt werden."
-      }
-    }
+      },
+      patient,
+      behandlerName,
+    })
+    if (!versand.ok) einladungFehler = versand.fehler ?? "Die Einladung konnte nicht verschickt werden."
   }
 
   return NextResponse.json(
