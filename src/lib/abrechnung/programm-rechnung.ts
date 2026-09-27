@@ -283,10 +283,29 @@ export function monatsrechnung(args: {
 export function vermerk(args: {
   konsultationAm: string | null
   bezahltAm: string | null
+  /** Die Bezahlrechnung, die diesen Nachweis bereits beglichen hat. */
+  rechnungsnummer?: string | null
+  rechnungsdatum?: string | null
 }): string {
   const teile: string[] = []
   if (args.konsultationAm) teile.push(`Behandlungsfall seit ${datum(args.konsultationAm)}`)
-  if (args.bezahltAm) teile.push(`Bereits durch Vorauszahlung vom ${datum(args.bezahltAm)} beglichen`)
+
+  // Der wichtigste Satz auf dem ganzen Blatt: Hier ist nichts zu zahlen.
+  // Steht die Rechnungsnummer zur Verfügung, wird sie genannt — dann kann der
+  // Patient (und seine Versicherung) beide Belege zusammenführen.
+  if (args.rechnungsnummer) {
+    teile.push(
+      `Bereits beglichen durch Rechnung ${args.rechnungsnummer}` +
+        (args.rechnungsdatum ? ` vom ${datum(args.rechnungsdatum)}` : "") +
+        `. Dies ist keine Zahlungsaufforderung`
+    )
+  } else if (args.bezahltAm) {
+    teile.push(
+      `Bereits durch Vorauszahlung vom ${datum(args.bezahltAm)} beglichen. ` +
+        `Dies ist keine Zahlungsaufforderung`
+    )
+  }
+
   teile.push(`Umsatzsteuerfrei gemäß § 4 Nr. 14a UStG`)
   teile.push(`Behandlungszeitraum: ${PROGRAMM.tage} Tage ab Programmstart`)
   return teile.join(". ") + "."

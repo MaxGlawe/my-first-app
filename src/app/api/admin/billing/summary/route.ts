@@ -21,10 +21,15 @@ export async function GET() {
   }
 
   // Alle Rechnungen laden (ohne Entwürfe)
+  //
+  // PROJ-29: und ohne Leistungsnachweise. Die tragen dieselben Betraege ein
+  // zweites Mal — als Aufschluesselung einer Rechnung, die hier schon steht.
+  // Ohne diesen Filter zeigt das Dashboard fuer ein 299-EUR-Programm 598 EUR.
   const { data: invoices, error } = await serviceClient
     .from("invoices")
     .select("total, status, invoice_date")
     .neq("status", "entwurf")
+    .eq("beleg_art", "rechnung")
 
   if (error) {
     return NextResponse.json({ error: "Fehler beim Laden." }, { status: 500 })

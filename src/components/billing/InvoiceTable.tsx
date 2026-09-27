@@ -70,6 +70,14 @@ export function InvoiceTable({ invoices, loading }: InvoiceTableProps) {
             <TableRow key={inv.id}>
               <TableCell className="font-mono text-sm">
                 {inv.invoice_number}
+                {/* PROJ-29: Ein Nachweis sieht sonst aus wie eine zweite
+                    Rechnung ueber dasselbe Geld. Er zaehlt nicht als Umsatz,
+                    also muss man das in der Liste sehen. */}
+                {inv.beleg_art === "leistungsnachweis" && (
+                  <span className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wide bg-slate-100 text-slate-500">
+                    Nachweis
+                  </span>
+                )}
               </TableCell>
               <TableCell>
                 {inv.patient

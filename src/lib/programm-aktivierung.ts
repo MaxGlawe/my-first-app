@@ -19,7 +19,7 @@
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { grantAppAccess, revokeAppAccess } from "@/lib/app-access"
 import { ensurePatientLogin, createMagicLink } from "@/lib/patient-provisioning"
-import { createProgrammInvoiceDraft } from "@/lib/billing/programm-invoice"
+import { createProgrammBezahlrechnung } from "@/lib/billing/programm-invoice"
 import { sendEmail } from "@/lib/email"
 import { programmWillkommenEmail } from "@/lib/email-templates/programm-willkommen"
 import type { ProgrammVariante } from "@/lib/programm"
@@ -148,15 +148,25 @@ export async function aktiviereProgramm(
     console.error("[programm] Therapeutenzuweisung fehlgeschlagen:", err)
   )
 
-  void createProgrammInvoiceDraft(supabase, {
+  // Die Bezahlrechnung traegt den VOLLEN Programmpreis, nicht nur das, was
+  // Stripe heute eingezogen hat: Die Konsultation ist Teil des Honorars, sie
+  // wurde nur frueher bezahlt. Die Positionen aus dem Vertrag summieren sich
+  // ebenfalls auf den vollen Preis — vorher stand im Kopf 230 EUR und in den
+  // Zeilen 299 EUR.
+  const gezahltJetzt =
+    args.amountTotal != null ? args.amountTotal / 100 : betragAusVertrag(contract)
+
+  void createProgrammBezahlrechnung(supabase, {
     patientId: contract.patient_id,
     createdBy: contract.created_by,
     contractId: contract.id,
     contractNumber: contract.contract_number,
-    amount: args.amountTotal != null ? args.amountTotal / 100 : betragAusVertrag(contract),
+    gesamtpreis: Number(contract.gesamtpreis ?? 0) || gezahltJetzt,
+    bereitsBeglichen: Number(contract.bereits_beglichen ?? 0),
+    gezahltJetzt,
     leistungen: (contract.leistungen ?? []) as Leistung[],
     stripeSessionId,
-  }).catch((err) => console.error("[programm] Rechnungsentwurf fehlgeschlagen:", err))
+  }).catch((err: unknown) => console.error("[programm] Bezahlrechnung fehlgeschlagen:", err))
 
   // Der Patient soll ein richtiges Passwort haben, nicht dauerhaft auf
   // Magiclinks angewiesen sein. Der Zwang wird beim ersten Besuch von der

@@ -118,6 +118,10 @@ export async function GET(request: NextRequest) {
     .gte("invoice_date", von)
     .lte("invoice_date", bis)
     .neq("status", "entwurf")
+    // PROJ-29: Leistungsnachweise sind KEIN Umsatz. Sie stellen dieselben
+    // Betraege noch einmal dar, aufgeschluesselt nach GebueH-Ziffern, zu einer
+    // Rechnung, die bereits hier steht. Mitzaehlen hiesse doppelt buchen.
+    .eq("beleg_art", "rechnung")
     .order("invoice_date", { ascending: false })
 
   if (patError) {

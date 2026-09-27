@@ -55,6 +55,18 @@ export interface Invoice {
   paid_at: string | null
   cancelled_at: string | null
   notes: string | null
+  /**
+   * PROJ-29: `rechnung` zaehlt als Umsatz, `leistungsnachweis` nie.
+   *
+   * Optional, weil Zeilen aus Abfragen stammen koennen, die die Spalte nicht
+   * mitlesen. Wo es zaehlt, wird ausdruecklich auf `"leistungsnachweis"`
+   * geprueft — ein fehlender Wert ist dann eine Rechnung, und das ist die
+   * sichere Richtung: lieber im Umsatz auftauchen als still daraus
+   * verschwinden.
+   */
+  beleg_art?: "rechnung" | "leistungsnachweis"
+  /** PROJ-29: Bei einem Nachweis die Rechnung, die ihn beglichen hat. */
+  bezug_invoice_id?: string | null
 }
 
 /** Rechnung mit Positionen (für Detail-Ansicht) */

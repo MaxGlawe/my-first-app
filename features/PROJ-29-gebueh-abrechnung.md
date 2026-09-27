@@ -216,6 +216,64 @@ planmässig noch aussteht, und schrumpft sofort.
 
 ---
 
+## 5b · Ein Beleg zählt, drei weisen nach (27.09.2026)
+
+Nachgefragt: „Ich will eine Bezahlrechnung, die der Klient bezahlt hat, und
+dann drei Teilrechnungen für das, was bisher passiert ist."
+
+Beides wird gebraucht — aber nur **eines** darf Umsatz sein. Trügen beide
+Sätze echte Rechnungsnummern, stünden für ein 299-€-Programm 598 € in den
+Büchern.
+
+| | Bezahlrechnung | Leistungsnachweis (3×) |
+|---|---|---|
+| Nummer | `2026-0042` | `N-2026-0001` (eigene Folge) |
+| Betrag | 299 € (voller Preis) | Summe der drei = 299 € |
+| Umsatz | **ja** | **nie** |
+| Entsteht | mit dem Zahlungseingang | Tag 30 / 60 / 90 |
+| Status | `bezahlt` | `entwurf`, Freigabe durch den Behandler |
+| Zweck | Buchhaltung | Einreichung bei der Versicherung |
+
+Die Bezahlrechnung trägt den **vollen** Programmpreis, nicht nur was Stripe
+eingezogen hat: Die Konsultation ist Teil des Honorars, sie wurde nur früher
+bezahlt. (Nebenbei behoben: Bisher stand im Kopf 230 € und in den Zeilen
+299 €.) Sie entsteht nicht mehr als Entwurf — das Geld ist da, der Inhalt
+steht im Vertrag; ein Entwurf, der nie freigegeben wird, ist ein Umsatz, der
+nie in den Büchern steht.
+
+### Drei Stellen, an denen Nachweise nicht mitzählen dürfen
+
+`invoices.beleg_art` trennt beides. Ausgeschlossen werden Nachweise in
+`/api/admin/billing/summary` (Kennzahlen), `/api/admin/buchhaltung`
+(Auswertung) und beim `bereitsBerechnet` des Rechnungslaufs — dort hätte die
+Bezahlrechnung sonst jeden Nachweis auf null gerechnet.
+
+### Das Dokument
+
+Drei Fehler, die beim Nachsehen auffielen und alle das Papier betrafen:
+
+1. **Vier Rechnungen statt drei.** `createProgrammInvoiceDraft` aus PROJ-26
+   legte bei jeder Zahlung zusätzlich einen Entwurf über den vollen Betrag an,
+   ohne `programm_contract_id` — der Rechnungslauf sah ihn nicht.
+2. **Die Vermerke standen nur in der Datenbank.** `invoices.notes` wurde im
+   PDF nirgends gedruckt.
+3. **Das PDF forderte zum Zahlen auf.** Bankdaten, „Zahlbar bis" und ein
+   EPC-QR-Code, unbedingt auf jedem Beleg — auf einer vorausbezahlten
+   Monatsrechnung eine scanfertige Aufforderung, zweimal zu zahlen.
+
+Behoben: Der Zahlungsteil entfällt, sobald ein Beleg als beglichen gilt
+(`beleg_art = leistungsnachweis` **oder** `status = bezahlt`), und wird durch
+einen hervorgehobenen Kasten ersetzt. „Fällig bis" verschwindet aus dem Kopf,
+der Titel lautet LEISTUNGSNACHWEIS, die Nummer heißt „Nachweis-Nr.".
+
+Beide Belege wurden als PDF gerendert und gelesen, nicht nur kompiliert.
+Dabei fiel noch ein vierter Fehler auf: Der Zebrastreifen der Positionstabelle
+war immer 7 mm hoch, unabhängig davon, wie oft die Beschreibung umbrach — auf
+einem Leistungsnachweis ist eine dreizeilige Beschreibung der Normalfall, nicht
+die Ausnahme. Die Zeilenhöhe rechnet jetzt mit.
+
+---
+
 ## 6 · Was ausdrücklich nicht gebaut wird
 
 Keine Erstattungsprognose, keine Einreichung bei Versicherungen, keine

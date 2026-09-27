@@ -5,10 +5,21 @@
  *
  * Er tut zwei Dinge, und beide sind Vorarbeit, keine Entscheidung:
  *
- *   1. ENTWÜRFE. Ist ein Programmmonat vorbei, entsteht die Rechnung dieses
- *      Monats — als Entwurf. Versendet wird sie erst, wenn der Behandler sie
- *      freigibt. „Völlig automatisiert" hört an der Stelle auf, an der ein
- *      Dokument entsteht, das man nicht zurückholen kann.
+ *   1. LEISTUNGSNACHWEISE. Ist ein Programmmonat vorbei, entsteht der
+ *      Nachweis dieses Monats — als Entwurf. Versendet wird er erst, wenn der
+ *      Behandler ihn freigibt. „Völlig automatisiert" hört an der Stelle auf,
+ *      an der ein Dokument entsteht, das man nicht zurückholen kann.
+ *
+ *      ═══ WARUM NACHWEIS UND NICHT RECHNUNG ═════════════════════════════
+ *
+ *      Bezahlt wurde einmal, bei Vertragsschluss — dafür gibt es die
+ *      Bezahlrechnung aus `billing/programm-invoice`. Das ist der Umsatz.
+ *
+ *      Trügen diese drei Dokumente ebenfalls Rechnungsnummern, stünden in den
+ *      Büchern 598 € für ein 299-€-Programm. Sie sind deshalb
+ *      LEISTUNGSNACHWEISE: eigene Nummernfolge (N-2026-0001), Verweis auf die
+ *      Rechnung, alle GebüH-Ziffern mit Datum für die Versicherung — und
+ *      ausdrücklich keine Zahlungsaufforderung.
  *
  *   2. ERINNERUNGEN. In Woche 6 und in Woche 12 steht je ein Bericht an.
  *      Wird er nicht geschrieben, darf er auch nicht berechnet werden — die
@@ -126,12 +137,17 @@ export async function GET(request: NextRequest) {
       const faellig = Math.min(3, Math.floor(tage / MONAT_TAGE)) as 0 | 1 | 2 | 3
       if (faellig < 1) continue
 
+      // Beides steckt in derselben Abfrage: die Bezahlrechnung (der Bezug,
+      // den jeder Nachweis trägt) und die bereits erstellten Nachweise.
       const { data: bestehende } = await svc
         .from("invoices")
-        .select("programm_monat, total")
+        .select("id, invoice_number, invoice_date, programm_monat, total, beleg_art")
         .eq("programm_contract_id", vertrag.id)
 
-      const schonDa = new Set((bestehende ?? []).map((r) => r.programm_monat))
+      const nachweise = (bestehende ?? []).filter((r) => r.beleg_art === "leistungsnachweis")
+      const bezahlrechnung = (bestehende ?? []).find((r) => r.beleg_art === "rechnung")
+
+      const schonDa = new Set(nachweise.map((r) => r.programm_monat))
       const monat = ([1, 2, 3] as const).find((m) => m <= faellig && !schonDa.has(m))
       if (!monat) continue
 
@@ -210,13 +226,15 @@ export async function GET(request: NextRequest) {
           .map((b) => ({ datum: b.created_at as string, abschluss: monat === 3 })),
       }
 
-      const bereitsBerechnet =
-        (bestehende ?? []).reduce((s, r) => s + Number(r.total ?? 0), 0)
+      // Nur die Nachweise zählen mit: Die Bezahlrechnung trägt den vollen
+      // Programmpreis, sie hier mitzuzählen würde jeden Nachweis auf null
+      // rechnen.
+      const bereitsBerechnet = nachweise.reduce((s, r) => s + Number(r.total ?? 0), 0)
 
       const rechnung = monatsrechnung({ variante, monat, ereignisse, bereitsBerechnet })
 
       // ── Anlegen ─────────────────────────────────────────────────────────
-      const { data: nummer } = await svc.rpc("generate_invoice_number")
+      const { data: nummer } = await svc.rpc("generate_nachweis_number")
 
       // `created_by` ist Pflicht und zeigt auf einen echten Benutzer. Der Lauf
       // hat keinen — also der, der den Vertrag ausgestellt hat, ersatzweise
@@ -242,7 +260,6 @@ export async function GET(request: NextRequest) {
         .maybeSingle()
 
       const heute = new Date()
-      const faelligAm = new Date(heute.getTime() + 14 * 86_400_000)
       const anschrift = [pat?.strasse, [pat?.plz, pat?.ort].filter(Boolean).join(" ")]
         .filter(Boolean)
         .join("\n")
@@ -255,7 +272,10 @@ export async function GET(request: NextRequest) {
           created_by: urheber,
           invoice_date: iso(heute),
           treatment_date: iso(ende < heute ? ende : heute),
-          due_date: iso(faelligAm),
+          // Ein Faelligkeitsdatum in der Zukunft liest sich auf einem bereits
+          // beglichenen Beleg wie eine Zahlungsaufforderung. Die Spalte ist
+          // NOT NULL, also der Ausstellungstag.
+          due_date: iso(heute),
           patient_name: [pat?.vorname, pat?.nachname].filter(Boolean).join(" ") || "Patient",
           patient_address: anschrift || null,
           praxis_name: praxis?.praxis_name ?? "Physiotherapie Glawe",
@@ -268,7 +288,11 @@ export async function GET(request: NextRequest) {
           notes: vermerk({
             konsultationAm: (konsultation?.begonnen_at as string) ?? null,
             bezahltAm: vertrag.paid_at as string,
+            rechnungsnummer: (bezahlrechnung?.invoice_number as string) ?? null,
+            rechnungsdatum: (bezahlrechnung?.invoice_date as string) ?? null,
           }),
+          beleg_art: "leistungsnachweis",
+          bezug_invoice_id: (bezahlrechnung?.id as string) ?? null,
           programm_contract_id: vertrag.id,
           programm_monat: monat,
         })
@@ -299,7 +323,7 @@ export async function GET(request: NextRequest) {
 
       await aufgabeAnlegen(svc, {
         typ: "rechnung_freigeben",
-        titel: `Rechnung freigeben: ${name}, Monat ${monat}`,
+        titel: `Leistungsnachweis freigeben: ${name}, Monat ${monat}`,
         beschreibung:
           `${angelegt.invoice_number} · ${euro(rechnung.summe)} · ` +
           `${rechnung.positionen.length} ${rechnung.positionen.length === 1 ? "Position" : "Positionen"}.` +

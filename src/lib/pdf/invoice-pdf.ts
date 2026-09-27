@@ -76,6 +76,18 @@ export async function generateInvoicePdf(
   }
 
   // ════════════════════════════════════════════════════
+  // PROJ-29: Rechnung oder Leistungsnachweis?
+  // ════════════════════════════════════════════════════
+  //
+  // Ein Leistungsnachweis gehoert zu einer bereits bezahlten Rechnung und ist
+  // nie eine Zahlungsaufforderung. Dasselbe gilt fuer jede Rechnung, die als
+  // bezahlt gilt. Auf beiden haben Bankdaten, Faelligkeit und ein GiroCode
+  // nichts zu suchen — ein QR-Code zum Ueberweisen auf einem beglichenen Beleg
+  // ist eine Aufforderung, zweimal zu zahlen.
+  const istNachweis = invoice.beleg_art === "leistungsnachweis"
+  const beglichen = istNachweis || invoice.status === "bezahlt"
+
+  // ════════════════════════════════════════════════════
   // 3. ABSENDERZEILE (über Adressfeld, DIN 5008)
   // ════════════════════════════════════════════════════
   y = 50
@@ -116,17 +128,20 @@ export async function generateInvoicePdf(
 
   // Box-Hintergrund
   setFill(SUBTLE)
-  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, 32, 2, 2, "F")
+  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, beglichen ? 25.5 : 32, 2, 2, "F")
 
   doc.setFontSize(8.5)
   infoY += 3
 
-  const infoRows = [
-    ["Rechnungsnr.", invoice.invoice_number],
-    ["Rechnungsdatum", fmtDate(invoice.invoice_date)],
+  const infoRows: string[][] = [
+    [istNachweis ? "Nachweis-Nr." : "Rechnungsnr.", invoice.invoice_number],
+    [istNachweis ? "Ausstellungsdatum" : "Rechnungsdatum", fmtDate(invoice.invoice_date)],
     ["Behandlungsdatum", fmtDate(invoice.treatment_date)],
-    ["F\u00E4llig bis", fmtDate(invoice.due_date)],
   ]
+
+  // „Faellig bis" auf einem beglichenen Beleg liest sich wie eine Frist, die
+  // noch laeuft. Auf einem Leistungsnachweis waere es schlicht falsch.
+  if (!beglichen) infoRows.push(["Fällig bis", fmtDate(invoice.due_date)])
 
   for (const [label, value] of infoRows) {
     doc.setFont("helvetica", "normal")
@@ -139,17 +154,17 @@ export async function generateInvoicePdf(
   }
 
   // ════════════════════════════════════════════════════
-  // 6. TITEL "RECHNUNG"
+  // 6. TITEL
   // ════════════════════════════════════════════════════
   y = 94
   doc.setFontSize(22)
   doc.setFont("helvetica", "bold")
   setColor(DARK)
-  doc.text("RECHNUNG", ML, y)
+  doc.text(istNachweis ? "LEISTUNGSNACHWEIS" : "RECHNUNG", ML, y)
 
   // Akzentlinie unter Titel
   setFill(EMERALD)
-  doc.rect(ML, y + 2, 40, 1, "F")
+  doc.rect(ML, y + 2, istNachweis ? 72 : 40, 1, "F")
   y += 12
 
   // ════════════════════════════════════════════════════
@@ -198,8 +213,18 @@ export async function generateInvoicePdf(
   doc.setFontSize(8.5)
 
   items.forEach((item, i) => {
+    // Die Beschreibung entscheidet, wie hoch die Zeile wird — deshalb muss sie
+    // VOR dem Seitenumbruch und vor dem Streifen umbrochen werden. Vorher war
+    // der Streifen immer 7 mm hoch, und bei einer dreizeiligen Beschreibung
+    // lief der Text unten aus seiner eigenen Zeile heraus in die naechste.
+    // Auf einem Leistungsnachweis ist das der Normalfall, nicht die Ausnahme.
+    doc.setFontSize(8.5)
+    const maxDescW = colAnz - colDesc - 3
+    const descLines = doc.splitTextToSize(item.beschreibung, maxDescW) as string[]
+    const rowH = 7 + Math.max(0, descLines.length - 1) * 5
+
     // Page break check
-    if (y > 248) {
+    if (y + rowH > 248) {
       drawPageFooter(doc, praxis)
       doc.addPage()
       setFill(EMERALD)
@@ -207,7 +232,6 @@ export async function generateInvoicePdf(
       y = 20
     }
 
-    const rowH = 7
     // Zebra-Stripe
     if (i % 2 === 0) {
       setFill(SUBTLE)
@@ -228,8 +252,6 @@ export async function generateInvoicePdf(
     doc.setFontSize(8.5)
     doc.setFont("helvetica", "normal")
     setColor(DARK)
-    const maxDescW = colAnz - colDesc - 3
-    const descLines = doc.splitTextToSize(item.beschreibung, maxDescW)
     doc.text(descLines[0], colDesc, y + 0.5)
 
     // Anzahl (zentriert)
@@ -243,9 +265,10 @@ export async function generateInvoicePdf(
     doc.setFont("helvetica", "bold")
     doc.text(fmtCurrency(Number(item.gesamtpreis)), colTotal - 1, y + 0.5, { align: "right" })
 
-    y += rowH
+    y += 7
 
-    // Weitere Beschreibungszeilen
+    // Weitere Beschreibungszeilen — zusammen mit den 7 mm oben ergibt das
+    // genau `rowH`, also die Hoehe, die der Streifen bereits abgedeckt hat.
     if (descLines.length > 1) {
       doc.setFont("helvetica", "normal")
       doc.setFontSize(8)
@@ -303,108 +326,179 @@ export async function generateInvoicePdf(
   y += 18
 
   // ════════════════════════════════════════════════════
+  // 9b. VERMERKE (PROJ-29)
+  // ════════════════════════════════════════════════════
+  //
+  // "Behandlungsfall seit ...", "Bereits beglichen durch Rechnung ...". Die
+  // standen bisher in der Datenbank und auf keinem Blatt Papier.
+  if (invoice.notes) {
+    // Der Stripe-Anker aus der Bezahlrechnung ist Technik, kein Vermerk.
+    const vermerkZeilen = invoice.notes
+      .split("\n")
+      .map((z) => z.trim())
+      .filter((z) => z && !z.startsWith("stripe_session:"))
+
+    if (vermerkZeilen.length > 0) {
+      if (y > 235) {
+        drawPageFooter(doc, praxis)
+        doc.addPage()
+        setFill(EMERALD)
+        doc.rect(0, 0, PAGE_W, 3, "F")
+        y = 20
+      }
+      doc.setFontSize(8)
+      doc.setFont("helvetica", "normal")
+      setColor(GRAY)
+      for (const zeile of vermerkZeilen) {
+        const umbrochen = doc.splitTextToSize(zeile, RIGHT_EDGE - ML) as string[]
+        for (const teil of umbrochen) {
+          doc.text(teil, ML, y)
+          y += 4
+        }
+        y += 1.5
+      }
+      y += 4
+    }
+  }
+
+  // ════════════════════════════════════════════════════
   // 10. ZAHLUNGSINFORMATIONEN + QR-CODE
   // ════════════════════════════════════════════════════
-  // Page break check
-  if (y > 220) {
-    drawPageFooter(doc, praxis)
-    doc.addPage()
-    setFill(EMERALD)
-    doc.rect(0, 0, PAGE_W, 3, "F")
-    y = 20
-  }
+  if (beglichen) {
+    // Kein Zahlungsteil. Stattdessen der eine Satz, um den es geht — gross
+    // genug, dass ihn niemand uebersieht, der nach einer IBAN sucht.
+    if (y > 240) {
+      drawPageFooter(doc, praxis)
+      doc.addPage()
+      setFill(EMERALD)
+      doc.rect(0, 0, PAGE_W, 3, "F")
+      y = 20
+    }
 
-  // Section-Akzent
-  setFill(EMERALD)
-  doc.rect(ML, y, 3, 0.8, "F")
-  doc.setFontSize(10)
-  doc.setFont("helvetica", "bold")
-  setColor(DARK)
-  doc.text("Zahlungsinformationen", ML + 6, y + 1)
-  y += 8
-
-  // Bankdaten-Box
-  const bankBoxStartY = y
-  const hasBic = !!praxis.bic
-  const hasBank = !!praxis.bank_name
-  const bankBoxH = 20 + (hasBic ? 6 : 0) + (hasBank ? 6 : 0)
-
-  setFill(SUBTLE)
-  doc.roundedRect(ML, y - 2, 100, bankBoxH, 2, 2, "F")
-
-  doc.setFontSize(8.5)
-  const bankLabelX = ML + 4
-  const bankValueX = ML + 35
-
-  doc.setFont("helvetica", "normal")
-  setColor(GRAY)
-  doc.text("Empf\u00E4nger", bankLabelX, y + 3)
-  doc.setFont("helvetica", "bold")
-  setColor(DARK)
-  doc.text(praxis.praxis_name, bankValueX, y + 3)
-  y += 6
-
-  doc.setFont("helvetica", "normal")
-  setColor(GRAY)
-  doc.text("IBAN", bankLabelX, y + 3)
-  doc.setFont("helvetica", "bold")
-  setColor(DARK)
-  doc.text(praxis.iban, bankValueX, y + 3)
-  y += 6
-
-  if (hasBic) {
-    doc.setFont("helvetica", "normal")
-    setColor(GRAY)
-    doc.text("BIC", bankLabelX, y + 3)
-    setColor(DARK)
-    doc.text(praxis.bic!, bankValueX, y + 3)
-    y += 6
-  }
-
-  if (hasBank) {
-    doc.setFont("helvetica", "normal")
-    setColor(GRAY)
-    doc.text("Bank", bankLabelX, y + 3)
-    setColor(DARK)
-    doc.text(praxis.bank_name!, bankValueX, y + 3)
-    y += 6
-  }
-
-  doc.setFont("helvetica", "bold")
-  setColor(EMERALD)
-  doc.text(`Zahlbar bis ${fmtDate(invoice.due_date)}`, bankLabelX, y + 3)
-
-  // ── QR-Code (rechts neben Bankdaten) ──
-  let qrDataUrl: string | null = null
-  try {
-    qrDataUrl = await generateEpcQrCode({
-      bic: praxis.bic || "",
-      name: praxis.praxis_name,
-      iban: praxis.iban,
-      amount: Number(invoice.total),
-      reference: `RE ${invoice.invoice_number}`,
-    })
-  } catch {
-    // QR-Code Generierung fehlgeschlagen
-  }
-
-  if (qrDataUrl) {
-    const qrSize = 32
-    const qrX = RIGHT_EDGE - qrSize - 5
-    const qrY = bankBoxStartY
-
-    // QR-Rahmen
-    setDraw({ r: 226, g: 232, b: 240 })
+    setFill({ r: 236, g: 253, b: 245 })
+    setDraw(EMERALD)
     doc.setLineWidth(0.3)
-    doc.roundedRect(qrX - 3, qrY - 3, qrSize + 6, qrSize + 14, 2, 2, "S")
+    doc.roundedRect(ML, y, RIGHT_EDGE - ML, 16, 2, 2, "FD")
 
-    doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    setColor(EMERALD)
+    doc.text("Betrag bereits beglichen", ML + 5, y + 6.5)
 
-    doc.setFontSize(7)
+    doc.setFontSize(8)
     doc.setFont("helvetica", "normal")
     setColor(GRAY)
-    doc.text("GiroCode scannen", qrX + qrSize / 2, qrY + qrSize + 4, { align: "center" })
-    doc.text("zum Bezahlen", qrX + qrSize / 2, qrY + qrSize + 8, { align: "center" })
+    doc.text(
+      istNachweis
+        ? "Dieser Nachweis dient Ihren Unterlagen und der Einreichung bei Ihrer Versicherung. Bitte nicht überweisen."
+        : "Bitte nicht überweisen.",
+      ML + 5,
+      y + 12
+    )
+
+    y += 22
+  } else {
+    // Page break check
+    if (y > 220) {
+      drawPageFooter(doc, praxis)
+      doc.addPage()
+      setFill(EMERALD)
+      doc.rect(0, 0, PAGE_W, 3, "F")
+      y = 20
+    }
+
+    // Section-Akzent
+    setFill(EMERALD)
+    doc.rect(ML, y, 3, 0.8, "F")
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    setColor(DARK)
+    doc.text("Zahlungsinformationen", ML + 6, y + 1)
+    y += 8
+
+    // Bankdaten-Box
+    const bankBoxStartY = y
+    const hasBic = !!praxis.bic
+    const hasBank = !!praxis.bank_name
+    const bankBoxH = 20 + (hasBic ? 6 : 0) + (hasBank ? 6 : 0)
+
+    setFill(SUBTLE)
+    doc.roundedRect(ML, y - 2, 100, bankBoxH, 2, 2, "F")
+
+    doc.setFontSize(8.5)
+    const bankLabelX = ML + 4
+    const bankValueX = ML + 35
+
+    doc.setFont("helvetica", "normal")
+    setColor(GRAY)
+    doc.text("Empf\u00E4nger", bankLabelX, y + 3)
+    doc.setFont("helvetica", "bold")
+    setColor(DARK)
+    doc.text(praxis.praxis_name, bankValueX, y + 3)
+    y += 6
+
+    doc.setFont("helvetica", "normal")
+    setColor(GRAY)
+    doc.text("IBAN", bankLabelX, y + 3)
+    doc.setFont("helvetica", "bold")
+    setColor(DARK)
+    doc.text(praxis.iban, bankValueX, y + 3)
+    y += 6
+
+    if (hasBic) {
+      doc.setFont("helvetica", "normal")
+      setColor(GRAY)
+      doc.text("BIC", bankLabelX, y + 3)
+      setColor(DARK)
+      doc.text(praxis.bic!, bankValueX, y + 3)
+      y += 6
+    }
+
+    if (hasBank) {
+      doc.setFont("helvetica", "normal")
+      setColor(GRAY)
+      doc.text("Bank", bankLabelX, y + 3)
+      setColor(DARK)
+      doc.text(praxis.bank_name!, bankValueX, y + 3)
+      y += 6
+    }
+
+    doc.setFont("helvetica", "bold")
+    setColor(EMERALD)
+    doc.text(`Zahlbar bis ${fmtDate(invoice.due_date)}`, bankLabelX, y + 3)
+
+    // ── QR-Code (rechts neben Bankdaten) ──
+    let qrDataUrl: string | null = null
+    try {
+      qrDataUrl = await generateEpcQrCode({
+        bic: praxis.bic || "",
+        name: praxis.praxis_name,
+        iban: praxis.iban,
+        amount: Number(invoice.total),
+        reference: `RE ${invoice.invoice_number}`,
+      })
+    } catch {
+      // QR-Code Generierung fehlgeschlagen
+    }
+
+    if (qrDataUrl) {
+      const qrSize = 32
+      const qrX = RIGHT_EDGE - qrSize - 5
+      const qrY = bankBoxStartY
+
+      // QR-Rahmen
+      setDraw({ r: 226, g: 232, b: 240 })
+      doc.setLineWidth(0.3)
+      doc.roundedRect(qrX - 3, qrY - 3, qrSize + 6, qrSize + 14, 2, 2, "S")
+
+      doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize)
+
+      doc.setFontSize(7)
+      doc.setFont("helvetica", "normal")
+      setColor(GRAY)
+      doc.text("GiroCode scannen", qrX + qrSize / 2, qrY + qrSize + 4, { align: "center" })
+      doc.text("zum Bezahlen", qrX + qrSize / 2, qrY + qrSize + 8, { align: "center" })
+    }
   }
 
   // ════════════════════════════════════════════════════

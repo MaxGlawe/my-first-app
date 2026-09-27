@@ -1,33 +1,69 @@
 /**
- * PROJ-26: Rechnung zum Praxis-OS-Programm.
+ * PROJ-26/29: Die Bezahlrechnung zum Praxis-OS-Programm.
  *
- * WICHTIG — warum hier bewusst ein ENTWURF entsteht und nichts versendet wird:
+ * Dies ist der EINE Beleg, der Umsatz ist. Er entsteht mit dem Zahlungseingang
+ * und trägt den vollen Programmpreis — auch den Teil, der schon bei der
+ * Buchung der Konsultation gezahlt wurde. Beides zusammen ist das Honorar.
  *
- * Das Briefing sieht eine Heilpraktiker-Rechnung mit Untersuchung, Beratung und
- * Behandlung als Einzelpositionen vor. Welche GebüH-Ziffern das im konkreten
- * Fall sind und wie sich der Betrag auf sie verteilt, ist eine fachliche und
- * abrechnungsrechtliche Entscheidung des Behandlers — keine, die Code treffen
- * darf. Erschwerend kommt hinzu: bezahlt wird am Tag 0, erbracht werden die
- * Leistungen über 90 Tage. Positionen für noch nicht erbrachte Behandlungen
- * automatisch auszuweisen wäre schlicht falsch.
+ * Was hier NICHT mehr passiert (Stand 27.09.2026):
  *
- * Deshalb legt diese Funktion die Rechnung als `entwurf` mit den
- * Klartext-Positionen des Vertrages an und benachrichtigt den Behandler. Die
- * GebüH-Ziffern setzt er im bestehenden Rechnungs-Editor
- * (/os/admin/billing/<id>) und versendet von dort.
+ *   — Kein Entwurf mehr. Das Geld ist da, der Inhalt steht im Vertrag; es gibt
+ *     nichts zu entscheiden. Ein Entwurf, der nie freigegeben wird, ist ein
+ *     Umsatz, der nie in den Büchern steht.
+ *
+ *   — Keine GebüH-Ziffern. Die stehen auf den drei Leistungsnachweisen, die
+ *     der Rechnungslauf später erzeugt (`cron/programm-rechnungen`) — je einer
+ *     über das, was in dem Monat wirklich stattgefunden hat. Sie sind für die
+ *     Versicherung und zählen ausdrücklich NICHT als Umsatz.
+ *
+ *   — Keine Mail. Über den Verkauf informiert bereits `programm-aktivierung`.
  *
  * Umsatzsteuer: heilkundliche Leistung nach § 4 Nr. 14a UStG — steuerfrei.
  * Die Rechnung trägt deshalb keinen Steuerausweis.
  */
 
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { sendEmail } from "@/lib/email"
-import { formatEuro } from "@/lib/programm"
 import type { Leistung } from "@/types/contract"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
 
-const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "physiotherapieglawe@gmx.de"
+function euro(n: number): string {
+  return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+}
+
+function datum(d: Date): string {
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })
+}
+
+/**
+ * Der Vermerk auf der Bezahlrechnung.
+ *
+ * Er muss die geteilte Zahlung erklären, sonst sieht der Patient eine Rechnung
+ * über 299 €, erinnert sich an 230 € auf seinem Kontoauszug und ruft an.
+ *
+ * „Bitte nicht überweisen" steht hier bewusst NICHT: Das sagt das PDF schon in
+ * einem eigenen, hervorgehobenen Kasten. Zweimal derselbe Satz auf einem Blatt
+ * liest sich wie ein Fehler.
+ *
+ * Der Stripe-Anker hängt hinten dran, damit die alte Idempotenzprüfung
+ * weiter greift.
+ */
+function vermerk(
+  p: { gesamtpreis: number; bereitsBeglichen: number; gezahltJetzt: number },
+  anker: string
+): string {
+  const heute = datum(new Date())
+  const zeilen = [
+    p.bereitsBeglichen > 0
+      ? `Vollständig beglichen: ${euro(p.bereitsBeglichen)} bei der Buchung der Videokonsultation, ` +
+        `${euro(p.gezahltJetzt)} am ${heute}.`
+      : `Vollständig beglichen am ${heute}.`,
+    `Die Aufstellung der einzelnen Leistungen nach dem Gebührenverzeichnis für Heilpraktiker ` +
+      `folgt in drei monatlichen Leistungsnachweisen zu dieser Rechnung.`,
+    anker,
+  ]
+  return zeilen.join("\n\n")
+}
 
 export interface ProgrammInvoiceParams {
   patientId: string
@@ -35,20 +71,42 @@ export interface ProgrammInvoiceParams {
   createdBy: string
   contractId: string
   contractNumber: string
-  /** Tatsächlich gezahlter Betrag (Restbetrag nach Anrechnung). */
-  amount: number
+  /** Der volle Programmpreis — das ist der Rechnungsbetrag. */
+  gesamtpreis: number
+  /** Bei der Buchung bereits gezahlt (Konsultation). Nur für den Vermerk. */
+  bereitsBeglichen: number
+  /** Heute per Stripe eingegangen. Nur für den Vermerk. */
+  gezahltJetzt: number
   leistungen: Leistung[]
   /** Idempotenz: dieselbe Stripe-Session erzeugt nie zwei Rechnungen. */
   stripeSessionId: string
 }
 
-export async function createProgrammInvoiceDraft(
+export async function createProgrammBezahlrechnung(
   supabase: ServiceClient,
   params: ProgrammInvoiceParams
 ): Promise<{ ok: boolean; invoiceNumber?: string; skipped?: boolean; error?: string }> {
   const noteAnchor = `stripe_session:${params.stripeSessionId}`
 
   // ── Idempotenz ────────────────────────────────────────────────────────────
+  //
+  // Zuerst über den Vertrag: Je Programm gibt es genau EINE Bezahlrechnung,
+  // egal wie oft Stripe das Ereignis wiederholt. Das ist robuster als der alte
+  // Weg über den Notiz-Anker, weil die Notiz jetzt auch lesbaren Text trägt.
+  const { data: schonDa } = await supabase
+    .from("invoices")
+    .select("id, invoice_number")
+    .eq("programm_contract_id", params.contractId)
+    .eq("beleg_art", "rechnung")
+    .limit(1)
+
+  if (schonDa?.length) {
+    return { ok: true, skipped: true, invoiceNumber: schonDa[0].invoice_number }
+  }
+
+  // Und weiterhin über den alten Anker — Rechnungen von vor dem 27.09.2026
+  // tragen kein `programm_contract_id` und würden sonst ein zweites Mal
+  // entstehen, falls Stripe eine alte Session wiederholt.
   const { data: existing } = await supabase
     .from("invoices")
     .select("id, invoice_number")
@@ -74,8 +132,9 @@ export async function createProgrammInvoiceDraft(
   if (!invoiceNumber) return { ok: false, error: "Rechnungsnummer konnte nicht erzeugt werden." }
 
   const today = new Date().toISOString().split("T")[0]
+  // Bezahlt ist bezahlt: Ein Fälligkeitsdatum in der Zukunft auf einer schon
+  // beglichenen Rechnung liest sich wie eine Zahlungsaufforderung.
   const due = new Date()
-  due.setDate(due.getDate() + 14)
 
   const patientName = `${patient.vorname} ${patient.nachname}`
   const patientAddress = [patient.strasse, `${patient.plz ?? ""} ${patient.ort ?? ""}`.trim()]
@@ -96,11 +155,15 @@ export async function createProgrammInvoiceDraft(
       praxis_name: praxis.praxis_name,
       praxis_address: `${praxis.strasse}\n${praxis.plz} ${praxis.ort}`,
       praxis_steuernr: praxis.steuernummer,
-      subtotal: params.amount,
-      total: params.amount,
-      // Der Anker trägt die Idempotenz UND den Bezug zum Vertrag.
-      notes: noteAnchor,
-      status: "entwurf",
+      subtotal: params.gesamtpreis,
+      total: params.gesamtpreis,
+      notes: vermerk(params, noteAnchor),
+      // Das Geld ist eingegangen — alles andere wäre eine Rechnung, die auf
+      // eine Zahlung wartet, die es längst gab.
+      status: "bezahlt",
+      paid_at: new Date().toISOString(),
+      beleg_art: "rechnung",
+      programm_contract_id: params.contractId,
     })
     .select("id")
     .single()
@@ -130,48 +193,6 @@ export async function createProgrammInvoiceDraft(
     return { ok: false, error: itemsError.message }
   }
 
-  void notifyTherapist({
-    invoiceNumber: invoiceNumber as string,
-    invoiceId: invoice.id as string,
-    patientName,
-    amount: params.amount,
-    contractNumber: params.contractNumber,
-  }).catch((err) => console.error("[programm-invoice] Benachrichtigung fehlgeschlagen:", err))
 
   return { ok: true, invoiceNumber: invoiceNumber as string }
-}
-
-async function notifyTherapist(args: {
-  invoiceNumber: string
-  invoiceId: string
-  patientName: string
-  amount: number
-  contractNumber: string
-}): Promise<void> {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://wwwpraxis-os.com"
-
-  await sendEmail({
-    to: ADMIN_EMAIL,
-    subject: `Rechnungsentwurf ${args.invoiceNumber} — ${args.patientName}`,
-    html: `
-      <p style="font-family:sans-serif;font-size:14px">
-        Zahlung eingegangen. Die Rechnung liegt als <strong>Entwurf</strong> bereit.
-      </p>
-      <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;font-size:14px">
-        <tr><td><strong>Patient</strong></td><td>${args.patientName}</td></tr>
-        <tr><td><strong>Betrag</strong></td><td>${formatEuro(args.amount)}</td></tr>
-        <tr><td><strong>Vertrag</strong></td><td>${args.contractNumber}</td></tr>
-      </table>
-      <p style="font-family:sans-serif;font-size:14px">
-        Noch zu tun: GebüH-Ziffern für Untersuchung, Beratung und Behandlung setzen,
-        dann versenden.<br/>
-        <a href="${siteUrl}/os/admin/billing/${args.invoiceId}">Rechnung öffnen &rarr;</a>
-      </p>
-      <p style="font-family:sans-serif;font-size:13px;color:#64748b">
-        Die Rechnung wird bewusst nicht automatisch versendet — die Ziffern und ihre
-        Aufteilung sind eine fachliche Entscheidung, und die Leistungen werden über
-        90 Tage erbracht.
-      </p>
-    `,
-  })
 }
