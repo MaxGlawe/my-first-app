@@ -2,7 +2,7 @@
 
 > **Die Rechnung schreibt sich aus dem, was wirklich stattgefunden hat.**
 
-**Status:** Planned
+**Status:** In Progress — Belege im Gespräch (Diagnose, Haken) und der tägliche Rechnungslauf gebaut am 27.09.2026; Honorarvereinbarung im Checkout offen
 **Stand:** 27.09.2026
 **Baut auf:** PROJ-26 (Programm, Varianten, Angebot), PROJ-27/28 (Videotermine als belegte Ereignisse), bestehendes Rechnungswesen (`invoices`, `invoice_line_items`, `gebueh_catalog`, `lib/pdf/invoice-pdf.ts`)
 
@@ -113,19 +113,38 @@ Für die **Konsultation allein** die Kurzfassung mit den Punkten 2, 3, 4 und 5
 
 ---
 
-## 5 · Zu entscheiden
+## 5 · Entschieden (27.09.2026)
 
-1. **Versand automatisch oder nach Freigabe?** „Völlig automatisiert" hiesse:
-   Rechnung entsteht und geht raus. Eine Rechnung ist aber ein Dokument, das
-   man nicht zurückholen kann. Vorschlag: automatisch als **Entwurf**, eine
-   Benachrichtigung an den Behandler, Versand mit einem Klick — oder nach
-   sieben Tagen ohne Widerspruch von selbst.
-2. **Verlaufs- und Abschlussbericht** existieren im System nur, wenn sie
-   geschrieben werden (`medical_reports`). Werden sie es nicht, dürfen die
-   41 € nicht als 11.2 erscheinen. Soll der Cron in Woche 6 und 12 daran
-   erinnern?
-3. **Diagnose fehlt** → nach Pflichtangaben darf die Rechnung nicht entstehen.
-   Abbrechen und melden, oder Entwurf ohne Diagnose anlegen und blockieren?
+1. **Entwurf, dann Freigabe.** Der Lauf legt an und benachrichtigt; versendet
+   wird nach kurzer Prüfung durch den Behandler.
+2. **Erinnerungen in Woche 6 und 12** an Verlaufs- und Abschlussbericht, mit
+   dem Hinweis, was ohne Bericht aus den 20,50 € wird.
+3. **Keine Rechnung ohne Diagnose.** Der Lauf überspringt und meldet. Damit
+   sie nicht im Nachhinein rekonstruiert werden muss, wird sie im Gespräch
+   erfasst — Feld in der Schublade, zusammen mit dem Haken für A20.1.
+
+## 5a · Geprüft (27.09.2026)
+
+Sieben Läufe gegen die Rechenlogik, alle ergeben exakt den Programmpreis:
+
+| Szenario | M1 | M2 | M3 | Summe |
+|---|---|---|---|---|
+| Begleitet, wie geplant | 149,33 | 74,83 | 74,84 | **299,00** |
+| Intensiv, wie geplant | 257,33 | 120,83 | 120,84 | **499,00** |
+| Intensiv, zwei Sitzungen fielen aus | 195,33 | 120,83 | 182,84 | **499,00** |
+| Begleitet, keine Berichte | 149,33 | 54,33 | 95,34 | **299,00** |
+| Konsultation ohne Haken | 118,33 | 74,83 | 105,84 | **299,00** |
+| Begleitet + Extra-Sitzung | 180,33 | 72,17 | 46,50 | **299,00** |
+| Nur die Konsultation | 97,33 | 28,33 | 173,34 | **299,00** |
+
+Die letzte Zeile zeigt das Prinzip am deutlichsten: Je weniger stattfindet,
+desto grösser wird die Programmpauschale — und desto kürzer die Liste der
+Einzelleistungen. Keine Zeile behauptet etwas, das nicht im System steht.
+
+Die vorletzte kostete eine zweite Runde: Eine Extra-Sitzung liess die Summe
+um 2,66 € über den Programmpreis steigen, weil die digitale Betreuung in den
+ersten beiden Monaten stur ihr Drittel nahm. Sie rechnet jetzt gegen das, was
+planmässig noch aussteht, und schrumpft sofort.
 
 ---
 
