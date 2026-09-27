@@ -304,6 +304,22 @@ function Notiz({ callId }: { callId: string }) {
   /** Was beim Oeffnen schon dastand — Massstab dafuer, ob sich etwas aenderte. */
   const geladenerText = useRef("")
 
+  /**
+   * DIAGNOSE UND DER HAKEN — beides entsteht nur hier und nur jetzt.
+   *
+   * Die Diagnose ist Pflichtangabe auf jeder GebüH-Rechnung. Sie hinterher zu
+   * rekonstruieren heisst raten; also wird sie erfasst, waehrend der Patient
+   * noch gegenuebersitzt.
+   *
+   * Der Haken entscheidet ueber die Analogziffer A20.1: Abgerechnet werden
+   * darf sie nur, wenn tatsaechlich eine Uebung angeleitet wurde. Ohne Haken
+   * keine Position — der Betrag wandert in die Programmpauschale statt in
+   * eine Leistung, die nicht stattfand.
+   */
+  const [diagnose, setDiagnose] = useState("")
+  const geladeneDiagnose = useRef("")
+  const [uebung, setUebung] = useState(false)
+
   useEffect(() => {
     fetch(`/api/os/video-calls/${callId}`)
       .then((r) => r.json())
@@ -312,22 +328,31 @@ function Notiz({ callId }: { callId: string }) {
           setText(d.notiz)
           geladenerText.current = d.notiz
         }
+        if (typeof d.diagnose === "string") {
+          setDiagnose(d.diagnose)
+          geladeneDiagnose.current = d.diagnose
+        }
+        setUebung(Boolean(d.uebung_angeleitet))
       })
       .catch(() => {})
       .finally(() => setGeladen(true))
   }, [callId])
 
+  /** Sichert genau das, was mitgegeben wird — nie das ganze Formular. */
   const sichern = useCallback(
-    async (wert: string) => {
+    async (teil: { notiz?: string; diagnose?: string; uebung_angeleitet?: boolean }) => {
       setStand("speichert")
       try {
         const r = await fetch("/api/os/video-calls", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: callId, aktion: "notiz", notiz: wert }),
+          body: JSON.stringify({ id: callId, aktion: "notiz", ...teil }),
         })
         setStand(r.ok ? "gesichert" : "fehler")
-        if (r.ok) geladenerText.current = wert
+        if (r.ok) {
+          if (typeof teil.notiz === "string") geladenerText.current = teil.notiz
+          if (typeof teil.diagnose === "string") geladeneDiagnose.current = teil.diagnose
+        }
       } catch {
         setStand("fehler")
       }
@@ -339,7 +364,7 @@ function Notiz({ callId }: { callId: string }) {
     setText(wert)
     setStand("ruht")
     if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => void sichern(wert), 2000)
+    timer.current = setTimeout(() => void sichern({ notiz: wert }), 2000)
   }
 
   useEffect(() => {
@@ -349,7 +374,61 @@ function Notiz({ callId }: { callId: string }) {
   }, [])
 
   return (
-    <div className="flex h-full flex-col p-3">
+    <div className="flex h-full flex-col gap-3 p-3">
+      {/* Diagnose zuerst: Ohne sie darf spaeter keine Rechnung entstehen. */}
+      <div>
+        <label
+          className="block text-[11px] font-semibold uppercase tracking-[0.14em]"
+          style={{ color: GREEN }}
+        >
+          Diagnose
+        </label>
+        <input
+          value={diagnose}
+          onChange={(e) => {
+            setDiagnose(e.target.value)
+            setStand("ruht")
+          }}
+          onBlur={() => {
+            if (geladen && diagnose !== geladeneDiagnose.current) {
+              void sichern({ diagnose })
+            }
+          }}
+          placeholder="z. B. chronische LWS-Beschwerden ohne Red Flags"
+          className="mt-1 w-full rounded-lg border px-3 py-2 text-[13.5px] outline-none"
+          style={{ borderColor: LINE, color: INK, backgroundColor: "#fff" }}
+        />
+        <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+          Pflichtangabe auf jeder Rechnung. Die ausführliche Diagnose mit ICD-10 bleibt in der
+          Akte.
+        </p>
+      </div>
+
+      {/* Der Haken entscheidet ueber eine Rechnungsposition. */}
+      <label
+        className="flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5"
+        style={{ borderColor: uebung ? GREEN : LINE, backgroundColor: uebung ? "#eef2ec" : "#fff" }}
+      >
+        <input
+          type="checkbox"
+          checked={uebung}
+          onChange={(e) => {
+            setUebung(e.target.checked)
+            void sichern({ uebung_angeleitet: e.target.checked })
+          }}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2C3E2D]"
+        />
+        <span>
+          <span className="block text-[13px] font-medium" style={{ color: INK }}>
+            Übung angeleitet
+          </span>
+          <span className="block text-[11px] leading-relaxed text-slate-500">
+            Nur mit Haken darf die aktive Bewegungstherapie (A20.1) abgerechnet werden — setze
+            ihn, wenn du eine Übung gezeigt und korrigiert hast.
+          </span>
+        </span>
+      </label>
+
       <textarea
         value={text}
         onChange={(e) => tippen(e.target.value)}
@@ -358,10 +437,10 @@ function Notiz({ callId }: { callId: string }) {
           // Nur sichern, wenn sich wirklich etwas geaendert hat. Wer nur ins
           // Feld tippt und wieder herausklickt, soll keinen leeren Text ueber
           // eine bestehende Notiz schreiben.
-          if (geladen && text !== geladenerText.current) void sichern(text)
+          if (geladen && text !== geladenerText.current) void sichern({ notiz: text })
         }}
-        placeholder="Was im Gespräch auffällt: Beobachtungen, Absprachen, was als Nächstes ansteht."
-        className="flex-1 resize-none rounded-xl border p-3 text-[13.5px] leading-relaxed outline-none focus:ring-2"
+        placeholder="Notiz: Beobachtungen, Absprachen, was als Nächstes ansteht."
+        className="min-h-[120px] flex-1 resize-none rounded-xl border p-3 text-[13.5px] leading-relaxed outline-none focus:ring-2"
         style={{ borderColor: LINE, color: INK, backgroundColor: "#fff" }}
       />
       <p className="mt-2 flex items-center gap-1.5 text-[11.5px] text-slate-500">
@@ -445,7 +524,7 @@ export function Schaltzentrale({
             [
               ["akte", "Akte", FileText],
               ["plan", "Plan", Dumbbell],
-              ["notiz", "Notiz", NotebookPen],
+              ["notiz", "Doku", NotebookPen],
             ] as const
           ).map(([wert, text, Icon]) => (
             <button

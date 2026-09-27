@@ -40,7 +40,7 @@ export async function GET(
 
   const { data: call } = await svc
     .from("video_calls")
-    .select("id, anlass, status, patient_id, gast_token, geplant_at, dauer_minuten, schliesst_at, notiz")
+    .select("id, anlass, status, patient_id, gast_token, geplant_at, dauer_minuten, schliesst_at, notiz, diagnose, uebung_angeleitet")
     .eq("id", id)
     .maybeSingle()
 
@@ -67,6 +67,8 @@ export async function GET(
     // Antwort — der Gast-Endpunkt gibt sie nicht heraus.
     patient_id: call.patient_id,
     notiz: call.notiz ?? "",
+    diagnose: call.diagnose ?? "",
+    uebung_angeleitet: Boolean(call.uebung_angeleitet),
     status: call.status,
     schliesst_at: call.schliesst_at,
   })

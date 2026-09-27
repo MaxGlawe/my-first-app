@@ -49,6 +49,10 @@ const patchSchema = z.object({
   id: z.string().uuid(),
   aktion: z.enum(["beenden", "einladung", "absagen", "notiz"]).default("beenden"),
   notiz: z.string().trim().max(4000).optional().nullable(),
+  /** Diagnose fuer die Rechnung — Pflichtangabe nach GebüH (PROJ-29). */
+  diagnose: z.string().trim().max(500).optional().nullable(),
+  /** Wurde eine Uebung angeleitet? Voraussetzung fuer A20.1. */
+  uebung_angeleitet: z.boolean().optional(),
   grund: z.string().trim().max(500).optional().nullable(),
 })
 
@@ -297,7 +301,7 @@ export async function PATCH(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Validierungsfehler." }, { status: 400 })
   }
-  const { id, aktion, notiz, grund } = parsed.data
+  const { id, aktion, notiz, grund, diagnose, uebung_angeleitet } = parsed.data
 
   const { data: call } = await auth.svc
     .from("video_calls")
@@ -389,10 +393,20 @@ export async function PATCH(request: NextRequest) {
   // Speichern-Knopf waere einer, den jemand vergisst, waehrend er zuhoert —
   // und der Text waere weg, sobald der Raum zugeht.
   if (aktion === "notiz") {
-    const { error } = await auth.svc
-      .from("video_calls")
-      .update({ notiz: notiz ?? null })
-      .eq("id", id)
+    // Nur anfassen, was mitkommt: Der Diagnose-Block und der Notiz-Block
+    // sichern unabhaengig voneinander, und keiner darf den anderen leeren.
+    const aenderung: Record<string, unknown> = {}
+    if (typeof notiz === "string" || notiz === null) aenderung.notiz = notiz ?? null
+    if (typeof diagnose === "string" || diagnose === null) {
+      aenderung.diagnose = diagnose?.trim() || null
+    }
+    if (typeof uebung_angeleitet === "boolean") aenderung.uebung_angeleitet = uebung_angeleitet
+
+    if (Object.keys(aenderung).length === 0) {
+      return NextResponse.json({ gesichert: true })
+    }
+
+    const { error } = await auth.svc.from("video_calls").update(aenderung).eq("id", id)
 
     if (error) {
       console.error("[os/video-calls] Notiz:", error)
