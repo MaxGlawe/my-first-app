@@ -6,8 +6,10 @@
  * über den 48-Stunden-Token und Rate-Limiting.
  *
  * Zwei Dinge passieren hier bewusst VOR der Zahlung:
- *   1. Der Widerrufsverzicht wird protokolliert (Zeitstempel, IP, User-Agent).
- *      Das ist der Moment, in dem der Patient die Checkbox gesetzt hat.
+ *   1. BEIDE Erklärungen werden protokolliert (je eigener Zeitstempel, IP,
+ *      User-Agent): die Honorarvereinbarung und der Widerrufsverzicht. Das ist
+ *      der Moment, in dem der Patient die Haken gesetzt hat — nicht der
+ *      Zahlungseingang, der liegt Minuten später im Stripe-Webhook.
  *   2. Es wird KEIN `stripe_session_id` gespeichert. Der wandert erst im
  *      Webhook in den Vertrag — dadurch trägt die UNIQUE-Spalte genau eine
  *      bezahlte Session, egal wie oft der Patient den Checkout abbricht.
@@ -29,6 +31,16 @@ const bodySchema = z.object({
   // Pflicht, kein `.optional()`: ohne sie darf die Betreuung nicht starten.
   widerrufVerzicht: z.literal(true, {
     message: "Bitte bestätige den sofortigen Beginn der Betreuung.",
+  }),
+  // PROJ-29 — Honorarvereinbarung (Anlage 1): GebüH-Sätze, drei
+  // Monatsrechnungen, keine Erstattungszusage, kein geschuldeter Erfolg.
+  //
+  // Eine eigene Erklärung neben dem Widerrufsverzicht, deshalb ein eigenes
+  // Feld. `.optional()` wäre hier kein Komfort, sondern eine Lücke: Ein älterer
+  // Client, der nur `widerrufVerzicht` schickt, käme sonst ohne
+  // Honorarvereinbarung durch und die Zustimmung stünde nirgends.
+  honorarvereinbarung: z.literal(true, {
+    message: "Bitte bestätige die Honorarvereinbarung.",
   }),
 })
 
@@ -115,11 +127,15 @@ export async function POST(
     return NextResponse.json({ error: "Es ist kein Betrag offen." }, { status: 422 })
   }
 
-  // ── Widerrufsverzicht protokollieren (vor der Zahlung) ───────────────────
+  // ── Beide Erklärungen protokollieren (vor der Zahlung) ───────────────────
+  const zugestimmtAm = new Date().toISOString()
   await svc
     .from("treatment_contracts")
     .update({
       signer_consent: true,
+      signer_consent_at: zugestimmtAm,
+      honorar_consent: true,
+      honorar_consent_at: zugestimmtAm,
       signer_ip: ip,
       signer_user_agent: request.headers.get("user-agent") || "unknown",
     })
@@ -184,7 +200,9 @@ export async function POST(
         contract_number: contract.contract_number,
         patient_id: contract.patient_id,
         widerruf_verzicht: "true",
-        widerruf_verzicht_at: new Date().toISOString(),
+        widerruf_verzicht_at: zugestimmtAm,
+        honorarvereinbarung: "true",
+        honorarvereinbarung_at: zugestimmtAm,
         ...(testbetragAktiv ? { testzahlung: "true" } : {}),
       },
     })

@@ -1,6 +1,7 @@
 import type { ContractType, Leistung, VertragText } from "@/types/contract"
 import type { PraxisSettings } from "@/types/billing"
 import { CALL_TAKTUNG } from "@/lib/programm"
+import { SATZ } from "@/lib/abrechnung/programm-rechnung"
 
 interface ContractContext {
   contractType: ContractType
@@ -221,6 +222,85 @@ export function generateVertragText(ctx: ContractContext): VertragText {
       ``,
       `(6) Die Fernbehandlung ersetzt nicht die Notfallversorgung. Bei akuten medizinischen Notfällen (z. B. Herzinfarkt, Schlaganfall, akute Atemnot, schwere Verletzungen) ist unverzüglich der Rettungsdienst (112) oder ein Notarzt zu verständigen. Die Video-Sitzung ist in einem solchen Fall sofort zu beenden.`,
     ].join("\n"),
+
+    // ──────────────────────────────────────────────
+    // ANLAGE 1 — HONORARVEREINBARUNG (PROJ-29)
+    //
+    // Bewusst eine ANLAGE und kein neuer Paragraf: Ein eingeschobener § haette
+    // jede folgende Nummer verschoben und die Querverweise im Vertrag
+    // („vgl. §7 Abs. 2") falsch gemacht. Eine Honorarvereinbarung ist ohnehin
+    // eine eigene Erklaerung neben dem Behandlungsvertrag — deshalb steht sie
+    // hinten und wird im Checkout gesondert bestaetigt.
+    //
+    // `null` bedeutet „Zeile entfaellt", `""` ist eine gewollte Leerzeile.
+    // Darum am Ende `!== null` statt `.filter(Boolean)`.
+    // ──────────────────────────────────────────────
+    honorarvereinbarung: [
+      `Anlage 1 — Honorarvereinbarung`,
+      `(§ 611 BGB in Verbindung mit dem Gebührenverzeichnis für Heilpraktiker)`,
+      ``,
+      `1. Gegenstand`,
+      ``,
+      isProgramm
+        ? `Gegenstand dieser Vereinbarung sind die in §1 und §2 des Behandlungsvertrages beschriebenen Leistungen der physiotherapeutischen Fernbetreuung über ${ctx.programmTage ?? 90} Tage, erbracht vom Behandler als Heilpraktiker für Physiotherapie.`
+        : `Gegenstand dieser Vereinbarung sind die in §1 und §2 des Behandlungsvertrages beschriebenen Leistungen, erbracht vom Behandler als Heilpraktiker für Physiotherapie.`,
+      ``,
+      `2. Honorar`,
+      ``,
+      einzelpreisText,
+      isProgramm ? `` : null,
+      isProgramm
+        ? `Es handelt sich um ein Pauschalhonorar für den gesamten Betreuungszeitraum. Ein Abonnement wird nicht begründet, eine weitere Abbuchung findet nicht statt.`
+        : null,
+      ``,
+      `3. Abrechnung nach dem Gebührenverzeichnis`,
+      ``,
+      `Das Honorar wird nach den Ziffern des Gebührenverzeichnisses für Heilpraktiker (GebüH) abgerechnet. Der Behandler setzt dabei die folgenden Sätze an:`,
+      ``,
+      `- Ziffer 1 — Eingehende Untersuchung: ${fmtCurrency(SATZ.untersuchung)}`,
+      `- Ziffer 5 — Beratung, auch fernmündlich: ${fmtCurrency(SATZ.beratung)}`,
+      `- Ziffer 11.2 — Ausführlicher schriftlicher Bericht: ${fmtCurrency(SATZ.bericht)}`,
+      `- Ziffer A11.3 — Schriftlicher Übungs- und Therapieplan (analog Diätplan): ${fmtCurrency(SATZ.plan)}`,
+      `- Ziffer A20.1 — Aktive Bewegungstherapie per Video (analog Atemtherapie): ${fmtCurrency(SATZ.bewegungstherapie)}`,
+      ``,
+      `Die mit „A" gekennzeichneten Ziffern sind Analogleistungen: Das Gebührenverzeichnis stammt aus dem Jahr 1985 und kennt weder die per Video angeleitete Übung noch den schriftlichen Trainingsplan. Der Behandler rechnet sie deshalb nach der nächstliegenden Ziffer ab und weist das auf jeder Rechnung aus.`,
+      ``,
+      `4. Höhe der Sätze`,
+      ``,
+      `Das Gebührenverzeichnis für Heilpraktiker ist eine unverbindliche Empfehlung; eine gesetzliche Gebührenordnung besteht für Heilpraktiker nicht. Die Vertragsparteien können ein Honorar daher frei vereinbaren, auch oberhalb der dort genannten Rahmensätze.`,
+      ``,
+      `Der Behandler weist ausdrücklich darauf hin, dass die vorstehend genannten Sätze den Rahmen des Gebührenverzeichnisses NICHT überschreiten. Sie entsprechen dem jeweiligen Höchstsatz oder liegen darunter. Eine Überschreitung findet im Rahmen dieser Vereinbarung nicht statt.`,
+      ``,
+      isProgramm ? `5. Rechnungsstellung in drei Monatsrechnungen` : `5. Rechnungsstellung`,
+      ``,
+      isProgramm
+        ? `Das Honorar wird bei Vertragsschluss vollständig im Voraus entrichtet. Die Abrechnung der einzelnen Leistungen erfolgt anschließend in drei aufeinanderfolgenden Monatsrechnungen über die im jeweiligen Monat tatsächlich erbrachten Leistungen. Jede Rechnung trägt den Vermerk, dass sie durch die Vorauszahlung bereits beglichen ist; eine erneute Zahlungsaufforderung ist damit nicht verbunden.`
+        : `Der Behandler stellt ordnungsgemäße Rechnungen mit allen für eine Erstattung erforderlichen Angaben aus: GebüH-Ziffer, Leistungsbeschreibung, Datum, Einzel- und Gesamtbetrag sowie die Diagnose.`,
+      isProgramm ? `` : null,
+      isProgramm
+        ? `Abgerechnet wird ausschließlich, was tatsächlich stattgefunden hat. Findet eine geplante Leistung nicht statt, erscheint sie auf keiner Rechnung; der Unterschiedsbetrag zum Pauschalhonorar wird dann als Position „Programmpauschale gemäß Honorarvereinbarung" ausgewiesen. Über alle drei Rechnungen ergibt sich in der Summe exakt das vereinbarte Pauschalhonorar. Eine Nachforderung darüber hinaus erfolgt nicht.`
+        : null,
+      ``,
+      `6. Erstattung durch Versicherungen`,
+      ``,
+      `Gesetzliche Krankenkassen erstatten Leistungen von Heilpraktikern grundsätzlich nicht. Eine Erstattung kommt nur bei privaten Krankenversicherungen, Beihilfestellen und Heilpraktiker-Zusatzversicherungen in Betracht und richtet sich ausschließlich nach dem individuellen Tarif des Patienten.`,
+      ``,
+      `Der Behandler gibt keine Zusicherung über eine Erstattung ab. Dem Patienten wird empfohlen, die Kostenübernahme vor Behandlungsbeginn mit seiner Versicherung zu klären. Eine ganz oder teilweise ausbleibende Erstattung berührt die Zahlungspflicht gegenüber dem Behandler nicht.`,
+      ``,
+      `7. Kein geschuldeter Behandlungserfolg`,
+      ``,
+      `Der Behandler schuldet die fachgerechte Durchführung der Behandlung, nicht deren Erfolg. Die Behandlung ist eine Dienstleistung, keine Werkleistung (vgl. §9 Abs. 2 des Behandlungsvertrages). Das Honorar ist für die erbrachte Leistung geschuldet, unabhängig vom Verlauf der Beschwerden.`,
+      ``,
+      // Beim Programm wird nicht unterschrieben, sondern bezahlt — die
+      // Zustimmung ist der gesonderte Haken im Checkout. Bei allen anderen
+      // Vertraegen ist es die Unterschrift. Ein Satz fuer beides waere fuer
+      // je einen Fall schlicht unwahr.
+      isProgramm
+        ? `Der Patient bestätigt mit der gesonderten Zustimmung im Zahlungsvorgang, diese Honorarvereinbarung vor Vertragsschluss gelesen und verstanden zu haben.`
+        : `Der Patient bestätigt mit seiner Unterschrift unter dem Behandlungsvertrag, diese Honorarvereinbarung gelesen und verstanden zu haben.`,
+    ]
+      .filter((zeile) => zeile !== null)
+      .join("\n"),
 
     // ──────────────────────────────────────────────
     // §5 VERGÜTUNG

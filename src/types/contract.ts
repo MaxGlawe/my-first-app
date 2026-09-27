@@ -33,6 +33,13 @@ export interface VertragText {
   rechtsgrundlage: string
   fernbehandlung: string
   verguetung: string
+  /**
+   * PROJ-29: Anlage 1, gesondert bestaetigt im Checkout.
+   *
+   * Optional, weil Vertraege von vor dem 27.09.2026 sie nicht enthalten —
+   * ihr gespeicherter Text bleibt unangetastet und damit reproduzierbar.
+   */
+  honorarvereinbarung?: string
   terminregelung: string
   mitwirkungspflichten: string
   schweigepflicht: string
@@ -77,6 +84,11 @@ export interface TreatmentContract {
   signer_ip: string | null
   signer_user_agent: string | null
   signer_consent: boolean
+  /** PROJ-29: Zeitpunkt des Widerrufsverzichts — nicht der Zahlungseingang. */
+  signer_consent_at: string | null
+  /** PROJ-29: Honorarvereinbarung vor der Zahlung bestaetigt. */
+  honorar_consent: boolean
+  honorar_consent_at: string | null
   widerruf_bis: string | null
   widerrufen_at: string | null
   pdf_path: string | null

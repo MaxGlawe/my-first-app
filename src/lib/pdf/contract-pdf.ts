@@ -165,14 +165,18 @@ export async function generateContractPdf(
     contract.vertrag_text.kuendigung,
     contract.vertrag_text.urheberrecht,
     contract.vertrag_text.schlussbestimmungen,
-  ].filter(Boolean)
+    // PROJ-29: steht hinten, weil es eine Anlage ist und keinen Paragrafen
+    // verschieben darf. Bei Vertraegen vor dem 27.09.2026 fehlt sie — der
+    // `filter` laesst sie dann einfach weg.
+    contract.vertrag_text.honorarvereinbarung,
+  ].filter((abschnitt): abschnitt is string => Boolean(abschnitt))
 
   for (const section of sections) {
     const lines = section.split("\n")
     for (const line of lines) {
       checkPageBreak(6)
 
-      if (line.startsWith("§") || line === "Präambel") {
+      if (line.startsWith("§") || line === "Präambel" || line.startsWith("Anlage 1")) {
         // Section header
         y += 3
         doc.setFontSize(11)

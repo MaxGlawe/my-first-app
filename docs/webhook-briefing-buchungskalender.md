@@ -158,3 +158,35 @@ weiter — gilt:
 Das ist Absicht: Praxis OS ist die digitale Betreuung, nicht die Zweitkopie
 des Praxiskalenders. Schickt trotzdem alle Ereignisse — wir entscheiden auf
 unserer Seite, was daraus wird.
+
+---
+
+## 6 · Bitte im Buchungsformular ergänzen: Honorarhinweis
+
+Das betrifft **nicht** den Webhook, sondern das Formular selbst — es ist die
+einzige Stelle, an der wir nicht mitschreiben können.
+
+Wer eine **Video-Konsultation** bucht, schliesst damit einen
+Behandlungsvertrag mit einem Heilpraktiker. Vor dem Absenden sollte deshalb
+ein Pflichthaken stehen, mit diesem Text:
+
+> Die Konsultation kostet 69,00 € und wird nach dem Gebührenverzeichnis für
+> Heilpraktiker abgerechnet; die angesetzten Sätze überschreiten dessen
+> Rahmen nicht. Gesetzliche Krankenkassen erstatten Heilpraktiker-Leistungen
+> nicht — bei privater Versicherung, Beihilfe oder Zusatzversicherung hängt
+> es vom jeweiligen Tarif ab, eine Zusicherung kann nicht gegeben werden.
+> Geschuldet ist die fachgerechte Behandlung, nicht ein bestimmter Erfolg.
+
+Wenn ihr den Zeitpunkt des Hakens mitschickt, nehmen wir ihn entgegen:
+
+```json
+"honorar_consent_at": "2026-10-01T09:12:44Z"
+```
+
+Das Feld ist **optional** — ohne dieses Feld ändert sich nichts, der Termin
+entsteht wie bisher.
+
+Solange der Haken fehlt, steht derselbe Hinweis in unserer Einladungsmail.
+Die geht direkt nach der Buchung raus und damit vor dem Termin, also bevor
+eine Leistung erbracht ist. Das trägt; der Haken im Formular wäre trotzdem
+der sauberere Ort, weil er vor dem Vertragsschluss liegt und nicht danach.

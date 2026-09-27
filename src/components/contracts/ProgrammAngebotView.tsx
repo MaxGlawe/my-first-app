@@ -8,11 +8,14 @@
  * Die Anrechnung der Konsultation ist eine sichtbare Zeile, kein Rabattcode:
  * wer zwei Tage später entscheidet, sieht exakt dieselbe Rechnung.
  *
- * Ohne die Checkbox (§ 356 Abs. 4 BGB) ist der Knopf gesperrt — dieselbe Regel
- * gilt serverseitig im Checkout.
+ * Ohne BEIDE Checkboxen ist der Knopf gesperrt — dieselbe Regel gilt
+ * serverseitig im Checkout. Es sind bewusst zwei: die Honorarvereinbarung
+ * („Ich kenne das Honorar und die Abrechnung") und der Widerrufsverzicht nach
+ * § 356 Abs. 4 BGB („Fang sofort an"). Wer nur eine bestätigt, hat nicht beide
+ * bestätigt — ein gemeinsamer Haken würde genau das verwischen.
  */
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -59,6 +62,8 @@ const SECTIONS: (keyof VertragText)[] = [
   "kuendigung",
   "urheberrecht",
   "schlussbestimmungen",
+  // PROJ-29: Anlage 1 — steht hinten und verschiebt keinen Paragrafen.
+  "honorarvereinbarung",
 ]
 
 export interface ProgrammAngebotViewProps {
@@ -79,20 +84,42 @@ export interface ProgrammAngebotViewProps {
 }
 
 export function ProgrammAngebotView(props: ProgrammAngebotViewProps) {
+  const [honorar, setHonorar] = useState(false)
   const [verzicht, setVerzicht] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [vertragOffen, setVertragOffen] = useState(false)
+  const anlageRef = useRef<HTMLPreElement>(null)
+
+  /**
+   * Angebote, die vor dem 27.09.2026 ausgestellt wurden, haben die Anlage
+   * nicht im gespeicherten Vertragstext — der wird bewusst nie nachträglich
+   * verändert, sonst wäre nicht mehr nachweisbar, was jemand gelesen hat.
+   *
+   * Die Zusammenfassung unten steht für sich und bleibt deshalb Pflicht. Nur
+   * der Verweis auf „Anlage 1" wäre dort eine Behauptung über ein Dokument,
+   * das dieser Patient nicht hat. Also: kein Verweis, kein Knopf.
+   */
+  const hatAnlage = Boolean(props.vertragText?.honorarvereinbarung)
+
+  /** Klappt den Vertrag auf und springt zur Anlage — nicht an seinen Anfang. */
+  function anlageZeigen() {
+    setVertragOffen(true)
+    // Nach dem Aufklappen, sonst gibt es das Element noch nicht.
+    requestAnimationFrame(() =>
+      anlageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    )
+  }
 
   async function bezahlen() {
-    if (!verzicht) return
+    if (!honorar || !verzicht) return
     setBusy(true)
     setError(null)
     try {
       const res = await fetch(`/api/contracts/${props.token}/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ widerrufVerzicht: true }),
+        body: JSON.stringify({ widerrufVerzicht: true, honorarvereinbarung: true }),
       })
       const json = await res.json()
       if (!res.ok || !json.url) {
@@ -229,6 +256,7 @@ export function ProgrammAngebotView(props: ProgrammAngebotViewProps) {
               return (
                 <pre
                   key={key}
+                  ref={key === "honorarvereinbarung" ? anlageRef : undefined}
                   className="mb-5 whitespace-pre-wrap font-sans text-[13px] leading-relaxed"
                   style={{ color: INK }}
                 >
@@ -240,9 +268,61 @@ export function ProgrammAngebotView(props: ProgrammAngebotViewProps) {
         )}
       </div>
 
+      {/* Honorarvereinbarung — die Zahlen stehen sichtbar da, nicht nur im
+          aufklappbaren Vertrag. Wer hier zustimmt, soll wissen wozu. */}
+      <div
+        className="mt-6 rounded-2xl border p-4"
+        style={{ borderColor: honorar ? GREEN : LINE, backgroundColor: honorar ? "rgba(44,62,45,0.05)" : "#fff" }}
+      >
+        <p className="text-sm font-semibold" style={{ color: INK }}>
+          Honorarvereinbarung
+        </p>
+        <ul className="mt-2 space-y-1.5 text-[13px] leading-relaxed" style={{ color: MUTED }}>
+          <li>
+            Pauschalhonorar {euro(props.gesamtpreis)} für {props.tage} Tage, abgerechnet nach dem
+            Gebührenverzeichnis für Heilpraktiker (GebüH). Die angesetzten Sätze überschreiten
+            dessen Rahmen nicht.
+          </li>
+          <li>
+            Du erhältst drei Monatsrechnungen über die tatsächlich erbrachten Leistungen — jede
+            mit dem Vermerk, dass sie durch deine Zahlung heute bereits beglichen ist.
+          </li>
+          <li>
+            Gesetzliche Krankenkassen erstatten Heilpraktiker-Leistungen nicht. Bei privater
+            Versicherung, Beihilfe oder Zusatzversicherung hängt die Erstattung von deinem Tarif
+            ab; eine Zusicherung kann der Behandler nicht geben.
+          </li>
+          <li>Geschuldet ist die fachgerechte Behandlung, nicht ein bestimmter Erfolg.</li>
+        </ul>
+        {hatAnlage && (
+          <button
+            type="button"
+            onClick={anlageZeigen}
+            className="mt-2.5 text-[13px] font-semibold underline"
+            style={{ color: GREEN }}
+          >
+            Vollständige Honorarvereinbarung lesen
+          </button>
+        )}
+
+        <label className="mt-3 flex cursor-pointer items-start gap-3 border-t pt-3" style={{ borderColor: LINE }}>
+          <Checkbox
+            checked={honorar}
+            onCheckedChange={(v) => setHonorar(v === true)}
+            className="mt-0.5"
+            aria-label="Honorarvereinbarung zustimmen"
+          />
+          <span className="text-[13px] leading-relaxed" style={{ color: INK }}>
+            {hatAnlage
+              ? "Ich habe die Honorarvereinbarung (Anlage 1 zum Behandlungsvertrag) gelesen und stimme ihr zu."
+              : "Ich habe die Honorarvereinbarung gelesen und stimme ihr zu."}
+          </span>
+        </label>
+      </div>
+
       {/* Widerrufsverzicht */}
       <label
-        className="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition"
+        className="mt-3 flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition"
         style={{ borderColor: verzicht ? GREEN : LINE, backgroundColor: verzicht ? "rgba(44,62,45,0.05)" : "#fff" }}
       >
         <Checkbox
@@ -268,7 +348,7 @@ export function ProgrammAngebotView(props: ProgrammAngebotViewProps) {
 
       <Button
         onClick={bezahlen}
-        disabled={!verzicht || busy}
+        disabled={!honorar || !verzicht || busy}
         size="lg"
         className="mt-5 w-full py-6 text-base font-bold"
         style={{ backgroundColor: GREEN }}

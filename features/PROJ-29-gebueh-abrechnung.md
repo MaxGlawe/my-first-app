@@ -2,7 +2,7 @@
 
 > **Die Rechnung schreibt sich aus dem, was wirklich stattgefunden hat.**
 
-**Status:** In Progress — Belege im Gespräch (Diagnose, Haken) und der tägliche Rechnungslauf gebaut am 27.09.2026; Honorarvereinbarung im Checkout offen
+**Status:** In Review — vollständig gebaut am 27.09.2026. Erste echte Monatsrechnung fällt am 22.10.2026 an.
 **Stand:** 27.09.2026
 **Baut auf:** PROJ-26 (Programm, Varianten, Angebot), PROJ-27/28 (Videotermine als belegte Ereignisse), bestehendes Rechnungswesen (`invoices`, `invoice_line_items`, `gebueh_catalog`, `lib/pdf/invoice-pdf.ts`)
 
@@ -96,20 +96,62 @@ Differenz hat einen Namen statt einer erfundenen Leistung.
 
 ---
 
-## 4 · Honorarvereinbarung im Checkout
+## 4 · Honorarvereinbarung (gebaut 27.09.2026)
 
-Pflichtbestätigung vor der Zahlung, mit Zeitstempel. Der Vertrag hat die
-Felder bereits: `signer_consent`, `signed_at`, `signer_ip`,
-`signer_user_agent`, `widerruf_bis`.
+**Anlage 1 zum Behandlungsvertrag**, nicht ein neuer Paragraf: Ein
+eingeschobener § hätte jede folgende Nummer verschoben und die Querverweise
+im Vertragstext („vgl. §7 Abs. 2") falsch gemacht. Erzeugt in
+`contract-templates.ts`, gerendert in Angebotsseite, Unterschriftsansicht und
+PDF.
 
-Inhalt nach Briefing: Leistung, Honorar, Hinweis auf mögliche Überschreitung
-der GebüH-Sätze, Erstattung nicht garantiert (gesetzliche Kassen zahlen
-nicht), kein geschuldeter Behandlungserfolg, monatliche Rechnungen,
-Widerrufsbelehrung mit ausdrücklichem Verlangen des vorzeitigen
-Leistungsbeginns und Kenntnisnahme des Wertersatzes.
+Sieben Abschnitte: Gegenstand · Honorar · Abrechnung nach GebüH (die fünf
+Ziffern mit ihren Sätzen, Analogziffern erklärt) · Höhe der Sätze ·
+Rechnungsstellung · Erstattung · kein geschuldeter Erfolg.
 
-Für die **Konsultation allein** die Kurzfassung mit den Punkten 2, 3, 4 und 5
-— bestätigt bei der Buchung.
+Bei Abschnitt 4 steht beides: dass ein Honorar oberhalb der GebüH-Rahmensätze
+frei vereinbart werden *dürfte*, und dass es hier nicht geschieht. Ein blosser
+Warnhinweis auf eine Überschreitung, die nachweislich nicht stattfindet, wäre
+die schlechtere Auskunft.
+
+### Zwei Haken, nicht einer
+
+Im Checkout sind es **zwei getrennte Erklärungen**, beide Pflicht, beide
+serverseitig erzwungen (`z.literal(true)`, kein `.optional()`):
+
+| Haken | Erklärung | Feld |
+|---|---|---|
+| Honorarvereinbarung | „Ich kenne Honorar und Abrechnung." | `honorar_consent` + `honorar_consent_at` |
+| Widerrufsverzicht (§ 356 Abs. 4 BGB) | „Fang sofort an." | `signer_consent` + `signer_consent_at` |
+
+Wer nur eine von beiden bestätigt, hat nicht beide bestätigt — ein
+gemeinsamer Haken hätte genau das verwischt. `signer_consent_at` ist neu:
+Bisher lag der Zeitpunkt des Widerrufsverzichts ausschliesslich in den
+Stripe-Metadaten, also ausserhalb unserer Akte. `signed_at` ist er nicht, das
+ist der Zahlungseingang aus dem Webhook.
+
+Die vier tragenden Sätze stehen **sichtbar auf der Seite**, nicht nur im
+aufklappbaren Vertrag. Wer zustimmt, soll wissen wozu, ohne zu klicken.
+
+### Altangebote
+
+Angebote von vor dem 27.09.2026 haben die Anlage nicht im gespeicherten
+Vertragstext — der wird nie nachträglich verändert, sonst wäre nicht mehr
+nachweisbar, was jemand gelesen hat. Für sie entfällt der Verweis auf
+„Anlage 1" und der Knopf dorthin; die Zusammenfassung steht für sich und
+bleibt Pflicht.
+
+### Konsultation allein (69 €)
+
+Gebucht wird im Kalender auf physiotherapie-glawe.de — **dort können wir
+keinen Haken setzen.** Die Kurzfassung (Honorar, GebüH, Erstattung, kein
+Erfolg) steht deshalb in der Einladungsmail, die direkt nach der Buchung
+rausgeht und den Patienten vor dem Termin erreicht, also bevor eine Leistung
+erbracht ist.
+
+Der Haken im Buchungsformular wäre der sauberere Ort, weil er vor dem
+Vertragsschluss liegt statt danach. Er ist in
+`docs/webhook-briefing-buchungskalender.md` § 6 angefragt, samt optionalem
+Feld `honorar_consent_at` im Termin-Ereignis. **Offen auf fremder Seite.**
 
 ---
 

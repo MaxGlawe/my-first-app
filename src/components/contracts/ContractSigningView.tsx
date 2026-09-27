@@ -244,6 +244,8 @@ export function ContractSigningView({ token }: ContractSigningViewProps) {
       contract.vertrag_text.kuendigung,
       contract.vertrag_text.urheberrecht,
       contract.vertrag_text.schlussbestimmungen,
+      // PROJ-29: Anlage, deshalb ans Ende. Fehlt bei Altvertraegen.
+      contract.vertrag_text.honorarvereinbarung,
     ].filter(Boolean)
 
     return (

@@ -18,12 +18,19 @@
  *     am Vorabend, landet auf einer Warteseite und hält den Termin für
  *     kaputt.
  *
+ *   — PROJ-29: Bei der ersten Mail nach einer Buchung steht die
+ *     Honorar-Kurzfassung drin. Gebucht wird im Kalender auf
+ *     physiotherapie-glawe.de — dort können wir keinen Haken setzen. Diese
+ *     Mail ist die erste Stelle, die uns gehört, und sie erreicht den
+ *     Patienten VOR dem Termin, also bevor die Leistung erbracht ist.
+ *
  *   — KEINE Angaben zur Beschwerde, auch nicht im Betreff. Eine Mail liegt
  *     auf fremden Servern und wird auf gesperrten Bildschirmen als Vorschau
  *     angezeigt. „Videotermin" genügt; worum es geht, weiss der Patient.
  */
 
 import { formatDatum, formatUhrzeit } from "@/lib/video/termin"
+import { PROGRAMM } from "@/lib/programm"
 
 export interface EinladungProps {
   vorname: string
@@ -62,6 +69,11 @@ const LINE = "#e3ddd1"
 const GREEN = "#2C3E2D"
 const SERIF = "Georgia,'Times New Roman',serif"
 const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif"
+
+/** „69,00 €" — in HTML wie im Text derselbe Betrag. */
+function euroText(betrag: number): string {
+  return betrag.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -164,7 +176,22 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
           <p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 12px;">
             <strong style="color:${INK};">Leg dir kurz bereit:</strong> vorhandene Befunde oder
             Bildgebung und deine aktuellen Medikamente.
-          </p>`
+          </p>
+          <div style="border:1px solid ${LINE};border-radius:10px;padding:14px 16px;margin:0 0 12px;">
+            <p style="font-size:13px;line-height:1.6;color:${INK};margin:0 0 6px;font-weight:600;">
+              Zum Honorar
+            </p>
+            <p style="font-size:13px;line-height:1.6;color:${BODY};margin:0;">
+              Die Konsultation kostet ${euroText(PROGRAMM.konsultation)} und wird nach dem
+              Gebührenverzeichnis für Heilpraktiker abgerechnet; die angesetzten Sätze
+              überschreiten dessen Rahmen nicht. Gesetzliche Krankenkassen erstatten
+              Heilpraktiker-Leistungen nicht — bei privater Versicherung, Beihilfe oder
+              Zusatzversicherung hängt es von deinem Tarif ab, eine Zusicherung können wir
+              nicht geben. Geschuldet ist die fachgerechte Behandlung, nicht ein bestimmter
+              Erfolg. Entscheidest du dich danach für eine Betreuung, wird dieser Betrag
+              vollständig angerechnet.
+            </p>
+          </div>`
               : ""
           }
           <p style="font-size:14px;line-height:1.65;color:${BODY};margin:0 0 ${props.termineUrl ? "12" : "18"}px;">
@@ -212,6 +239,11 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
     "",
     props.ersterKontakt
       ? "In den 30 Minuten: was deine Beschwerden auslöst, ob sich das aus der Ferne betreuen lässt, und wie eine Betreuung über Praxis OS bei dir aussähe. Leg dir Befunde und Medikamente bereit."
+      : "",
+    props.ersterKontakt
+      ? `
+Zum Honorar: Die Konsultation kostet ${euroText(PROGRAMM.konsultation)} und wird nach dem Gebuehrenverzeichnis fuer Heilpraktiker abgerechnet; die angesetzten Saetze ueberschreiten dessen Rahmen nicht. Gesetzliche Krankenkassen erstatten Heilpraktiker-Leistungen nicht; bei privater Versicherung, Beihilfe oder Zusatzversicherung haengt es von deinem Tarif ab, eine Zusicherung koennen wir nicht geben. Geschuldet ist die fachgerechte Behandlung, nicht ein bestimmter Erfolg. Entscheidest du dich danach fuer eine Betreuung, wird dieser Betrag vollstaendig angerechnet.
+`
       : "",
     "Du kannst nicht? Antworte einfach auf diese Mail.",
     props.termineUrl ? `Termine selbst verwalten: ${props.termineUrl}` : "",
