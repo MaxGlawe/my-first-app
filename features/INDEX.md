@@ -40,12 +40,13 @@
 | PROJ-26 | Praxis OS als 90-Tage-Programm (Neupositionierung) | In Review | [Spec](PROJ-26-praxis-os-programm.md) | 2026-09-22 |
 | PROJ-27 | Digitales Sprechzimmer (Video, Dokumentenakte, Befund-Scan) | In Review | [Spec](PROJ-27-digitales-sprechzimmer.md) | 2026-09-23 |
 | PROJ-28 | Schaltzentrale im Call + gebrandetes Wartezimmer | In Review | [Spec](PROJ-28-schaltzentrale-im-call.md) | 2026-09-24 |
+| PROJ-29 | Automatische GebüH-Abrechnung des Programms | Planned | [Spec](PROJ-29-gebueh-abrechnung.md) | 2026-09-27 |
 | PROJ-34 | Patienten-Terminkoordination (Termine sehen/umbuchen/stornieren) | Ruhend | [Spec](PROJ-34-patienten-terminkoordination.md) | 2026-06-20 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-29
-<!-- PROJ-34 nutzt die feature-übergreifende ID aus dem Buchungstool-Briefing; interne Sequenz läuft bei PROJ-28 weiter. -->
+## Next Available ID: PROJ-30
+<!-- PROJ-34 nutzt die feature-übergreifende ID aus dem Buchungstool-Briefing; interne Sequenz läuft bei PROJ-29 weiter. -->
 
 
 ## Build Order (Empfohlen)
