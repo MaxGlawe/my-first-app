@@ -123,6 +123,32 @@ Für die **Konsultation allein** die Kurzfassung mit den Punkten 2, 3, 4 und 5
    sie nicht im Nachhinein rekonstruiert werden muss, wird sie im Gespräch
    erfasst — Feld in der Schublade, zusammen mit dem Haken für A20.1.
 
+4. **Der Lauf schreibt ins OS, nicht ins Postfach** (Nachtrag 27.09.2026).
+   Eine Mail ist eine Benachrichtigung, keine Aufgabe: sie kennt kein
+   „erledigt" und sie sammelt sich. Bei zwanzig Patienten im Programm wären
+   das allein aus Entwürfen und Berichtserinnerungen sechzig Mails im Quartal.
+
+   Stattdessen `os_aufgaben` (Migration `20260927000003`) und eine Karte auf
+   dem Therapeuten-Dashboard: Titel, ein Satz Kontext, **Öffnen** dorthin, wo
+   man sie erledigt, und ein Haken. Sind alle abgehakt, verschwindet die Karte
+   — wie der Ampel-Banner. Erreichbar von jedem Endgerät, weil es im OS liegt
+   und nicht in einem Postfach.
+
+   | Aufgabe | entsteht bei | Öffnen führt nach | doppelt verhindert durch |
+   |---|---|---|---|
+   | Rechnung freigeben | jedem Entwurf | `/os/admin/billing/{id}` | `ref_id` = Rechnung |
+   | Verlaufs-/Abschlussbericht | Woche 6 / 12 | `/os/patients/{id}/arztbericht/new` | Zeitstempel am Vertrag |
+   | Diagnose fehlt | übersprungenem Vertrag | Patientenakte | `ref_id` = Vertrag |
+
+   Die Berichtserinnerungen tragen **bewusst keine `ref_id`**: Woche 6 und
+   Woche 12 haben denselben Typ, und der eindeutige Index liegt auf
+   `(typ, ref_id)` — die zweite Erinnerung würde verschluckt. Dort schützt der
+   Zeitstempel `bericht_erinnerung_woche{6,12}_at` am Vertrag.
+
+   Der Hinweis „Diagnose fehlt" ist neu und schließt eine stille Lücke: Vorher
+   übersprang der Lauf jeden Morgen wortlos ins Log. Kein Ausfall im System
+   darf nur im Log stehen.
+
 ## 5a · Geprüft (27.09.2026)
 
 Sieben Läufe gegen die Rechenlogik, alle ergeben exakt den Programmpreis:

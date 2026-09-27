@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useDashboardStats } from "@/hooks/use-dashboard-stats"
 import { AmpelBanner } from "@/components/ampel/AmpelBanner"
+import { AufgabenKarte } from "@/components/os/AufgabenKarte"
 import type { LucideIcon } from "lucide-react"
 import {
   Users,
@@ -156,6 +157,10 @@ export default function TherapistDashboardPage() {
 
         {/* Ampel Banner — compact link to /os/ampel */}
         <AmpelBanner />
+
+        {/* PROJ-29: Arbeitsvorrat aus den automatischen Laeufen. Steht vor den
+            Zahlen, weil es das einzige hier ist, das eine Handlung verlangt. */}
+        <AufgabenKarte />
 
         {/* Loading */}
         {isLoading && <DashboardSkeleton />}

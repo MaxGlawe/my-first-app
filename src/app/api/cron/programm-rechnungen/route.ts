@@ -20,14 +20,20 @@
  * nichts und der Behandler erfährt warum — lieber eine Rechnung später als
  * eine unvollständige.
  *
- * Der Zeitstempel der Erinnerung wird VOR dem Versand gesetzt: Scheitert die
- * Mail, gilt sie trotzdem als erledigt. Zwanzig gleiche Mails sind ein
- * Vertrauensschaden, eine verpasste ist ärgerlich.
+ * BEIDES LANDET IM OS, NICHT IM POSTFACH. Eine Mail ist eine
+ * Benachrichtigung, keine Aufgabe: sie kennt kein „erledigt" und sie sammelt
+ * sich. Bei zwanzig Patienten im Programm wären das allein hier sechzig Mails
+ * im Quartal. Der Behandler sieht seinen Arbeitsvorrat stattdessen auf dem
+ * Dashboard — von jedem Endgerät, an einem Fleck.
+ *
+ * Der Zeitstempel der Erinnerung wird VOR dem Anlegen gesetzt: Scheitert das
+ * Anlegen, gilt sie trotzdem als erledigt. Zwanzig gleiche Aufgaben sind
+ * Lärm, eine verpasste ist ärgerlich.
  */
 
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { sendEmail } from "@/lib/email"
+import { aufgabeAnlegen } from "@/lib/aufgaben"
 import { VARIANTEN, type ProgrammVariante } from "@/lib/programm"
 import { monatsrechnung, vermerk, type Ereignisse } from "@/lib/abrechnung/programm-rechnung"
 
@@ -99,14 +105,19 @@ export async function GET(request: NextRequest) {
           .maybeSingle()
 
         const name = [pat?.vorname, pat?.nachname].filter(Boolean).join(" ") || "Patient"
-        await sendEmail({
-          to: praxis?.email || process.env.SMTP_USER || "",
-          subject: `${was} fällig: ${name}`,
-          html:
-            `<p style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#3a4038;">` +
-            `Für <strong>${name}</strong> steht der <strong>${was}</strong> an — Woche ${woche} des Programms.<br /><br />` +
-            `Ohne geschriebenen Bericht darf die Ziffer 11.2 (20,50 €) nicht auf die Rechnung; ` +
-            `der Betrag wird dann als Programmpauschale ausgewiesen.</p>`,
+
+        // Kein `refId`: Woche 6 und Woche 12 tragen denselben Typ, und der
+        // eindeutige Index liegt auf (typ, ref_id) — die zweite Erinnerung
+        // würde verschluckt. Gegen Doppelte schützt hier der Zeitstempel am
+        // Vertrag, der eine Zeile weiter oben gesetzt wurde.
+        await aufgabeAnlegen(svc, {
+          typ: "bericht_faellig",
+          titel: `${was} schreiben: ${name}`,
+          beschreibung:
+            `Woche ${woche} des Programms. Ohne geschriebenen Bericht darf die Ziffer 11.2 ` +
+            `(20,50 €) nicht auf die Rechnung — der Betrag wird dann als Programmpauschale ausgewiesen.`,
+          link: `/os/patients/${vertrag.patient_id}/arztbericht/new`,
+          patientId: vertrag.patient_id as string,
         })
         ergebnis.erinnerungen++
       }
@@ -136,6 +147,20 @@ export async function GET(request: NextRequest) {
       const diagnose = alle.find((c) => c.diagnose)?.diagnose as string | undefined
 
       if (!diagnose) {
+        // Nicht nur ins Log: Ohne Diagnose entsteht hier nie eine Rechnung,
+        // und ein Lauf, der jeden Morgen still überspringt, fällt niemandem
+        // auf. `refId` = der Vertrag, also genau ein Hinweis je Patient.
+        await aufgabeAnlegen(svc, {
+          typ: "hinweis",
+          titel: "Diagnose fehlt — keine Rechnung möglich",
+          beschreibung:
+            "Für dieses Programm ist keine Diagnose hinterlegt. Die Diagnose ist Pflichtangabe " +
+            "auf der Rechnung; bis sie im Gespräch oder am Patienten erfasst ist, entstehen keine " +
+            "Monatsrechnungen.",
+          link: `/os/patients/${vertrag.patient_id}`,
+          patientId: vertrag.patient_id as string,
+          refId: vertrag.id as string,
+        })
         ergebnis.uebersprungen.push(`${vertrag.id.slice(0, 8)}: keine Diagnose hinterlegt`)
         continue
       }
@@ -270,22 +295,24 @@ export async function GET(request: NextRequest) {
 
       // ── Der Behandler erfährt davon ─────────────────────────────────────
       const name = [pat?.vorname, pat?.nachname].filter(Boolean).join(" ") || "Patient"
-      await sendEmail({
-        to: praxis?.email || process.env.SMTP_USER || "",
-        subject: `Rechnungsentwurf ${angelegt.invoice_number} — ${name}, Monat ${monat}`,
-        html:
-          `<p style="font-family:sans-serif;font-size:15px;line-height:1.6;color:#3a4038;">` +
-          `Für <strong>${name}</strong> liegt der Entwurf für <strong>Monat ${monat}</strong> bereit: ` +
-          `<strong>${rechnung.summe.toFixed(2).replace(".", ",")} €</strong>, ${rechnung.positionen.length} Positionen.` +
+      const euro = (n: number) => `${n.toFixed(2).replace(".", ",")} €`
+
+      await aufgabeAnlegen(svc, {
+        typ: "rechnung_freigeben",
+        titel: `Rechnung freigeben: ${name}, Monat ${monat}`,
+        beschreibung:
+          `${angelegt.invoice_number} · ${euro(rechnung.summe)} · ` +
+          `${rechnung.positionen.length} ${rechnung.positionen.length === 1 ? "Position" : "Positionen"}.` +
           (rechnung.ohneNachweis > 0
-            ? `<br /><br />Hinweis: ${rechnung.ohneNachweis} Gespräch(e) ohne den Haken „Übung angeleitet" — die Bewegungstherapie konnte dafür nicht berechnet werden.`
+            ? ` ${rechnung.ohneNachweis} Gespräch(e) ohne den Haken „Übung angeleitet" — die Bewegungstherapie konnte dafür nicht berechnet werden.`
             : "") +
           (rechnung.ueberschuss > 0
-            ? `<br /><br />Hinweis: Es wurde mehr erbracht als im Programmpreis vorgesehen (${rechnung.ueberschuss
-                .toFixed(2)
-                .replace(".", ",")} € darüber).`
-            : "") +
-          `<br /><br />Prüfen und freigeben unter „Buchhaltung → Rechnungen".</p>`,
+            ? ` Es wurde mehr erbracht als im Programmpreis vorgesehen (${euro(rechnung.ueberschuss)} darüber).`
+            : ""),
+        link: `/os/admin/billing/${angelegt.id}`,
+        patientId: vertrag.patient_id as string,
+        // Die Rechnung selbst: eine Aufgabe je Entwurf, für immer.
+        refId: angelegt.id as string,
       })
 
       ergebnis.entwuerfe++
