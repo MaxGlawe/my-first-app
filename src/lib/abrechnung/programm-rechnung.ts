@@ -54,6 +54,10 @@ export const SATZ = {
   bericht: 20.5,
 } as const
 
+function euro(n: number): string {
+  return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
+}
+
 export interface Position {
   /** GebüH-Ziffer, „A" davor bei Analogleistungen. Null bei der Pauschale. */
   ziffer: string | null
@@ -232,6 +236,8 @@ export function monatsrechnung(args: {
   let digital: number
   let pauschale = 0
   let ueberschuss = 0
+  /** Der Cent, der beim Dritteln uebrig bleibt. Wird auf dem Beleg benannt. */
+  let rundungsausgleich = 0
 
   if (monat < 3) {
     // Das Drittel, aber nie so viel, dass fuer die noch geplanten Leistungen
@@ -247,6 +253,23 @@ export function monatsrechnung(args: {
       // alles darüber hinaus bekommt seinen ehrlichen Namen.
       digital = Math.min(drittel, rest)
       pauschale = runde(rest - digital)
+
+      // Ein Rundungsrest von einem Cent ist keine Pauschale, sondern ein
+      // Rundungsrest. Als eigene Zeile „Programmpauschale gemäß
+      // Honorarvereinbarung — 0,01 €" sieht er auf einem Beleg, den jemand bei
+      // seiner Versicherung einreicht, nach einem Fehler aus.
+      //
+      // Er wandert deshalb in die digitale Betreuung — aber NICHT stillschweigend:
+      // 85,00 € lassen sich nicht durch drei teilen, zweimal 28,33 € und einmal
+      // 28,34 € ist die einzige ehrliche Aufteilung. Steht der Cent unkommentiert
+      // da, rechnet der Leser 3 × 28,33 = 84,99 und kommt auf 298,99 statt 299,00
+      // — genau das ist am 01.10.2026 passiert, und zwar dem, der es gebaut hat.
+      // Ein Cent, den niemand findet, ist schlimmer als eine hässliche Zeile.
+      if (pauschale > 0 && pauschale < 1) {
+        digital = runde(digital + pauschale)
+        rundungsausgleich = pauschale
+        pauschale = 0
+      }
     } else {
       digital = 0
       ueberschuss = runde(-rest)
@@ -256,7 +279,15 @@ export function monatsrechnung(args: {
   if (digital > 0) {
     positionen.push({
       ziffer: null,
-      beschreibung: `Digitale Betreuung und Verlaufsbegleitung (Chat, tägliche Check-ins, Auswertung), Programmabschnitt ${monat} von 3`,
+      beschreibung:
+        `Digitale Betreuung und Verlaufsbegleitung (Chat, tägliche Check-ins, Auswertung), ` +
+        `Programmabschnitt ${monat} von 3` +
+        // Warum es den Ausgleich gibt, sagt der Vermerk unter der Tabelle
+        // („einer von drei Abschnitten, die zusammen X ergeben"). Hier steht
+        // nur, dass dieser eine Cent kein Zufall ist.
+        (rundungsausgleich > 0
+          ? ` — einschließlich Rundungsausgleich von ${euro(rundungsausgleich)}`
+          : ""),
       anzahl: 1,
       einzelpreis: digital,
     })
@@ -286,6 +317,8 @@ export function vermerk(args: {
   /** Die Bezahlrechnung, die diesen Nachweis bereits beglichen hat. */
   rechnungsnummer?: string | null
   rechnungsdatum?: string | null
+  /** Ihr Gesamtbetrag — damit der Leser die drei Abschnitte pruefen kann. */
+  rechnungsbetrag?: number | null
 }): string {
   const teile: string[] = []
   if (args.konsultationAm) teile.push(`Behandlungsfall seit ${datum(args.konsultationAm)}`)
@@ -297,8 +330,17 @@ export function vermerk(args: {
     teile.push(
       `Bereits beglichen durch Rechnung ${args.rechnungsnummer}` +
         (args.rechnungsdatum ? ` vom ${datum(args.rechnungsdatum)}` : "") +
+        (args.rechnungsbetrag ? ` über ${euro(args.rechnungsbetrag)}` : "") +
         `. Dies ist keine Zahlungsaufforderung`
     )
+    // Der Satz, der das Nachrechnen ueberfluessig macht: Wer drei Blaetter in
+    // der Hand haelt, soll sehen, worauf sie sich zusammen belaufen muessen.
+    if (args.rechnungsbetrag) {
+      teile.push(
+        `Dieser Nachweis ist einer von drei Abschnitten, die zusammen ` +
+          `${euro(args.rechnungsbetrag)} ergeben`
+      )
+    }
   } else if (args.bezahltAm) {
     teile.push(
       `Bereits durch Vorauszahlung vom ${datum(args.bezahltAm)} beglichen. ` +

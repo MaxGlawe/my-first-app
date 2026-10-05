@@ -274,6 +274,56 @@ die Ausnahme. Die Zeilenhöhe rechnet jetzt mit.
 
 ---
 
+## 5c · Was ein Muster zutage förderte (01.–05.10.2026)
+
+Auf Bitte hin vier Musterbelege per Mail verschickt. Ein Muster entlang eines
+echten Zeitablaufs zu bauen, deckte drei Fehler auf, die keine Rechnung und
+kein Typecheck gefunden hätte.
+
+**1. Die Konsultation fiel aus der Abrechnung — stillschweigend.**
+Das Monatsfenster begann bei `paid_at`. Die Konsultation liegt aber **immer
+davor**: Sie ist der Anlass für das Angebot. Damit rutschten Ziffer 1, A20.1
+und Ziffer 5 (zusammen 69 €) durch den Filter und erschienen auf keinem
+Nachweis. Die Summe blieb richtig, weil der Ausgleichsposten sie schluckte —
+die Leistung war nur nicht mehr benannt. Also genau das, was ein Patient bei
+seiner Versicherung einreichen will.
+
+Die sieben Szenarien aus Abschnitt 5a haben das nicht gefangen, weil sie
+`ereignisse` direkt füttern und das Zeitfenster nie durchlaufen. **Monat 1
+beginnt jetzt beim Behandlungsfall, nicht beim Geldeingang.** Und die
+Konsultation ist die letzte vor dem Vertrag, nicht die erste überhaupt — ein
+Patient, der nach einem Jahr wiederkommt, hat zwei.
+
+**2. Ein Cent, den niemand findet.**
+85,00 € digitale Betreuung lassen sich nicht durch drei teilen. Zuerst stand
+der Rest als eigene Zeile „Programmpauschale gemäß Honorarvereinbarung —
+0,01 €" da; das sah nach einem Fehler aus und wurde in die digitale Betreuung
+gefaltet. Damit war es schlimmer: Monat 1 und 2 zeigten 28,33 €, Monat 3
+zeigte 28,34 € — ohne ein Wort dazu. Wer 3 × 28,33 rechnet, kommt auf 84,99
+und landet bei **298,99 €**. Genau das ist passiert, und zwar dem, der die
+Belege angefordert hat.
+
+Jetzt benennt der letzte Abschnitt den Cent („einschließlich Rundungsausgleich
+von 0,01 €"), und **jeder** Nachweis sagt unter der Tabelle, wozu er gehört:
+„Bereits beglichen durch Rechnung 2026-0042 vom 27.09.2026 über 299,00 €.
+Dieser Nachweis ist einer von drei Abschnitten, die zusammen 299,00 € ergeben."
+
+Die Lehre ist nicht die Rundung, sondern: **Ein richtiges Ergebnis, dessen
+Zustandekommen der Leser nicht nachvollziehen kann, ist auf einem Beleg kein
+richtiges Ergebnis.**
+
+**3. „Diese Rechnung ist nach dem GebüH erstellt" auf einem Leistungsnachweis.**
+
+### Offen in den Praxis-Stammdaten
+
+Die Muster zeigen im Fuß: **Steuernummer und Zulassungsnummer sind leer**, und
+als Kontakt steht `physiotherapieglawe@gmx.de` statt
+`info@physiotherapie-glawe.de`. Die Steuernummer gehört auf eine Rechnung, die
+Zulassungsnummer trägt die GebüH-Abrechnung gegenüber einer Versicherung.
+Einzutragen unter `/os/admin/billing/settings`.
+
+---
+
 ## 6 · Was ausdrücklich nicht gebaut wird
 
 Keine Erstattungsprognose, keine Einreichung bei Versicherungen, keine

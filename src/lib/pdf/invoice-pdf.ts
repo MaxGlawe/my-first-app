@@ -510,7 +510,9 @@ export async function generateInvoicePdf(
     doc.setFont("helvetica", "normal")
     setColor(LIGHT)
     doc.text(
-      "Diese Rechnung ist nach dem Geb\u00FChrenverzeichnis f\u00FCr Heilpraktiker (Geb\u00FCH) erstellt.",
+      istNachweis
+        ? "Dieser Nachweis ist nach dem Geb\u00FChrenverzeichnis f\u00FCr Heilpraktiker (Geb\u00FCH) erstellt."
+        : "Diese Rechnung ist nach dem Geb\u00FChrenverzeichnis f\u00FCr Heilpraktiker (Geb\u00FCH) erstellt.",
       ML, y
     )
     y += 3.5

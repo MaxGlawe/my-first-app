@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
   const { data: vertraege } = await svc
     .from("treatment_contracts")
-    .select("id, patient_id, created_by, paid_at, programm_variante, bericht_erinnerung_woche6_at, bericht_erinnerung_woche12_at")
+    .select("id, patient_id, created_by, created_at, paid_at, programm_variante, bericht_erinnerung_woche6_at, bericht_erinnerung_woche12_at")
     .eq("contract_type", "praxis_os_programm")
     .not("paid_at", "is", null)
     .limit(200)
@@ -181,13 +181,42 @@ export async function GET(request: NextRequest) {
         continue
       }
 
+      // ── Die Konsultation, um die es geht ────────────────────────────────
+      //
+      // Nicht einfach die erste überhaupt: Ein Patient, der nach einem Jahr
+      // wiederkommt, hat zwei. Gemeint ist die, aus der dieses Angebot
+      // entstand — also die letzte vor dem Vertrag.
+      const bisVertrag = new Date((vertrag.created_at as string) ?? (vertrag.paid_at as string))
+      const konsultationen = alle.filter(
+        (c) => c.anlass === "konsultation" && new Date(c.begonnen_at as string) <= bisVertrag
+      )
+      const konsultation =
+        konsultationen[konsultationen.length - 1] ?? alle.find((c) => c.anlass === "konsultation")
+
       // ── Zeitfenster dieses Monats ───────────────────────────────────────
-      const start = new Date(new Date(vertrag.paid_at as string).getTime() + (monat - 1) * MONAT_TAGE * 86_400_000)
-      const ende = new Date(new Date(vertrag.paid_at as string).getTime() + monat * MONAT_TAGE * 86_400_000)
+      //
+      // ACHTUNG, hier steckte ein stiller Fehler: Monat 1 begann bei `paid_at`
+      // — und die Konsultation liegt IMMER davor, sie ist ja der Anlass für
+      // das Angebot. Sie fiel damit durch den Filter, und die drei tragenden
+      // Ziffern (1, A20.1, 5 = 69 €) erschienen auf keinem Nachweis. Die Summe
+      // blieb richtig, weil der Ausgleichsposten sie schluckte — die Leistung
+      // war nur nicht mehr benannt. Genau das, was der Patient bei seiner
+      // Versicherung einreichen will.
+      //
+      // Monat 1 beginnt deshalb beim Behandlungsfall, nicht beim Geldeingang.
+      const bezahltAm = new Date(vertrag.paid_at as string)
+      const fallBeginn =
+        konsultation?.begonnen_at && new Date(konsultation.begonnen_at as string) < bezahltAm
+          ? new Date(konsultation.begonnen_at as string)
+          : bezahltAm
+
+      const start =
+        monat === 1
+          ? fallBeginn
+          : new Date(bezahltAm.getTime() + (monat - 1) * MONAT_TAGE * 86_400_000)
+      const ende = new Date(bezahltAm.getTime() + monat * MONAT_TAGE * 86_400_000)
       const imFenster = (d: string | null) =>
         !!d && new Date(d) >= start && new Date(d) < ende
-
-      const konsultation = alle.find((c) => c.anlass === "konsultation")
       const { data: plaene } = await svc
         .from("patient_assignments")
         .select("created_at")
@@ -290,6 +319,7 @@ export async function GET(request: NextRequest) {
             bezahltAm: vertrag.paid_at as string,
             rechnungsnummer: (bezahlrechnung?.invoice_number as string) ?? null,
             rechnungsdatum: (bezahlrechnung?.invoice_date as string) ?? null,
+            rechnungsbetrag: bezahlrechnung ? Number(bezahlrechnung.total) : null,
           }),
           beleg_art: "leistungsnachweis",
           bezug_invoice_id: (bezahlrechnung?.id as string) ?? null,
