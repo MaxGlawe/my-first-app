@@ -325,40 +325,60 @@ export async function generateInvoicePdf(
 
   y += 18
 
+  if (process.env.PDF_DEBUG) console.log("[pdf] y nach Summenblock:", y.toFixed(1))
+
   // ════════════════════════════════════════════════════
   // 9b. VERMERKE (PROJ-29)
   // ════════════════════════════════════════════════════
   //
   // "Behandlungsfall seit ...", "Bereits beglichen durch Rechnung ...". Die
   // standen bisher in der Datenbank und auf keinem Blatt Papier.
-  if (invoice.notes) {
-    // Der Stripe-Anker aus der Bezahlrechnung ist Technik, kein Vermerk.
-    const vermerkZeilen = invoice.notes
-      .split("\n")
-      .map((z) => z.trim())
-      .filter((z) => z && !z.startsWith("stripe_session:"))
+  // Der Stripe-Anker aus der Bezahlrechnung ist Technik, kein Vermerk.
+  const vermerkZeilen = (invoice.notes ?? "")
+    .split("\n")
+    .map((z) => z.trim())
+    .filter((z) => z && !z.startsWith("stripe_session:"))
 
-    if (vermerkZeilen.length > 0) {
-      if (y > 235) {
-        drawPageFooter(doc, praxis)
-        doc.addPage()
-        setFill(EMERALD)
-        doc.rect(0, 0, PAGE_W, 3, "F")
-        y = 20
+  // ── Der Umbruch wird EINMAL entschieden, fuer Vermerk und Kasten zusammen ─
+  //
+  // Vorher hatte jeder Block seine eigene Schwelle. Bei einem langen
+  // Leistungsnachweis — "Intensiv" hat im ersten Monat zehn Positionen —
+  // konnte der Vermerk noch auf Seite 1 passen und der Kasten "Betrag bereits
+  // beglichen" allein auf Seite 2 landen. Getrennt gehoeren die beiden nicht:
+  // der eine erklaert den anderen.
+  //
+  // Die alten Schwellen (235 / 240) warfen ausserdem frueher um als noetig und
+  // verschenkten damit vierzig Millimeter Papier.
+  doc.setFontSize(8)
+  let brauchtPlatz = vermerkZeilen.length > 0 ? 4 : 0
+  for (const zeile of vermerkZeilen) {
+    brauchtPlatz += (doc.splitTextToSize(zeile, RIGHT_EDGE - ML) as string[]).length * 4 + 1.5
+  }
+  // Der Kasten "bereits beglichen" misst 16 mm plus Abstand; der Zahlungsteil
+  // mit Bankdaten und QR-Code braucht deutlich mehr.
+  brauchtPlatz += beglichen ? 22 : 60
+
+  // Die Fusszeile beginnt bei PAGE_H - 15; darueber bleibt ein Finger breit.
+  if (y + brauchtPlatz > PAGE_H - 21) {
+    drawPageFooter(doc, praxis)
+    doc.addPage()
+    setFill(EMERALD)
+    doc.rect(0, 0, PAGE_W, 3, "F")
+    y = 20
+  }
+
+  if (vermerkZeilen.length > 0) {
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "normal")
+    setColor(GRAY)
+    for (const zeile of vermerkZeilen) {
+      for (const teil of doc.splitTextToSize(zeile, RIGHT_EDGE - ML) as string[]) {
+        doc.text(teil, ML, y)
+        y += 4
       }
-      doc.setFontSize(8)
-      doc.setFont("helvetica", "normal")
-      setColor(GRAY)
-      for (const zeile of vermerkZeilen) {
-        const umbrochen = doc.splitTextToSize(zeile, RIGHT_EDGE - ML) as string[]
-        for (const teil of umbrochen) {
-          doc.text(teil, ML, y)
-          y += 4
-        }
-        y += 1.5
-      }
-      y += 4
+      y += 1.5
     }
+    y += 4
   }
 
   // ════════════════════════════════════════════════════
@@ -367,13 +387,8 @@ export async function generateInvoicePdf(
   if (beglichen) {
     // Kein Zahlungsteil. Stattdessen der eine Satz, um den es geht — gross
     // genug, dass ihn niemand uebersieht, der nach einer IBAN sucht.
-    if (y > 240) {
-      drawPageFooter(doc, praxis)
-      doc.addPage()
-      setFill(EMERALD)
-      doc.rect(0, 0, PAGE_W, 3, "F")
-      y = 20
-    }
+    // Kein eigener Seitenumbruch mehr: Der Platz wurde oben zusammen mit dem
+    // Vermerk reserviert, damit die beiden nicht auseinandergerissen werden.
 
     setFill({ r: 236, g: 253, b: 245 })
     setDraw(EMERALD)
