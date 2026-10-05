@@ -45,6 +45,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { aufgabeAnlegen } from "@/lib/aufgaben"
+import { erstelleKonsultationsrechnung } from "@/lib/billing/konsultation-invoice"
 import { VARIANTEN, type ProgrammVariante } from "@/lib/programm"
 import { monatsrechnung, vermerk, type Ereignisse } from "@/lib/abrechnung/programm-rechnung"
 
@@ -52,6 +53,20 @@ export const dynamic = "force-dynamic"
 
 /** Ein Programmmonat sind dreissig Tage. */
 const MONAT_TAGE = 30
+
+/**
+ * Wie lange nach der Konsultation gewartet wird, bevor sie einzeln berechnet
+ * wird.
+ *
+ * Wer im Gespräch zusagt, kauft meist am selben oder am nächsten Tag — für den
+ * soll keine Einzelrechnung entstehen, die gleich wieder angerechnet werden
+ * müsste. Wer „ich muss noch nachdenken" sagt, soll seinen Beleg trotzdem
+ * zeitnah bekommen. Drei Tage sind der Kompromiss; das Angebot gilt 48 Stunden.
+ *
+ * Entscheidet er sich später doch, wird die Rechnung angerechnet — der Fall
+ * ist also nicht schlimm, nur unschön.
+ */
+const KARENZ_KONSULTATION_TAGE = 3
 
 function autorisiert(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET
@@ -76,7 +91,20 @@ export async function GET(request: NextRequest) {
   }
 
   const svc = createSupabaseServiceClient()
-  const ergebnis = { entwuerfe: 0, erinnerungen: 0, uebersprungen: [] as string[], fehler: 0 }
+  const ergebnis = {
+    entwuerfe: 0,
+    erinnerungen: 0,
+    konsultationsrechnungen: 0,
+    uebersprungen: [] as string[],
+    fehler: 0,
+  }
+
+  // ══ Pass 1: Konsultationen ohne Programm ════════════════════════════════
+  //
+  // Wer in der Konsultation sagt „ich muss noch nachdenken", hat 69 € bezahlt
+  // und eine Leistung erhalten — und bekam dafür bisher keinen Beleg. Auch
+  // nichts für seine Versicherung.
+  await konsultationsrechnungen(svc, ergebnis)
 
   const { data: vertraege } = await svc
     .from("treatment_contracts")
@@ -260,7 +288,31 @@ export async function GET(request: NextRequest) {
       // rechnen.
       const bereitsBerechnet = nachweise.reduce((s, r) => s + Number(r.total ?? 0), 0)
 
-      const rechnung = monatsrechnung({ variante, monat, ereignisse, bereitsBerechnet })
+      // ── Wurde die Konsultation schon einzeln berechnet? ─────────────────
+      //
+      // Der Fall „erst nur die Konsultation, später doch das Programm": Dann
+      // existiert bereits eine Rechnung über 69 €, und die Bezahlrechnung
+      // deckt nur den Rest. Die Nachweise müssen dasselbe tun — sonst stünde
+      // dieselbe Leistung auf zwei Belegen, und der Patient könnte sie zweimal
+      // bei seiner Versicherung einreichen.
+      const { data: kRechnung } = await svc
+        .from("invoices")
+        .select("total")
+        .eq("patient_id", vertrag.patient_id)
+        .not("konsultation_call_id", "is", null)
+        .neq("status", "storniert")
+        .limit(1)
+        .maybeSingle()
+
+      const konsultationExtern = kRechnung ? Number(kRechnung.total) : 0
+
+      const rechnung = monatsrechnung({
+        variante,
+        monat,
+        ereignisse,
+        bereitsBerechnet,
+        konsultationExtern,
+      })
 
       // ── Anlegen ─────────────────────────────────────────────────────────
       const { data: nummer } = await svc.rpc("generate_nachweis_number")
@@ -378,4 +430,105 @@ export async function GET(request: NextRequest) {
 
   console.log("[cron/programm-rechnungen]", JSON.stringify(ergebnis))
   return NextResponse.json({ ok: true, ...ergebnis })
+}
+
+/**
+ * Konsultationen, zu denen kein Programm kam — jede bekommt ihre eigene
+ * Rechnung.
+ *
+ * Übersprungen wird, wer danach ein Programm gekauft hat: Dort steckt die
+ * Konsultation bereits in der Bezahlrechnung. Wer sich ERST SPÄTER entscheidet,
+ * behält seine Rechnung; sie wird dann angerechnet statt storniert.
+ */
+async function konsultationsrechnungen(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  svc: any,
+  ergebnis: { konsultationsrechnungen: number; uebersprungen: string[]; fehler: number }
+): Promise<void> {
+  const grenze = new Date(Date.now() - KARENZ_KONSULTATION_TAGE * 86_400_000).toISOString()
+
+  const { data: gespraeche } = await svc
+    .from("video_calls")
+    .select("id, patient_id, therapist_id, begonnen_at, uebung_angeleitet, diagnose")
+    .eq("anlass", "konsultation")
+    .not("begonnen_at", "is", null)
+    .lt("begonnen_at", grenze)
+    .order("begonnen_at", { ascending: false })
+    .limit(100)
+
+  for (const call of gespraeche ?? []) {
+    try {
+      // Ohne Diagnose keine Rechnung — dieselbe Regel wie beim Programm.
+      if (!call.diagnose) {
+        await aufgabeAnlegen(svc, {
+          typ: "hinweis",
+          titel: "Diagnose fehlt — Konsultation nicht abrechenbar",
+          beschreibung:
+            "Für diese Videokonsultation ist keine Diagnose hinterlegt. Die Diagnose ist " +
+            "Pflichtangabe auf der Rechnung; bis sie erfasst ist, entsteht kein Beleg für " +
+            "den Patienten.",
+          link: `/os/patients/${call.patient_id}`,
+          patientId: call.patient_id as string,
+          refId: call.id as string,
+        })
+        continue
+      }
+
+      // Kam danach ein bezahltes Programm, steckt die Konsultation dort drin.
+      const { data: vertrag } = await svc
+        .from("treatment_contracts")
+        .select("id, paid_at")
+        .eq("patient_id", call.patient_id)
+        .eq("contract_type", "praxis_os_programm")
+        .not("paid_at", "is", null)
+        .gte("paid_at", call.begonnen_at as string)
+        .limit(1)
+        .maybeSingle()
+
+      if (vertrag) continue
+
+      const res = await erstelleKonsultationsrechnung(svc, {
+        callId: call.id as string,
+        patientId: call.patient_id as string,
+        begonnenAt: call.begonnen_at as string,
+        uebungAngeleitet: Boolean(call.uebung_angeleitet),
+        diagnose: call.diagnose as string,
+        urheber: call.therapist_id as string,
+      })
+
+      if (!res.ok) {
+        ergebnis.uebersprungen.push(`Konsultation ${String(call.id).slice(0, 8)}: ${res.fehler}`)
+        ergebnis.fehler++
+        continue
+      }
+      if (res.schonDa || !res.invoiceId) continue
+
+      const { data: pat } = await svc
+        .from("patients")
+        .select("vorname, nachname")
+        .eq("id", call.patient_id)
+        .maybeSingle()
+      const name = [pat?.vorname, pat?.nachname].filter(Boolean).join(" ") || "Patient"
+      const betrag = (res.summe ?? 0).toFixed(2).replace(".", ",")
+
+      await aufgabeAnlegen(svc, {
+        typ: "rechnung_freigeben",
+        titel: `Konsultationsrechnung versenden: ${name}`,
+        beschreibung:
+          `${res.invoiceNumber} · ${betrag} € · Videokonsultation ohne anschließendes Programm. ` +
+          `Prüfen, freigeben und per Mail an den Patienten schicken.` +
+          (Boolean(call.uebung_angeleitet)
+            ? ""
+            : ` Hinweis: kein Haken „Übung angeleitet" — die Bewegungstherapie (31,00 €) fehlt.`),
+        link: `/os/admin/billing/${res.invoiceId}`,
+        patientId: call.patient_id as string,
+        refId: res.invoiceId,
+      })
+
+      ergebnis.konsultationsrechnungen++
+    } catch (err) {
+      console.error("[cron/programm-rechnungen] Konsultation:", err)
+      ergebnis.fehler++
+    }
+  }
 }

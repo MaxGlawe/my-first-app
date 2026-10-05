@@ -49,12 +49,25 @@ function datum(d: Date): string {
  * weiter greift.
  */
 function vermerk(
-  p: { gesamtpreis: number; bereitsBeglichen: number; gezahltJetzt: number },
+  p: {
+    gesamtpreis: number
+    bereitsBeglichen: number
+    gezahltJetzt: number
+    /** Gesondert gestellte Konsultationsrechnung, falls es sie gibt. */
+    konsultationsrechnung?: { nummer: string; betrag: number } | null
+  },
   anker: string
 ): string {
   const heute = datum(new Date())
+  const k = p.konsultationsrechnung
   const zeilen = [
-    p.bereitsBeglichen > 0
+    // Drei Faelle, und der Patient muss in jedem wiederfinden, was von seinem
+    // Konto abgegangen ist.
+    k
+      ? `Vollständig beglichen am ${heute}. Die Videokonsultation wurde bereits mit ` +
+        `Rechnung ${k.nummer} über ${euro(k.betrag)} gesondert abgerechnet; beide Rechnungen ` +
+        `zusammen ergeben ${euro(p.gezahltJetzt + k.betrag)}.`
+      : p.bereitsBeglichen > 0
       ? `Vollständig beglichen: ${euro(p.bereitsBeglichen)} bei der Buchung der Videokonsultation, ` +
         `${euro(p.gezahltJetzt)} am ${heute}.`
       : `Vollständig beglichen am ${heute}.`,
@@ -80,6 +93,29 @@ export interface ProgrammInvoiceParams {
   leistungen: Leistung[]
   /** Idempotenz: dieselbe Stripe-Session erzeugt nie zwei Rechnungen. */
   stripeSessionId: string
+}
+
+/** Die gesondert gestellte Konsultationsrechnung dieses Patienten, falls vorhanden. */
+async function konsultationsrechnungSuchen(
+  supabase: ServiceClient,
+  patientId: string
+): Promise<{ id: string; nummer: string; betrag: number } | null> {
+  const { data } = await supabase
+    .from("invoices")
+    .select("id, invoice_number, total, status")
+    .eq("patient_id", patientId)
+    .not("konsultation_call_id", "is", null)
+    .neq("status", "storniert")
+    .order("treatment_date", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (!data) return null
+  return {
+    id: data.id as string,
+    nummer: data.invoice_number as string,
+    betrag: Number(data.total),
+  }
 }
 
 export async function createProgrammBezahlrechnung(
@@ -136,6 +172,27 @@ export async function createProgrammBezahlrechnung(
   // beglichenen Rechnung liest sich wie eine Zahlungsaufforderung.
   const due = new Date()
 
+  // ── Anrechnung einer gesondert gestellten Konsultationsrechnung ─────────
+  //
+  // Der Fall „erst nur die Konsultation, spaeter doch das Programm": Dann gibt
+  // es bereits eine Rechnung ueber 69 EUR. Diese hier darf dann nur noch den
+  // Rest tragen — sonst stuenden 69 + 299 = 368 EUR in den Buechern fuer ein
+  // 299-EUR-Programm.
+  // Gibt es sie, traegt diese Rechnung nur noch das, was Stripe wirklich
+  // eingezogen hat. Nicht „Programmpreis minus Konsultationsrechnung": Hat der
+  // Behandler beim Angebot vergessen, die Konsultation anzurechnen, hat der
+  // Patient den vollen Preis gezahlt — dann muss der Beleg das auch zeigen.
+  // Ein Beleg bildet ab, was geflossen ist, nicht was fliessen sollte.
+  const konsultationsrechnung = await konsultationsrechnungSuchen(supabase, patient.id)
+  const rechnungsbetrag = konsultationsrechnung ? params.gezahltJetzt : params.gesamtpreis
+
+  if (rechnungsbetrag <= 0) {
+    console.error(
+      `[programm-invoice] Rechnungsbetrag waere ${rechnungsbetrag} EUR — keine Rechnung angelegt.`
+    )
+    return { ok: false, error: "Es bleibt kein Betrag zu berechnen." }
+  }
+
   const patientName = `${patient.vorname} ${patient.nachname}`
   const patientAddress = [patient.strasse, `${patient.plz ?? ""} ${patient.ort ?? ""}`.trim()]
     .filter(Boolean)
@@ -155,9 +212,9 @@ export async function createProgrammBezahlrechnung(
       praxis_name: praxis.praxis_name,
       praxis_address: `${praxis.strasse}\n${praxis.plz} ${praxis.ort}`,
       praxis_steuernr: praxis.steuernummer,
-      subtotal: params.gesamtpreis,
-      total: params.gesamtpreis,
-      notes: vermerk(params, noteAnchor),
+      subtotal: rechnungsbetrag,
+      total: rechnungsbetrag,
+      notes: vermerk({ ...params, konsultationsrechnung }, noteAnchor),
       // Das Geld ist eingegangen — alles andere wäre eine Rechnung, die auf
       // eine Zahlung wartet, die es längst gab.
       status: "bezahlt",
@@ -173,19 +230,49 @@ export async function createProgrammBezahlrechnung(
     return { ok: false, error: invoiceError?.message ?? "Rechnung konnte nicht angelegt werden." }
   }
 
-  // Positionen im Klartext aus dem Vertrag. Nur die kostenpflichtige Position
-  // wird berechnet; die bereits beglichene Konsultation erscheint als
-  // Null-Position, damit die Anrechnung auf der Rechnung sichtbar bleibt.
+  // Positionen im Klartext aus dem Vertrag.
+  //
+  // Wurde die Konsultation gesondert berechnet, erscheint sie hier als
+  // ABZUG — sichtbar, nicht weggerechnet. Der Patient soll den Programmpreis
+  // sehen und daneben, was davon schon auf einer anderen Rechnung steht.
   const bezahlte = params.leistungen.filter((l) => l.preis > 0)
-  const rows = bezahlte.map((l, i) => ({
-    invoice_id: invoice.id,
+  const rows: Array<{
+    invoice_id: string
+    sort_order: number
+    gebueh_ziffer: string | null
+    beschreibung: string
+    anzahl: number
+    einzelpreis: number
+    gesamtpreis: number
+  }> = bezahlte.map((l, i) => ({
+    invoice_id: invoice.id as string,
     sort_order: i,
-    gebueh_ziffer: null as string | null,
+    gebueh_ziffer: null,
     beschreibung: l.details ? `${l.beschreibung} (${l.details})` : l.beschreibung,
     anzahl: 1,
     einzelpreis: l.preis,
     gesamtpreis: l.preis,
   }))
+
+  if (konsultationsrechnung) {
+    // Die Hauptposition traegt den Programmpreis; der Abzug macht sichtbar,
+    // dass ein Teil davon schon auf einer anderen Rechnung steht. Beide Zeilen
+    // zusammen ergeben den Betrag im Kopf.
+    const abzug = Math.round((params.gesamtpreis - rechnungsbetrag) * 100) / 100
+    if (abzug !== 0) {
+      rows.push({
+        invoice_id: invoice.id as string,
+        sort_order: rows.length,
+        gebueh_ziffer: null,
+        beschreibung:
+          `Abzüglich gesondert berechneter Videokonsultation ` +
+          `(Rechnung ${konsultationsrechnung.nummer})`,
+        anzahl: 1,
+        einzelpreis: -abzug,
+        gesamtpreis: -abzug,
+      })
+    }
+  }
 
   const { error: itemsError } = await supabase.from("invoice_line_items").insert(rows)
   if (itemsError) {

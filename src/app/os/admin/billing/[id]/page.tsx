@@ -34,6 +34,7 @@ import {
   XCircle,
   Eye,
   ListOrdered,
+  Mail,
 } from "lucide-react"
 import { toast } from "sonner"
 import type { InvoiceWithItems, InvoiceStatus, PraxisSettings } from "@/types/billing"
@@ -102,6 +103,39 @@ export default function InvoiceDetailPage() {
       toast.success("Status aktualisiert.")
     } catch {
       toast.error("Fehler beim Aktualisieren.")
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  /**
+   * PROJ-29: Beleg per Mail an den Patienten.
+   *
+   * Vorher konnte der Dialog herunterladen und finalisieren, aber nicht
+   * versenden — wer dem Patienten seine Rechnung geben wollte, musste das PDF
+   * laden und von Hand anhaengen.
+   */
+  const sendeAnPatient = async () => {
+    setActionLoading(true)
+    try {
+      const res = await fetch(`/api/admin/invoices/${id}/send`, { method: "POST" })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error(json.error || "Der Versand ist fehlgeschlagen.")
+        return
+      }
+      setInvoice((prev) =>
+        prev
+          ? {
+              ...prev,
+              versendet_at: new Date().toISOString(),
+              status: prev.status === "entwurf" ? "offen" : prev.status,
+            }
+          : null
+      )
+      toast.success(`Verschickt an ${json.an}.`)
+    } catch {
+      toast.error("Verbindungsfehler beim Versand.")
     } finally {
       setActionLoading(false)
     }
@@ -185,6 +219,37 @@ export default function InvoiceDetailPage() {
                 PDF
               </Button>
             </a>
+          )}
+
+          {invoice.status !== "storniert" && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" disabled={actionLoading}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  {invoice.versendet_at ? "Erneut senden" : "An Patient senden"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {invoice.beleg_art === "leistungsnachweis"
+                      ? "Leistungsnachweis verschicken?"
+                      : "Rechnung verschicken?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {invoice.patient_name} erhält den Beleg als PDF per E-Mail.
+                    {invoice.status === "entwurf" &&
+                      " Der Entwurf gilt damit als gestellt und wechselt auf „offen“."}
+                    {invoice.versendet_at &&
+                      " Dieser Beleg wurde bereits einmal verschickt."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={sendeAnPatient}>Senden</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
 
           {invoice.status === "entwurf" && (

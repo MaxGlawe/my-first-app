@@ -104,13 +104,25 @@ function runde(n: number): number {
  * was nach Plan als Einzelleistung anfällt. Wird nicht von Hand gepflegt —
  * sonst stünde er irgendwann im Widerspruch zum Preis.
  */
-export function digitaleBetreuungGesamt(variante: ProgrammVariante): number {
+export function digitaleBetreuungGesamt(
+  variante: ProgrammVariante,
+  /**
+   * Betrag einer bereits GESONDERT gestellten Konsultationsrechnung.
+   *
+   * Dann gehört die Konsultation nicht mehr in dieses Programm: Weder ihre
+   * Ziffern auf den Leistungsnachweis noch ihr Betrag in den zu verteilenden
+   * Preis. Beides zusammen ergibt wieder den Programmpreis — nur eben auf
+   * zwei Belegen statt auf einem.
+   */
+  konsultationExtern = 0
+): number {
   const v = VARIANTEN[variante]
-  const konsultation = SATZ.untersuchung + SATZ.beratung + SATZ.bewegungstherapie
+  const konsultation =
+    konsultationExtern > 0 ? 0 : SATZ.untersuchung + SATZ.beratung + SATZ.bewegungstherapie
   const plaene = SATZ.plan * 4 // Erstellung + drei Überarbeitungen
   const berichte = SATZ.bericht * 2 // Verlauf und Abschluss
   const sitzungen = SATZ.bewegungstherapie * v.calls
-  return runde(v.preis - (konsultation + plaene + berichte + sitzungen))
+  return runde(v.preis - konsultationExtern - (konsultation + plaene + berichte + sitzungen))
 }
 
 /**
@@ -153,9 +165,25 @@ export function monatsrechnung(args: {
   monat: 1 | 2 | 3
   ereignisse: Ereignisse
   bereitsBerechnet: number
+  /**
+   * Betrag einer bereits gesondert gestellten Konsultationsrechnung — also
+   * der Fall „erst nur die Konsultation, später doch das Programm".
+   *
+   * Die drei Nachweise decken dann nur noch den Rest; die Konsultation steht
+   * vollständig auf ihrer eigenen Rechnung.
+   */
+  konsultationExtern?: number
 }): Monatsrechnung {
-  const { variante, monat, ereignisse, bereitsBerechnet } = args
-  const preis = VARIANTEN[variante].preis
+  const { variante, monat, bereitsBerechnet } = args
+  const konsultationExtern = args.konsultationExtern ?? 0
+  const preis = runde(VARIANTEN[variante].preis - konsultationExtern)
+
+  // Wurde die Konsultation gesondert berechnet, darf sie hier unter keinen
+  // Umständen noch einmal auftauchen. Das wird hier erzwungen und nicht dem
+  // Aufrufer überlassen: Der Fehler wäre eine doppelt abgerechnete Leistung,
+  // und die fällt erst auf, wenn die Versicherung zurückfragt.
+  const ereignisse: Ereignisse =
+    konsultationExtern > 0 ? { ...args.ereignisse, konsultation: null } : args.ereignisse
   const positionen: Position[] = []
   let ohneNachweis = 0
 
@@ -230,7 +258,7 @@ export function monatsrechnung(args: {
   //
   // Zu Dritteln über die Monate, damit jede Rechnung einen Abschnitt des
   // Programmzeitraums abbildet und nicht erst die letzte alles nachholt.
-  const gesamtDigital = digitaleBetreuungGesamt(variante)
+  const gesamtDigital = digitaleBetreuungGesamt(variante, konsultationExtern)
   const drittel = runde(gesamtDigital / 3)
 
   let digital: number

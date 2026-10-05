@@ -67,6 +67,10 @@ export interface Invoice {
   beleg_art?: "rechnung" | "leistungsnachweis"
   /** PROJ-29: Bei einem Nachweis die Rechnung, die ihn beglichen hat. */
   bezug_invoice_id?: string | null
+  /** PROJ-29: Das Gespraech, das diese Rechnung abrechnet (Konsultation allein). */
+  konsultation_call_id?: string | null
+  /** PROJ-29: Wann der Beleg per E-Mail an den Patienten ging. */
+  versendet_at?: string | null
 }
 
 /** Rechnung mit Positionen (für Detail-Ansicht) */
