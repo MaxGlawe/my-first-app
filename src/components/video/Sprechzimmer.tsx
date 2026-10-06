@@ -38,7 +38,7 @@ import {
   useRemoteParticipants,
 } from "@livekit/components-react"
 import { Steuerleiste } from "./Steuerleiste"
-import { ConnectionState, Track, RoomEvent, VideoPresets } from "livekit-client"
+import { ConnectionState, Track, RoomEvent, VideoPresets, AudioPresets } from "livekit-client"
 import "@livekit/components-styles"
 import { Button } from "@/components/ui/button"
 import { Loader2, Mic, Video as VideoIcon, AlertTriangle, PhoneOff, QrCode } from "lucide-react"
@@ -963,9 +963,28 @@ export function Sprechzimmer({
             // statt das Bild einfrieren zu lassen.
             videoSimulcastLayers: [VideoPresets.h360, VideoPresets.h720],
             degradationPreference: "maintain-framerate",
-            audioPreset: { maxBitrate: 32_000 },
+            // ── Ton, nachgebessert nach dem ersten echten Gespraech ──────
+            //
+            // Vorher 32 kbit/s. Der Behandler beschrieb den Klang als „dumpf
+            // oder blechern": verstaendlich, aber hohl. Das ist das typische
+            // Bild einer zu knappen Sprach-Bitrate.
+            //
+            // `music` sind 48 kbit/s — fuer ein Einzelgespraech belanglos
+            // (zum Vergleich: das Bild darf 2.500 kbit/s nehmen), aber es ist
+            // der Unterschied zwischen „Telefon" und „im Raum".
+            audioPreset: AudioPresets.music,
+
+            // Redundante Pakete gegen Aussetzer bei schwachem Netz — bleibt.
             red: true,
-            dtx: true,
+
+            // DTX sendet in Sprechpausen nichts. Das spart Bandbreite, kann
+            // aber Wortanfaenge verschlucken und laesst den Hintergrund
+            // „pumpen", sobald jemand einatmet.
+            //
+            // In einem Gespraech, in dem eine Uebung angeleitet wird, ist eine
+            // verschluckte Silbe teurer als die paar eingesparten Kilobit.
+            // Deshalb aus.
+            dtx: false,
           },
           audioCaptureDefaults: {
             echoCancellation: true,
