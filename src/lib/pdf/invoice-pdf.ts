@@ -85,6 +85,10 @@ export async function generateInvoicePdf(
   // nichts zu suchen — ein QR-Code zum Ueberweisen auf einem beglichenen Beleg
   // ist eine Aufforderung, zweimal zu zahlen.
   const istNachweis = invoice.beleg_art === "leistungsnachweis"
+  // Ein Kostenvoranschlag rechnet nichts ab — er schaetzt. Deshalb keine
+  // Zahlungsangaben, aber auch kein „bereits beglichen": Es ist schlicht
+  // noch nichts faellig und noch nichts geschehen.
+  const istVoranschlag = invoice.beleg_art === "kostenvoranschlag"
   const beglichen = istNachweis || invoice.status === "bezahlt"
 
   // ════════════════════════════════════════════════════
@@ -128,20 +132,40 @@ export async function generateInvoicePdf(
 
   // Box-Hintergrund
   setFill(SUBTLE)
-  doc.roundedRect(infoBoxX, infoY - 2, RIGHT_EDGE - infoBoxX, beglichen ? 25.5 : 32, 2, 2, "F")
+  doc.roundedRect(
+    infoBoxX,
+    infoY - 2,
+    RIGHT_EDGE - infoBoxX,
+    beglichen || istVoranschlag ? 25.5 : 32,
+    2,
+    2,
+    "F"
+  )
 
   doc.setFontSize(8.5)
   infoY += 3
 
   const infoRows: string[][] = [
-    [istNachweis ? "Nachweis-Nr." : "Rechnungsnr.", invoice.invoice_number],
-    [istNachweis ? "Ausstellungsdatum" : "Rechnungsdatum", fmtDate(invoice.invoice_date)],
-    ["Behandlungsdatum", fmtDate(invoice.treatment_date)],
+    [
+      istVoranschlag ? "Voranschlag-Nr." : istNachweis ? "Nachweis-Nr." : "Rechnungsnr.",
+      invoice.invoice_number,
+    ],
+    [
+      istVoranschlag || istNachweis ? "Ausstellungsdatum" : "Rechnungsdatum",
+      fmtDate(invoice.invoice_date),
+    ],
   ]
+  // „Behandlungsdatum" auf einem Voranschlag waere falsch: Die Behandlung hat
+  // noch nicht stattgefunden. Dort steht stattdessen, wie lange er gilt.
+  if (istVoranschlag) {
+    infoRows.push(["Gültig bis", fmtDate(invoice.due_date)])
+  } else {
+    infoRows.push(["Behandlungsdatum", fmtDate(invoice.treatment_date)])
+  }
 
   // „Faellig bis" auf einem beglichenen Beleg liest sich wie eine Frist, die
   // noch laeuft. Auf einem Leistungsnachweis waere es schlicht falsch.
-  if (!beglichen) infoRows.push(["Fällig bis", fmtDate(invoice.due_date)])
+  if (!beglichen && !istVoranschlag) infoRows.push(["Fällig bis", fmtDate(invoice.due_date)])
 
   for (const [label, value] of infoRows) {
     doc.setFont("helvetica", "normal")
@@ -160,11 +184,15 @@ export async function generateInvoicePdf(
   doc.setFontSize(22)
   doc.setFont("helvetica", "bold")
   setColor(DARK)
-  doc.text(istNachweis ? "LEISTUNGSNACHWEIS" : "RECHNUNG", ML, y)
+  doc.text(
+    istVoranschlag ? "KOSTENVORANSCHLAG" : istNachweis ? "LEISTUNGSNACHWEIS" : "RECHNUNG",
+    ML,
+    y
+  )
 
   // Akzentlinie unter Titel
   setFill(EMERALD)
-  doc.rect(ML, y + 2, istNachweis ? 72 : 40, 1, "F")
+  doc.rect(ML, y + 2, istVoranschlag ? 80 : istNachweis ? 72 : 40, 1, "F")
   y += 12
 
   // ════════════════════════════════════════════════════
@@ -325,7 +353,6 @@ export async function generateInvoicePdf(
 
   y += 18
 
-  if (process.env.PDF_DEBUG) console.log("[pdf] y nach Summenblock:", y.toFixed(1))
 
   // ════════════════════════════════════════════════════
   // 9b. VERMERKE (PROJ-29)
@@ -360,9 +387,8 @@ export async function generateInvoicePdf(
         analogZiffern
           .map((z) => `${z} analog ${ANALOG_HERKUNFT[z] ?? `Ziffer ${z.slice(1)}`}`)
           .join(", ") +
-        `. Das Gebührenverzeichnis für Heilpraktiker stammt aus dem Jahr 1985 und enthält ` +
-        `weder für Bewegungstherapie noch für schriftliche Trainingspläne eine eigene Ziffer; ` +
-        `die Analogie wird deshalb offen ausgewiesen.`
+        `. Die GebüH von 1985 enthält für Bewegungstherapie und schriftliche Trainingspläne ` +
+        `keine eigenen Ziffern; die Analogie wird deshalb offen ausgewiesen.`
       : null
 
   // Der Stripe-Anker aus der Bezahlrechnung ist Technik, kein Vermerk.
@@ -390,7 +416,7 @@ export async function generateInvoicePdf(
   }
   // Der Kasten "bereits beglichen" misst 16 mm plus Abstand; der Zahlungsteil
   // mit Bankdaten und QR-Code braucht deutlich mehr.
-  brauchtPlatz += beglichen ? 22 : 60
+  brauchtPlatz += beglichen || istVoranschlag ? 22 : 60
 
   // Die Fusszeile beginnt bei PAGE_H - 15; darueber bleibt ein Finger breit.
   if (y + brauchtPlatz > PAGE_H - 21) {
@@ -418,7 +444,31 @@ export async function generateInvoicePdf(
   // ════════════════════════════════════════════════════
   // 10. ZAHLUNGSINFORMATIONEN + QR-CODE
   // ════════════════════════════════════════════════════
-  if (beglichen) {
+  if (istVoranschlag) {
+    // Der wichtigste Satz auf einem Kostenvoranschlag: Das ist keine Rechnung.
+    // Wer ihn mit einer verwechselt, ueberweist Geld fuer eine Behandlung, die
+    // noch gar nicht stattgefunden hat.
+    setFill({ r: 241, g: 245, b: 249 })
+    setDraw({ r: 148, g: 163, b: 184 })
+    doc.setLineWidth(0.3)
+    doc.roundedRect(ML, y, RIGHT_EDGE - ML, 16, 2, 2, "FD")
+
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+    setColor(DARK)
+    doc.text("Kostenvoranschlag — keine Rechnung", ML + 5, y + 6.5)
+
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "normal")
+    setColor(GRAY)
+    doc.text(
+      "Die aufgeführten Leistungen sind geplant und noch nicht erbracht. Es ist keine Zahlung fällig.",
+      ML + 5,
+      y + 12
+    )
+
+    y += 22
+  } else if (beglichen) {
     // Kein Zahlungsteil. Stattdessen der eine Satz, um den es geht — gross
     // genug, dass ihn niemand uebersieht, der nach einer IBAN sucht.
     // Kein eigener Seitenumbruch mehr: Der Platz wurde oben zusammen mit dem
@@ -559,9 +609,11 @@ export async function generateInvoicePdf(
     doc.setFont("helvetica", "normal")
     setColor(LIGHT)
     doc.text(
-      istNachweis
-        ? "Dieser Nachweis ist nach dem Geb\u00FChrenverzeichnis f\u00FCr Heilpraktiker (Geb\u00FCH) erstellt."
-        : "Diese Rechnung ist nach dem Geb\u00FChrenverzeichnis f\u00FCr Heilpraktiker (Geb\u00FCH) erstellt.",
+      istVoranschlag
+        ? "Dieser Kostenvoranschlag ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) kalkuliert."
+        : istNachweis
+        ? "Dieser Nachweis ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) erstellt."
+        : "Diese Rechnung ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) erstellt.",
       ML, y
     )
     y += 3.5

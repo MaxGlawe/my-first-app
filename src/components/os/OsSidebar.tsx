@@ -63,6 +63,9 @@ export function OsSidebar() {
     { label: "Patienten-Ampel", href: "/os/ampel", icon: Activity },
     { label: "Patienten", href: "/os/patients", icon: Users },
     { label: "Digitale Sprechstunde", href: "/os/sprechstunde", icon: Video },
+    // PROJ-29: Gehoert hierher und nicht unter Admin — ein Kostenvoranschlag
+    // entsteht am Telefon, waehrend jemand fragt, was das kostet.
+    { label: "Kostenvoranschlag", href: "/os/kostenvoranschlag", icon: FileText },
   ]
 
   // Praxismanagement doesn't have Nachrichten write access, but can read

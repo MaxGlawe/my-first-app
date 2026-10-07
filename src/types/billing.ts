@@ -64,7 +64,7 @@ export interface Invoice {
    * sichere Richtung: lieber im Umsatz auftauchen als still daraus
    * verschwinden.
    */
-  beleg_art?: "rechnung" | "leistungsnachweis"
+  beleg_art?: "rechnung" | "leistungsnachweis" | "kostenvoranschlag"
   /** PROJ-29: Bei einem Nachweis die Rechnung, die ihn beglichen hat. */
   bezug_invoice_id?: string | null
   /** PROJ-29: Das Gespraech, das diese Rechnung abrechnet (Konsultation allein). */
