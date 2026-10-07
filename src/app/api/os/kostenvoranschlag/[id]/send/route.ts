@@ -18,7 +18,7 @@ import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, kopieAdresse } from "@/lib/email"
 import { kostenvoranschlagEmail } from "@/lib/email-templates/kostenvoranschlag"
 import { kostenvoranschlagAlsBeleg, variantenName } from "@/lib/billing/kostenvoranschlag-beleg"
 import type { PraxisSettings } from "@/types/billing"
@@ -112,6 +112,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const res = await sendEmail({
     to: adresse,
+    // Stille Kopie an die Praxis: der Beleg, dass sie rausgegangen ist.
+    bcc: kopieAdresse(praxis.email),
     subject: mail.subject,
     html: mail.html,
     text: mail.text,

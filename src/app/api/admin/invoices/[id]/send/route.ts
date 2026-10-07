@@ -24,7 +24,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { generateInvoicePdf } from "@/lib/pdf/invoice-pdf"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, kopieAdresse } from "@/lib/email"
 import type { InvoiceWithItems, PraxisSettings } from "@/types/billing"
 
 export const dynamic = "force-dynamic"
@@ -130,6 +130,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const res = await sendEmail({
     to: patient.email,
+    // Dieselbe stille Kopie wie beim Kostenvoranschlag. Es ist derselbe
+    // Vorgang — ein Beleg verlaesst das Haus —, also derselbe Nachweis.
+    bcc: kopieAdresse(praxis.email),
     subject: `Ihr ${bezeichnung} ${invoice.invoice_number} — ${praxis.praxis_name}`,
     html,
     attachments: [

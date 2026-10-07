@@ -41,6 +41,33 @@ function getTransporter(): nodemailer.Transporter | null {
   return _transporter
 }
 
+/**
+ * An welche Adresse die stille Kopie geht.
+ *
+ * „Eine Kopie an mich waere immer gut, dass ich sehe, dass sie rausgegangen
+ * ist."
+ *
+ * Voreinstellung ist das Praxispostfach — dort gehoert Geschaeftspost hin.
+ * Wer sie woanders lesen will, setzt `EMAIL_BCC_ADDRESS`; dann braucht es
+ * keine Code-Aenderung, nur einen Neustart.
+ *
+ * Gibt `null` zurueck, wenn die Kopie dieselbe Adresse waere wie der Absender
+ * UND kein eigener Wert gesetzt ist: Eine Blindkopie an das eigene
+ * Absenderpostfach liefern manche Anbieter stillschweigend nicht aus — dann
+ * entstuende der Eindruck, der Versand sei fehlgeschlagen.
+ */
+export function kopieAdresse(praxisEmail?: string | null): string | null {
+  const gesetzt = process.env.EMAIL_BCC_ADDRESS?.trim()
+  if (gesetzt) return gesetzt
+
+  const absender = (process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || "").toLowerCase()
+  const praxis = praxisEmail?.trim()
+  if (!praxis) return null
+  if (praxis.toLowerCase() === absender) return praxis
+
+  return praxis
+}
+
 interface SendEmailOptions {
   to: string
   subject: string
@@ -56,6 +83,15 @@ interface SendEmailOptions {
    * Textfassung sogar baut und dann verwarf.
    */
   text?: string
+  /**
+   * Stille Kopie an die Praxis.
+   *
+   * „Eine Kopie an mich waere immer gut, dass ich sehe, dass sie rausgegangen
+   * ist." — Blindkopie und nicht CC: Der Patient hat nichts davon zu wissen,
+   * dass die Praxis mitliest, und eine sichtbare zweite Adresse im Kopf einer
+   * Patientenmail sieht nach einem Versehen aus.
+   */
+  bcc?: string | null
   attachments?: { filename: string; content: Buffer }[]
 }
 
@@ -90,7 +126,7 @@ export function textAusHtml(html: string): string {
     .trim()
 }
 
-export async function sendEmail({ to, subject, html, text, attachments }: SendEmailOptions) {
+export async function sendEmail({ to, subject, html, text, attachments, bcc }: SendEmailOptions) {
   const transporter = getTransporter()
   if (!transporter) {
     console.warn("[Email] SMTP_USER/SMTP_PASS not set — skipping email send")
@@ -104,6 +140,9 @@ export async function sendEmail({ to, subject, html, text, attachments }: SendEm
     const info = await transporter.sendMail({
       from,
       to,
+      // Eine Kopie an den Absender selbst waere keine Kopie, sondern eine
+      // Verdopplung im selben Postfach.
+      ...(bcc && bcc.toLowerCase() !== to.toLowerCase() ? { bcc } : {}),
       subject,
       text: text?.trim() || textAusHtml(html),
       html,
