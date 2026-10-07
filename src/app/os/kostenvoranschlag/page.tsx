@@ -30,17 +30,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, FileText, Loader2, ExternalLink } from "lucide-react"
+import { AlertTriangle, FileText, Loader2, ExternalLink, Send, Check } from "lucide-react"
 import { KV_VARIANTEN, kostenvoranschlagAufstellung, type KvVariante } from "@/lib/abrechnung/kostenvoranschlag"
 
 interface Eintrag {
   id: string
   nummer: string
   empfaenger_name: string
+  empfaenger_email: string | null
   variante: string | null
   summe: number
   gueltig_bis: string | null
   created_at: string
+  versendet_at: string | null
 }
 
 function euro(n: number): string {
@@ -60,13 +62,17 @@ export default function KostenvoranschlagPage() {
   const [name, setName] = useState("")
   const [anschrift, setAnschrift] = useState("")
   const [geburtstag, setGeburtstag] = useState("")
+  const [email, setEmail] = useState("")
   const [diagnose, setDiagnose] = useState("")
   const [variante, setVariante] = useState<KvVariante>("intensiv")
   const [gueltigTage, setGueltigTage] = useState(30)
 
   const [busy, setBusy] = useState(false)
   const [fehler, setFehler] = useState<string | null>(null)
-  const [letzter, setLetzter] = useState<{ nummer: string; pdf: string } | null>(null)
+  const [letzter, setLetzter] = useState<{ nummer: string; pdf: string; gesendetAn?: string } | null>(
+    null
+  )
+  const [sendetId, setSendetId] = useState<string | null>(null)
   const [liste, setListe] = useState<Eintrag[]>([])
 
   const aufstellung = useMemo(() => kostenvoranschlagAufstellung(variante), [variante])
@@ -94,6 +100,7 @@ export default function KostenvoranschlagPage() {
           empfaenger_name: name.trim(),
           empfaenger_anschrift: anschrift.trim() || null,
           empfaenger_geburtstag: geburtstag || null,
+          empfaenger_email: email.trim() || null,
           diagnose: diagnose.trim() || null,
           variante,
           gueltig_tage: gueltigTage,
@@ -104,19 +111,66 @@ export default function KostenvoranschlagPage() {
         setFehler(json.error ?? "Der Kostenvoranschlag konnte nicht erstellt werden.")
         return
       }
-      setLetzter({ nummer: json.nummer, pdf: json.pdf_url })
-      window.open(json.pdf_url, "_blank", "noopener")
+      // Steht eine Adresse da, geht die Mail sofort raus — das war der ganze
+      // Sinn des Feldes. Scheitert sie, ist der Voranschlag trotzdem angelegt
+      // und laesst sich aus der Liste erneut senden.
+      let gesendetAn: string | undefined
+      if (email.trim()) {
+        const s = await fetch(json.senden_url, { method: "POST" })
+        const sj = await s.json().catch(() => ({}))
+        if (s.ok) {
+          gesendetAn = sj.an
+        } else {
+          setFehler(
+            `${json.nummer} wurde angelegt, aber der Versand schlug fehl: ` +
+              `${sj.error ?? "unbekannter Fehler"}. Du kannst ihn unten erneut senden.`
+          )
+        }
+      }
+
+      setLetzter({ nummer: json.nummer, pdf: json.pdf_url, gesendetAn })
+      if (!gesendetAn) window.open(json.pdf_url, "_blank", "noopener")
       // Felder leeren, damit der naechste sofort getippt werden kann — die
       // Diagnose bleibt stehen, die ist beim naechsten oft dieselbe nicht.
       setName("")
       setAnschrift("")
       setGeburtstag("")
+      setEmail("")
       setDiagnose("")
       laden()
     } catch {
       setFehler("Verbindungsfehler.")
     } finally {
       setBusy(false)
+    }
+  }
+
+  /** Nachsenden aus der Liste — auch an eine Adresse, die erst jetzt bekannt ist. */
+  async function senden(e: Eintrag) {
+    const adresse =
+      e.empfaenger_email ||
+      window.prompt(`An welche Adresse soll ${e.nummer} gehen?`, "")?.trim() ||
+      ""
+    if (!adresse) return
+
+    setSendetId(e.id)
+    setFehler(null)
+    try {
+      const res = await fetch(`/api/os/kostenvoranschlag/${e.id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: adresse }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setFehler(json.error ?? "Der Versand schlug fehl.")
+        return
+      }
+      laden()
+    } catch {
+      setFehler("Verbindungsfehler beim Versand.")
+    } finally {
+      setSendetId(null)
     }
   }
 
@@ -188,6 +242,26 @@ export default function KostenvoranschlagPage() {
             </div>
 
             <div className="sm:col-span-2">
+              <Label htmlFor="kv-email">E-Mail</Label>
+              <Input
+                id="kv-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void erstellen()
+                }}
+                placeholder="name@beispiel.de"
+                className="mt-1"
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Steht hier eine Adresse, geht der Voranschlag sofort als PDF per Mail hinaus —
+                mit einem Text, den der Patient direkt an seine Versicherung weiterleiten kann.
+                Ohne Adresse öffnet sich nur das PDF.
+              </p>
+            </div>
+
+            <div className="sm:col-span-2">
               <Label htmlFor="kv-diagnose">Diagnose</Label>
               <Input
                 id="kv-diagnose"
@@ -237,7 +311,12 @@ export default function KostenvoranschlagPage() {
           >
             {busy ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Wird erstellt…
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {email.trim() ? "Wird erstellt und gesendet…" : "Wird erstellt…"}
+              </>
+            ) : email.trim() ? (
+              <>
+                <Send className="mr-2 h-4 w-4" /> Erstellen und an {email.trim()} senden
               </>
             ) : (
               <>
@@ -248,7 +327,14 @@ export default function KostenvoranschlagPage() {
 
           {letzter && (
             <p className="mt-3 text-sm text-slate-600">
-              <strong>{letzter.nummer}</strong> erstellt.{" "}
+              <strong>{letzter.nummer}</strong>{" "}
+              {letzter.gesendetAn ? (
+                <span className="font-semibold text-emerald-700">
+                  an {letzter.gesendetAn} verschickt.
+                </span>
+              ) : (
+                "erstellt."
+              )}{" "}
               <a
                 href={letzter.pdf}
                 target="_blank"
@@ -299,6 +385,7 @@ export default function KostenvoranschlagPage() {
                   <th className="px-4 py-2.5 font-medium">Nummer</th>
                   <th className="px-4 py-2.5 font-medium">Empfänger</th>
                   <th className="px-4 py-2.5 font-medium">Gültig bis</th>
+                  <th className="px-4 py-2.5 font-medium">Versand</th>
                   <th className="px-4 py-2.5 text-right font-medium">Betrag</th>
                   <th className="px-4 py-2.5" />
                 </tr>
@@ -309,16 +396,41 @@ export default function KostenvoranschlagPage() {
                     <td className="px-4 py-2.5 font-mono text-xs">{e.nummer}</td>
                     <td className="px-4 py-2.5">{e.empfaenger_name}</td>
                     <td className="px-4 py-2.5 text-slate-600">{datum(e.gueltig_bis)}</td>
+                    <td className="px-4 py-2.5">
+                      {e.versendet_at ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
+                          <Check className="h-3.5 w-3.5" />
+                          {datum(e.versendet_at)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{euro(Number(e.summe))}</td>
-                    <td className="px-4 py-2.5 text-right">
-                      <a
-                        href={`/api/os/kostenvoranschlag/${e.id}/pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"
-                      >
-                        PDF <ExternalLink className="h-3 w-3" />
-                      </a>
+                    <td className="px-4 py-2.5">
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void senden(e)}
+                          disabled={sendetId === e.id}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40"
+                        >
+                          {sendetId === e.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Send className="h-3.5 w-3.5" />
+                          )}
+                          {e.versendet_at ? "Erneut" : "Senden"}
+                        </button>
+                        <a
+                          href={`/api/os/kostenvoranschlag/${e.id}/pdf`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"
+                        >
+                          PDF <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
                     </td>
                   </tr>
                 ))}

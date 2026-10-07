@@ -48,7 +48,9 @@ export async function GET() {
 
   const { data, error } = await auth.svc
     .from("kostenvoranschlaege")
-    .select("id, nummer, empfaenger_name, variante, summe, gueltig_bis, created_at, versendet_at")
+    .select(
+      "id, nummer, empfaenger_name, empfaenger_email, variante, summe, gueltig_bis, created_at, versendet_at"
+    )
     .is("storniert_at", null)
     .order("created_at", { ascending: false })
     .limit(50)
@@ -74,6 +76,12 @@ const schema = z.object({
   gueltig_tage: z.number().int().min(1).max(365).optional().default(30),
   hinweis: z.string().trim().max(1000).optional().nullable(),
   patient_id: z.string().uuid().optional().nullable(),
+  empfaenger_email: z
+    .string()
+    .trim()
+    .email("Das ist keine gültige E-Mail-Adresse.")
+    .optional()
+    .nullable(),
 })
 
 export async function POST(request: NextRequest) {
@@ -126,6 +134,7 @@ export async function POST(request: NextRequest) {
       empfaenger_name: d.empfaenger_name,
       empfaenger_anschrift: d.empfaenger_anschrift || null,
       empfaenger_geburtstag: d.empfaenger_geburtstag || null,
+      empfaenger_email: d.empfaenger_email || null,
       patient_id: d.patient_id || null,
       diagnose: d.diagnose || null,
       variante: d.variante,
@@ -154,5 +163,9 @@ export async function POST(request: NextRequest) {
     nummer: angelegt.nummer,
     summe: Number(angelegt.summe),
     pdf_url: `/api/os/kostenvoranschlag/${angelegt.id}/pdf`,
+    // Der Versand laeuft als eigener Aufruf. Zusammengelegt haette ein
+    // gescheiterter Mailversand das Anlegen mitgerissen — und dann gaebe es
+    // weder Beleg noch Mail.
+    senden_url: `/api/os/kostenvoranschlag/${angelegt.id}/send`,
   })
 }
