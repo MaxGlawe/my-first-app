@@ -333,11 +333,45 @@ export async function generateInvoicePdf(
   //
   // "Behandlungsfall seit ...", "Bereits beglichen durch Rechnung ...". Die
   // standen bisher in der Datenbank und auf keinem Blatt Papier.
+  // ── Analogziffern einmal erklaeren (PROJ-29) ────────────────────────────
+  //
+  // Eine Analogziffer ohne Begruendung ist der sichere Weg in die Ablehnung:
+  // Der Sachbearbeiter gleicht mit dem Katalog ab, liest unter 20.1
+  // „Atemtherapeutische Behandlungsverfahren" und sieht eine Uebungsbehandlung.
+  //
+  // Die Erklaerung gehoert deshalb auf den Beleg — aber EINMAL, als Fussnote.
+  // In jeder Zeile stuende sie bei „Intensiv" fuenfmal auf derselben Seite.
+  const ANALOG_HERKUNFT: Record<string, string> = {
+    "A20.1": "Ziffer 20.1 (Atemtherapeutische Behandlungsverfahren)",
+    "A11.3": "Ziffer 11.3 (Individueller schriftlicher Diätplan)",
+  }
+
+  const analogZiffern = [
+    ...new Set(
+      (invoice.line_items ?? [])
+        .map((p) => p.gebueh_ziffer)
+        .filter((z): z is string => !!z && z.startsWith("A"))
+    ),
+  ].sort()
+
+  const analogHinweis =
+    analogZiffern.length > 0
+      ? `Analogleistungen: ` +
+        analogZiffern
+          .map((z) => `${z} analog ${ANALOG_HERKUNFT[z] ?? `Ziffer ${z.slice(1)}`}`)
+          .join(", ") +
+        `. Das Gebührenverzeichnis für Heilpraktiker stammt aus dem Jahr 1985 und enthält ` +
+        `weder für Bewegungstherapie noch für schriftliche Trainingspläne eine eigene Ziffer; ` +
+        `die Analogie wird deshalb offen ausgewiesen.`
+      : null
+
   // Der Stripe-Anker aus der Bezahlrechnung ist Technik, kein Vermerk.
   const vermerkZeilen = (invoice.notes ?? "")
     .split("\n")
     .map((z) => z.trim())
     .filter((z) => z && !z.startsWith("stripe_session:"))
+
+  if (analogHinweis) vermerkZeilen.unshift(analogHinweis)
 
   // ── Der Umbruch wird EINMAL entschieden, fuer Vermerk und Kasten zusammen ─
   //

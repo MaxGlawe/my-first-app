@@ -9,7 +9,7 @@
  * ═══ DIE DREI ZIFFERN ERGEBEN DEN PREIS ═════════════════════════════════
  *
  *   Ziffer 1      Eingehende Untersuchung      20,50 €
- *   Ziffer A20.1  Aktive Bewegungstherapie     31,00 €
+ *   Ziffer A20.1  Krankengymn. Übungsbehandl.  31,00 €
  *   Ziffer 5      Beratung                     17,50 €
  *                                             ─────────
  *                                              69,00 €
@@ -28,7 +28,7 @@
  */
 
 import type { createSupabaseServiceClient } from "@/lib/supabase-service"
-import { SATZ, type Position } from "@/lib/abrechnung/programm-rechnung"
+import { SATZ, bewegungstherapieText, type Position } from "@/lib/abrechnung/programm-rechnung"
 
 type ServiceClient = ReturnType<typeof createSupabaseServiceClient>
 
@@ -65,7 +65,7 @@ export function konsultationsPositionen(args: {
   if (args.uebungAngeleitet) {
     positionen.push({
       ziffer: "A20.1",
-      beschreibung: `Aktive Bewegungstherapie per Video: Anleitung und Korrektur der ersten Übung (analog Ziff. 20.1) am ${tag}`,
+      beschreibung: bewegungstherapieText({ datum: tag, ersteUebung: true }),
       anzahl: 1,
       einzelpreis: SATZ.bewegungstherapie,
     })

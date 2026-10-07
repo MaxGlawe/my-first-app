@@ -58,6 +58,46 @@ function euro(n: number): string {
   return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" })
 }
 
+/**
+ * Der Wortlaut der Position A20.1 — an EINER Stelle.
+ *
+ * Er steht auf der Konsultationsrechnung, auf jedem Leistungsnachweis und im
+ * Kostenvoranschlag. Dreimal derselbe Text an drei Stellen waere dreimal eine
+ * Gelegenheit, ihn verschieden werden zu lassen; dieselbe Leistung darf auf
+ * zwei Belegen nicht verschieden aussehen.
+ *
+ * Warum er so ausfuehrlich ist (entschieden am 07.10.2026):
+ *
+ *   — „Krankengymnastische Uebungsbehandlung" statt „Bewegungstherapie":
+ *     die Bezeichnung, die ein Sachbearbeiter kennt.
+ *
+ *   — „in der Videosprechstunde" bleibt stehen. Es wegzulassen, damit es nach
+ *     einer Behandlung vor Ort aussieht, waere eine falsche Angabe gegenueber
+ *     der Versicherung.
+ *
+ *   — Die Analogie wird offengelegt UND begruendet. Ziffer 20.1 heisst im
+ *     Katalog „Atemtherapeutische Behandlungsverfahren". Ohne den Zusatz
+ *     gleicht der Sachbearbeiter ab, liest Atemtherapie, sieht Bewegungs-
+ *     therapie — und lehnt ab. Die GebueH kennt fuer Bewegungstherapie
+ *     nachweislich keine eigene Ziffer (im Katalog: null Treffer fuer
+ *     Bewegung, Gymnastik, Uebungsbehandlung, Krankengymnastik).
+ */
+export function bewegungstherapieText(args: {
+  datum: string
+  /** Die erste Uebung in der Konsultation wird eigens benannt. */
+  ersteUebung?: boolean
+}): string {
+  const was = args.ersteUebung
+    ? "Krankengymnastische Übungsbehandlung als Einzelbehandlung: Anleitung und Korrektur der ersten Übung in der Videosprechstunde"
+    : "Krankengymnastische Übungsbehandlung als Einzelbehandlung, angeleitet und korrigiert in der Videosprechstunde"
+
+  // Die Begruendung der Analogie steht NICHT hier, sondern einmal als Fussnote
+  // unter der Tabelle (`analogHinweis` im PDF). Bei „Intensiv" stehen im
+  // ersten Monat fuenf dieser Positionen auf einem Blatt — fuenfmal derselbe
+  // Erklaerblock ist Laerm, und gelesen wird er beim zweiten Mal ohnehin nicht.
+  return `${was} (analog Ziff. 20.1) am ${args.datum}`
+}
+
 export interface Position {
   /** GebüH-Ziffer, „A" davor bei Analogleistungen. Null bei der Pauschale. */
   ziffer: string | null
@@ -199,7 +239,7 @@ export function monatsrechnung(args: {
     if (k.uebungAngeleitet) {
       positionen.push({
         ziffer: "A20.1",
-        beschreibung: `Aktive Bewegungstherapie per Video: Anleitung und Korrektur der ersten Übung (analog Ziff. 20.1) am ${datum(k.datum)}`,
+        beschreibung: bewegungstherapieText({ datum: datum(k.datum), ersteUebung: true }),
         anzahl: 1,
         einzelpreis: SATZ.bewegungstherapie,
       })
@@ -234,7 +274,7 @@ export function monatsrechnung(args: {
     }
     positionen.push({
       ziffer: "A20.1",
-      beschreibung: `Aktive Bewegungstherapie per Video (analog Ziff. 20.1) am ${datum(s.datum)}`,
+      beschreibung: bewegungstherapieText({ datum: datum(s.datum) }),
       anzahl: 1,
       einzelpreis: SATZ.bewegungstherapie,
     })
