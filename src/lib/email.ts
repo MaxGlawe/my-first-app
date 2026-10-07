@@ -42,30 +42,22 @@ function getTransporter(): nodemailer.Transporter | null {
 }
 
 /**
- * An welche Adresse die stille Kopie geht.
+ * An welche Adresse die stille Kopie jedes versendeten Belegs geht.
  *
  * „Eine Kopie an mich waere immer gut, dass ich sehe, dass sie rausgegangen
- * ist."
+ * ist." — und auf Nachfrage: ins Praxispostfach, nicht auf die private
+ * Adresse. Geschaeftspost gehoert in das Postfach, das zur Praxis gehoert.
  *
- * Voreinstellung ist das Praxispostfach — dort gehoert Geschaeftspost hin.
- * Wer sie woanders lesen will, setzt `EMAIL_BCC_ADDRESS`; dann braucht es
- * keine Code-Aenderung, nur einen Neustart.
+ * Das ist zugleich die Absenderadresse, und das ist hier Absicht. Die Kopie
+ * liegt damit neben allem anderen Schriftverkehr der Praxis statt in einem
+ * zweiten Postfach, das irgendwann niemand mehr oeffnet.
  *
- * Gibt `null` zurueck, wenn die Kopie dieselbe Adresse waere wie der Absender
- * UND kein eigener Wert gesetzt ist: Eine Blindkopie an das eigene
- * Absenderpostfach liefern manche Anbieter stillschweigend nicht aus — dann
- * entstuende der Eindruck, der Versand sei fehlgeschlagen.
+ * `EMAIL_BCC_ADDRESS` haengt sie um, falls das Postfach die Kopie an sich
+ * selbst einmal nicht ausliefert — dann braucht es keine Code-Aenderung,
+ * nur einen Neustart.
  */
 export function kopieAdresse(praxisEmail?: string | null): string | null {
-  const gesetzt = process.env.EMAIL_BCC_ADDRESS?.trim()
-  if (gesetzt) return gesetzt
-
-  const absender = (process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || "").toLowerCase()
-  const praxis = praxisEmail?.trim()
-  if (!praxis) return null
-  if (praxis.toLowerCase() === absender) return praxis
-
-  return praxis
+  return process.env.EMAIL_BCC_ADDRESS?.trim() || praxisEmail?.trim() || null
 }
 
 interface SendEmailOptions {
