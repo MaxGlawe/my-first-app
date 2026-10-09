@@ -265,8 +265,13 @@ export default async function DatenschutzPage() {
           <section>
             <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>6. Cookies und lokale Speicherung</h2>
             <p>
-              Unsere Website verwendet <span className="font-medium" style={{ color: INK }}>ausschließlich technisch notwendige Cookies</span>.
-              Wir setzen keine Tracking-, Marketing- oder Analyse-Cookies ein.
+              Für den Betrieb der Website verwenden wir{" "}
+              <span className="font-medium" style={{ color: INK }}>technisch notwendige Cookies</span>.
+              Zusätzlich setzen wir auf unseren Marketingseiten den Meta-Pixel ein — aber{" "}
+              <span className="font-medium" style={{ color: INK }}>ausschließlich dann, wenn Sie
+              vorher ausdrücklich zugestimmt haben</span>. Ohne Ihre Einwilligung wird kein
+              Marketing-Cookie gesetzt und keine Verbindung zu Meta aufgebaut. Einzelheiten dazu
+              in Abschnitt 6a.
             </p>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full text-xs border rounded-lg overflow-hidden" style={{ borderColor: LINE }}>
@@ -298,13 +303,132 @@ export default async function DatenschutzPage() {
                     <td className="p-3">Offline-Fähigkeit der PWA, Caching</td>
                     <td className="p-3">Bis zur Deinstallation</td>
                   </tr>
+                  <tr>
+                    <td className="p-3 font-mono text-xs">praxisos_consent_v1</td>
+                    <td className="p-3">Ihre Cookie-Entscheidung (localStorage), damit wir nicht erneut fragen</td>
+                    <td className="p-3">Bis zur Löschung durch Nutzer</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-mono text-xs">praxisos_herkunft_v1</td>
+                    <td className="p-3">
+                      Kampagnenparameter aus der aufgerufenen Adresse (utm_*, fbclid, gclid), damit
+                      wir sie an unseren Buchungskalender weitergeben können. Keine Weitergabe an
+                      Dritte.
+                    </td>
+                    <td className="p-3">Bis Tab geschlossen wird</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3 font-mono text-xs">_fbp, _fbc</td>
+                    <td className="p-3">
+                      Meta-Pixel — <span className="font-medium" style={{ color: INK }}>nur nach
+                      Einwilligung</span>. Siehe Abschnitt 6a.
+                    </td>
+                    <td className="p-3">90 Tage</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
             <p className="mt-3">
-              <span className="font-medium" style={{ color: INK }}>Rechtsgrundlage:</span> Art. 6 Abs. 1 lit. f DSGVO
-              (berechtigtes Interesse). Da ausschließlich technisch notwendige Cookies eingesetzt werden,
-              ist eine Einwilligung nach § 25 Abs. 2 TDDDG nicht erforderlich.
+              <span className="font-medium" style={{ color: INK }}>Rechtsgrundlage:</span> Für die
+              technisch notwendigen Cookies Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse);
+              ihre Speicherung ist nach § 25 Abs. 2 Nr. 2 TDDDG einwilligungsfrei, weil ohne sie
+              die Website nicht funktioniert. Für den Meta-Pixel und die dabei gesetzten Cookies
+              Ihre Einwilligung nach § 25 Abs. 1 TDDDG und Art. 6 Abs. 1 lit. a DSGVO.
+            </p>
+          </section>
+
+          {/* 6a. Meta-Pixel und Einwilligung */}
+          <section>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>6a. Meta-Pixel (Facebook/Instagram)</h2>
+            <p>
+              Auf unseren Marketingseiten — Startseite, Beschwerdebilder, Online-Physiotherapie,
+              Anfrageseite, Therapeutenprofil und Schmerzcheck — setzen wir den{" "}
+              <span className="font-medium" style={{ color: INK }}>Meta-Pixel</span> der Meta
+              Platforms Ireland Ltd., 4 Grand Canal Square, Dublin 2, Irland ein. Er misst, über
+              welche Anzeige Besucher zu uns finden, und erlaubt uns, die Wirksamkeit unserer
+              Werbung zu bewerten.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Nur mit Ihrer Einwilligung.</span>{" "}
+              Beim ersten Besuch fragen wir Sie über ein Banner. Erst wenn Sie dort zustimmen,
+              wird das Skript von Meta geladen und ein Cookie gesetzt. Lehnen Sie ab oder
+              entscheiden Sie sich nicht, geschieht nichts: kein Skript, kein Cookie, keine
+              Verbindung zu Meta — auch kein unsichtbares Zählbild.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Welche Daten übertragen werden:</span>{" "}
+              Ihre IP-Adresse, Angaben zu Browser und Endgerät, die aufgerufene Seite, Datum und
+              Uhrzeit sowie eine im Cookie gespeicherte Kennung. Wir übermitteln{" "}
+              <span className="font-medium" style={{ color: INK }}>keine Gesundheitsdaten</span> an
+              Meta. Insbesondere melden wir keine Terminbuchungen, keine Behandlungen, keine
+              Beschwerdebilder und keine Käufe — auch nicht serverseitig über die Conversions API,
+              die wir bewusst nicht einsetzen. Dass Sie eine Seite aufgerufen haben, erfährt Meta;
+              was Sie dort getan haben, nicht.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Rechtsgrundlage:</span> Ihre
+              Einwilligung nach § 25 Abs. 1 TDDDG und Art. 6 Abs. 1 lit. a DSGVO. Meta verarbeitet
+              Daten auch in den USA; Grundlage dafür sind die Standardvertragsklauseln der
+              EU-Kommission sowie das EU-US Data Privacy Framework, dem Meta beigetreten ist. Ein
+              dem europäischen gleichwertiges Datenschutzniveau kann trotzdem nicht in jedem Fall
+              gewährleistet werden; insbesondere ist ein Zugriff US-amerikanischer Behörden nicht
+              auszuschließen.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Widerruf jederzeit.</span> Über
+              den Link <span className="font-medium" style={{ color: INK }}>„Cookie-Einstellungen"</span>{" "}
+              im Seitenfuß können Sie Ihre Entscheidung jederzeit ändern. Bei einem Widerruf löschen
+              wir die gesetzten Meta-Cookies (<span className="font-mono text-xs">_fbp</span>,{" "}
+              <span className="font-mono text-xs">_fbc</span>) und laden den Pixel nicht erneut. Die
+              Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt davon unberührt
+              (Art. 7 Abs. 3 DSGVO).
+            </p>
+            <p className="mt-3">
+              Meta ist für die Verarbeitung gemeinsam mit uns verantwortlich, soweit Daten erhoben
+              und an Meta übermittelt werden (Art. 26 DSGVO). Weitere Informationen finden Sie in
+              der Datenschutzrichtlinie von Meta unter{" "}
+              <a href="https://www.facebook.com/privacy/policy" target="_blank" rel="noopener noreferrer" className="underline">
+                facebook.com/privacy/policy
+              </a>.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Nicht im geschützten Bereich.</span>{" "}
+              Im Therapeuten-Bereich, in der Patienten-App, im digitalen Sprechzimmer und in der
+              Terminübersicht läuft der Pixel nicht. Dort verarbeiten wir Gesundheitsdaten; diese
+              Bereiche bleiben von jeder Reichweitenmessung ausgenommen.
+            </p>
+          </section>
+
+          {/* 6b. Google Consent Mode v2 */}
+          <section>
+            <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: INK }}>6b. Google Ads und Consent Mode v2 (vorbereitet)</h2>
+            <p>
+              Wir bereiten den Einsatz von <span className="font-medium" style={{ color: INK }}>Google Ads</span>{" "}
+              der Google Ireland Ltd., Gordon House, Barrow Street, Dublin 4, Irland vor. Dazu
+              übermittelt unsere Website bereits heute die Einwilligungssignale des{" "}
+              <span className="font-medium" style={{ color: INK }}>Google Consent Mode v2</span>.
+            </p>
+            <p className="mt-3">
+              <span className="font-medium" style={{ color: INK }}>Derzeit wird kein Google-Dienst geladen.</span>{" "}
+              Gesetzt werden ausschließlich die Signale{" "}
+              <span className="font-mono text-xs">ad_storage</span>,{" "}
+              <span className="font-mono text-xs">ad_user_data</span>,{" "}
+              <span className="font-mono text-xs">ad_personalization</span> und{" "}
+              <span className="font-mono text-xs">analytics_storage</span> — alle in der
+              Voreinstellung auf <span className="font-mono text-xs">denied</span>. Diese Signale
+              liegen allein in Ihrem Browser; solange kein Google-Dienst eingebunden ist, werden sie
+              an niemanden übertragen und es wird kein Cookie gesetzt.
+            </p>
+            <p className="mt-3">
+              Stimmen Sie im Banner der Kategorie „Marketing" zu, werden die drei
+              werbebezogenen Signale auf <span className="font-mono text-xs">granted</span>{" "}
+              gesetzt. <span className="font-mono text-xs">analytics_storage</span> bleibt dauerhaft
+              auf <span className="font-mono text-xs">denied</span> — wir setzen keine
+              Statistik-Dienste ein.
+            </p>
+            <p className="mt-3">
+              Sobald Google Ads tatsächlich eingebunden wird, ergänzen wir diesen Abschnitt um die
+              dann übermittelten Daten und holen Ihre Einwilligung über dasselbe Banner ein.
             </p>
           </section>
 

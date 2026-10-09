@@ -190,3 +190,45 @@ Solange der Haken fehlt, steht derselbe Hinweis in unserer Einladungsmail.
 Die geht direkt nach der Buchung raus und damit vor dem Termin, also bevor
 eine Leistung erbracht ist. Das trägt; der Haken im Formular wäre trotzdem
 der sauberere Ort, weil er vor dem Vertragsschluss liegt und nicht danach.
+
+---
+
+## 7 · Bitte mitschicken: woher die Buchung kam
+
+Seit dem 09.10.2026 hängen unsere Buchungslinks die Kampagnenparameter an,
+mit denen ein Besucher bei uns ankam. Ein Link sieht dann so aus:
+
+```
+https://physiotherapie-glawe.de/termin-buchen.html
+  ?service=video-sprechstunde-praxis-os
+  &utm_source=meta&utm_medium=paid&utm_campaign=…&utm_content=…&utm_term=…
+  &fbclid=…
+```
+
+**Was wir brauchen:** diese Werte im `appointment.created`-Ereignis zurück.
+
+```json
+"payload": {
+  "id": "…", "patient_id": "…", "scheduled_at": "…",
+  "referrer": {
+    "source":   "meta",      // utm_source
+    "medium":   "paid",      // utm_medium
+    "campaign": "herbst-26", // utm_campaign
+    "content":  "trailer-a", // utm_content
+    "term":     "rückenschmerzen"  // utm_term, nur bei Suchanzeigen
+  }
+}
+```
+
+**Alle fünf Felder sind optional.** Fehlt `referrer` ganz, ändert sich nichts —
+der Termin entsteht wie bisher. Wir nehmen entgegen, was kommt.
+
+Technisch heisst das: Die Parameter müssen beim Aufruf der Buchungsseite
+gespeichert (Sitzung genügt) und beim Absenden der Buchung an den Termin
+gehängt werden.
+
+**Warum es sich lohnt:** Ohne diese Felder lässt sich nicht sagen, welche
+Anzeige eine Buchung gebracht hat. Die Buchung wird auf eurer Seite
+abgeschlossen; was dort nicht mitgeschrieben wird, ist danach nicht mehr
+rekonstruierbar. Geprüft am 09.10.2026: In allen bisherigen Ereignissen fehlt
+`referrer` vollständig, in Praxis OS steht das Feld auf NULL.

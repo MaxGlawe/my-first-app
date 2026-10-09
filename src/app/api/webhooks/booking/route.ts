@@ -213,6 +213,12 @@ const appointmentRawSchema = z.object({
     source: z.string().max(200).optional().nullable(),
     medium: z.string().max(200).optional().nullable(),
     campaign: z.string().max(200).optional().nullable(),
+    // `content` und `term` seit 09.10.2026. Ohne `content` laesst sich nicht
+    // sagen, WELCHE Anzeige einer Kampagne gebucht hat — und das ist die
+    // Frage, die ueber das Budget entscheidet. Beide optional: Ein Tool, das
+    // sie nicht kennt, soll deshalb nicht scheitern.
+    content: z.string().max(200).optional().nullable(),
+    term: z.string().max(200).optional().nullable(),
   }).optional().nullable(),
 }).refine(
   (d) => d.id || d.booking_appointment_id,
@@ -241,6 +247,8 @@ function normalizeAppointmentPayload(raw: z.infer<typeof appointmentRawSchema>) 
     referrer_source: raw.referrer?.source ?? null,
     referrer_medium: raw.referrer?.medium ?? null,
     referrer_campaign: raw.referrer?.campaign ?? null,
+    referrer_content: raw.referrer?.content ?? null,
+    referrer_term: raw.referrer?.term ?? null,
   }
 }
 
@@ -634,6 +642,8 @@ async function handleAppointmentEvent(
         referrer_source: data.referrer_source,
         referrer_medium: data.referrer_medium,
         referrer_campaign: data.referrer_campaign,
+        referrer_content: data.referrer_content,
+        referrer_term: data.referrer_term,
         synced_at: new Date().toISOString(),
       },
       {
