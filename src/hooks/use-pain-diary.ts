@@ -135,7 +135,16 @@ interface UsePatientPainDiaryResult {
   refresh: () => void
 }
 
-export function usePatientPainDiary(patientId: string): UsePatientPainDiaryResult {
+/**
+ * Check-ins eines Patienten aus Therapeutensicht.
+ *
+ * `tage` waehlt den Zeitraum: 90, 365 oder „alle". Voreinstellung ist „alle" —
+ * die Historie ist der Grund, warum diese Ansicht existiert.
+ */
+export function usePatientPainDiary(
+  patientId: string,
+  tage: number | "alle" = "alle"
+): UsePatientPainDiaryResult {
   const [entries, setEntries] = useState<PainDiaryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -150,7 +159,7 @@ export function usePatientPainDiary(patientId: string): UsePatientPainDiaryResul
       setIsLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/patients/${patientId}/pain-diary`)
+        const res = await fetch(`/api/patients/${patientId}/pain-diary?tage=${tage}`)
         if (cancelled) return
         if (res.redirected && res.url.includes("/login")) {
           window.location.href = "/login"
@@ -172,7 +181,7 @@ export function usePatientPainDiary(patientId: string): UsePatientPainDiaryResul
 
     load()
     return () => { cancelled = true }
-  }, [patientId, refreshKey])
+  }, [patientId, tage, refreshKey])
 
   return { entries, isLoading, error, refresh }
 }

@@ -315,8 +315,38 @@ function RecentEntries({ entries }: { entries: PainDiaryEntry[] }) {
 
 // ── Main Tab ─────────────────────────────────────────────────────────────────
 
+const ZEITRAEUME: { wert: number | "alle"; label: string }[] = [
+  { wert: 90, label: "90 Tage" },
+  { wert: 365, label: "1 Jahr" },
+  { wert: "alle", label: "Gesamt" },
+]
+
 export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
-  const { entries, isLoading, error } = usePatientPainDiary(patientId)
+  // „Gesamt" als Voreinstellung. Bis zum 09.10.2026 waren es fest 90 Tage —
+  // bei elf Patienten mit abgeschlossenem Verlauf zeigte die Ansicht deshalb
+  // nichts, obwohl die Daten vollstaendig vorlagen. Wer den Verlauf kuerzen
+  // will, kann das; wer ihn braucht, muss nicht suchen.
+  const [zeitraum, setZeitraum] = useState<number | "alle">("alle")
+  const { entries, isLoading, error } = usePatientPainDiary(patientId, zeitraum)
+
+  const auswahl = (
+    <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+      {ZEITRAEUME.map((z) => (
+        <button
+          key={String(z.wert)}
+          type="button"
+          onClick={() => setZeitraum(z.wert)}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            zeitraum === z.wert
+              ? "bg-slate-900 text-white"
+              : "text-slate-500 hover:text-slate-900"
+          }`}
+        >
+          {z.label}
+        </button>
+      ))}
+    </div>
+  )
 
   if (isLoading) {
     return (
@@ -338,17 +368,23 @@ export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
 
   if (entries.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <Heart className="h-7 w-7 text-slate-300" />
+      <div>
+        <div className="flex justify-end mb-4">{auswahl}</div>
+        <div className="text-center py-12">
+          <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <Heart className="h-7 w-7 text-slate-300" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-700 mb-2">
+            {zeitraum === "alle"
+              ? "Noch keine Befindlichkeitsdaten"
+              : "In diesem Zeitraum keine Einträge"}
+          </h3>
+          <p className="text-sm text-slate-400 max-w-sm mx-auto">
+            {zeitraum === "alle"
+              ? "Der Patient hat noch keine Einträge im Schmerztagebuch gemacht. Einträge erscheinen hier automatisch, sobald der Patient den Tages-Check-in in der App nutzt."
+              : "Für den gewählten Zeitraum liegen keine Einträge vor. Wähle „Gesamt“, um den vollständigen Verlauf zu sehen."}
+          </p>
         </div>
-        <h3 className="text-base font-semibold text-slate-700 mb-2">
-          Noch keine Befindlichkeitsdaten
-        </h3>
-        <p className="text-sm text-slate-400 max-w-sm mx-auto">
-          Der Patient hat noch keine Einträge im Schmerztagebuch gemacht.
-          Einträge erscheinen hier automatisch, sobald der Patient den Tages-Check-in in der App nutzt.
-        </p>
       </div>
     )
   }
@@ -372,8 +408,26 @@ export function BefindlichkeitTab({ patientId }: BefindlichkeitTabProps) {
   const hasStressData = entries.some((e) => e.stress_level != null)
   const hasMovementData = entries.some((e) => e.movement_restriction != null)
 
+  const ersterTag = entries[0]?.entry_date
+  const letzterTag = entries[entries.length - 1]?.entry_date
+  const fmt = (d?: string) =>
+    d ? new Date(d + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : ""
+
   return (
     <div className="space-y-6">
+      {/* Zeitraum: zeigt, worueber die Zahlen darunter eigentlich sprechen.
+          Ein Durchschnitt ohne Zeitraum ist eine Zahl ohne Aussage. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-slate-500">
+          <span className="font-semibold text-slate-700">{entries.length}</span>{" "}
+          {entries.length === 1 ? "Check-in" : "Check-ins"}
+          {ersterTag && letzterTag && (
+            <> · {fmt(ersterTag)} bis {fmt(letzterTag)}</>
+          )}
+        </p>
+        {auswahl}
+      </div>
+
       {/* Primary stats — Pain + Wellbeing */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="border rounded-lg p-3 bg-white text-center">
