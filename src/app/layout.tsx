@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next"
 import { Inter, Space_Grotesk, Source_Serif_4 } from "next/font/google"
 import "./globals.css"
+import { Suspense } from "react"
+import { ConsentBanner } from "@/components/analytics/ConsentBanner"
+import { HerkunftMerken } from "@/components/analytics/HerkunftMerken"
+import { CONSENT_MODE_DEFAULT_SNIPPET } from "@/lib/consent"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -85,9 +89,30 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+        {/*
+          Google Consent Mode v2 — Vorab-Standard.
+
+          Muss VOR jedem anderen Tag im Dokument stehen, sonst misst der erste
+          Tag genau einmal zu frueh. Steht deshalb hier im <head> und nicht in
+          einer Komponente: Next.js wuerde eine `afterInteractive`-Komponente
+          spaeter einhaengen, und „spaeter" ist hier zu spaet.
+
+          Alles auf `denied`. Google Ads kommt erst noch; wenn es kommt,
+          findet es die Signale vor und braucht keine Aenderung mehr.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: CONSENT_MODE_DEFAULT_SNIPPET }} />
       </head>
       <body className={`${inter.className} antialiased`}>
         {children}
+        {/* Auf allen oeffentlichen Seiten. Blendet sich in den angemeldeten
+            Bereichen selbst aus — dort laufen nur notwendige Cookies. */}
+        <ConsentBanner />
+        {/* `useSearchParams` verlangt eine Suspense-Grenze, sonst wuerde die
+            ganze Seite dynamisch gerendert und verloere ihre statische
+            Auslieferung. */}
+        <Suspense fallback={null}>
+          <HerkunftMerken />
+        </Suspense>
         <script
           dangerouslySetInnerHTML={{
             __html: `

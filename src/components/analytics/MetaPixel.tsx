@@ -1,6 +1,8 @@
 "use client"
 
 import Script from "next/script"
+import { useEffect, useState } from "react"
+import { CONSENT_EVENT, marketingErlaubt } from "@/lib/consent"
 
 /**
  * Meta Pixel — Basisladung und Ereignisse.
@@ -22,7 +24,25 @@ import Script from "next/script"
  */
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
-  if (!pixelId) return null
+  const [erlaubt, setErlaubt] = useState(false)
+
+  useEffect(() => {
+    // Beim Einhaengen pruefen und danach auf Aenderungen hoeren: Wer im
+    // Banner zustimmt, soll den Pixel sofort bekommen, ohne die Seite neu zu
+    // laden — sonst waere der erste Seitenaufruf nach der Zustimmung
+    // ungezaehlt, und genau der ist der aus der Anzeige.
+    const pruefen = () => setErlaubt(marketingErlaubt())
+    pruefen()
+    window.addEventListener(CONSENT_EVENT, pruefen)
+    return () => window.removeEventListener(CONSENT_EVENT, pruefen)
+  }, [])
+
+  // Ohne Zustimmung wird NICHTS gerendert — auch nicht das noscript-Bild.
+  // Das ist kein Detail: Ein <img> auf facebook.com/tr ist ein vollwertiger
+  // Beacon mit IP-Adresse, er braucht nur kein JavaScript. Ein Banner, das
+  // „wir laden nichts" verspricht, waehrend ein Zaehlpixel bereits geladen
+  // hat, waere die Einwilligung nicht wert, auf der es steht.
+  if (!pixelId || !erlaubt) return null
 
   return (
     <>

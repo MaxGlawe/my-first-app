@@ -17,10 +17,12 @@
  * Verlassen der Seite.
  */
 
+import { useEffect, useState } from "react"
 import type { AnchorHTMLAttributes, ReactNode } from "react"
 import { buchungsUrl } from "@/lib/programm"
 import type { ProgrammVariante } from "@/lib/programm"
 import { fireKonsultationKlick } from "@/components/analytics/MetaPixel"
+import { mitHerkunft } from "@/lib/kampagnen-herkunft"
 
 interface KonsultationLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   /** Welcher Abschnitt der Seite — landet in utm_content und im Ereignis. */
@@ -36,9 +38,21 @@ export function KonsultationLink({
   onClick,
   ...rest
 }: KonsultationLinkProps) {
+  const standard = buchungsUrl(abschnitt, variante)
+  const [ziel, setZiel] = useState(standard)
+
+  useEffect(() => {
+    // Erst nach dem Einhaengen: `sessionStorage` gibt es auf dem Server nicht,
+    // und eine serverseitig andere Adresse als im Browser waere ein
+    // Hydrations-Fehler. Die erste Darstellung traegt deshalb die
+    // Standard-Parameter, die Kampagnen-Herkunft kommt einen Wimpernschlag
+    // spaeter dazu — lange bevor jemand klicken kann.
+    setZiel(mitHerkunft(standard))
+  }, [standard])
+
   return (
     <a
-      href={buchungsUrl(abschnitt, variante)}
+      href={ziel}
       target="_blank"
       rel="noopener noreferrer"
       onClick={(e) => {

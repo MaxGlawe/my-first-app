@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ConsentEinstellungenLink } from "@/components/analytics/ConsentBanner"
 import Image from "next/image"
 
 // Premium-Markenwelt (Masterclass-Format)
@@ -70,6 +71,14 @@ export function LandingFooter() {
                   </Link>
                 </li>
               ))}
+              {/* Die Einwilligung muss jederzeit widerrufbar sein — § 7 Abs. 3
+                  DSGVO. Ohne diesen Link waere die Zustimmung endgueltig. */}
+              <li>
+                <ConsentEinstellungenLink
+                  className="text-sm transition-colors hover:opacity-80"
+                  style={{ color: MUTED }}
+                />
+              </li>
             </ul>
           </div>
 
