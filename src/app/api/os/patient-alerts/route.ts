@@ -2,9 +2,14 @@
  * GET /api/os/patient-alerts
  * PROJ-17: Patienten-Ampelsystem
  *
- * Computes the traffic-light (Ampel) status for every patient belonging to
- * the authenticated therapist and returns them sorted by severity:
+ * Computes the traffic-light (Ampel) status for every patient IN ACTIVE CARE
+ * and returns them sorted by severity:
  *   ROT (red) first -> GELB (yellow) -> GRUEN (green).
+ *
+ * „In active care" = laufende Begleitung (app_access_grants) oder aktives Abo
+ * (patient_subscriptions). Wessen Betreuung beendet ist, wird nicht mehr
+ * bewertet — er kann in der App ohnehin nichts mehr eintragen, und ein Alarm
+ * ueber jemanden ohne Schreibrecht ist keiner. Siehe Abschnitt 1.
  *
  * Alert rules:
  *   ROT  | Schmerz >= 8 in the last 3 days
@@ -21,7 +26,8 @@
  * Minimum data: Compliance only evaluated when >= MIN_EXPECTED_FOR_COMPLIANCE
  * sessions are expected (prevents volatile percentages like 0/1 = 0%).
  *
- * Data sources: pain_diary_entries, assignment_completions, patient_assignments, patients
+ * Data sources: pain_diary_entries, assignment_completions, patient_assignments,
+ *               patients, app_access_grants, patient_subscriptions
  * No new tables required.
  */
 
@@ -167,20 +173,76 @@ export async function GET(_request: NextRequest) {
   sevenDaysAgo.setDate(today.getDate() - 6)
   const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0]
 
-  // -- 1. Fetch all patients for this therapist -------------------------------
+  // -- 1. Patienten mit LAUFENDER Betreuung -----------------------------------
+  //
+  // Bis zum 09.10.2026 wurde hier jeder nicht archivierte Patient bewertet.
+  // Das waren 16 Karten, von denen elf Menschen betrafen, deren Betreuung
+  // laengst beendet war — sie hatten nur noch einen Trainingsplan im Status
+  // `aktiv` stehen. Eine Ampel, in der zwei Drittel der Karten niemanden
+  // betreffen, fuer den man zustaendig ist, wird nicht mehr gelesen.
+  //
+  // „Laufend" heisst dasselbe wie ueberall sonst im System (`lib/app-access`):
+  // eine nicht abgelaufene Begleitung ODER ein aktives Abo. Genau in diesem
+  // Zeitraum darf der Patient schreiben, bekommt Plaene und erwartet eine
+  // Reaktion. Danach ist die App fuer ihn nur noch lesbar — und ein Alarm
+  // ueber jemanden, der nichts mehr eintragen kann, ist keiner.
+  //
+  // Die Patientenliste bleibt davon unberuehrt: Niemand verschwindet aus der
+  // Akte, nur aus der Ueberwachung.
 
-  const { data: patients, error: patientsError } = await supabase
+  const { data: patientsRaw, error: patientsError } = await supabase
     .from("patients")
     .select("id, vorname, nachname, avatar_url, user_id")
     .is("archived_at", null)
     .limit(500)
 
-  if (patientsError || !patients) {
+  if (patientsError || !patientsRaw) {
     return NextResponse.json(
       { error: "Patienten konnten nicht geladen werden." },
       { status: 500 },
     )
   }
+
+  if (patientsRaw.length === 0) {
+    return NextResponse.json({ alerts: [] })
+  }
+
+  const jetztIso = new Date().toISOString()
+  const userIds = patientsRaw.map((p) => p.user_id).filter((id): id is string => !!id)
+
+  const [grantsResult, abosResult] = await Promise.all([
+    userIds.length > 0
+      ? serviceClient
+          .from("app_access_grants")
+          .select("user_id")
+          .in("user_id", userIds)
+          .is("revoked_at", null)
+          .gt("expires_at", jetztIso)
+      : Promise.resolve({ data: [], error: null }),
+    serviceClient
+      .from("patient_subscriptions")
+      .select("patient_id, status")
+      .in("patient_id", patientsRaw.map((p) => p.id))
+      .in("status", ["active", "trial"]),
+  ])
+
+  // Faellt eine der beiden Abfragen aus, wird NICHT stillschweigend gefiltert:
+  // Lieber zu viele Karten als eine Ampel, die einen roten Patienten
+  // verschweigt, weil eine Nebenabfrage einen Schluckauf hatte.
+  const abfrageKaputt = !!grantsResult.error || !!abosResult.error
+  if (abfrageKaputt) {
+    console.error(
+      "[patient-alerts] Betreuungsstatus nicht ermittelbar — es wird nicht gefiltert:",
+      grantsResult.error?.message ?? abosResult.error?.message
+    )
+  }
+
+  const mitBegleitung = new Set((grantsResult.data ?? []).map((g) => g.user_id as string))
+  const mitAbo = new Set((abosResult.data ?? []).map((a) => a.patient_id as string))
+
+  const patients = abfrageKaputt
+    ? patientsRaw
+    : patientsRaw.filter((p) => (p.user_id && mitBegleitung.has(p.user_id)) || mitAbo.has(p.id))
 
   if (patients.length === 0) {
     return NextResponse.json({ alerts: [] })
