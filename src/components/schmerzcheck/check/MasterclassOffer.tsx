@@ -1,7 +1,7 @@
 "use client"
 
 import { ArrowRight, MessageCircle, Headphones, LineChart } from "lucide-react"
-import { fireInitiateCheckout } from "@/components/schmerzcheck/MetaPixel"
+import { fireInitiateCheckout } from "@/components/analytics/MetaPixel"
 import type { ResultCategory } from "@/lib/schmerzcheck/scoring"
 
 /**

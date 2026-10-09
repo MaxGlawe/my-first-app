@@ -1,7 +1,7 @@
 "use client"
 
 import { ArrowRight } from "lucide-react"
-import { fireInitiateCheckout } from "@/components/schmerzcheck/MetaPixel"
+import { fireInitiateCheckout } from "@/components/analytics/MetaPixel"
 
 /**
  * PROJ-23 / Report v2: recommendation CTA. For the external Video-Analyse

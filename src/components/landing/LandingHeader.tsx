@@ -1,11 +1,11 @@
 "use client"
 
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect } from "react"
 import { ArrowRight, Menu, X } from "lucide-react"
-import { buchungsUrl } from "@/lib/programm"
 
 // Premium-Markenwelt (Masterclass-Format)
 const GREEN = "#2C3E2D"
@@ -95,7 +95,7 @@ export function LandingHeader() {
                 Anmelden
               </Button>
             </Link>
-            <a href={buchungsUrl("kopfzeile")} target="_blank" rel="noopener noreferrer">
+            <KonsultationLink abschnitt={"kopfzeile"}>
               <Button
                 size="sm"
                 className="rounded-xl px-5 text-white hover:opacity-90"
@@ -104,7 +104,7 @@ export function LandingHeader() {
                 Konsultation buchen
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
-            </a>
+            </KonsultationLink>
           </div>
 
           <button
@@ -136,17 +136,14 @@ export function LandingHeader() {
             <Link href="/login" className="text-lg" style={{ color: INK }} onClick={() => setMenuOpen(false)}>
               Anmelden
             </Link>
-            <a
-              href={buchungsUrl("kopfzeile-mobil")}
-              target="_blank"
-              rel="noopener noreferrer"
+            <KonsultationLink abschnitt={"kopfzeile-mobil"}
               onClick={() => setMenuOpen(false)}
             >
               <Button className="rounded-xl px-6 text-white" style={{ backgroundColor: GREEN }}>
                 Konsultation buchen
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </a>
+            </KonsultationLink>
           </nav>
         </div>
       )}

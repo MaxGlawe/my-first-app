@@ -1,5 +1,6 @@
+import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
-import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import {
   STAEDTE,
@@ -56,6 +57,7 @@ export default function OnlinePhysiotherapieHubPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
+      <MetaPixel />
       {/* Hero */}
       <div className="relative overflow-hidden" style={{ backgroundColor: PAPER }}>
         <div
@@ -95,13 +97,11 @@ export default function OnlinePhysiotherapieHubPage() {
               und der Schweiz. Ohne Wartezeit, ohne Anfahrt, mit persönlichem Therapeuten.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
+              <KonsultationLink abschnitt={"online-physiotherapie"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
-                style={{ backgroundColor: GREEN }}
-              >
+                style={{ backgroundColor: GREEN }}>
                 Konsultation buchen <ArrowRight className="h-4 w-4" />
-              </Link>
+              </KonsultationLink>
               <span className="text-sm" style={{ color: MUTED }}>Ersteinschätzung ohne Verordnung</span>
             </div>
           </div>
@@ -258,13 +258,11 @@ export default function OnlinePhysiotherapieHubPage() {
                 und funktioniert überall in Deutschland, Österreich und der Schweiz.
                 Starte mit einer Videokonsultation.
               </p>
-              <Link
-                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
+              <KonsultationLink abschnitt={"online-physiotherapie"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
-                style={{ color: GREEN }}
-              >
+                style={{ color: GREEN }}>
                 Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
-              </Link>
+              </KonsultationLink>
             </div>
           </div>
         </div>

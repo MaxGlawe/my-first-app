@@ -1,5 +1,6 @@
+import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
-import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { STAEDTE, LAND_NAMEN, getStadtBySlug } from "@/lib/staedte"
@@ -276,6 +277,7 @@ export default async function StadtPage({ params }: Props) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
+      <MetaPixel />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -319,13 +321,11 @@ export default async function StadtPage({ params }: Props) {
               {hero.subtitle}
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-start gap-4">
-              <Link
-                href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
+              <KonsultationLink abschnitt={"online-physiotherapie"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
-                style={{ backgroundColor: GREEN }}
-              >
+                style={{ backgroundColor: GREEN }}>
                 Konsultation buchen <ArrowRight className="h-4 w-4" />
-              </Link>
+              </KonsultationLink>
               <span className="text-sm sm:self-center" style={{ color: MUTED }}>ohne Verordnung</span>
             </div>
           </div>
@@ -542,13 +542,11 @@ export default async function StadtPage({ params }: Props) {
               Stelle deine Anfrage und erhalte innerhalb von
               24 Stunden eine persönliche Rückmeldung von unserem Therapeuten.
             </p>
-            <Link
-              href={buchungsUrl("online-physiotherapie")} target="_blank" rel="noopener noreferrer"
+            <KonsultationLink abschnitt={"online-physiotherapie"}
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
-              style={{ color: GREEN }}
-            >
+              style={{ color: GREEN }}>
               Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
-            </Link>
+            </KonsultationLink>
           </div>
         </section>
 

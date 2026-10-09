@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { LeadForm } from "@/components/schmerzcheck/LeadForm"
-import { MetaPixel } from "@/components/schmerzcheck/MetaPixel"
+import { MetaPixel } from "@/components/analytics/MetaPixel"
 import { HeroVisual } from "@/components/schmerzcheck/HeroVisual"
 import { SpineShowcase } from "@/components/schmerzcheck/SpineShowcase"
 import {

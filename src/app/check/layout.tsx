@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Cormorant_Garamond } from "next/font/google"
-import { MetaPixel } from "@/components/schmerzcheck/MetaPixel"
+import { MetaPixel } from "@/components/analytics/MetaPixel"
 
 /**
  * PROJ-23 / Phase 2: Schmerzcheck assessment layout.

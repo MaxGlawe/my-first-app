@@ -1,5 +1,6 @@
+import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
-import { buchungsUrl } from "@/lib/programm"
 import Link from "next/link"
 import { BESCHWERDEN } from "@/lib/beschwerden"
 import { ArrowRight, Activity, Sparkles } from "lucide-react"
@@ -28,6 +29,7 @@ export const metadata: Metadata = {
 export default function BeschwerdenHubPage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
+      <MetaPixel />
       {/* Hero — Premium */}
       <div className="relative overflow-hidden" style={{ backgroundColor: PAPER }}>
         {/* Sand-Aura */}
@@ -122,13 +124,11 @@ export default function BeschwerdenHubPage() {
                 Wir behandeln viele weitere Beschwerden per Online-Physiotherapie.
                 Stelle eine Anfrage und wir beraten dich persönlich.
               </p>
-              <Link
-                href={buchungsUrl("beschwerden")} target="_blank" rel="noopener noreferrer"
+              <KonsultationLink abschnitt={"beschwerden"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-lg"
-                style={{ color: GREEN }}
-              >
+                style={{ color: GREEN }}>
                 Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
-              </Link>
+              </KonsultationLink>
             </div>
           </div>
         </div>

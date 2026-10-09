@@ -1,5 +1,6 @@
+import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
-import { buchungsUrl } from "@/lib/programm"
 import { Calendar, MessageCircle, Clock, Check, ExternalLink } from "lucide-react"
 import { IntakeForm } from "@/components/intake/IntakeForm"
 
@@ -18,13 +19,10 @@ export const metadata: Metadata = {
     "Buchen Sie direkt Ihre Videokonsultation — 30 Minuten, ohne ärztliche Verordnung. Oder stellen Sie vorab eine unverbindliche Frage.",
 }
 
-// Zentrale Quelle statt eigener Zusammenbau — sonst laufen die
-// UTM-Parameter hier und auf der Startseite auseinander.
-const BOOKING_URL = buchungsUrl("anfrage")
-
 export default function AnfragePage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
+      <MetaPixel />
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <div className="text-center mb-10">
           <h1
@@ -82,16 +80,14 @@ export default function AnfragePage() {
             </li>
           </ul>
 
-          <a
-            href={BOOKING_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <KonsultationLink
+            abschnitt="anfrage"
             className="inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
             style={{ backgroundColor: GREEN }}
           >
             Termin auswählen
             <ExternalLink className="h-4 w-4" />
-          </a>
+          </KonsultationLink>
 
           <p className="text-xs mt-3 flex items-center gap-1.5" style={{ color: MUTED }}>
             <ExternalLink className="h-3 w-3 shrink-0" />

@@ -15,12 +15,14 @@
  * Profilen zusammenführen — die URLs müssen nachgetragen werden.
  */
 
+import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { LandingFooter } from "@/components/landing/LandingFooter"
-import { PROGRAMM, VARIANTEN, buchungsUrl } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN } from "@/lib/programm"
 
 const INTENSIV = VARIANTEN.intensiv
 
@@ -122,6 +124,7 @@ export default function MaxGlawePage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
+      <MetaPixel />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(person) }}
@@ -254,9 +257,9 @@ export default function MaxGlawePage() {
           </address>
 
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[14.5px]">
-            <a href={buchungsUrl("autorenseite")} target="_blank" rel="noopener noreferrer" style={{ color: GREEN }}>
+            <KonsultationLink abschnitt={"autorenseite"} style={{ color: GREEN }}>
               Konsultation buchen →
-            </a>
+            </KonsultationLink>
             <Link href="/" style={{ color: GREEN }}>
               Zum {PROGRAMM.tage}-Tage-Programm →
             </Link>

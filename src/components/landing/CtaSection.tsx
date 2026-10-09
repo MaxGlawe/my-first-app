@@ -17,10 +17,11 @@
  * Knopf fuehrt deshalb direkt dorthin, mit UTM-Parametern.
  */
 
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { PROGRAMM, buchungsUrl, formatEuro } from "@/lib/programm"
+import { PROGRAMM, formatEuro } from "@/lib/programm"
 
 const INK = "#0f172a"
 const GREEN = "#2C3E2D"
@@ -75,7 +76,7 @@ export function CtaSection() {
           </p>
 
           <div className="mt-9">
-            <a href={buchungsUrl("abschluss")} target="_blank" rel="noopener noreferrer">
+            <KonsultationLink abschnitt={"abschluss"}>
               <Button
                 size="lg"
                 className="group h-14 rounded-xl px-9 text-base font-semibold text-white hover:opacity-90"
@@ -84,7 +85,7 @@ export function CtaSection() {
                 Konsultation buchen
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
-            </a>
+            </KonsultationLink>
             <p className="mt-4 max-w-sm text-[14px] leading-relaxed" style={{ color: "#64748b" }}>
               30 Minuten per Video für {formatEuro(PROGRAMM.konsultation)}, abgerechnet nach dem
               Gespräch. Startest du danach das Programm, ist die Konsultation darin enthalten.

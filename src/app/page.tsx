@@ -1,3 +1,4 @@
+import { MetaPixel } from "@/components/analytics/MetaPixel"
 import { Suspense } from "react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/landing/StructuredData"
@@ -71,6 +72,7 @@ export const metadata: Metadata = {
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
+      <MetaPixel />
       <StructuredData />
       <Suspense fallback={null}>
         <LandingAnalytics />

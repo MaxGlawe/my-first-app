@@ -17,9 +17,9 @@
  * Stelle die Buchungen bringt — und ob ein Band ueberhaupt etwas beitraegt.
  */
 
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { buchungsUrl } from "@/lib/programm"
 
 const PAPER = "#F8F5F0"
 const INK = "#0f172a"
@@ -63,12 +63,8 @@ export function CtaBand({ satz, zusatz, abschnitt, hell = false }: CtaBandProps)
             )}
           </div>
 
-          <a
-            href={buchungsUrl(abschnitt)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="shrink-0"
-          >
+          <KonsultationLink abschnitt={abschnitt}
+            className="shrink-0">
             <Button
               size="lg"
               className="group h-12 rounded-xl px-7 text-[15px] font-semibold text-white hover:opacity-90"
@@ -77,7 +73,7 @@ export function CtaBand({ satz, zusatz, abschnitt, hell = false }: CtaBandProps)
               Konsultation buchen
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
-          </a>
+          </KonsultationLink>
         </div>
       </div>
     </section>

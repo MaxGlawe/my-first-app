@@ -23,6 +23,7 @@
  * im Vertrag, waere der teuerste Fehler dieser Seite.
  */
 
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { ScrollReveal } from "./ScrollReveal"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Check } from "lucide-react"
@@ -30,7 +31,6 @@ import {
   PROGRAMM,
   VARIANTEN,
   VARIANTEN_REIHENFOLGE,
-  buchungsUrl,
   formatEuro,
   type ProgrammVariante,
 } from "@/lib/programm"
@@ -169,12 +169,8 @@ export function PricingSection() {
 
                   <div className="mt-8 flex-1" />
 
-                  <a
-                    href={buchungsUrl("preis", v.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
+                  <KonsultationLink abschnitt={"preis"} variante={v.id}
+                    className="block">
                     <Button
                       size="lg"
                       className="group h-14 w-full rounded-xl text-base font-semibold hover:opacity-90"
@@ -187,7 +183,7 @@ export function PricingSection() {
                       Konsultation buchen
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Button>
-                  </a>
+                  </KonsultationLink>
                   <p
                     className="mt-3 text-center text-[13px] leading-relaxed"
                     style={{ color: hell ? MUTED : "rgba(248,245,240,0.6)" }}

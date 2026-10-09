@@ -13,11 +13,12 @@
  * Schleier am unteren Bildrand aendern — dann liegt der Text ueber dem Bild.
  */
 
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 import { BetreuungsbogenGrafik } from "./BetreuungsbogenGrafik"
-import { PROGRAMM, VARIANTEN, buchungsUrl } from "@/lib/programm"
+import { PROGRAMM, VARIANTEN } from "@/lib/programm"
 
 const INTENSIV = VARIANTEN.intensiv
 
@@ -107,7 +108,7 @@ export function HeroSection() {
             </p>
 
             <div className="animate-fade-in-up animation-delay-450 mt-9">
-              <a href={buchungsUrl("hero")} target="_blank" rel="noopener noreferrer">
+              <KonsultationLink abschnitt={"hero"}>
                 <Button
                   size="lg"
                   className="group h-14 rounded-xl px-9 text-base font-semibold text-white hover:opacity-90"
@@ -116,7 +117,7 @@ export function HeroSection() {
                   Konsultation buchen
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
-              </a>
+              </KonsultationLink>
               <p className="mt-4 max-w-md text-[14px] leading-relaxed" style={{ color: MUTED }}>
                 Im Gespräch prüfen wir ehrlich, ob wir dein Beschwerdebild aus der Ferne betreuen
                 können. Wenn nicht, sagen wir es dir.

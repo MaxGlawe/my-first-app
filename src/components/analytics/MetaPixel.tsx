@@ -3,11 +3,22 @@
 import Script from "next/script"
 
 /**
- * PROJ-23: Meta Pixel base loader for the Schmerzcheck funnel.
+ * Meta Pixel — Basisladung und Ereignisse.
  *
- * Loads the Pixel and fires PageView. The `Lead` event is fired from the form
- * with a shared eventID so it deduplicates against the server-side CAPI event.
- * Renders nothing when NEXT_PUBLIC_META_PIXEL_ID is unset (e.g. local dev).
+ * Lädt den Pixel und feuert PageView. Rendert nichts, wenn
+ * NEXT_PUBLIC_META_PIXEL_ID fehlt (lokal etwa).
+ *
+ * WO ER LÄUFT, steht nicht hier, sondern an jeder Seite einzeln. Das ist
+ * Absicht: Ein Pixel in einem gemeinsamen Layout wäre irgendwann auch auf
+ * Seiten, auf denen er nichts zu suchen hat. In Praxis OS betrifft das das
+ * Sprechzimmer, das Therapeuten-OS und die Patienten-App — dort ist ein
+ * identifizierter Mensch in einem Gesundheitskontext, und der geht Meta
+ * nichts an. Die Liste der Seiten mit Pixel ist deshalb die Liste der
+ * Dateien, die diese Komponente einbinden.
+ *
+ * Ursprünglich für den Schmerzcheck-Funnel gebaut (PROJ-23), seit dem
+ * 09.10.2026 auch auf den Marketingseiten, auf denen die Konsultation
+ * beworben wird.
  */
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
@@ -47,6 +58,28 @@ export function MetaPixel() {
 export function fireLeadPixel(eventId: string) {
   if (typeof window !== "undefined" && typeof window.fbq === "function") {
     window.fbq("track", "Lead", {}, { eventID: eventId })
+  }
+}
+
+/**
+ * Klick auf „Konsultation buchen".
+ *
+ * Der Knopf führt auf den Buchungskalender unter physiotherapie-glawe.de —
+ * eine fremde Seite, auf der unser Pixel nicht liegt. Ohne dieses Ereignis
+ * endet die Spur hier, und Meta erfährt nie, dass die Anzeige jemanden bis an
+ * den Kalender gebracht hat.
+ *
+ * `InitiateCheckout` und nicht `Schedule`: Gezählt wird der Klick, nicht die
+ * Buchung. Ob der Termin zustande kam, weiss diese Seite nicht — das steht
+ * allein im fremden Kalender. Ein Ereignis „Schedule" wäre also eine
+ * Behauptung über etwas, das wir nicht sehen.
+ */
+export function fireKonsultationKlick(abschnitt: string) {
+  if (typeof window !== "undefined" && typeof window.fbq === "function") {
+    window.fbq("track", "InitiateCheckout", {
+      content_name: "videokonsultation",
+      content_category: abschnitt,
+    })
   }
 }
 

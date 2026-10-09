@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { Check, Loader2, Mail } from "lucide-react"
-import { fireLeadPixel } from "./MetaPixel"
+import { fireLeadPixel } from "@/components/analytics/MetaPixel"
 
 /**
  * PROJ-23: Lead capture form (Vorname + E-Mail).
