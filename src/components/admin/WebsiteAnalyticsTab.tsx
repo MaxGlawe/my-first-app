@@ -23,7 +23,9 @@ interface WebsiteSummary {
     total_pageviews: number
     total_conversions: number
     conversion_rate: number
-    avg_duration_seconds: number
+    median_duration_seconds: number
+    durations_over_hour: number
+    durations_recorded: number
     today_visitors: number
     yesterday_visitors: number
   }
@@ -186,12 +188,21 @@ export function WebsiteAnalyticsTab() {
           <CardHeader className="pb-2">
             <CardDescription className="flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
-              Ø Verweildauer
+              Verweildauer (Median)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{formatDuration(kpi.avg_duration_seconds)}</p>
-            <p className="text-xs text-muted-foreground mt-1">pro Seitenaufruf</p>
+            <p className="text-3xl font-bold">{formatDuration(kpi.median_duration_seconds)}</p>
+            {/* Median, nicht Mittelwert: Ein ueber Nacht offener Tab liefert
+                23 Stunden und zog den Mittelwert allein um Minuten nach oben.
+                Die Zahl der Langlaeufer steht daneben, damit der niedrige
+                Wert nicht wie ein Fehler aussieht. */}
+            <p className="text-xs text-muted-foreground mt-1">
+              pro Seitenaufruf
+              {kpi.durations_over_hour > 0 && (
+                <> · {kpi.durations_over_hour} von {kpi.durations_recorded} über 1 Std.</>
+              )}
+            </p>
           </CardContent>
         </Card>
 

@@ -624,6 +624,32 @@ async function handleAppointmentEvent(
   // Der Termin soll abgesagt in der Akte stehen bleiben, mit dem Zeitpunkt,
   // den er hatte — sonst steht dort ein Eintrag ohne Datum.
   const nurStatus = data.status === "cancelled" && !data.scheduled_at
+
+  // Die Herkunft wird NUR geschrieben, wenn sie mitkommt.
+  //
+  // Das Buchungstool sendet `referrer` ausschliesslich bei `appointment.created`.
+  // Eine Absage oder Verschiebung traegt es nicht mehr — und weil der Upsert
+  // alle Felder schrieb, loeschte der zweite Aufruf die Attribution des
+  // ersten. Genau so verschwand die Herkunft der Testbuchung vom 09.10.2026:
+  // angelegt mit source=meta/content=test, drei Minuten spaeter abgesagt,
+  // alle fuenf Spalten NULL. Die Messung war da, die Zuordnung weg — und der
+  // Verlust faellt nirgends auf, weil NULL auch „nie gesendet" heisst.
+  const hatHerkunft =
+    data.referrer_source ||
+    data.referrer_medium ||
+    data.referrer_campaign ||
+    data.referrer_content ||
+    data.referrer_term
+  const herkunft = hatHerkunft
+    ? {
+        referrer_source: data.referrer_source,
+        referrer_medium: data.referrer_medium,
+        referrer_campaign: data.referrer_campaign,
+        referrer_content: data.referrer_content,
+        referrer_term: data.referrer_term,
+      }
+    : {}
+
   const { error: upsertError } = await supabase
     .from("appointments")
     .upsert(
@@ -639,11 +665,7 @@ async function handleAppointmentEvent(
         therapist_name: data.therapist_name ?? null,
         service_name: data.service_name ?? null,
         status: data.status,
-        referrer_source: data.referrer_source,
-        referrer_medium: data.referrer_medium,
-        referrer_campaign: data.referrer_campaign,
-        referrer_content: data.referrer_content,
-        referrer_term: data.referrer_term,
+        ...herkunft,
         synced_at: new Date().toISOString(),
       },
       {

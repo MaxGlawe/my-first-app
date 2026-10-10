@@ -3,7 +3,7 @@ import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { STAEDTE, LAND_NAMEN, getStadtBySlug } from "@/lib/staedte"
+import { STAEDTE_AKTIV, LAND_NAMEN, getStadtBySlug } from "@/lib/staedte"
 import { BESCHWERDEN } from "@/lib/beschwerden"
 import {
   ArrowRight,
@@ -35,7 +35,10 @@ interface Props {
 }
 
 export function generateStaticParams() {
-  return STAEDTE.map((s) => ({ stadt: s.slug }))
+  // Nur noch deutsche Staedte. AT/CH beantwortet der Proxy mit 410, eine
+  // vorgenerierte Seite waere toter Ballast — und ein Risiko, falls der
+  // Proxy einmal nicht greift.
+  return STAEDTE_AKTIV.map((s) => ({ stadt: s.slug }))
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -227,9 +230,11 @@ function getFaq(city: string, variant: number) {
 export default async function StadtPage({ params }: Props) {
   const { stadt: slug } = await params
   const city = getStadtBySlug(slug)
-  if (!city) notFound()
+  // Greift der Proxy einmal nicht, darf hier trotzdem keine AT/CH-Seite
+  // entstehen — zwei Sicherungen fuer dieselbe Zusage.
+  if (!city || city.land !== "DE") notFound()
 
-  const cityIndex = STAEDTE.findIndex((s) => s.slug === slug)
+  const cityIndex = STAEDTE_AKTIV.findIndex((s) => s.slug === slug)
   const variant = cityIndex >= 0 ? cityIndex % 5 : 0
 
   const hero = getHeroText(city.name, variant)
@@ -237,7 +242,9 @@ export default async function StadtPage({ params }: Props) {
   const steps = getProcessSteps(city.name, variant)
   const faq = getFaq(city.name, variant)
 
-  const nearbyCities = STAEDTE.filter(
+  // Nur noch aktive Staedte verlinken — sonst zeigt die Seite auf Adressen,
+  // die mit 410 antworten.
+  const nearbyCities = STAEDTE_AKTIV.filter(
     (s) => s.region === city.region && s.land === city.land && s.slug !== city.slug
   ).slice(0, 8)
 

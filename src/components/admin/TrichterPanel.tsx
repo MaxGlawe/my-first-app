@@ -10,9 +10,12 @@
  *
  * Diese Ansicht beantwortet genau eine Frage, und zwar in dieser Reihenfolge:
  *
- *   1. Der Trichter      — wie viele kommen bis wohin
- *   2. Die Absprungseite — wo endet der Besuch
- *   3. Die Quelle        — wer schickt Besucher, die bleiben
+ *   1. Der Trichter        — wie viele kommen bis wohin
+ *   2. Die Leseleiter      — an welchem Abschnitt es bricht
+ *   3. Lesetiefe & Zeit    — war er überhaupt da
+ *   4. Die Absprungseite   — wo endet der Besuch
+ *   5. Quelle/Kampagne/Anzeige — wer schickt Besucher, die bleiben
+ *   6. Gerät und Browser   — konnte er die Seite überhaupt benutzen
  *
  * Prozentzahlen stehen immer neben der absoluten Zahl. „2 %" bei 442
  * Besuchern heisst neun Menschen; wer nur den Prozentwert sieht, trifft
@@ -22,7 +25,17 @@
 import { useCallback, useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertTriangle, TrendingDown, LogOut, Radio, BookOpen } from "lucide-react"
+import {
+  AlertTriangle,
+  TrendingDown,
+  LogOut,
+  Radio,
+  BookOpen,
+  Timer,
+  ListOrdered,
+  Smartphone,
+  CalendarCheck,
+} from "lucide-react"
 
 interface Stufe {
   stufe: string
@@ -43,21 +56,39 @@ interface Einstieg {
   klicks: number
   bleiberate: number
 }
-interface Quelle {
-  quelle: string
+interface Zeile {
+  name: string
   sitzungen: number
   geblieben: number
+  preis: number
   klicks: number
   bleiberate: number
   klickrate: number
 }
+interface Sprosse {
+  id: string
+  titel: string
+  erreicht: number
+  anteil: number
+  haltequote: number | null
+}
 interface Daten {
   gesamt: number
+  intern_ausgeschlossen: number
   trichter: Stufe[]
+  leiter: Sprosse[] | null
   absprung: Absprung[]
   einstieg: Einstieg[]
-  quellen: Quelle[]
+  quellen: Zeile[]
+  kampagnen: Zeile[]
+  anzeigen: Zeile[]
+  geraete: Zeile[]
+  browser: Zeile[]
+  in_app_sitzungen: number
   lesetiefe: { marke: number; anzahl: number }[] | null
+  aktivzeit: { marke: number; anzahl: number }[] | null
+  buchungen_nach_quelle: { quelle: string; anzahl: number }[]
+  buchungen_ohne_herkunft: number
   seitenProSitzung: { eine: number; zweiBisVier: number; fuenfPlus: number }
 }
 
@@ -70,6 +101,110 @@ function Balken({ anteil, farbe }: { anteil: number; farbe: string }) {
         className="h-full rounded-full transition-all"
         style={{ width: `${Math.max(anteil, anteil > 0 ? 1.5 : 0)}%`, backgroundColor: farbe }}
       />
+    </div>
+  )
+}
+
+function Karte({
+  titel,
+  hinweis,
+  symbol,
+  children,
+}: {
+  titel: string
+  hinweis?: string
+  symbol?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
+      <div className="mb-1 flex items-center gap-2">
+        {symbol}
+        <h4 className="text-sm font-semibold text-slate-800">{titel}</h4>
+      </div>
+      {hinweis && <p className="mb-3 text-[11px] leading-relaxed text-slate-400">{hinweis}</p>}
+      {children}
+    </div>
+  )
+}
+
+/** Eine Aufschlüsselung — dieselbe Tabelle für Quelle, Kampagne, Anzeige, Gerät. */
+function Aufschluesselung({ zeilen, spalte }: { zeilen: Zeile[]; spalte: string }) {
+  if (zeilen.length === 0) {
+    return <p className="text-xs text-slate-400">Keine Angaben im Zeitraum.</p>
+  }
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-left text-[11px] text-slate-400">
+            <th className="pb-2 font-medium">{spalte}</th>
+            <th className="pb-2 text-right font-medium">Sitzungen</th>
+            <th className="pb-2 text-right font-medium">geblieben</th>
+            <th className="pb-2 text-right font-medium">Preis gesehen</th>
+            <th className="pb-2 text-right font-medium">Buchung geklickt</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {zeilen.map((q) => (
+            <tr key={q.name}>
+              <td className="max-w-[12rem] truncate py-2 font-medium text-slate-700">{q.name}</td>
+              <td className="py-2 text-right tabular-nums text-slate-600">{q.sitzungen}</td>
+              <td className="py-2 text-right tabular-nums">
+                <span className="text-slate-600">{q.geblieben}</span>{" "}
+                <span
+                  className={
+                    q.bleiberate < 10
+                      ? "text-red-500"
+                      : q.bleiberate < 25
+                        ? "text-amber-500"
+                        : "text-emerald-600"
+                  }
+                >
+                  ({q.bleiberate} %)
+                </span>
+              </td>
+              <td className="py-2 text-right tabular-nums text-slate-600">{q.preis}</td>
+              <td className="py-2 text-right tabular-nums">
+                <span className="text-slate-600">{q.klicks}</span>{" "}
+                <span className="text-slate-400">({q.klickrate} %)</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+/** Verteilung über Schwellen — „mindestens X" als Treppe. */
+function Treppe({
+  werte,
+  gesamt,
+  beschriftung,
+  farbe,
+}: {
+  werte: { marke: number; anzahl: number }[]
+  gesamt: number
+  beschriftung: (marke: number) => string
+  farbe: string
+}) {
+  return (
+    <div className="space-y-2.5">
+      {werte.map((l) => (
+        <div key={l.marke}>
+          <div className="flex items-baseline justify-between text-xs">
+            <span className="text-slate-600">{beschriftung(l.marke)}</span>
+            <span className="tabular-nums text-slate-500">
+              <strong className="text-slate-800">{l.anzahl}</strong> ·{" "}
+              {gesamt > 0 ? Math.round((l.anzahl / gesamt) * 100) : 0} %
+            </span>
+          </div>
+          <div className="mt-1">
+            <Balken anteil={gesamt > 0 ? (l.anzahl / gesamt) * 100 : 0} farbe={farbe} />
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -126,6 +261,12 @@ export function TrichterPanel() {
           <h3 className="text-base font-semibold text-slate-800">Wo der Besucher verloren geht</h3>
           <p className="mt-0.5 text-xs text-slate-500">
             {daten.gesamt} Sitzungen in den letzten {tage} Tagen
+            {daten.intern_ausgeschlossen > 0 && (
+              <span className="text-slate-400">
+                {" "}
+                · {daten.intern_ausgeschlossen} eigene ausgeschlossen
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
@@ -187,55 +328,109 @@ export function TrichterPanel() {
         </p>
       </div>
 
-      {/* ── Lesetiefe ───────────────────────────────────────────── */}
-      {daten.lesetiefe ? (
-        <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
-          <div className="mb-3 flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-slate-400" />
-            <h4 className="text-sm font-semibold text-slate-800">Wie weit gelesen wird</h4>
-          </div>
+      {/* ── Leseleiter ──────────────────────────────────────────── */}
+      {daten.leiter ? (
+        <Karte
+          titel="An welchem Abschnitt es bricht"
+          hinweis="Abschnitte der Startseite in Leserichtung. „noch dabei“ heisst: wie viele von denen, die den vorigen Abschnitt sahen, auch hier ankamen. Der niedrigste Wert ist die Baustelle."
+          symbol={<ListOrdered className="h-4 w-4 text-slate-400" />}
+        >
           <div className="space-y-2.5">
-            {daten.lesetiefe
-              .filter((l) => l.marke > 0)
-              .map((l) => (
-                <div key={l.marke}>
-                  <div className="flex items-baseline justify-between text-xs">
-                    <span className="text-slate-600">mindestens {l.marke} % der Seite</span>
-                    <span className="tabular-nums text-slate-500">
-                      <strong className="text-slate-800">{l.anzahl}</strong> ·{" "}
-                      {daten.gesamt > 0 ? Math.round((l.anzahl / daten.gesamt) * 100) : 0} %
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <Balken
-                      anteil={daten.gesamt > 0 ? (l.anzahl / daten.gesamt) * 100 : 0}
-                      farbe="#64748b"
-                    />
-                  </div>
+            {daten.leiter.map((a) => (
+              <div key={a.id}>
+                <div className="flex items-baseline justify-between gap-3 text-xs">
+                  <span className="text-slate-700">{a.titel}</span>
+                  <span className="whitespace-nowrap tabular-nums text-slate-500">
+                    <strong className="text-slate-800">{a.erreicht}</strong> · {a.anteil} %
+                    {a.haltequote !== null && (
+                      <span
+                        className={
+                          a.haltequote < 60
+                            ? " text-red-500"
+                            : a.haltequote < 85
+                              ? " text-amber-500"
+                              : " text-emerald-600"
+                        }
+                      >
+                        {" "}
+                        · {a.haltequote} % noch dabei
+                      </span>
+                    )}
+                  </span>
                 </div>
-              ))}
+                <div className="mt-1">
+                  <Balken anteil={a.anteil} farbe="#2C3E2D" />
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+        </Karte>
       ) : (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
           <p className="text-xs leading-relaxed text-slate-500">
-            <strong className="text-slate-700">Lesetiefe wird noch gesammelt.</strong> Die Messung
-            läuft seit diesem Update. Sobald die ersten Besucher gescrollt haben, steht hier, wie
-            weit sie kommen — der Unterschied zwischen „sofort weg“ und „bis zum Preis gelesen“.
+            <strong className="text-slate-700">Abschnitte werden noch gesammelt.</strong> Die
+            Messung läuft seit diesem Update. Sobald die ersten Besucher gescrollt haben, steht
+            hier, an welchem Abschnitt der Startseite das Lesen aufhört.
           </p>
         </div>
       )}
 
+      {/* ── Lesetiefe und aktive Zeit ───────────────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {daten.lesetiefe ? (
+          <Karte
+            titel="Wie weit gelesen wird"
+            hinweis="Anteil der Seite, der durchs Fenster gelaufen ist. 100 % heisst: unten angekommen."
+            symbol={<BookOpen className="h-4 w-4 text-slate-400" />}
+          >
+            <Treppe
+              werte={daten.lesetiefe}
+              gesamt={daten.gesamt}
+              beschriftung={(m) => `mindestens ${m} % der Seite`}
+              farbe="#64748b"
+            />
+          </Karte>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
+            <p className="text-xs leading-relaxed text-slate-500">
+              <strong className="text-slate-700">Lesetiefe wird noch gesammelt.</strong> Der
+              Unterschied zwischen „sofort weg“ und „bis zum Preis gelesen“.
+            </p>
+          </div>
+        )}
+
+        {daten.aktivzeit ? (
+          <Karte
+            titel="Wie lange wirklich da"
+            hinweis="Nur Zeit mit sichtbarem Tab und Aktivität in den letzten 30 Sekunden. Ein über Nacht offener Tab zählt nicht."
+            symbol={<Timer className="h-4 w-4 text-slate-400" />}
+          >
+            <Treppe
+              werte={daten.aktivzeit}
+              gesamt={daten.gesamt}
+              beschriftung={(m) =>
+                m >= 60 ? `mindestens ${m / 60} Minuten` : `mindestens ${m} Sekunden`
+              }
+              farbe="#0ea5e9"
+            />
+          </Karte>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
+            <p className="text-xs leading-relaxed text-slate-500">
+              <strong className="text-slate-700">Aktive Zeit wird noch gesammelt.</strong> Sie
+              ersetzt die alte Verweildauer, deren längster Wert ein über Nacht offener Tab war
+              (23,6 Stunden).
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* ── Absprungseiten ──────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
-        <div className="mb-1 flex items-center gap-2">
-          <LogOut className="h-4 w-4 text-slate-400" />
-          <h4 className="text-sm font-semibold text-slate-800">Wo der Besuch endet</h4>
-        </div>
-        <p className="mb-3 text-[11px] text-slate-400">
-          Letzte Seite der Sitzung. Rechtliche Seiten sind ausgenommen — dort endet ein Besuch
-          zu Recht.
-        </p>
+      <Karte
+        titel="Wo der Besuch endet"
+        hinweis="Letzte Seite der Sitzung. Rechtliche Seiten sind ausgenommen — dort endet ein Besuch zu Recht."
+        symbol={<LogOut className="h-4 w-4 text-slate-400" />}
+      >
         <div className="space-y-2">
           {daten.absprung.map((a) => (
             <div key={a.pfad} className="flex items-center gap-3">
@@ -253,64 +448,83 @@ export function TrichterPanel() {
             </div>
           ))}
         </div>
-      </div>
+      </Karte>
 
-      {/* ── Quellen ─────────────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
-        <div className="mb-1 flex items-center gap-2">
-          <Radio className="h-4 w-4 text-slate-400" />
-          <h4 className="text-sm font-semibold text-slate-800">Welche Quelle bringt wen</h4>
+      {/* ── Quelle, Kampagne, Anzeige ───────────────────────────── */}
+      <Karte
+        titel="Welche Quelle bringt wen"
+        hinweis="Nicht wie viele kommen, sondern wie viele bleiben. Das ist die Zahl, die über Werbebudget entscheidet."
+        symbol={<Radio className="h-4 w-4 text-slate-400" />}
+      >
+        <Aufschluesselung zeilen={daten.quellen} spalte="Quelle" />
+      </Karte>
+
+      {(daten.kampagnen.length > 0 || daten.anzeigen.length > 0) && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {daten.kampagnen.length > 0 && (
+            <Karte titel="Nach Kampagne" hinweis="utm_campaign">
+              <Aufschluesselung zeilen={daten.kampagnen} spalte="Kampagne" />
+            </Karte>
+          )}
+          {daten.anzeigen.length > 0 && (
+            <Karte
+              titel="Nach Anzeige"
+              hinweis="utm_content — bei Meta die einzelne Anzeige. Hier entscheidet sich, welche abgeschaltet wird."
+            >
+              <Aufschluesselung zeilen={daten.anzeigen} spalte="Anzeige" />
+            </Karte>
+          )}
         </div>
-        <p className="mb-3 text-[11px] text-slate-400">
-          Nicht wie viele kommen, sondern wie viele bleiben. Das ist die Zahl, die über
-          Werbebudget entscheidet.
-        </p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="text-left text-[11px] text-slate-400">
-                <th className="pb-2 font-medium">Quelle</th>
-                <th className="pb-2 text-right font-medium">Sitzungen</th>
-                <th className="pb-2 text-right font-medium">geblieben</th>
-                <th className="pb-2 text-right font-medium">Buchung geklickt</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {daten.quellen.map((q) => (
-                <tr key={q.quelle}>
-                  <td className="py-2 font-medium text-slate-700">{q.quelle}</td>
-                  <td className="py-2 text-right tabular-nums text-slate-600">{q.sitzungen}</td>
-                  <td className="py-2 text-right tabular-nums">
-                    <span className="text-slate-600">{q.geblieben}</span>{" "}
-                    <span
-                      className={
-                        q.bleiberate < 10
-                          ? "text-red-500"
-                          : q.bleiberate < 25
-                            ? "text-amber-500"
-                            : "text-emerald-600"
-                      }
-                    >
-                      ({q.bleiberate} %)
-                    </span>
-                  </td>
-                  <td className="py-2 text-right tabular-nums">
-                    <span className="text-slate-600">{q.klicks}</span>{" "}
-                    <span className="text-slate-400">({q.klickrate} %)</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      )}
+
+      {/* ── Buchungen nach Herkunft ─────────────────────────────── */}
+      <Karte
+        titel="Buchungen nach Herkunft"
+        hinweis="Aus dem Buchungskalender, nicht aus der Website-Messung — gebucht wird auf einer fremden Domäne. Termine ohne Angabe stammen aus der Zeit, bevor das Buchungstool die Herkunft mitsendete."
+        symbol={<CalendarCheck className="h-4 w-4 text-slate-400" />}
+      >
+        {daten.buchungen_nach_quelle.length === 0 && daten.buchungen_ohne_herkunft === 0 ? (
+          <p className="text-xs text-slate-400">Keine Videotermine im Zeitraum.</p>
+        ) : (
+          <div className="space-y-1.5 text-xs">
+            {daten.buchungen_nach_quelle.map((b) => (
+              <div key={b.quelle} className="flex items-center justify-between">
+                <span className="font-medium text-slate-700">{b.quelle}</span>
+                <span className="tabular-nums text-slate-600">{b.anzahl}</span>
+              </div>
+            ))}
+            {daten.buchungen_ohne_herkunft > 0 && (
+              <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 text-slate-400">
+                <span>ohne Angabe</span>
+                <span className="tabular-nums">{daten.buchungen_ohne_herkunft}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </Karte>
+
+      {/* ── Gerät und Browser ───────────────────────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Karte titel="Gerät" symbol={<Smartphone className="h-4 w-4 text-slate-400" />}>
+          <Aufschluesselung zeilen={daten.geraete} spalte="Gerät" />
+        </Karte>
+        <Karte
+          titel="Browser"
+          hinweis={
+            daten.in_app_sitzungen > 0
+              ? `${daten.in_app_sitzungen} Sitzungen liefen in einem App-Browser (Instagram, Facebook). Dort fehlen Teile des Speichers und Weiterleitungen brechen — wenn Anzeigen-Traffic nicht konvertiert, ist das der erste Verdacht.`
+              : "App-Browser (Instagram, Facebook) stehen als eigener Eintrag — sonst verschwinden sie unter „Chrome“."
+          }
+        >
+          <Aufschluesselung zeilen={daten.browser} spalte="Browser" />
+        </Karte>
       </div>
 
       {/* ── Einstiegsseiten ─────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
-        <h4 className="mb-1 text-sm font-semibold text-slate-800">Wo Besucher ankommen</h4>
-        <p className="mb-3 text-[11px] text-slate-400">
-          Erste Seite der Sitzung, mit dem Anteil derer, die danach nicht sofort gingen.
-        </p>
+      <Karte
+        titel="Wo Besucher ankommen"
+        hinweis="Erste Seite der Sitzung, mit dem Anteil derer, die danach nicht sofort gingen."
+      >
         <div className="space-y-2">
           {daten.einstieg.map((e) => (
             <div key={e.pfad} className="flex items-center gap-3">
@@ -332,7 +546,7 @@ export function TrichterPanel() {
             </div>
           ))}
         </div>
-      </div>
+      </Karte>
     </div>
   )
 }

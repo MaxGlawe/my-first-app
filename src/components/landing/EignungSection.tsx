@@ -51,7 +51,7 @@ const ZUERST_ZUM_ARZT = [
 
 export function EignungSection() {
   return (
-    <section className="relative py-24 sm:py-32" style={{ backgroundColor: PAPER }}>
+    <section id="eignung" className="relative py-24 sm:py-32" style={{ backgroundColor: PAPER }}>
       <div className="container mx-auto max-w-6xl px-4">
         <ScrollReveal className="mb-12 max-w-2xl sm:mb-16">
           <span className="text-sm font-medium uppercase tracking-wider" style={{ color: GREEN }}>

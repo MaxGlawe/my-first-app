@@ -3,19 +3,8 @@
 import { useEffect, useRef } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import { getDeviceType, getBrowser, isBot } from "@/lib/device-detect"
-import { randomUUID } from "@/lib/uuid"
-
-const SESSION_KEY = "landing_session_id"
-
-function getSessionId(): string {
-  if (typeof window === "undefined") return ""
-  let id = sessionStorage.getItem(SESSION_KEY)
-  if (!id) {
-    id = randomUUID()
-    sessionStorage.setItem(SESSION_KEY, id)
-  }
-  return id
-}
+import { landingSitzungId } from "@/lib/landing-sitzung"
+import { internSchalterLesen, istInternerBesuch } from "@/lib/intern"
 
 export function LandingAnalytics() {
   const pathname = usePathname()
@@ -27,8 +16,14 @@ export function LandingAnalytics() {
     const ua = navigator.userAgent
     if (isBot(ua)) return
 
+    // `?intern=1` zuerst auswerten, dann pruefen: so wirkt der Schalter
+    // schon fuer den Aufruf, mit dem er gesetzt wird.
+    internSchalterLesen()
+    if (istInternerBesuch()) return
+
     mountTime.current = Date.now()
-    const sessionId = getSessionId()
+    const sessionId = landingSitzungId()
+    if (!sessionId) return
 
     fetch("/api/analytics/pageview", {
       method: "POST",
@@ -39,6 +34,10 @@ export function LandingAnalytics() {
         utm_source: searchParams.get("utm_source") || null,
         utm_medium: searchParams.get("utm_medium") || null,
         utm_campaign: searchParams.get("utm_campaign") || null,
+        // utm_content traegt bei Meta die Anzeigen-Kennung. Ohne sie weiss
+        // man, dass Meta Besucher bringt — aber nicht, welche Anzeige.
+        utm_content: searchParams.get("utm_content") || null,
+        utm_term: searchParams.get("utm_term") || null,
         device_type: getDeviceType(ua),
         browser: getBrowser(ua),
         session_id: sessionId,
@@ -61,10 +60,16 @@ export function LandingAnalytics() {
       navigator.sendBeacon("/api/analytics/duration", blob)
     }
 
+    // `pagehide` zusaetzlich zu `beforeunload`: Auf iOS feuert
+    // `beforeunload` nicht, wenn die Seite in den Seiten-Cache wandert —
+    // dort faellt also jede Dauer weg, und iOS ist der groesste Teil des
+    // Anzeigen-Traffics.
     window.addEventListener("beforeunload", sendDuration)
+    window.addEventListener("pagehide", sendDuration)
     return () => {
       sendDuration()
       window.removeEventListener("beforeunload", sendDuration)
+      window.removeEventListener("pagehide", sendDuration)
     }
   }, [pathname, searchParams])
 

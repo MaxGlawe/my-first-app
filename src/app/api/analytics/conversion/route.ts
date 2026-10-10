@@ -13,7 +13,7 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
 
-  if (isRateLimited(`cv:${ip}`, 20, 60_000)) {
+  if (isRateLimited(`cv:${ip}`, 80, 60_000)) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 })
   }
 

@@ -61,11 +61,28 @@ export async function GET() {
     ? Math.round((convertedSessions.size / totalVisitors) * 1000) / 10
     : 0
 
-  // Average duration (only where duration is recorded)
+  // Verweildauer: Median statt Mittelwert (geaendert 10.10.2026).
+  //
+  // `duration_seconds` misst Anmeldung bis Entladen — ein Tab, der ueber
+  // Nacht offen bleibt, liefert 84.977 Sekunden. 29 von 1000 Aufrufen liegen
+  // ueber einer Stunde, 70 ueber zehn Minuten. Ein Mittelwert daraus war
+  // nicht ungenau, sondern bedeutungslos: Er zeigte knapp vier Minuten, wo
+  // die Haelfte der Besucher unter einer halben Minute lag.
+  //
+  // Der Median ist gegen solche Ausreisser gleichgueltig. Die eigentliche
+  // Antwort auf „wie lange war er wirklich da" steht im Trichter-Panel als
+  // aktive Zeit (sichtbarer Tab + Aktivitaet).
   const durationsRecorded = pageViews.filter((pv) => pv.duration_seconds != null && pv.duration_seconds > 0)
-  const avgDuration = durationsRecorded.length > 0
-    ? Math.round(durationsRecorded.reduce((sum, pv) => sum + pv.duration_seconds, 0) / durationsRecorded.length)
+  const sortierteDauern = durationsRecorded
+    .map((pv) => pv.duration_seconds as number)
+    .sort((a, b) => a - b)
+  const medianDuration = sortierteDauern.length > 0
+    ? sortierteDauern[Math.floor(sortierteDauern.length / 2)]
     : 0
+  // Fuer die Beschriftung: Wie viele Aufrufe liegen ueber einer Stunde? Die
+  // Zahl steht neben dem Median, damit niemand ihn fuer einen Mittelwert
+  // haelt und sich wundert, warum er so niedrig ist.
+  const dauernUeberStunde = sortierteDauern.filter((d) => d > 3600).length
 
   // --- Visitors by day (last 30 days) ---
   const visitorsByDay: Record<string, Set<string>> = {}
@@ -171,7 +188,9 @@ export async function GET() {
       total_pageviews: totalPageViews,
       total_conversions: totalConversions,
       conversion_rate: conversionRate,
-      avg_duration_seconds: avgDuration,
+      median_duration_seconds: medianDuration,
+      durations_over_hour: dauernUeberStunde,
+      durations_recorded: sortierteDauern.length,
       today_visitors: todayVisitors,
       yesterday_visitors: yesterdayVisitors,
     },

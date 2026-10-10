@@ -1,17 +1,21 @@
 "use client"
 
 import { useCallback, useRef } from "react"
-
-const SESSION_KEY = "landing_session_id"
+import { landingSitzungId } from "@/lib/landing-sitzung"
+import { istInternerBesuch } from "@/lib/intern"
 
 export function useConversionTracker() {
   const lastEvent = useRef<{ type: string; time: number }>({ type: "", time: 0 })
 
   const trackConversion = useCallback(
     (eventType: string, metadata: Record<string, unknown> = {}) => {
-      const sessionId = typeof window !== "undefined"
-        ? sessionStorage.getItem(SESSION_KEY)
-        : null
+      // Eigene Besuche fliessen nicht in die Messung — bei 442 Sitzungen im
+      // Monat verschiebt ein Testklick die Klickrate sichtbar.
+      if (istInternerBesuch()) return
+
+      // Fehlt die Kennung, wird sie hier angelegt statt das Ereignis zu
+      // verwerfen (siehe lib/landing-sitzung).
+      const sessionId = landingSitzungId()
       if (!sessionId) return
 
       // Deduplicate same event within 2s

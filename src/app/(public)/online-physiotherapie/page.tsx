@@ -3,7 +3,7 @@ import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { Metadata } from "next"
 import Link from "next/link"
 import {
-  STAEDTE,
+  STAEDTE_AKTIV,
   REGIONEN,
   LAND_NAMEN,
   getStadtBySlug,
@@ -33,27 +33,29 @@ const LINE = "#e7e1d6"
 const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 export const metadata: Metadata = {
-  title: "Online Physiotherapie in Deutschland, Österreich & Schweiz | Praxis OS",
+  title: "Online Physiotherapie in Deutschland | Praxis OS",
   description:
-    "Online Physiotherapie per Video im gesamten DACH-Raum. Professionelle physiotherapeutische Betreuung in deiner Stadt — ohne Wartezeit, ohne Anfahrt. Jetzt Termin buchen.",
+    "Online Physiotherapie per Video — deutschlandweit. Professionelle physiotherapeutische Betreuung in deiner Stadt, ohne Wartezeit und ohne Anfahrt. Jetzt Termin buchen.",
   keywords: [
     "Online Physiotherapie Deutschland",
-    "Online Physiotherapie Österreich",
-    "Online Physiotherapie Schweiz",
     "Physiotherapie per Video",
     "Telemedizin Physiotherapie",
-    "digitale Physiotherapie DACH",
+    "digitale Physiotherapie",
     "Online Physio Termin",
     "Physiotherapie ohne Wartezeit",
   ],
   alternates: { canonical: "https://wwwpraxis-os.com/online-physiotherapie" },
 }
 
-const LAENDER: Land[] = ["DE", "AT", "CH"]
+// Nur noch Deutschland. Oesterreich und die Schweiz sind am 10.10.2026
+// entfallen: „Heilpraktiker" ist ein deutsches Rechtskonstrukt, den Beruf
+// gibt es dort nicht. Die Seiten antworten mit 410 — sie hier noch zu
+// verlinken hiesse, Besucher auf eine Sackgasse zu schicken.
+const LAENDER: Land[] = ["DE"]
 const LAND_FLAGS: Record<Land, string> = { DE: "DE", AT: "AT", CH: "CH" }
 
 export default function OnlinePhysiotherapieHubPage() {
-  const totalCities = STAEDTE.length
+  const totalCities = STAEDTE_AKTIV.length
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: PAPER }}>
@@ -79,7 +81,7 @@ export default function OnlinePhysiotherapieHubPage() {
             >
               <Globe className="h-4 w-4" style={{ color: GREEN }} />
               <span className="text-sm font-medium" style={{ color: GREEN }}>
-                {totalCities}+ Standorte im DACH-Raum
+                {totalCities}+ Standorte in Deutschland
               </span>
             </div>
             <h1
@@ -93,8 +95,8 @@ export default function OnlinePhysiotherapieHubPage() {
               </span>
             </h1>
             <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style={{ color: BODY }}>
-              Professionelle Physiotherapie per Video — in Deutschland, Österreich
-              und der Schweiz. Ohne Wartezeit, ohne Anfahrt, mit persönlichem Therapeuten.
+              Professionelle Physiotherapie per Video — deutschlandweit. Ohne
+              Wartezeit, ohne Anfahrt, mit persönlichem Therapeuten.
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <KonsultationLink abschnitt={"online-physiotherapie"}
@@ -215,7 +217,7 @@ export default function OnlinePhysiotherapieHubPage() {
                   <p className="text-4xl md:text-5xl" style={{ ...serif, color: GREEN }}>
                     {totalCities}+
                   </p>
-                  <p className="text-sm mt-2" style={{ color: MUTED }}>Städte im DACH-Raum</p>
+                  <p className="text-sm mt-2" style={{ color: MUTED }}>Städte in Deutschland</p>
                 </div>
                 <div className="text-center">
                   <p className="text-4xl md:text-5xl" style={{ ...serif, color: GREEN }}>
@@ -255,8 +257,8 @@ export default function OnlinePhysiotherapieHubPage() {
               </h2>
               <p className="mb-8 max-w-lg mx-auto leading-relaxed" style={{ color: "rgba(255,255,255,0.85)" }}>
                 Kein Problem — unsere Online-Physiotherapie ist komplett digital
-                und funktioniert überall in Deutschland, Österreich und der Schweiz.
-                Starte mit einer Videokonsultation.
+                und funktioniert überall in Deutschland. Starte mit einer
+                Videokonsultation.
               </p>
               <KonsultationLink abschnitt={"online-physiotherapie"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"

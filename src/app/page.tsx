@@ -1,5 +1,5 @@
 import { MetaPixel } from "@/components/analytics/MetaPixel"
-import { LesetiefeMessen } from "@/components/analytics/LesetiefeMessen"
+import { AufmerksamkeitMessen } from "@/components/analytics/AufmerksamkeitMessen"
 import { Suspense } from "react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/landing/StructuredData"
@@ -74,9 +74,14 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <MetaPixel />
-      {/* Misst, wie weit gelesen wird — der Unterschied zwischen
-          "sofort weg" und "bis zum Preis gelesen". */}
-      <LesetiefeMessen seite="startseite" />
+      {/* Misst Lesetiefe, aktive Zeit und erreichte Abschnitte — der
+          Unterschied zwischen "sofort weg" und "bis zum Preis gelesen".
+          Die IDs sind die der Abschnitte weiter unten, in Leserichtung;
+          wird einer umbenannt, muss er hier mit. */}
+      <AufmerksamkeitMessen
+        seite="startseite"
+        abschnitte={["was-ist-praxis-os", "ablauf", "wer-betreut-dich", "eignung", "preis", "faq"]}
+      />
       <StructuredData />
       <Suspense fallback={null}>
         <LandingAnalytics />

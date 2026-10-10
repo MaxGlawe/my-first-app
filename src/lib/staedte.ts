@@ -209,6 +209,28 @@ const CH_STAEDTE: Stadt[] = [
 
 export const STAEDTE: Stadt[] = [...DE_STAEDTE, ...AT_STAEDTE, ...CH_STAEDTE]
 
+/**
+ * Städte, für die es noch eine Seite gibt — seit dem 10.10.2026 nur noch
+ * deutsche.
+ *
+ * Österreich und die Schweiz wurden entfernt, und zwar NICHT aus
+ * Ranking-Gründen: „Heilpraktiker" ist ein rein deutsches Rechtskonstrukt
+ * (§ 1 HeilprG). In Österreich und der Schweiz gibt es den Beruf nicht. Auf
+ * 81 Seiten stand damit eine Leistung unter einer Berufsbezeichnung, die dort
+ * niemand führen kann — das ist ein Compliance-Thema, kein SEO-Thema.
+ *
+ * Die Seiten antworten mit 410 („Gone") statt 404: 410 sagt Suchmaschinen,
+ * dass die Adresse absichtlich und dauerhaft verschwunden ist. Google nimmt
+ * sie dann schneller aus dem Index als bei einem 404, der auch ein
+ * vorübergehender Fehler sein könnte.
+ */
+export const STAEDTE_AKTIV: Stadt[] = DE_STAEDTE
+
+/** Slugs, die absichtlich entfernt wurden. Der Proxy antwortet darauf mit 410. */
+export const STAEDTE_ENTFERNT: ReadonlySet<string> = new Set(
+  [...AT_STAEDTE, ...CH_STAEDTE].map((s) => s.slug)
+)
+
 // ─── REGIONEN ───────────────────────────────────────────────
 
 export const REGIONEN: Region[] = [
