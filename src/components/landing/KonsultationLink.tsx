@@ -23,6 +23,7 @@ import { buchungsUrl } from "@/lib/programm"
 import type { ProgrammVariante } from "@/lib/programm"
 import { fireKonsultationKlick } from "@/components/analytics/MetaPixel"
 import { mitHerkunft } from "@/lib/kampagnen-herkunft"
+import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 
 interface KonsultationLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   /** Welcher Abschnitt der Seite — landet in utm_content und im Ereignis. */
@@ -40,6 +41,7 @@ export function KonsultationLink({
 }: KonsultationLinkProps) {
   const standard = buchungsUrl(abschnitt, variante)
   const [ziel, setZiel] = useState(standard)
+  const { trackConversion } = useConversionTracker()
 
   useEffect(() => {
     // Erst nach dem Einhaengen: `sessionStorage` gibt es auf dem Server nicht,
@@ -61,6 +63,18 @@ export function KonsultationLink({
         // selbst wenn fbq fehlt oder geblockt ist, passiert hier nichts
         // ausser dass nichts gezaehlt wird.
         fireKonsultationKlick(abschnitt)
+
+        // Und in die EIGENE Messung. Bis zum 10.10.2026 wurde dieser Klick
+        // nirgends festgehalten — ausgerechnet der entscheidende Schritt.
+        // In der Auswertung endete der Weg jedes Besuchers auf der
+        // Startseite, und ob er weiterging, war schlicht unbekannt.
+        //
+        // Meta-Pixel reicht dafuer nicht: Er feuert nur mit Einwilligung, und
+        // in den ersten dreissig Tagen hatte von 218 bezahlten Besuchern
+        // niemand eine erteilt. Die eigene Messung laeuft cookiefrei ueber
+        // eine Sitzungskennung und zaehlt deshalb jeden.
+        trackConversion("konsultation_klick", { abschnitt, variante: variante ?? null })
+
         onClick?.(e)
       }}
       {...rest}

@@ -1,4 +1,5 @@
 import { MetaPixel } from "@/components/analytics/MetaPixel"
+import { LesetiefeMessen } from "@/components/analytics/LesetiefeMessen"
 import { Suspense } from "react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/landing/StructuredData"
@@ -73,6 +74,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <MetaPixel />
+      {/* Misst, wie weit gelesen wird — der Unterschied zwischen
+          "sofort weg" und "bis zum Preis gelesen". */}
+      <LesetiefeMessen seite="startseite" />
       <StructuredData />
       <Suspense fallback={null}>
         <LandingAnalytics />

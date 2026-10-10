@@ -1,5 +1,6 @@
 "use client"
 
+import { TrichterPanel } from "@/components/admin/TrichterPanel"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -113,6 +114,18 @@ export function WebsiteAnalyticsTab() {
 
   return (
     <div className="space-y-6">
+      {/* Der Trichter steht VOR den Zaehlwerken: Er beantwortet die Frage,
+          wegen der man die Statistik ueberhaupt aufschlaegt. Die Einzelzahlen
+          darunter sind Nachschlagewerk, nicht Einstieg. */}
+      <TrichterPanel />
+
+      <div className="border-t border-slate-200 pt-6">
+        <h3 className="text-base font-semibold text-slate-800">Einzelzahlen</h3>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Besucher, Aufrufe, Geräte und Quellen im Überblick.
+        </p>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
