@@ -97,6 +97,7 @@ interface Daten {
   lesetiefe: { marke: number; anzahl: number }[] | null
   aktivzeit: { marke: number; anzahl: number }[] | null
   buchungen_nach_quelle: { quelle: string; anzahl: number }[]
+  buchungen_nach_cta: { cta: string; anzahl: number }[]
   buchungen_ohne_herkunft: number
   seitenProSitzung: { eine: number; zweiBisVier: number; fuenfPlus: number }
 }
@@ -516,6 +517,18 @@ export function TrichterPanel() {
               <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 text-slate-400">
                 <span>ohne Angabe</span>
                 <span className="tabular-nums">{daten.buchungen_ohne_herkunft}</span>
+              </div>
+            )}
+            {/* Welcher Knopf — eine andere Frage als welche Anzeige. */}
+            {daten.buchungen_nach_cta?.length > 0 && (
+              <div className="mt-3 border-t border-slate-100 pt-2">
+                <p className="mb-1.5 text-[11px] text-slate-400">Nach geklicktem Knopf</p>
+                {daten.buchungen_nach_cta.map((b) => (
+                  <div key={b.cta} className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">{b.cta}</span>
+                    <span className="tabular-nums text-slate-600">{b.anzahl}</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>

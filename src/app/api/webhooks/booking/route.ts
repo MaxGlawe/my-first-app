@@ -219,6 +219,10 @@ const appointmentRawSchema = z.object({
     // sie nicht kennt, soll deshalb nicht scheitern.
     content: z.string().max(200).optional().nullable(),
     term: z.string().max(200).optional().nullable(),
+    // `cta` seit 11.10.2026: WELCHER Knopf geklickt wurde (hero, leiste,
+    // abschluss). Steckte vorher in `content` und ging dort verloren,
+    // sobald eine Anzeige eigene Werte mitbrachte.
+    cta: z.string().max(200).optional().nullable(),
   }).optional().nullable(),
 }).refine(
   (d) => d.id || d.booking_appointment_id,
@@ -249,6 +253,7 @@ function normalizeAppointmentPayload(raw: z.infer<typeof appointmentRawSchema>) 
     referrer_campaign: raw.referrer?.campaign ?? null,
     referrer_content: raw.referrer?.content ?? null,
     referrer_term: raw.referrer?.term ?? null,
+    referrer_cta: raw.referrer?.cta ?? null,
   }
 }
 
@@ -639,7 +644,8 @@ async function handleAppointmentEvent(
     data.referrer_medium ||
     data.referrer_campaign ||
     data.referrer_content ||
-    data.referrer_term
+    data.referrer_term ||
+    data.referrer_cta
   const herkunft = hatHerkunft
     ? {
         referrer_source: data.referrer_source,
@@ -647,6 +653,7 @@ async function handleAppointmentEvent(
         referrer_campaign: data.referrer_campaign,
         referrer_content: data.referrer_content,
         referrer_term: data.referrer_term,
+        referrer_cta: data.referrer_cta,
       }
     : {}
 

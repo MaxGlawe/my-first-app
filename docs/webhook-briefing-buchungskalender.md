@@ -202,6 +202,7 @@ mit denen ein Besucher bei uns ankam. Ein Link sieht dann so aus:
 https://physiotherapie-glawe.de/termin-buchen.html
   ?service=video-sprechstunde-praxis-os
   &utm_source=meta&utm_medium=paid&utm_campaign=…&utm_content=…&utm_term=…
+  &cta=sabine-hero
   &fbclid=…
 ```
 
@@ -215,17 +216,26 @@ https://physiotherapie-glawe.de/termin-buchen.html
     "medium":   "paid",      // utm_medium
     "campaign": "herbst-26", // utm_campaign
     "content":  "trailer-a", // utm_content
-    "term":     "rückenschmerzen"  // utm_term, nur bei Suchanzeigen
+    "term":     "rückenschmerzen", // utm_term, nur bei Suchanzeigen
+    "cta":      "sabine-hero"      // Parameter `cta` (seit 11.10.2026)
   }
 }
 ```
 
-**Alle fünf Felder sind optional.** Fehlt `referrer` ganz, ändert sich nichts —
+**Alle sechs Felder sind optional.** Fehlt `referrer` ganz, ändert sich nichts —
 der Termin entsteht wie bisher. Wir nehmen entgegen, was kommt.
 
 Technisch heisst das: Die Parameter müssen beim Aufruf der Buchungsseite
 gespeichert (Sitzung genügt) und beim Absenden der Buchung an den Termin
-gehängt werden.
+gehängt werden. `cta` verhält sich dabei genau wie die utm_*-Werte — nur
+dass er nicht `utm_` heisst.
+
+**Zu `cta` (neu seit 11.10.2026):** `utm_content` trägt die ANZEIGE,
+`cta` den geklickten KNOPF. Vorher stand beides in `utm_content`, und bei
+Besuchern aus einer Anzeige gewann die Anzeige — der Knopf war genau dann
+nicht mehr erkennbar, wenn die Buchung am meisten gekostet hat. Mögliche
+Werte sind sprechend, etwa `sabine-hero`, `sabine-leiste`,
+`erstattung-abschluss`, `hero`, `kopfzeile`.
 
 **Warum es sich lohnt:** Ohne diese Felder lässt sich nicht sagen, welche
 Anzeige eine Buchung gebracht hat. Die Buchung wird auf eurer Seite

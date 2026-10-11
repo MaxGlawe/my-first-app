@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
   // verdoppeln.
   const { data: termine } = await svc
     .from("appointments")
-    .select("id, referrer_source, referrer_campaign, referrer_content, service_name")
+    .select("id, referrer_source, referrer_campaign, referrer_content, referrer_cta, service_name")
     .gte("created_at", seit)
     .ilike("service_name", "%video%")
     .or("referrer_content.is.null,referrer_content.neq.test")
@@ -402,6 +402,21 @@ export async function GET(request: NextRequest) {
     .map(([quelle, anzahl]) => ({ quelle, anzahl }))
     .sort((a, b) => b.anzahl - a.anzahl)
 
+  // Und: welcher KNOPF hat ueberzeugt? Zwei verschiedene Fragen —
+  // `referrer_content` sagt, welche Anzeige jemanden gebracht hat,
+  // `referrer_cta`, wo auf der Seite er dann geklickt hat. Frueher
+  // teilten sich beide ein Feld, und bei bezahltem Traffic gewann die
+  // Anzeige; der Knopf war genau dann unsichtbar, wenn er am meisten
+  // gekostet hat.
+  const buchungProCta = new Map<string, number>()
+  for (const t of termine ?? []) {
+    const c = (t.referrer_cta as string | null)?.trim()
+    if (c) buchungProCta.set(c, (buchungProCta.get(c) ?? 0) + 1)
+  }
+  const buchungen_nach_cta = [...buchungProCta.entries()]
+    .map(([cta, anzahl]) => ({ cta, anzahl }))
+    .sort((a, b) => b.anzahl - a.anzahl)
+
   return NextResponse.json({
     zeitraum: { tage, seit },
     gesamt,
@@ -419,6 +434,7 @@ export async function GET(request: NextRequest) {
     lesetiefe: lesetiefeGemessen ? lesetiefe : null,
     aktivzeit: aktivzeitGemessen ? aktivzeit : null,
     buchungen_nach_quelle,
+    buchungen_nach_cta,
     buchungen_ohne_herkunft: buchungOhneHerkunft,
     seitenProSitzung: {
       eine: alle.filter((s) => s.seiten === 1).length,

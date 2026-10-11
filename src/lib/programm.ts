@@ -192,10 +192,30 @@ export function preisFuer(variante: ProgrammVariante): number {
 export function buchungsUrl(abschnitt: string, variante?: ProgrammVariante): string {
   const params = new URLSearchParams({
     service: "video-sprechstunde-praxis-os",
+    // Die utm_*-Werte sind der RUECKFALL fuer Besucher ohne Kampagne.
+    // Kommt jemand ueber eine Anzeige, ersetzt `mitHerkunft()` sie durch
+    // deren Werte — die Herkunft der Anzeige ist die wahre, unsere waere
+    // nur die Behauptung, der Besuch komme von der eigenen Website.
     utm_source: "praxis-os",
     utm_medium: "website",
     utm_campaign: variante ? `programm-90-tage-${variante}` : "programm-90-tage",
     utm_content: abschnitt,
+    // `cta` traegt den GEKLICKTEN KNOPF, und zwar immer.
+    //
+    // Ohne ihn ging genau diese Angabe verloren, sobald eine Kampagne im
+    // Spiel war: `utm_content` kann nur eines von beidem tragen, und dort
+    // gewinnt die Anzeige. Bei einer Buchung aus einer Anzeige stand dann
+    // zwar „trailer", aber nicht mehr, ob der Besucher oben, unten oder
+    // auf der festen Leiste geklickt hat.
+    //
+    // Eigener Parameter statt Anhaengsel an utm_content: Ein zusammen-
+    // gesetzter Wert („trailer|hero") muesste an jeder auswertenden
+    // Stelle wieder zerlegt werden, und spaetestens die dritte Stelle
+    // vergisst es.
+    //
+    // `cta` steht NICHT in HERKUNFT_PARAMETER, wird von `mitHerkunft()`
+    // also nicht ueberschrieben.
+    cta: abschnitt,
   })
   return `https://physiotherapie-glawe.de/termin-buchen.html?${params.toString()}`
 }
