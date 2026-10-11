@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
 import "./anzeigen.css"
 
 /**
@@ -53,5 +55,24 @@ import "./anzeigen.css"
  * Source Serif.
  */
 export default function AnzeigenLayout({ children }: { children: React.ReactNode }) {
-  return <div className="anzeige">{children}</div>
+  return (
+    <div className="anzeige">
+      {/*
+        Der Seitenaufruf. Ohne ihn gibt es die Sitzung in der Auswertung
+        nicht — und dann fallen auch alle Abschnitts- und Klickereignisse
+        unter den Tisch, weil der Trichter jede Sitzung aus ihren
+        Seitenaufrufen zusammensetzt. Genau so war es beim ersten Livegang:
+        200 Ereignisse auf /start/* in 89 Sitzungen, kein einziger
+        Seitenaufruf, also im Dashboard nichts. Aufgefallen ist es nur beim
+        Nachsehen in den echten Daten.
+
+        Steht hier und nicht in den Seiten: Was fuer beide gilt, soll nicht
+        zweimal dastehen — beim dritten Lander vergisst es jemand.
+      */}
+      <Suspense fallback={null}>
+        <LandingAnalytics />
+      </Suspense>
+      {children}
+    </div>
+  )
 }
