@@ -61,7 +61,7 @@ export default function SabineLandingPage() {
           </div>
 
           <div style={{ position: "relative", borderRadius: "24px", overflow: "hidden", height: "200px", background: "#1C3A2D" }}>
-            <AnzeigeBild name="sabine" vorrang alt="Illustration: Sabine sitzt am Küchentisch und schaut nachdenklich auf ihr Handy" sofort style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "30% 40%", display: "block" }} />
+            <AnzeigeBild name="sabine" vorrang alt="Illustration: Sabine, nachdenklich in der Küche" sofort style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "30% 40%", display: "block" }} />
             <span style={{ position: "absolute", left: "14px", bottom: "14px", background: "rgba(15,42,31,0.82)", color: "#F5F1EA", borderRadius: "999px", padding: "6px 12px", fontSize: "12px", fontWeight: "600", letterSpacing: "0.02em" }}>Aus der Serie · Sabines Weg</span>
             <span style={{ position: "absolute", right: "12px", top: "12px", background: "rgba(15,42,31,0.7)", color: "#DDE8E1", borderRadius: "6px", padding: "3px 8px", fontSize: "11px" }}>Illustration · KI</span>
           </div>
