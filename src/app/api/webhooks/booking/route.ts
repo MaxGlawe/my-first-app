@@ -653,7 +653,16 @@ async function handleAppointmentEvent(
         referrer_campaign: data.referrer_campaign,
         referrer_content: data.referrer_content,
         referrer_term: data.referrer_term,
-        referrer_cta: data.referrer_cta,
+        // `referrer_cta` nur, wenn wirklich ein Wert da ist.
+        //
+        // Nicht Kosmetik: Die Spalte entsteht erst mit Migration
+        // 20261011000001. Wuerde der Schluessel immer mitgeschickt,
+        // scheiterte jede Buchung mit Herkunft, solange die Migration
+        // fehlt — und eine verlorene Buchung ist teurer als eine leere
+        // Dashboard-Spalte. Das Buchungstool sendet `cta` ohnehin erst,
+        // wenn es dafuer umgebaut ist; bis dahin bleibt der Schluessel
+        // weg und die Reihenfolge von Migration und Deploy ist egal.
+        ...(data.referrer_cta ? { referrer_cta: data.referrer_cta } : {}),
       }
     : {}
 
