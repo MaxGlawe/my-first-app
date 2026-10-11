@@ -12,11 +12,24 @@ const inter = Inter({
   variable: "--font-inter",
 })
 
+// `preload: false` ist Absicht und gemessen.
+//
+// `--font-display` wird nur auf /kurse und den Masterclass-Seiten benutzt —
+// sechs Dateien. Weil die Schrift aber hier im Wurzel-Layout steht, hat
+// Next.js sie auf JEDER Seite vorab geladen: 50 KB mit hoher Prioritaet,
+// die dem render-blockierenden Stylesheet die Bandbreite wegnehmen. Auf den
+// Anzeigen-Seiten kostete das rund 200 ms bis zum ersten Bild, bei einer
+// Schrift, die dort kein einziges Zeichen setzt.
+//
+// Ohne Vorabladen findet der Browser sie weiterhin ueber das Stylesheet —
+// auf /kurse und der Masterclass also eine Rundreise spaeter. Dort greift
+// `display: swap`, es gibt also ohnehin einen Wechsel; er kommt nur spaeter.
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-display",
   weight: ["400", "500", "600", "700"],
+  preload: false,
 })
 
 // Editorial-Serif (Masterclass-Welt) — global verfügbar als var(--font-serif).

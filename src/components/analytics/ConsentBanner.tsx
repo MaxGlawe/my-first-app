@@ -65,7 +65,25 @@ export function ConsentBanner() {
     }
   }, [oeffnen])
 
-  if (OHNE_BANNER.some((p) => pfad?.startsWith(p))) return null
+  const unterdrueckt = OHNE_BANNER.some((p) => pfad?.startsWith(p))
+  const sichtbar = offen && !unterdrueckt
+
+  // `body.consent-open`, solange das Banner steht.
+  //
+  // Die Anzeigen-Landingpages haben eine feste Buchungsleiste am unteren
+  // Bildschirmrand — genau dort, wo auch das Banner sitzt. Uebereinander
+  // verdeckt die Leiste den Knopf „Ablehnen", und eine Einwilligung, deren
+  // Ablehnung man nicht erreicht, ist keine. Die Leiste blendet sich
+  // deshalb aus, solange hier etwas zu entscheiden ist (Regel in
+  // `app/start/anzeigen.css`). Auf allen anderen Seiten hat die Klasse
+  // keine Wirkung.
+  useEffect(() => {
+    if (!sichtbar) return
+    document.body.classList.add("consent-open")
+    return () => document.body.classList.remove("consent-open")
+  }, [sichtbar])
+
+  if (unterdrueckt) return null
   if (!offen) return null
 
   function entscheiden(marketingErlaubt: boolean) {

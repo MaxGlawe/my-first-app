@@ -29,6 +29,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { SEITEN_LISTE, seiteZuPfad } from "@/lib/gemessene-seiten"
 
 export const dynamic = "force-dynamic"
 
@@ -36,20 +37,6 @@ const STAFF = ["admin"]
 
 /** Seiten, die kein Besuchsziel sind — sie verfaelschen die Absprungrate. */
 const RECHTLICH = new Set(["/impressum", "/datenschutz", "/agb", "/widerruf"])
-
-/**
- * Die Abschnitte der Startseite in Leserichtung. Die Reihenfolge ist die
- * Aussage: Sie zeigt, an welcher Stelle das Lesen aufhoert. Muss zu den IDs
- * in `app/page.tsx` passen.
- */
-const ABSCHNITTE: { id: string; titel: string }[] = [
-  { id: "was-ist-praxis-os", titel: "Was ist Praxis OS" },
-  { id: "ablauf", titel: "Ablauf" },
-  { id: "wer-betreut-dich", titel: "Wer betreut dich" },
-  { id: "eignung", titel: "Passt das zu mir" },
-  { id: "preis", titel: "Preis" },
-  { id: "faq", titel: "Häufige Fragen" },
-]
 
 const LESEMARKEN = [25, 50, 75, 100] as const
 const AKTIVMARKEN = [15, 45, 120] as const
@@ -198,10 +185,19 @@ export async function GET(request: NextRequest) {
   // Fenster, grosse Schrift) wuerde sonst durchfallen.
   const geblieben = (s: Sitzung) => s.seiten > 1 || s.lesetiefe >= 25 || s.aktiv >= 15
 
-  // „Preis gesehen": der Abschnitt stand im Fenster. Fuer Sitzungen auf
-  // Seiten ohne Abschnittsmessung (Stadtseiten, Shop) tritt die Lesetiefe
-  // ein — sonst waere die Stufe dort immer null und der Trichter log.
-  const preisGesehen = (s: Sitzung) => s.abschnitte.has("preis") || s.lesetiefe >= 75
+  // „Preis gesehen": der Abschnitt stand im Fenster. WELCHER Abschnitt das
+  // ist, haengt an der Seite — auf der Erstattungsseite heisst er „pakete",
+  // sonst „preis". Dieselbe Stufe, anderer Name; ein fest verdrahtetes
+  // „preis" haette dort immer null gemeldet.
+  //
+  // Fuer Sitzungen auf Seiten ohne Abschnittsmessung (Stadtseiten, Shop)
+  // tritt die Lesetiefe ein — sonst waere die Stufe dort immer null und der
+  // Trichter log.
+  const preisGesehen = (s: Sitzung) => {
+    const seite = seiteZuPfad(s.erste)
+    if (seite) return s.abschnitte.has(seite.preis) || s.lesetiefe >= 75
+    return s.abschnitte.has("preis") || s.lesetiefe >= 75
+  }
 
   const dageblieben = alle.filter(geblieben)
   const beimPreis = alle.filter(preisGesehen)
@@ -259,20 +255,42 @@ export async function GET(request: NextRequest) {
   // viele den Abschnitt erreicht haben, und wie viele von denen, die den
   // vorigen erreicht hatten, hier noch dabei sind. Die zweite zeigt, WO es
   // bricht — ein Abschnitt mit 30 Prozent Verlust ist eine Baustelle.
-  let vorige: number | null = null
-  const leiter = ABSCHNITTE.map((a) => {
-    const erreicht = alle.filter((s) => s.abschnitte.has(a.id)).length
-    const haltequote = vorige && vorige > 0 ? Math.round((erreicht / vorige) * 1000) / 10 : null
-    vorige = erreicht
+  //
+  // Eine Leiter JE SEITE, und gerechnet nur ueber die Sitzungen, die dort
+  // eingestiegen sind. Startseite und Anzeigenseiten haben verschiedene
+  // Abschnitte; sie in einen Topf zu werfen hiesse, jeden Abschnitt an
+  // allen Besuchern zu messen — und jede Leiter saehe nach Abbruch aus.
+  const leitern = SEITEN_LISTE.map((seite) => {
+    const sitzungenDort = alle.filter((s) => s.erste === seite.pfad)
+    let vorige: number | null = null
+    const sprossen = seite.abschnitte.map((a) => {
+      const erreicht = sitzungenDort.filter((s) => s.abschnitte.has(a.id)).length
+      const haltequote = vorige && vorige > 0 ? Math.round((erreicht / vorige) * 1000) / 10 : null
+      vorige = erreicht
+      return {
+        id: a.id,
+        titel: a.titel,
+        erreicht,
+        anteil:
+          sitzungenDort.length > 0
+            ? Math.round((erreicht / sitzungenDort.length) * 1000) / 10
+            : 0,
+        haltequote,
+      }
+    })
     return {
-      id: a.id,
-      titel: a.titel,
-      erreicht,
-      anteil: anteil(erreicht),
-      haltequote,
+      schluessel: seite.schluessel,
+      titel: seite.titel,
+      pfad: seite.pfad,
+      sitzungen: sitzungenDort.length,
+      klicks: sitzungenDort.filter((s) => s.klick).length,
+      sprossen,
+      // Ohne eine einzige Meldung waere die Leiter eine Reihe Nullen — und
+      // „niemand hat den Preis gesehen" ist etwas anderes als „es wird noch
+      // nicht gemessen". Deshalb der Unterschied im Datensatz.
+      gemessen: sitzungenDort.some((s) => s.abschnitte.size > 0),
     }
-  })
-  const abschnitteGemessen = alle.some((s) => s.abschnitte.size > 0)
+  }).filter((l) => l.sitzungen > 0)
 
   // ── Wo die Sitzung endet ───────────────────────────────────────────────
   const aufrufeProSeite = new Map<string, number>()
@@ -389,7 +407,7 @@ export async function GET(request: NextRequest) {
     gesamt,
     intern_ausgeschlossen: intern.size,
     trichter,
-    leiter: abschnitteGemessen ? leiter : null,
+    leitern,
     absprung,
     einstieg,
     quellen,

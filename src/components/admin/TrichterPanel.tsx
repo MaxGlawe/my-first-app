@@ -72,11 +72,20 @@ interface Sprosse {
   anteil: number
   haltequote: number | null
 }
+interface Leiter {
+  schluessel: string
+  titel: string
+  pfad: string
+  sitzungen: number
+  klicks: number
+  sprossen: Sprosse[]
+  gemessen: boolean
+}
 interface Daten {
   gesamt: number
   intern_ausgeschlossen: number
   trichter: Stufe[]
-  leiter: Sprosse[] | null
+  leitern: Leiter[]
   absprung: Absprung[]
   einstieg: Einstieg[]
   quellen: Zeile[]
@@ -328,51 +337,61 @@ export function TrichterPanel() {
         </p>
       </div>
 
-      {/* ── Leseleiter ──────────────────────────────────────────── */}
-      {daten.leiter ? (
-        <Karte
-          titel="An welchem Abschnitt es bricht"
-          hinweis="Abschnitte der Startseite in Leserichtung. „noch dabei“ heisst: wie viele von denen, die den vorigen Abschnitt sahen, auch hier ankamen. Der niedrigste Wert ist die Baustelle."
-          symbol={<ListOrdered className="h-4 w-4 text-slate-400" />}
-        >
-          <div className="space-y-2.5">
-            {daten.leiter.map((a) => (
-              <div key={a.id}>
-                <div className="flex items-baseline justify-between gap-3 text-xs">
-                  <span className="text-slate-700">{a.titel}</span>
-                  <span className="whitespace-nowrap tabular-nums text-slate-500">
-                    <strong className="text-slate-800">{a.erreicht}</strong> · {a.anteil} %
-                    {a.haltequote !== null && (
-                      <span
-                        className={
-                          a.haltequote < 60
-                            ? " text-red-500"
-                            : a.haltequote < 85
-                              ? " text-amber-500"
-                              : " text-emerald-600"
-                        }
-                      >
-                        {" "}
-                        · {a.haltequote} % noch dabei
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="mt-1">
-                  <Balken anteil={a.anteil} farbe="#2C3E2D" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Karte>
-      ) : (
+      {/* ── Leseleitern, eine je Seite ──────────────────────────── */}
+      {daten.leitern.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 p-4">
           <p className="text-xs leading-relaxed text-slate-500">
-            <strong className="text-slate-700">Abschnitte werden noch gesammelt.</strong> Die
-            Messung läuft seit diesem Update. Sobald die ersten Besucher gescrollt haben, steht
-            hier, an welchem Abschnitt der Startseite das Lesen aufhört.
+            <strong className="text-slate-700">Abschnitte werden noch gesammelt.</strong> Sobald
+            die ersten Besucher gescrollt haben, steht hier, an welchem Abschnitt das Lesen
+            aufhört — getrennt für die Startseite und jede Anzeigenseite.
           </p>
         </div>
+      ) : (
+        daten.leitern.map((l) => (
+          <Karte
+            key={l.schluessel}
+            titel={`An welchem Abschnitt es bricht · ${l.titel}`}
+            hinweis={`${l.sitzungen} Sitzungen sind auf ${l.pfad} eingestiegen, ${l.klicks} haben den Buchungsknopf geklickt. Abschnitte in Leserichtung; „noch dabei“ heisst: wie viele von denen, die den vorigen Abschnitt sahen, auch hier ankamen. Der niedrigste Wert ist die Baustelle.`}
+            symbol={<ListOrdered className="h-4 w-4 text-slate-400" />}
+          >
+            {l.gemessen ? (
+              <div className="space-y-2.5">
+                {l.sprossen.map((a) => (
+                  <div key={a.id}>
+                    <div className="flex items-baseline justify-between gap-3 text-xs">
+                      <span className="text-slate-700">{a.titel}</span>
+                      <span className="whitespace-nowrap tabular-nums text-slate-500">
+                        <strong className="text-slate-800">{a.erreicht}</strong> · {a.anteil} %
+                        {a.haltequote !== null && (
+                          <span
+                            className={
+                              a.haltequote < 60
+                                ? " text-red-500"
+                                : a.haltequote < 85
+                                  ? " text-amber-500"
+                                  : " text-emerald-600"
+                            }
+                          >
+                            {" "}
+                            · {a.haltequote} % noch dabei
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="mt-1">
+                      <Balken anteil={a.anteil} farbe="#2C3E2D" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs leading-relaxed text-slate-500">
+                Für diese Seite liegt noch keine einzige Abschnitts-Meldung vor. Das heisst nicht,
+                dass niemand gelesen hat — die Messung läuft erst seit kurzem.
+              </p>
+            )}
+          </Karte>
+        ))
       )}
 
       {/* ── Lesetiefe und aktive Zeit ───────────────────────────── */}

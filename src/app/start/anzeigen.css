@@ -1,0 +1,239 @@
+/*
+ * Anzeigen-Landingpages — übernommen aus der Vorlage.
+ *
+ * Nur die Regeln, die dort im <style> standen, Wert für Wert. Was in der
+ * Vorlage Inline-Stil war, ist auch hier Inline-Stil; nur die Schriftnamen
+ * sind auf die Variablen von next/font umgebogen (siehe layout.tsx).
+ *
+ * Diese Datei wird allein vom Layout unter /start geladen — Next.js liefert
+ * CSS pro Route aus. Die `body`-Regel gilt deshalb nicht für die übrige
+ * Seite, obwohl sie hier global aussieht.
+ */
+
+/*
+ * Die Schriften der Vorlage, selbst ausgeliefert.
+ *
+ * Eigene Familiennamen, damit sie sich nicht mit der `Source Serif 4` aus
+ * dem Wurzel-Layout ins Gehege kommen — die hat feste Gewichte und keine
+ * Kursive; welche Variante bei gleichem Namen gewinnt, haengt sonst an der
+ * Reihenfolge der Stylesheets. Begruendung ausfuehrlich in layout.tsx.
+ *
+ * `font-weight: 400 700` ist eine SPANNE, keine Zahl: Es sind variable
+ * Schriften. Daraus folgt auch, dass `font-optical-sizing: auto` (die
+ * Voreinstellung) greift — die Zeichenform richtet sich nach der
+ * Schriftgroesse, genau wie bei der Vorlage.
+ */
+@font-face {
+  font-family: "Anzeige Serif";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/anzeigen/fonts/source-serif-4-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Anzeige Serif";
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/anzeigen/fonts/source-serif-4-latin-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Anzeige Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/anzeigen/fonts/instrument-sans-latin.woff2") format("woff2");
+}
+
+/*
+ * Der Grund, auf dem die 520-px-Spalte liegt. Steht bewusst auf `body`:
+ * Auf dem Desktop ist links und rechts der Spalte Grund zu sehen, und bei
+ * Ueberdehnung am oberen Rand auch darueber. Ein Wrapper mit min-height
+ * deckt den zweiten Fall nicht ab.
+ *
+ * Dass diese Regel die uebrige Seite nicht trifft, liegt an Next.js: Das
+ * Stylesheet wird nur fuer die Routen unter /start geladen.
+ */
+body {
+  margin: 0;
+  background: #e9e2d5;
+}
+
+/*
+ * Schrift und Textfarbe am Wrapper, nicht an `body` — das Wurzel-Layout
+ * setzt dort eine Klasse mit Inter, und eine Klasse schlaegt einen
+ * Element-Selektor. Am Wrapper gewinnt die naehere Regel.
+ */
+.anzeige {
+  --font-anzeige-sans: "Anzeige Sans";
+  --font-anzeige-serif: "Anzeige Serif";
+  font-family: var(--font-anzeige-sans), system-ui, sans-serif;
+  color: #16241d;
+}
+
+.anzeige * {
+  box-sizing: border-box;
+}
+
+.anzeige img {
+  max-width: 100%;
+}
+
+/*
+ * Das <source> im <picture> darf nicht mitzaehlen.
+ *
+ * `AnzeigeBild` setzt `display: contents` aufs <picture>, damit das <img>
+ * selbst das Flex-Kind bleibt (sonst verschiebt ein zusaetzlicher Kasten das
+ * Layout). Dadurch wird aber AUCH das <source> zum Flex-Kind: unsichtbar,
+ * null Pixel gross — und trotzdem eine weitere `gap`-Luecke. Im
+ * Abschluss-Abschnitt waren das genau 18 px zu viel, und alles darunter
+ * verschob sich mit. Gefunden im Vergleich mit der Vorlage am 11.10.2026.
+ */
+.anzeige picture > source {
+  display: none;
+}
+
+.anzeige a {
+  color: inherit;
+}
+
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  background: #f5f1ea;
+  /*
+   * Platz für die feste Buchungsleiste. Ohne diesen Abstand verschwindet
+   * der letzte Absatz der Fußzeile darunter — und zwar genau dort, wo
+   * Impressum und Datenschutz stehen.
+   */
+  padding-bottom: 110px;
+  box-shadow: 0 0 40px rgba(15, 42, 31, 0.08);
+}
+
+.faq {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 0 18px;
+}
+
+.faq summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 60px;
+  padding: 16px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #16241d;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary .sign {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e4eee8;
+  color: #1f4a36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.faq summary .sign::before {
+  content: "+";
+}
+
+.faq[open] summary .sign::before {
+  content: "–";
+}
+
+.faq p {
+  margin: 0 0 18px;
+  font-size: 15px;
+  color: #33433b;
+  line-height: 1.55;
+}
+
+.sticky-cta {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  /* env(safe-area-inset-bottom): iPhone-Streifen unter dem Bildschirmrand. */
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+  background: rgba(245, 241, 234, 0.96);
+  border-top: 1px solid #ddd5c7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.sticky-cta__inner {
+  width: 100%;
+  max-width: 488px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sticky-cta__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 20%;
+  flex: 0 0 auto;
+}
+
+.sticky-cta__btn {
+  flex: 1 1 auto;
+  min-height: 52px;
+  border-radius: 14px;
+  background: #0f2a1f;
+  color: #f5f1ea;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.sticky-cta__note {
+  font-size: 12.5px;
+  color: #4a5a52;
+}
+
+/*
+ * Solange das Einwilligungsbanner offen ist, verschwindet die Buchungsleiste.
+ * Beides sitzt unten am Bildschirmrand; zusammen würde die Leiste die
+ * Knöpfe „Ablehnen" und „Akzeptieren" verdecken. Ein Banner, dessen
+ * Ablehnen-Knopf nicht erreichbar ist, ist keine freie Entscheidung.
+ */
+body.consent-open .sticky-cta {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .page {
+    margin: 32px auto;
+    border-radius: 28px;
+    overflow: hidden;
+  }
+}

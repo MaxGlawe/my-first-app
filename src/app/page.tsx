@@ -1,5 +1,6 @@
 import { MetaPixel } from "@/components/analytics/MetaPixel"
 import { AufmerksamkeitMessen } from "@/components/analytics/AufmerksamkeitMessen"
+import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
 import { Suspense } from "react"
 import { Metadata } from "next"
 import { StructuredData } from "@/components/landing/StructuredData"
@@ -80,7 +81,7 @@ export default function LandingPage() {
           wird einer umbenannt, muss er hier mit. */}
       <AufmerksamkeitMessen
         seite="startseite"
-        abschnitte={["was-ist-praxis-os", "ablauf", "wer-betreut-dich", "eignung", "preis", "faq"]}
+        abschnitte={GEMESSENE_SEITEN.startseite.abschnitte.map((a) => a.id)}
       />
       <StructuredData />
       <Suspense fallback={null}>

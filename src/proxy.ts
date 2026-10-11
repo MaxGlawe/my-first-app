@@ -38,12 +38,19 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
+     * Alles ausser:
+     * - _next/static, _next/image (Build-Ausgabe)
+     * - favicon.ico
+     * - Dateien aus `public/` anhand ihrer Endung
+     *
+     * Die Endungsliste ist keine Kosmetik. Steht eine Endung nicht drin,
+     * laeuft die Datei durch `updateSession()` — und weil `/anzeigen/...`
+     * keine oeffentliche Route ist, antwortet der Server mit 307 auf
+     * /login. Genau so ging es am 11.10.2026 den Schriftdateien der
+     * Anzeigen-Seiten: Die Seite lud, sah fast richtig aus und setzte den
+     * Text in Georgia. Aufgefallen ist es nur im Vergleich mit der
+     * Vorlage, an zwei Ueberschriften, die eine Zeile zu viel brauchten.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp4|webm|pdf)$).*)',
   ],
 }

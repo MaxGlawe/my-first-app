@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/widerruf', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass', '/max-glawe']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/widerruf', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass', '/max-glawe', '/start']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
@@ -96,7 +96,19 @@ export async function updateSession(request: NextRequest) {
   const isSeoRoute = pathname === '/sitemap.xml' || pathname === '/robots.txt' || pathname === '/opengraph-image' || pathname === '/llms.txt'
 
   // Static assets + API routes that handle their own auth
-  const isStaticAsset = pathname === '/sw.js' || pathname.startsWith('/icons/') || pathname.startsWith('/images/') || pathname.startsWith('/audio/') || pathname.startsWith('/downloads/')
+  // `/manifest.json` fehlte hier bis zum 11.10.2026 — die Datei antwortete
+  // jedem nicht angemeldeten Besucher mit 307 auf /login. Folge: Auf jeder
+  // oeffentlichen Seite stand ein Konsolenfehler („Manifest: Syntax error",
+  // weil HTML als JSON gelesen wurde), und die Installation als App war nie
+  // moeglich. Nachgeprueft an der Live-Seite, nicht nur lokal.
+  const isStaticAsset =
+    pathname === '/sw.js' ||
+    pathname === '/manifest.json' ||
+    pathname.startsWith('/icons/') ||
+    pathname.startsWith('/images/') ||
+    pathname.startsWith('/audio/') ||
+    pathname.startsWith('/downloads/') ||
+    pathname.startsWith('/anzeigen/')
   const isCronApi = pathname.startsWith('/api/cron/')
   const isPushSendApi = pathname === '/api/push/send'
   const isWebhookApi = pathname.startsWith('/api/webhooks/') // includes /api/webhooks/stripe

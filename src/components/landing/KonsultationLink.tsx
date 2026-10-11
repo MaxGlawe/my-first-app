@@ -29,12 +29,25 @@ interface KonsultationLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElem
   /** Welcher Abschnitt der Seite — landet in utm_content und im Ereignis. */
   abschnitt: string
   variante?: ProgrammVariante
+  /**
+   * Meldet der Klick auch an Meta (`InitiateCheckout`)?
+   *
+   * Voreinstellung ja — auf der oeffentlichen Website laeuft das so seit dem
+   * 09.10.2026. Auf den Anzeigen-Landingpages unter /start ist es
+   * ausdruecklich AUS: Dort darf nur ein PageView an Meta gehen. Ein
+   * Ereignis am Buchungsknopf sagt Meta, dass dieser Mensch einen
+   * Physiotherapie-Termin anstrebt, und das ist eine Angabe zur Gesundheit
+   * (Art. 9 DSGVO). Die eigene Messung zaehlt den Klick trotzdem — sie
+   * verlaesst das Haus nicht.
+   */
+  metaMelden?: boolean
   children: ReactNode
 }
 
 export function KonsultationLink({
   abschnitt,
   variante,
+  metaMelden = true,
   children,
   onClick,
   ...rest
@@ -62,7 +75,7 @@ export function KonsultationLink({
         // oeffnet ohnehin einen neuen Tab, diese Seite bleibt stehen, und
         // selbst wenn fbq fehlt oder geblockt ist, passiert hier nichts
         // ausser dass nichts gezaehlt wird.
-        fireKonsultationKlick(abschnitt)
+        if (metaMelden) fireKonsultationKlick(abschnitt)
 
         // Und in die EIGENE Messung. Bis zum 10.10.2026 wurde dieser Klick
         // nirgends festgehalten — ausgerechnet der entscheidende Schritt.
