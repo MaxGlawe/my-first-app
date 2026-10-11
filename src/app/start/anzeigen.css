@@ -73,11 +73,24 @@ body {
   color: #16241d;
 }
 
-.anzeige * {
+/*
+ * Die drei Grundregeln der Vorlage standen dort auf `*`, `img` und `a` —
+ * also mit der niedrigsten Spezifitaet, die es gibt. Hier mussten sie auf
+ * den Wrapper eingegrenzt werden, damit sie die uebrige Seite nicht
+ * treffen. `:where()` macht genau das, OHNE die Spezifitaet zu erhoehen:
+ * `:where(.anzeige) a` zaehlt wie ein blosses `a`.
+ *
+ * Das ist kein Feinschliff. Mit `.anzeige a { color: inherit }` (ein
+ * Klassen-Selektor mehr) schlug die Regel `.sticky-cta__btn { color:
+ * #f5f1ea }` — und die Schrift auf dem festen Buchungsknopf erbte das
+ * dunkle #16241d des Wrappers. Dunkelgrau auf Dunkelgruen, auf dem
+ * wichtigsten Knopf der Seite. Gemeldet am 11.10.2026.
+ */
+:where(.anzeige) * {
   box-sizing: border-box;
 }
 
-.anzeige img {
+:where(.anzeige) img {
   max-width: 100%;
 }
 
@@ -95,7 +108,7 @@ body {
   display: none;
 }
 
-.anzeige a {
+:where(.anzeige) a {
   color: inherit;
 }
 

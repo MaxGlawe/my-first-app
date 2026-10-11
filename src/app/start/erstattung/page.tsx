@@ -205,7 +205,6 @@ export default function ErstattungLandingPage() {
             <div style={{ alignSelf: "flex-start", maxWidth: "270px", background: "#FFFFFF", borderRadius: "4px 16px 16px 16px", padding: "9px 12px", fontSize: "14.5px", lineHeight: "1.4" }}>Gut, dass du fragst. Mach sie heute nur halb so weit und schick mir morgen kurz, wie es war. Dann passe ich deinen Plan an.</div>
             <span style={{ alignSelf: "flex-start", fontSize: "12px", color: "#4A5A52", display: "flex", alignItems: "center", gap: "6px" }}>
               <AnzeigeBild name="max-klein" alt="" width={18} height={18} style={{ width: "18px", height: "18px", borderRadius: "50%", objectFit: "cover", objectPosition: "50% 20%" }} />Max · Antwort innerhalb von 24 h</span>
-            <p style={{ margin: "0", fontSize: "12.5px", color: "#4A5A52" }}>[Platzhalter – hier kommt ein echter Screenshot aus der App hin]</p>
           </div>
         </section>
 
