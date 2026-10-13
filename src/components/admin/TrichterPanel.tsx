@@ -35,6 +35,7 @@ import {
   ListOrdered,
   Smartphone,
   CalendarCheck,
+  ShieldQuestion,
 } from "lucide-react"
 
 interface Stufe {
@@ -81,7 +82,21 @@ interface Leiter {
   sprossen: Sprosse[]
   gemessen: boolean
 }
+interface BannerZeile {
+  name: string
+  gezeigt: number
+  akzeptiert: number
+  abgelehnt: number
+  ohne_auswahl: number
+  zustimmungsrate: number
+}
 interface Daten {
+  zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  verworfene_sitzungen: number
+  banner: { gezeigt: number; akzeptiert: number; abgelehnt: number; ohne_auswahl: number }
+  banner_nach_seite: BannerZeile[]
+  banner_nach_anzeige: BannerZeile[]
+  buchungen_nach_anzeige: { anzeige: string; anzahl: number }[]
   gesamt: number
   intern_ausgeschlossen: number
   trichter: Stufe[]
@@ -103,6 +118,25 @@ interface Daten {
 }
 
 const ZEITRAEUME = [7, 30, 90]
+
+/**
+ * Was unter einer Stufe wirklich gezaehlt wird — Satz fuer Satz im
+ * Dashboard sichtbar.
+ *
+ * Anlass (13.10.2026): Nach einer Korrektur sanken 30-Tage-Werte, obwohl
+ * sie nur steigen koennen. Der Grund war eine Zaehlung je SITZUNG statt je
+ * Klick — richtig, aber nicht erkennbar. Eine Kennzahl, deren Definition
+ * man nicht ablesen kann, ist keine Kennzahl, sondern eine Behauptung.
+ */
+const ZAEHLREGEL: Record<string, string> = {
+  Besucher: "Je Sitzung einmal. Eine Sitzung endet, wenn der Browser-Tab geschlossen wird.",
+  Geblieben: "Je Sitzung einmal, auch bei mehrfachem Scrollen.",
+  "Preis gesehen":
+    "Je Sitzung einmal — nicht je Aufruf des Preisabschnitts. Wer dreimal hoch- und runterscrollt, zählt einmal.",
+  "Buchung angeklickt":
+    "Je Sitzung einmal — nicht je Klick. Wer zweimal auf „buchen“ tippt, zählt einmal.",
+  "Termin gebucht": "Termine aus dem Buchungskalender, nicht aus der Website-Messung.",
+}
 
 function Balken({ anteil, farbe }: { anteil: number; farbe: string }) {
   return (
@@ -221,6 +255,9 @@ function Treppe({
 
 export function TrichterPanel() {
   const [tage, setTage] = useState(30)
+  /** Freier Startzeitpunkt; leer = „letzte N Tage". */
+  const [von, setVon] = useState("")
+  const [testsZeigen, setTestsZeigen] = useState(false)
   const [daten, setDaten] = useState<Daten | null>(null)
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState<string | null>(null)
@@ -228,7 +265,11 @@ export function TrichterPanel() {
   const laden = useCallback(() => {
     setLaedt(true)
     setFehler(null)
-    fetch(`/api/analytics/trichter?tage=${tage}`)
+    const abfrage = new URLSearchParams()
+    if (von) abfrage.set("von", new Date(von).toISOString())
+    else abfrage.set("tage", String(tage))
+    if (testsZeigen) abfrage.set("tests", "ein")
+    fetch(`/api/analytics/trichter?${abfrage.toString()}`)
       .then(async (r) => {
         const j = await r.json()
         if (!r.ok) throw new Error(j.error ?? "Konnte nicht geladen werden.")
@@ -237,7 +278,7 @@ export function TrichterPanel() {
       .then(setDaten)
       .catch((e) => setFehler(e.message))
       .finally(() => setLaedt(false))
-  }, [tage])
+  }, [tage, von, testsZeigen])
 
   useEffect(() => laden(), [laden])
 
@@ -270,28 +311,76 @@ export function TrichterPanel() {
         <div>
           <h3 className="text-base font-semibold text-slate-800">Wo der Besucher verloren geht</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            {daten.gesamt} Sitzungen in den letzten {tage} Tagen
+            {daten.gesamt} Sitzungen{" "}
+            {daten.zeitraum?.frei
+              ? `seit ${new Date(daten.zeitraum.seit).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" })}`
+              : `in den letzten ${tage} Tagen`}
             {daten.intern_ausgeschlossen > 0 && (
               <span className="text-slate-400">
                 {" "}
-                · {daten.intern_ausgeschlossen} eigene ausgeschlossen
+                · {daten.intern_ausgeschlossen} eigene {daten.zeitraum?.tests_sichtbar ? "mitgezählt" : "ausgeschlossen"}
+              </span>
+            )}
+            {daten.verworfene_sitzungen > 0 && (
+              <span
+                className="text-amber-600"
+                title="Ereignisse ohne zugehörigen Seitenaufruf. Sie lassen sich keiner Sitzung zuordnen und fallen aus jeder Quote heraus."
+              >
+                {" "}
+                · {daten.verworfene_sitzungen} ohne Seitenaufruf verworfen
               </span>
             )}
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
-          {ZEITRAEUME.map((z) => (
-            <button
-              key={z}
-              type="button"
-              onClick={() => setTage(z)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                tage === z ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              {z} Tage
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+            {ZEITRAEUME.map((z) => (
+              <button
+                key={z}
+                type="button"
+                onClick={() => {
+                  setVon("")
+                  setTage(z)
+                }}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  !von && tage === z ? "bg-slate-900 text-white" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {z} Tage
+              </button>
+            ))}
+          </div>
+          {/* Freier Startzeitpunkt — fuer „ab dem Moment, in dem die
+              Anzeige umgestellt wurde". Ein Tagesraster wuerde den halben
+              Tag davor mitzaehlen. */}
+          <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500">
+            ab
+            <input
+              type="datetime-local"
+              value={von}
+              onChange={(e) => setVon(e.target.value)}
+              className="bg-transparent text-xs text-slate-800 outline-none"
+            />
+            {von && (
+              <button
+                type="button"
+                onClick={() => setVon("")}
+                className="text-slate-400 hover:text-slate-700"
+                aria-label="Startzeitpunkt zuruecksetzen"
+              >
+                ×
+              </button>
+            )}
+          </label>
+          <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500">
+            <input
+              type="checkbox"
+              checked={testsZeigen}
+              onChange={(e) => setTestsZeigen(e.target.checked)}
+              className="h-3.5 w-3.5"
+            />
+            eigene Tests mitzählen
+          </label>
         </div>
       </div>
 
@@ -325,6 +414,10 @@ export function TrichterPanel() {
                   <Balken anteil={s.anteil} farbe={i === t.length - 1 ? "#2C3E2D" : "#10b981"} />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">{s.hinweis}</p>
+                {/* Was genau gezaehlt wird. Ohne diesen Satz haelt man eine
+                    Stufe fuer eine Klickzahl und wundert sich, warum sie
+                    nach einer Korrektur faellt. */}
+                <p className="mt-0.5 text-[11px] italic text-slate-400">{ZAEHLREGEL[s.stufe] ?? ""}</p>
               </div>
             )
           })}
@@ -337,6 +430,90 @@ export function TrichterPanel() {
           {daten.seitenProSitzung.fuenfPlus} fünf oder mehr.
         </p>
       </div>
+
+      {/* ── Einwilligungsbanner ─────────────────────────────────── */}
+      <Karte
+        titel="Entscheidung am Einwilligungsbanner"
+        hinweis="Je Sitzung einmal. „Ohne Auswahl“ heisst: Das Banner wurde gezeigt, aber weder angenommen noch abgelehnt — für diese Besucher lädt kein Pixel, und bei Meta tauchen sie nie auf. Sitzungen, die schon früher entschieden hatten, bekommen kein Banner und stehen hier nicht."
+        symbol={<ShieldQuestion className="h-4 w-4 text-slate-400" />}
+      >
+        {daten.banner?.gezeigt > 0 ? (
+          <>
+            <div className="mb-4 grid grid-cols-3 gap-3">
+              {[
+                ["Akzeptiert", daten.banner.akzeptiert, "#10b981"],
+                ["Abgelehnt", daten.banner.abgelehnt, "#64748b"],
+                ["Ohne Auswahl", daten.banner.ohne_auswahl, "#f59e0b"],
+              ].map(([titel, wert, farbe]) => (
+                <div key={titel as string}>
+                  <p className="text-[11px] text-slate-500">{titel as string}</p>
+                  <p className="text-xl font-bold tabular-nums text-slate-900">{wert as number}</p>
+                  <p className="text-[11px] tabular-nums text-slate-400">
+                    {daten.banner.gezeigt > 0
+                      ? Math.round(((wert as number) / daten.banner.gezeigt) * 100)
+                      : 0}{" "}
+                    % von {daten.banner.gezeigt}
+                  </p>
+                  <div className="mt-1">
+                    <Balken
+                      anteil={
+                        daten.banner.gezeigt > 0 ? ((wert as number) / daten.banner.gezeigt) * 100 : 0
+                      }
+                      farbe={farbe as string}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            {[
+              ["Nach Einstiegsseite", daten.banner_nach_seite],
+              ["Nach Anzeige (utm_content)", daten.banner_nach_anzeige],
+            ].map(([titel, zeilen]) =>
+              (zeilen as BannerZeile[])?.length ? (
+                <div key={titel as string} className="mt-3 border-t border-slate-100 pt-2">
+                  <p className="mb-1.5 text-[11px] text-slate-400">{titel as string}</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-left text-[11px] text-slate-400">
+                          <th className="pb-1 font-medium" />
+                          <th className="pb-1 text-right font-medium">gezeigt</th>
+                          <th className="pb-1 text-right font-medium">akzeptiert</th>
+                          <th className="pb-1 text-right font-medium">abgelehnt</th>
+                          <th className="pb-1 text-right font-medium">ohne Auswahl</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {(zeilen as BannerZeile[]).map((b) => (
+                          <tr key={b.name}>
+                            <td className="max-w-[12rem] truncate py-1.5 font-medium text-slate-700">
+                              {b.name}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums text-slate-600">{b.gezeigt}</td>
+                            <td className="py-1.5 text-right tabular-nums">
+                              <span className="text-slate-600">{b.akzeptiert}</span>{" "}
+                              <span className="text-emerald-600">({b.zustimmungsrate} %)</span>
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums text-slate-600">{b.abgelehnt}</td>
+                            <td className="py-1.5 text-right tabular-nums text-amber-600">
+                              {b.ohne_auswahl}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null
+            )}
+          </>
+        ) : (
+          <p className="text-xs leading-relaxed text-slate-500">
+            Noch keine Banner-Entscheidung gemessen. Die Messung läuft seit dem 13.10.2026 — Werte
+            entstehen ab dem ersten Besucher, der danach zum ersten Mal auf die Seite kommt.
+          </p>
+        )}
+      </Karte>
 
       {/* ── Leseleitern, eine je Seite ──────────────────────────── */}
       {daten.leitern.length === 0 ? (
@@ -517,6 +694,18 @@ export function TrichterPanel() {
               <div className="flex items-center justify-between border-t border-slate-100 pt-1.5 text-slate-400">
                 <span>ohne Angabe</span>
                 <span className="tabular-nums">{daten.buchungen_ohne_herkunft}</span>
+              </div>
+            )}
+            {/* Welche Anzeige — die Frage, nach der Budget verschoben wird. */}
+            {daten.buchungen_nach_anzeige?.length > 0 && (
+              <div className="mt-3 border-t border-slate-100 pt-2">
+                <p className="mb-1.5 text-[11px] text-slate-400">Nach Anzeige (utm_content)</p>
+                {daten.buchungen_nach_anzeige.map((b) => (
+                  <div key={b.anzeige} className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">{b.anzeige}</span>
+                    <span className="tabular-nums text-slate-600">{b.anzahl}</span>
+                  </div>
+                ))}
               </div>
             )}
             {/* Welcher Knopf — eine andere Frage als welche Anzeige. */}

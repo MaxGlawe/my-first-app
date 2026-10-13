@@ -38,6 +38,31 @@ const STAFF = ["admin"]
 /** Seiten, die kein Besuchsziel sind — sie verfaelschen die Absprungrate. */
 const RECHTLICH = new Set(["/impressum", "/datenschutz", "/agb", "/widerruf"])
 
+/**
+ * Kennungen, unter denen wir selbst getestet haben.
+ *
+ * `utm_content=test` wird schon beim Senden unterdrueckt (lib/intern), die
+ * hier sind nachtraeglich entstanden: Links, die zum Pruefen verschickt
+ * oder am Handy aufgerufen wurden. Sie stehen mal in `utm_source`, mal in
+ * `utm_content` — geprueft wird deshalb beides.
+ */
+const TESTKENNUNGEN = new Set([
+  "test",
+  "selbsttest",
+  "handytest",
+  "testbuchung",
+  "androidtest",
+  "probe",
+  "abnahme",
+])
+
+function istTest(quelle?: string | null, inhalt?: string | null): boolean {
+  return (
+    TESTKENNUNGEN.has((quelle ?? "").trim().toLowerCase()) ||
+    TESTKENNUNGEN.has((inhalt ?? "").trim().toLowerCase())
+  )
+}
+
 const LESEMARKEN = [25, 50, 75, 100] as const
 const AKTIVMARKEN = [15, 45, 120] as const
 
@@ -55,6 +80,9 @@ interface Sitzung {
   aktiv: number
   abschnitte: Set<string>
   klick: boolean
+  /** Einwilligungsbanner: gezeigt? und wie entschieden? */
+  bannerGezeigt: boolean
+  bannerEntscheidung: "akzeptiert" | "abgelehnt" | null
 }
 
 export async function GET(request: NextRequest) {
@@ -74,8 +102,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
   }
 
-  const tage = Math.min(365, Math.max(1, Number(request.nextUrl.searchParams.get("tage")) || 30))
-  const seit = new Date(Date.now() - tage * 86_400_000).toISOString()
+  const q = request.nextUrl.searchParams
+
+  // Zeitraum: entweder „letzte N Tage" oder ein fester Startzeitpunkt.
+  // `von` gewinnt — wer einen Zeitpunkt nennt, meint ihn. Praktisch fuer
+  // „ab dem Moment, in dem die Anzeige umgestellt wurde": Ein Tagesraster
+  // wuerde den halben Tag davor mitzaehlen.
+  const vonRoh = q.get("von")
+  const vonDatum = vonRoh ? new Date(vonRoh) : null
+  const gueltigesVon = vonDatum && !Number.isNaN(vonDatum.getTime()) ? vonDatum : null
+
+  const tage = Math.min(365, Math.max(1, Number(q.get("tage")) || 30))
+  const seit = (gueltigesVon ?? new Date(Date.now() - tage * 86_400_000)).toISOString()
+
+  // Testquellen ausblenden (Voreinstellung: ja). Das sind Besuche, die wir
+  // selbst erzeugt haben — sie zu zaehlen hiesse, die eigene Arbeit fuer
+  // Nachfrage zu halten.
+  const testsZeigen = q.get("tests") === "ein"
 
   // Seitenaufrufe seitenweise holen: PostgREST deckelt bei 1000, und ein
   // stillschweigend abgeschnittener Datensatz ergaebe eine Auswertung, die
@@ -124,7 +167,9 @@ export async function GET(request: NextRequest) {
   // klickt den Buchungsbutton zum Pruefen. Bei 442 Sitzungen im Monat
   // verschiebt das die Klickrate sichtbar.
   const intern = new Set(
-    aufrufe.filter((a) => a.utm_content === "test").map((a) => a.session_id)
+    aufrufe
+      .filter((a) => (testsZeigen ? a.utm_content === "test" : istTest(a.utm_source, a.utm_content)))
+      .map((a) => a.session_id)
   )
 
   // ── Sitzungen zusammensetzen ───────────────────────────────────────────
@@ -151,6 +196,8 @@ export async function GET(request: NextRequest) {
         aktiv: 0,
         abschnitte: new Set<string>(),
         klick: false,
+        bannerGezeigt: false,
+        bannerEntscheidung: null,
       })
     } else {
       vorhanden.letzte = a.path
@@ -171,10 +218,29 @@ export async function GET(request: NextRequest) {
 
     const abschnitt = /^abschnitt_(.+)$/.exec(e.event_type)
     if (abschnitt) s.abschnitte.add(abschnitt[1])
+
+    if (e.event_type === "consent_gezeigt") s.bannerGezeigt = true
+    if (e.event_type === "consent_akzeptiert") s.bannerEntscheidung = "akzeptiert"
+    if (e.event_type === "consent_abgelehnt") s.bannerEntscheidung = "abgelehnt"
+
   }
 
   const alle = [...sitzungen.values()]
   const gesamt = alle.length
+
+  // Ereignisse OHNE Seitenaufruf — und wie viele Sitzungen deshalb fehlen.
+  //
+  // Die Auswertung setzt jede Sitzung aus ihren Seitenaufrufen zusammen.
+  // Ereignisse einer Sitzung, von der kein Seitenaufruf vorliegt, lassen
+  // sich nirgends einhaengen und fallen heraus. Das ist richtig so, darf
+  // aber nicht unsichtbar passieren: Am 13.10.2026 waren es 196 Sitzungen
+  // mit 516 Ereignissen — genug, um jede Quote zu verschieben, und die
+  // Ursache (Bots sendeten Ereignisse, aber keinen Seitenaufruf) war nur
+  // zu finden, weil jemand nachgerechnet hat. Steht die Zahl im Dashboard,
+  // faellt der naechste Fall am selben Tag auf.
+  const verworfen = new Set(
+    (ereignisse ?? []).filter((e) => !sitzungen.has(e.session_id)).map((e) => e.session_id)
+  )
 
   // ── Der Trichter ───────────────────────────────────────────────────────
   //
@@ -386,6 +452,47 @@ export async function GET(request: NextRequest) {
   }))
   const aktivzeitGemessen = alle.some((s) => s.aktiv > 0)
 
+  // ── Das Einwilligungsbanner ────────────────────────────────────────────
+  //
+  // Drei Ausgaenge, und der dritte ist der interessante: Wer gefragt wurde
+  // und ohne Antwort gegangen ist, hat weder zugestimmt noch abgelehnt —
+  // fuer ihn laedt kein Pixel, und er taucht in Metas Zahlen nie auf. Ohne
+  // das Ereignis „gezeigt" liesse sich diese Gruppe nicht von denen
+  // unterscheiden, die nie gefragt wurden (weil sie schon entschieden
+  // hatten).
+  const bannerNach = (schluessel: (s: Sitzung) => string | null) => {
+    const map = new Map<string, { gezeigt: number; akzeptiert: number; abgelehnt: number }>()
+    for (const s of alle) {
+      if (!s.bannerGezeigt) continue
+      const k = schluessel(s)
+      if (!k) continue
+      const e = map.get(k) ?? { gezeigt: 0, akzeptiert: 0, abgelehnt: 0 }
+      e.gezeigt++
+      if (s.bannerEntscheidung === "akzeptiert") e.akzeptiert++
+      if (s.bannerEntscheidung === "abgelehnt") e.abgelehnt++
+      map.set(k, e)
+    }
+    return [...map.entries()]
+      .map(([name, e]) => ({
+        name,
+        ...e,
+        ohne_auswahl: e.gezeigt - e.akzeptiert - e.abgelehnt,
+        zustimmungsrate: e.gezeigt > 0 ? Math.round((e.akzeptiert / e.gezeigt) * 1000) / 10 : 0,
+      }))
+      .sort((a, b) => b.gezeigt - a.gezeigt)
+      .slice(0, 12)
+  }
+
+  const banner_nach_seite = bannerNach((s) => s.erste)
+  const banner_nach_anzeige = bannerNach((s) => s.anzeige ?? "(ohne Kennung)")
+  const bannerGesamt = alle.filter((s) => s.bannerGezeigt)
+  const banner = {
+    gezeigt: bannerGesamt.length,
+    akzeptiert: bannerGesamt.filter((s) => s.bannerEntscheidung === "akzeptiert").length,
+    abgelehnt: bannerGesamt.filter((s) => s.bannerEntscheidung === "abgelehnt").length,
+    ohne_auswahl: bannerGesamt.filter((s) => s.bannerEntscheidung === null).length,
+  }
+
   // ── Buchungen nach Herkunft ────────────────────────────────────────────
   //
   // Erst seit PROJ-88 sendet das Buchungstool die Herkunft mit. Aeltere
@@ -408,6 +515,17 @@ export async function GET(request: NextRequest) {
   // teilten sich beide ein Feld, und bei bezahltem Traffic gewann die
   // Anzeige; der Knopf war genau dann unsichtbar, wenn er am meisten
   // gekostet hat.
+  // Nach Anzeige, nicht nur nach Quelle: „meta" sagt nur, dass bezahlt
+  // wurde — welche Anzeige gebucht hat, steht in utm_content.
+  const buchungProAnzeige = new Map<string, number>()
+  for (const t of termine ?? []) {
+    const c = (t.referrer_content as string | null)?.trim()
+    if (c) buchungProAnzeige.set(c, (buchungProAnzeige.get(c) ?? 0) + 1)
+  }
+  const buchungen_nach_anzeige = [...buchungProAnzeige.entries()]
+    .map(([anzeige, anzahl]) => ({ anzeige, anzahl }))
+    .sort((a, b) => b.anzahl - a.anzahl)
+
   const buchungProCta = new Map<string, number>()
   for (const t of termine ?? []) {
     const c = (t.referrer_cta as string | null)?.trim()
@@ -418,7 +536,8 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.anzahl - a.anzahl)
 
   return NextResponse.json({
-    zeitraum: { tage, seit },
+    zeitraum: { tage, seit, frei: gueltigesVon !== null, tests_sichtbar: testsZeigen },
+    verworfene_sitzungen: verworfen.size,
     gesamt,
     intern_ausgeschlossen: intern.size,
     trichter,
@@ -434,7 +553,11 @@ export async function GET(request: NextRequest) {
     lesetiefe: lesetiefeGemessen ? lesetiefe : null,
     aktivzeit: aktivzeitGemessen ? aktivzeit : null,
     buchungen_nach_quelle,
+    buchungen_nach_anzeige,
     buchungen_nach_cta,
+    banner,
+    banner_nach_seite,
+    banner_nach_anzeige,
     buchungen_ohne_herkunft: buchungOhneHerkunft,
     seitenProSitzung: {
       eine: alle.filter((s) => s.seiten === 1).length,

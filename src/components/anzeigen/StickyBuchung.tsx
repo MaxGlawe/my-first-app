@@ -12,9 +12,10 @@ import { AnzeigeBild } from "@/components/anzeigen/AnzeigeBild"
  *
  *   - `padding-bottom: 110px` auf `.page`, sonst liegt die Fußzeile mit
  *     Impressum und Datenschutz unter der Leiste.
- *   - `body.consent-open .sticky-cta { display: none }` — solange das
- *     Einwilligungsbanner offen ist, verschwindet die Leiste. Beides sitzt
- *     unten; zusammen würde die Leiste den Ablehnen-Knopf verdecken.
+ *   - Das Einwilligungsbanner setzt sich ÜBER diese Leiste, statt sie zu
+ *     verdecken: Es misst ihre Höhe zur Laufzeit und legt sich darauf.
+ *     Beide sind gleichzeitig sichtbar (seit 13.10.2026; vorher blendete
+ *     sich die Leiste aus, solange das Banner stand).
  *
  * Die Klasse `js-book` bleibt am Knopf, obwohl kein Skript sie mehr braucht:
  * Sie ist der Name, unter dem die Buchungsknöpfe in der Vorlage und in der

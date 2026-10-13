@@ -242,3 +242,67 @@ Anzeige eine Buchung gebracht hat. Die Buchung wird auf eurer Seite
 abgeschlossen; was dort nicht mitgeschrieben wird, ist danach nicht mehr
 rekonstruierbar. Geprüft am 09.10.2026: In allen bisherigen Ereignissen fehlt
 `referrer` vollständig, in Praxis OS steht das Feld auf NULL.
+
+---
+
+## 8 · Buchungsseite: Aufruf mit `?service=video-sprechstunde-praxis-os`
+
+Betrifft `physiotherapie-glawe.de/termin-buchen.html`, also **eure Seite** —
+nicht Praxis OS. Drei Punkte, Stand 13.10.2026.
+
+### 8.1 Schritt „Extras dazubuchen" ausblenden
+
+Wird die Seite mit `?service=video-sprechstunde-praxis-os` aufgerufen, kommt
+der Besucher aus einer bezahlten Anzeige und hat genau eine Absicht: die
+Konsultation buchen. Ein Zwischenschritt mit Zusatzleistungen ist dort eine
+Abzweigung, die niemand wollte — und jede Abzweigung kostet Buchungen.
+
+Bitte den Schritt für diesen einen Service **vollständig überspringen**, nicht
+nur leer anzeigen. Ein leerer Schritt, den man „weiter" klicken muss, ist
+derselbe Verlust in langsamer.
+
+### 8.2 Direkt zum Kalender scrollen
+
+Nach dem Laden soll der Buchungskalender im Bild stehen, ohne dass jemand
+suchen muss. Üblicherweise genügt eine ID am Kalender-Container und ein
+Sprung dorthin, sobald die Seite steht:
+
+```html
+<div id="kalender"> … </div>
+```
+```js
+// erst wenn der Kalender wirklich gerendert ist, sonst springt es ins Leere
+document.getElementById('kalender')
+  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+```
+
+Nur bei diesem Service — wer regulär bucht, soll die Seite von oben sehen.
+
+### 8.3 ALLE Parameter müssen den Weg überleben
+
+`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`, `utm_term`, `cta`
+und `service` dürfen durch nichts verloren gehen: nicht durch eine
+Weiterleitung, nicht durch einen Schrittwechsel, nicht durch das Scrollen.
+
+**Warum das konkret dringend ist:** Am 13.10.2026 sind von 92 Sitzungen auf
+`/start/erstattung` nur 14 mit `utm_content=erstattung` angekommen. 61 trugen
+überhaupt keine Parameter, 52 davon zusätzlich keinen Referrer. Wo genau sie
+verloren gehen, messen wir seit heute mit (wir speichern die vollständige
+Landing-Adresse). Falls die Spur auf eurer Seite endet, sind die üblichen
+Verdächtigen:
+
+- Weiterleitung `www` ↔ ohne `www` oder `http` → `https`, die den
+  Query-String abschneidet
+- abschliessender Schrägstrich, der eine neue Weiterleitung auslöst
+- ein Schrittwechsel, der die Adresse ohne Query neu setzt
+  (`location.href = 'termin-buchen.html'` statt `location.search` zu erhalten)
+
+Ein `scrollIntoView` darf die Adresse nicht anfassen — kein
+`history.replaceState` ohne `location.search`.
+
+### Prüfung in 30 Sekunden
+
+1. `https://physiotherapie-glawe.de/termin-buchen.html?service=video-sprechstunde-praxis-os&utm_source=meta&utm_medium=paid&utm_campaign=test&utm_content=trailer&utm_term=x&cta=sabine-hero` öffnen
+2. Steht der Kalender sofort im Bild? Fehlt der Extras-Schritt?
+3. In der Adresszeile nachsehen: Sind nach dem letzten Schritt noch alle
+   sieben Parameter da?

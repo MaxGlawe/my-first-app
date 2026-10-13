@@ -38,6 +38,10 @@ export function LandingAnalytics() {
         // man, dass Meta Besucher bringt — aber nicht, welche Anzeige.
         utm_content: searchParams.get("utm_content") || null,
         utm_term: searchParams.get("utm_term") || null,
+        // Die rohe Adresse, nur Pfad und Query — kein Fragment, nichts von
+        // fremden Seiten. Damit laesst sich spaeter beantworten, warum
+        // Parameter fehlen, statt darueber zu streiten.
+        landing_url: (window.location.pathname + window.location.search).slice(0, 2000),
         device_type: getDeviceType(ua),
         browser: getBrowser(ua),
         session_id: sessionId,

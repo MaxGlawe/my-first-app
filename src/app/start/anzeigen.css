@@ -234,14 +234,13 @@ body {
 }
 
 /*
- * Solange das Einwilligungsbanner offen ist, verschwindet die Buchungsleiste.
- * Beides sitzt unten am Bildschirmrand; zusammen würde die Leiste die
- * Knöpfe „Ablehnen" und „Akzeptieren" verdecken. Ein Banner, dessen
- * Ablehnen-Knopf nicht erreichbar ist, ist keine freie Entscheidung.
+ * Die Regel `body.consent-open .sticky-cta { display: none }` ist am
+ * 13.10.2026 entfallen. Das Banner ist jetzt eine schmale Leiste, die sich
+ * ueber die Buchungsleiste setzt statt sie zu verdecken — gemessen zur
+ * Laufzeit, siehe ConsentBanner. Beide sind gleichzeitig sichtbar und
+ * bedienbar; der wichtigste Knopf der Seite verschwindet nicht mehr genau
+ * in dem Moment, in dem der Besucher ankommt.
  */
-body.consent-open .sticky-cta {
-  display: none;
-}
 
 @media (min-width: 900px) {
   .page {
