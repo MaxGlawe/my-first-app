@@ -331,9 +331,9 @@ export default async function StadtPage({ params }: Props) {
               <KonsultationLink abschnitt={"online-physiotherapie"}
                 className="inline-flex items-center gap-2 px-8 py-3.5 text-white font-semibold rounded-xl transition-all hover:opacity-90"
                 style={{ backgroundColor: GREEN }}>
-                Konsultation buchen <ArrowRight className="h-4 w-4" />
+                Kostenloses Kennenlernen buchen <ArrowRight className="h-4 w-4" />
               </KonsultationLink>
-              <span className="text-sm sm:self-center" style={{ color: MUTED }}>ohne Verordnung</span>
+              <span className="text-sm sm:self-center" style={{ color: MUTED }}>20 Min. per Video · unverbindlich · ohne Verordnung</span>
             </div>
           </div>
         </div>
@@ -552,7 +552,7 @@ export default async function StadtPage({ params }: Props) {
             <KonsultationLink abschnitt={"online-physiotherapie"}
               className="inline-flex items-center gap-2 px-8 py-3.5 bg-white font-semibold rounded-xl transition-all hover:opacity-90"
               style={{ color: GREEN }}>
-              Anfrage stellen — ohne Verordnung <ArrowRight className="h-4 w-4" />
+              Kostenloses Kennenlernen buchen <ArrowRight className="h-4 w-4" />
             </KonsultationLink>
           </div>
         </section>

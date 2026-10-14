@@ -30,7 +30,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { PROGRAMM, VARIANTEN, formatEuro } from "@/lib/programm"
+import { PROGRAMM, KENNENLERNEN, VARIANTEN, formatEuro } from "@/lib/programm"
 
 // Bis Schritt 2 zeigt die Seite die Variante „Intensiv“ — der bisherige Stand.
 const BEGLEITET = VARIANTEN.begleitet
@@ -51,7 +51,7 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   },
   {
     frage: "Was ist der Unterschied zwischen „Begleitet“ und „Intensiv“?",
-    antwort: `Beide Varianten des 90-Tage-Programms von Praxis OS enthalten dieselbe Betreuung: die Videokonsultation zu Beginn, den persönlichen Plan aus täglichen Micro-Übungen und Trainingsplan, das tägliche Check-in, die laufende Anpassung durch den Behandler und den Chat mit Antwort innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden an Werktagen. Der Unterschied sind die festen Video-Sitzungen: „${INTENSIV.name}“ (${formatEuro(INTENSIV.preis)}) enthält ${INTENSIV.calls} davon, anfangs wöchentlich und zum Ende hin seltener; bei „${BEGLEITET.name}“ (${formatEuro(BEGLEITET.preis)}) ist außer der Konsultation kein Videotermin vereinbart. Verschlechtern sich die Beschwerden, wird in beiden Varianten kurzfristig eine zusätzliche Sitzung eingeschoben. Welche Variante passt, wird am Ende der Konsultation gemeinsam entschieden.`,
+    antwort: `Beide Varianten des 90-Tage-Programms von Praxis OS enthalten dieselbe Betreuung: die ausführliche Erstbefundung per Video zu Beginn, den persönlichen Plan aus täglichen Micro-Übungen und Trainingsplan, das tägliche Check-in, die laufende Anpassung durch den Behandler und den Chat mit Antwort innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden an Werktagen. Der Unterschied sind die festen Video-Sitzungen: „${INTENSIV.name}“ (${formatEuro(INTENSIV.preis)}) enthält ${INTENSIV.calls} davon, anfangs wöchentlich und zum Ende hin seltener; bei „${BEGLEITET.name}“ (${formatEuro(BEGLEITET.preis)}) ist außer der Erstbefundung kein Videotermin vereinbart. Verschlechtern sich die Beschwerden, wird in beiden Varianten kurzfristig eine zusätzliche Sitzung eingeschoben. Welche Variante passt, wird im kostenlosen Kennenlernen gemeinsam entschieden.`,
   },
   {
     frage: "Brauche ich eine ärztliche Verordnung oder eine Überweisung?",
@@ -60,11 +60,11 @@ const FRAGEN: { frage: string; antwort: string }[] = [
   },
   {
     frage: "Was kostet das Programm, und wann wird abgerechnet?",
-    antwort: `Das 90-Tage-Programm von Praxis OS gibt es in zwei Varianten: „${BEGLEITET.name}“ kostet ${formatEuro(BEGLEITET.preis)} einmalig, „${INTENSIV.name}“ mit ${INTENSIV.calls} Video-Sitzungen ${formatEuro(INTENSIV.preis)} einmalig. Die vorausgegangene Videokonsultation ist in beiden enthalten. Bei der Terminbuchung wird noch nichts abgebucht. Abgerechnet wird nach dem Gespräch: entweder der Betrag der gewählten Variante oder ${formatEuro(PROGRAMM.konsultation)} für die Konsultation allein, wenn man sich gegen das Programm entscheidet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
+    antwort: `Das 90-Tage-Programm von Praxis OS gibt es in zwei Varianten: „${BEGLEITET.name}“ kostet ${formatEuro(BEGLEITET.preis)} einmalig, „${INTENSIV.name}“ mit ${INTENSIV.calls} Video-Sitzungen ${formatEuro(INTENSIV.preis)} einmalig. Die ausführliche Erstbefundung per Video ist in beiden enthalten. Der Einstieg ist ein kostenloses Kennenlernen (${KENNENLERNEN.minuten} Min., unverbindlich); bei der Terminbuchung wird nichts abgebucht und es entstehen keine Kosten. Bezahlt wird erst, wenn das Programm startet. Bezahlt wird per Karte oder Klarna; ob Klarna eine Ratenzahlung anbietet, entscheidet Klarna nach eigener Prüfung.`,
   },
   {
     frage: "Was passiert, wenn ihr mein Beschwerdebild nicht betreuen könnt?",
-    antwort: `Dann wird das in der Videokonsultation offen gesagt. Fernbetreuung ist nicht für jedes Beschwerdebild geeignet — etwa nicht bei frischen Verletzungen, nach einer kürzlichen Operation oder bei Anzeichen, die zuerst ärztlich abgeklärt gehören. In diesem Fall entstehen nur die ${formatEuro(PROGRAMM.konsultation)} für das Gespräch, und es wird kein Programm abgeschlossen. Nach Möglichkeit wird auf einen geeigneteren Weg hingewiesen.`,
+    antwort: `Dann wird das im kostenlosen Kennenlernen offen gesagt. Fernbetreuung ist nicht für jedes Beschwerdebild geeignet — etwa nicht bei frischen Verletzungen, nach einer kürzlichen Operation oder bei Anzeichen, die zuerst ärztlich abgeklärt gehören. In diesem Fall entstehen keine Kosten, und es wird kein Programm abgeschlossen. Nach Möglichkeit wird auf einen geeigneteren Weg hingewiesen.`,
   },
   {
     frage: "Ist das ein Abonnement, und was passiert nach den 90 Tagen?",
@@ -119,7 +119,7 @@ export function FaqSection() {
             Was du wissen solltest
           </h2>
           <p className="mt-4 text-lg leading-relaxed" style={{ color: MUTED }}>
-            Offene Fragen klären wir ohnehin in der Konsultation. Das Wichtigste steht aber
+            Offene Fragen klären wir ohnehin im Kennenlernen. Das Wichtigste steht aber
             schon hier.
           </p>
         </ScrollReveal>

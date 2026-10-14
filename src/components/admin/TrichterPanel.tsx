@@ -93,6 +93,7 @@ interface BannerZeile {
 }
 interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  umstellung_kennenlernen: string
   verworfene_sitzungen: number
   banner: { gezeigt: number; akzeptiert: number; abgelehnt: number; ohne_auswahl: number }
   nach_klick: {
@@ -142,8 +143,8 @@ const ZAEHLREGEL: Record<string, string> = {
   Geblieben: "Je Sitzung einmal, auch bei mehrfachem Scrollen.",
   "Preis gesehen":
     "Je Sitzung einmal — nicht je Aufruf des Preisabschnitts. Wer dreimal hoch- und runterscrollt, zählt einmal.",
-  "Buchung angeklickt":
-    "Je Sitzung einmal — nicht je Klick. Wer zweimal auf „buchen“ tippt, zählt einmal.",
+  "Kennenlernen angeklickt":
+    "Je Sitzung einmal — nicht je Klick. Wer zweimal auf „buchen“ tippt, zählt einmal. Enthält auch die Klicks von vor dem 15.10.2026, als der Einstieg noch „Konsultation“ hiess und 69 € kostete.",
   "Termin gebucht": "Termine aus dem Buchungskalender, nicht aus der Website-Messung.",
 }
 
@@ -330,6 +331,24 @@ export function TrichterPanel() {
                 · {daten.intern_ausgeschlossen} eigene {daten.zeitraum?.tests_sichtbar ? "mitgezählt" : "ausgeschlossen"}
               </span>
             )}
+            {(() => {
+              // Liegt der Schnitt im gewaehlten Zeitraum? Dann muss er
+              // sichtbar sein: Davor kostete der Einstieg 69 €, danach
+              // nichts. Klickraten ueber diesen Schnitt hinweg zu
+              // vergleichen, waere ein Vergleich zweier Angebote.
+              const u = new Date(daten.umstellung_kennenlernen)
+              if (!daten.zeitraum || new Date(daten.zeitraum.seit) > u) return null
+              return (
+                <span className="text-slate-700">
+                  {" · "}
+                  <span title="Vorher: Konsultation für 69 €. Danach: kostenloses Kennenlernen, 20 Min.">
+                    Angebotswechsel am{" "}
+                    {u.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}{" "}
+                    im Zeitraum
+                  </span>
+                </span>
+              )
+            })()}
             {daten.verworfene_sitzungen > 0 && (
               <span
                 className="text-amber-600"

@@ -114,7 +114,7 @@ export function HeroSection() {
                   className="group h-14 rounded-xl px-9 text-base font-semibold text-white hover:opacity-90"
                   style={{ backgroundColor: GREEN }}
                 >
-                  Konsultation buchen
+                  Kostenloses Kennenlernen buchen
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Button>
               </KonsultationLink>
@@ -131,7 +131,7 @@ export function HeroSection() {
             nicht nur gesehen. */}
         <div className="relative z-10 mx-auto max-w-2xl px-4 pb-20 pt-10 sm:pb-24 lg:pt-4">
           <div className="mb-4 flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.16em]">
-            <span style={{ color: GREEN }}>Tag 0 · Konsultation</span>
+            <span style={{ color: GREEN }}>Tag 0 · Kennenlernen</span>
             <span style={{ color: MUTED }}>Tag {PROGRAMM.tage} · Abschluss</span>
           </div>
           <BetreuungsbogenGrafik />

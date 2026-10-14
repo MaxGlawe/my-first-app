@@ -25,8 +25,8 @@ export const metadata: Metadata = {
   // was in der Trefferliste steht, und wirkten laenger nach als der Fliesstext.
   title: "90 Tage Physiotherapie per Video | Praxis OS — Physiotherapie Glawe",
   description:
-    "Physiotherapeutische Fernbetreuung über 90 Tage: Videokonsultation mit ehrlicher " +
-    "Eignungsprüfung, persönlicher Trainingsplan, tägliches Check-in und Chat mit dem Behandler — "
+    "Physiotherapeutische Fernbetreuung über 90 Tage. Einstieg: kostenloses Kennenlernen " +
+    "(20 Min. per Video), danach persönlicher Trainingsplan, tägliches Check-in und Chat mit dem Behandler — "
     + "wahlweise mit acht Video-Sitzungen. " +
     "Heilpraktiker für Physiotherapie — ohne ärztliche Verordnung, ohne Wartezeit.",
   keywords: [
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "90 Tage Physiotherapie per Video | Praxis OS",
     description:
       "Ein Therapeut, ein Plan, täglicher Kontakt — 90 Tage begleitet, Schritt für Schritt in " +
-      "die Selbstständigkeit. Am Anfang steht eine Videokonsultation mit ehrlicher Eignungsprüfung.",
+      "die Selbstständigkeit. Am Anfang steht ein kostenloses Kennenlernen, 20 Minuten per Video.",
     type: "website",
     locale: "de_DE",
     url: "https://wwwpraxis-os.com",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "90 Tage Physiotherapie per Video | Praxis OS",
     description:
-      "Videokonsultation mit ehrlicher Eignungsprüfung, persönlicher Plan, täglicher Kontakt. " +
+      "Kostenloses Kennenlernen, persönlicher Plan, täglicher Kontakt. " +
       "Kein Abo — die Betreuung endet nach 90 Tagen automatisch.",
   },
   alternates: {
@@ -96,7 +96,7 @@ export default function LandingPage() {
         <CtaBand
           abschnitt="nach-ablauf"
           satz="Klingt das nach dem, was dir bisher gefehlt hat?"
-          zusatz="Dann lass uns 30 Minuten sprechen — für 69 €, abgerechnet nach dem Gespräch. Startest du danach das Programm, ist die Konsultation darin enthalten."
+          zusatz="Dann lass uns 20 Minuten sprechen — kostenlos und unverbindlich. Erst wenn du starten möchtest, wählst du ein Paket."
         />
         <GarantieSection />
         <CredentialsSection />
@@ -104,7 +104,7 @@ export default function LandingPage() {
           hell
           abschnitt="nach-therapeut"
           satz="Der schnellste Weg herauszufinden, ob das passt: miteinander reden."
-          zusatz="30 Minuten per Video, ohne Verordnung, ohne Wartezeit."
+          zusatz="20 Minuten per Video, kostenlos, ohne Verordnung, ohne Wartezeit."
         />
         <EignungSection />
         <PricingSection />

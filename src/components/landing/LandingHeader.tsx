@@ -101,7 +101,7 @@ export function LandingHeader() {
                 className="rounded-xl px-5 text-white hover:opacity-90"
                 style={{ backgroundColor: GREEN }}
               >
-                Konsultation buchen
+                Kostenloses Kennenlernen buchen
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </KonsultationLink>
@@ -140,7 +140,7 @@ export function LandingHeader() {
               onClick={() => setMenuOpen(false)}
             >
               <Button className="rounded-xl px-6 text-white" style={{ backgroundColor: GREEN }}>
-                Konsultation buchen
+                Kostenloses Kennenlernen buchen
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </KonsultationLink>

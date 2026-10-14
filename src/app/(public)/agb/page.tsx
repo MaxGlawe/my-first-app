@@ -61,7 +61,7 @@ export default function AgbPage() {
               angeboten. In beiden Varianten umfasst es:
             </p>
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
-              <li>Eine Videokonsultation von ca. 30 Minuten mit Befunderhebung und Prüfung, ob sich das Beschwerdebild für eine Fernbetreuung eignet</li>
+              <li>Eine ausführliche Erstbefundung per Video zum Programmstart, einschließlich der Prüfung, ob sich das Beschwerdebild für eine Fernbetreuung eignet</li>
               <li>Einen individuellen Plan aus täglichen Kurzübungen und einem Trainingsplan für vereinbarte Trainingstage, mit Video-Anleitungen</li>
               <li>Tägliches Befindlichkeits-Tracking über die App und Anpassung des Plans anhand dieser Angaben</li>
               <li>Chat-Kommunikation mit dem behandelnden Therapeuten; Antwort an Werktagen innerhalb von 24 Stunden</li>
@@ -74,7 +74,7 @@ export default function AgbPage() {
             <ul className="list-disc list-inside space-y-1 mt-2 ml-2">
               <li>
                 <span className="font-medium" style={{ color: INK }}>„Begleitet"</span> (299 €): Über die
-                Videokonsultation nach Absatz 1 hinaus werden keine Video-Sitzungen vereinbart. Die laufende
+                Erstbefundung nach Absatz 1 hinaus werden keine Video-Sitzungen vereinbart. Die laufende
                 Betreuung erfolgt über Chat und App.
               </li>
               <li>
@@ -131,8 +131,9 @@ export default function AgbPage() {
               Abschluss eines Vertrags über die Videokonsultation ab. Bei der Buchung wird kein Betrag abgebucht.
             </p>
             <p className="mt-2">
-              (3) Der Vertrag über die Videokonsultation kommt mit der Bestätigung des Termins durch den Anbieter
-              zustande. Die Vergütung wird nach der Konsultation abgerechnet.
+              (3) Das Kennenlernen (ca. 20 Minuten per Video) ist unentgeltlich und begründet keinen
+              Behandlungsvertrag. Es dient der Klärung, ob eine Fernbetreuung in Betracht kommt; eine
+              Befunderhebung oder Behandlung findet dabei nicht statt.
             </p>
             <p className="mt-2">
               (4) Über das 90-Tage-Programm nach § 2 Abs. 1 wird ein <span className="font-medium" style={{ color: INK }}>gesonderter
@@ -147,8 +148,8 @@ export default function AgbPage() {
               (§ 357 Abs. 8 BGB) wird an dieser Stelle gesondert hingewiesen; Näheres regelt die Widerrufsbelehrung.
             </p>
             <p className="mt-2">
-              (6) Nimmt der Patient das Angebot nach Abs. 4 nicht an, bleibt es bei der Vergütung für die
-              Videokonsultation. Für Einzelsitzungen und Reha-Programme gelten Abs. 2 bis 4 entsprechend.
+              (6) Nimmt der Patient das Angebot nach Abs. 4 nicht an, entstehen ihm keine Kosten. Für
+              Einzelsitzungen und Reha-Programme gelten Abs. 2 bis 4 entsprechend.
             </p>
           </section>
 

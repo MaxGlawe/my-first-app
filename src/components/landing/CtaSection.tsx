@@ -21,7 +21,7 @@ import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
-import { PROGRAMM, formatEuro } from "@/lib/programm"
+import { PROGRAMM, KENNENLERNEN } from "@/lib/programm"
 
 const INK = "#0f172a"
 const GREEN = "#2C3E2D"
@@ -82,13 +82,13 @@ export function CtaSection() {
                 className="group h-14 rounded-xl px-9 text-base font-semibold text-white hover:opacity-90"
                 style={{ backgroundColor: GREEN }}
               >
-                Konsultation buchen
+                Kostenloses Kennenlernen buchen
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </Button>
             </KonsultationLink>
             <p className="mt-4 max-w-sm text-[14px] leading-relaxed" style={{ color: "#64748b" }}>
-              30 Minuten per Video für {formatEuro(PROGRAMM.konsultation)}, abgerechnet nach dem
-              Gespräch. Startest du danach das Programm, ist die Konsultation darin enthalten.
+              {KENNENLERNEN.minuten} Minuten per Video, unverbindlich und kostenlos. Erst wenn du
+              starten möchtest, wählst du ein Paket.
             </p>
           </div>
         </div>

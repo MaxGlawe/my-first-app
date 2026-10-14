@@ -45,7 +45,7 @@ const GRUPPEN: Gruppe[] = [
     zusagen: [
       {
         titel: "Eine ehrliche Eignungsprüfung",
-        text: `In der Konsultation klären wir, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir es dir — und du zahlst nur die ${PROGRAMM.konsultation} € für das Gespräch.`,
+        text: `Im kostenlosen Kennenlernen klären wir, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir es dir — und es entstehen dir keine Kosten.`,
       },
       {
         titel: "Ein Plan, der zu dir gehört",
@@ -66,7 +66,7 @@ const GRUPPEN: Gruppe[] = [
       },
       {
         titel: `In „${INTENSIV.name}“: ${INTENSIV.calls} Video-Sitzungen, fest eingeplant`,
-        text: `Wöchentlich, dann vierzehntägig, zum Schluss Zwischen- und Abschlussgespräch. Fällt eine aus, wird sie nachgeholt. In „${VARIANTEN.begleitet.name}“ ist außer der Konsultation kein Videotermin vereinbart — dafür ist diese Variante günstiger.`,
+        text: `Wöchentlich, dann vierzehntägig, zum Schluss Zwischen- und Abschlussgespräch. Fällt eine aus, wird sie nachgeholt. In „${VARIANTEN.begleitet.name}“ ist außer der Erstbefundung kein Videotermin vereinbart — dafür ist diese Variante günstiger.`,
       },
       {
         titel: "Anpassung statt Zettel",

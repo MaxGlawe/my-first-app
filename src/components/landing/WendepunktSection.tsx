@@ -80,8 +80,8 @@ export function WendepunktSection() {
             style={{ color: "rgba(248,245,240,0.82)" }}
           >
             Praxis OS ist ein {PROGRAMM.tage}-Tage-Programm für physiotherapeutische
-            Fernbetreuung. Am Anfang steht eine 30-minütige Videokonsultation, in der geprüft
-            wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Danach erhältst du
+            Fernbetreuung. Am Anfang steht ein kostenloses Kennenlernen von 20 Minuten, in dem
+            geprüft wird, ob sich das Beschwerdebild aus der Ferne betreuen lässt. Danach erhältst du
             einen persönlichen Plan aus täglichen Micro-Übungen und einem Trainingsplan für
             festgelegte Trainingstage, checkst täglich kurz in der App ein und hast über die
             gesamte Zeit denselben Behandler, im Chat erreichbar. Es gibt zwei Varianten:

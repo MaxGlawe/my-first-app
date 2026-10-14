@@ -30,6 +30,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { SEITEN_LISTE, seiteZuPfad } from "@/lib/gemessene-seiten"
+import { UMSTELLUNG_KENNENLERNEN } from "@/lib/programm"
 
 export const dynamic = "force-dynamic"
 
@@ -230,7 +231,14 @@ export async function GET(request: NextRequest) {
   for (const e of ereignisse ?? []) {
     const s = sitzungen.get(e.session_id)
     if (!s) continue
-    if (e.event_type === "konsultation_klick") s.klick = true
+    // Beide Namen zaehlen auf dieselbe Stufe: Bis zum 15.10.2026 hiess der
+    // Einstieg „Konsultation" (69 €), danach „Kennenlernen" (kostenlos).
+    // Zwei Stufen daraus zu machen, haette die Historie zerschnitten; eine
+    // Stufe ohne Hinweis auf den Schnitt waere ein Vergleich zweier
+    // verschiedener Angebote. Deshalb: eine Stufe, und die Marke daneben.
+    if (e.event_type === "konsultation_klick" || e.event_type === "kennenlernen_klick") {
+      s.klick = true
+    }
 
     const tiefe = /^lesetiefe_(\d+)$/.exec(e.event_type)
     if (tiefe) s.lesetiefe = Math.max(s.lesetiefe, Number(tiefe[1]))
@@ -330,10 +338,10 @@ export async function GET(request: NextRequest) {
       hinweis: "Preisabschnitt stand im Fenster",
     },
     {
-      stufe: "Buchung angeklickt",
+      stufe: "Kennenlernen angeklickt",
       anzahl: geklickt.length,
       anteil: anteil(geklickt.length),
-      hinweis: "Klick auf „Konsultation buchen“",
+      hinweis: "Klick auf „Kostenloses Kennenlernen buchen“",
     },
     {
       stufe: "Termin gebucht",
@@ -588,6 +596,10 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     zeitraum: { tage, seit, frei: gueltigesVon !== null, tests_sichtbar: testsZeigen },
+    // Der Schnitt zwischen zwei Angeboten. Steht im Dashboard als Marke,
+    // damit niemand Klickraten von vorher und nachher vergleicht, ohne zu
+    // wissen, dass dazwischen aus 69 Euro „kostenlos" wurde.
+    umstellung_kennenlernen: UMSTELLUNG_KENNENLERNEN,
     verworfene_sitzungen: verworfen.size,
     gesamt,
     intern_ausgeschlossen: intern.size,

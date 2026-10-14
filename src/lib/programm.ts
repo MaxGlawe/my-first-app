@@ -6,6 +6,15 @@
  * hier. Ein Preis, der an zwei Stellen steht, steht irgendwann an zwei Stellen
  * verschieden — und auf einem Behandlungsvertrag ist das teuer.
  *
+ * EINSTIEG SEIT 15.10.2026: ein KOSTENLOSES KENNENLERNEN (20 Min. per
+ * Video, unverbindlich). Die ausfuehrliche Erstbefundung ist seitdem Teil
+ * des Programms, nicht mehr ein eigener Schritt davor.
+ *
+ * Wortwahl ist hier kein Geschmack, sondern Paragraf 7 HWG: Kostenlos
+ * angeboten wird ein GESPRAECH. „Kostenlose Untersuchung", „kostenloser
+ * Befund", „kostenlose Behandlung" waeren unzulaessige Zuwendungen und
+ * duerfen nirgends stehen — auch nicht sinngemaess.
+ *
  * ZWEI VARIANTEN (seit 23.09.2026):
  *
  *   begleitet — 299 €, ohne feste Video-Sitzungen. Der einzige feste
@@ -29,11 +38,46 @@ import type { Leistung } from "@/types/contract"
 
 export type ProgrammVariante = "begleitet" | "intensiv"
 
+/**
+ * Der kostenlose Einstieg (seit 15.10.2026).
+ *
+ * Ein Gespraech, keine Untersuchung — siehe Kopfkommentar. Wer die Texte
+ * anfasst, muss diesen Unterschied halten.
+ */
+export const KENNENLERNEN = {
+  minuten: 20,
+  /** Knopfbeschriftung auf allen oeffentlichen Seiten. */
+  knopf: "Kostenloses Kennenlernen buchen",
+  /** Zeile unter dem Knopf. */
+  zusatz: "20 Min. per Video · unverbindlich · deutschlandweit",
+  /** Kurzform fuer die feste Leiste am unteren Bildschirmrand. */
+  zusatzKurz: "20 Min. per Video · unverbindlich",
+  /** Der Dienst, den das Buchungstool anbieten soll. */
+  service: "kennenlernen-praxis-os",
+} as const
+
+/**
+ * Wann umgestellt wurde — als Marke in der Auswertung.
+ *
+ * Vor diesem Zeitpunkt stand am Einstieg eine Konsultation fuer 69 Euro,
+ * danach ein kostenloses Gespraech. Klickraten davor und danach zu
+ * vergleichen, ohne den Schnitt zu kennen, waere ein Vergleich zweier
+ * verschiedener Angebote.
+ */
+export const UMSTELLUNG_KENNENLERNEN = "2026-10-15T00:00:00+02:00"
+
 /** Gilt für beide Varianten. */
 export const PROGRAMM = {
   /** Dauer der Betreuung. */
   tage: 90,
-  /** Preis der Videokonsultation, wenn KEIN Programm zustande kommt. */
+  /**
+   * ALTBESTAND: Preis der Videokonsultation, solange sie 69 Euro kostete.
+   *
+   * Seit dem 15.10.2026 ist der Einstieg kostenlos; neue Faelle erzeugen
+   * keine Konsultationsrechnung mehr. Der Wert bleibt, weil Rechnungen und
+   * Leistungsnachweise aus der Zeit davor reproduzierbar bleiben muessen —
+   * ein Beleg, der sich nachtraeglich aendert, ist kein Beleg.
+   */
   konsultation: 69,
   /** Gültigkeit des Angebots-Links. */
   angebotGueltigStunden: 48,
@@ -104,7 +148,7 @@ export const CALL_TAKTUNG =
  */
 export const BASIS_LEISTUNGEN: Leistung[] = [
   {
-    beschreibung: "Videokonsultation (30 Min.) mit Eignungsprüfung",
+    beschreibung: "Ausführliche Erstbefundung per Video zum Programmstart",
     preis: 0,
   },
   {
@@ -141,8 +185,8 @@ export function leistungenFuer(variante: ProgrammVariante): Leistung[] {
     preis: v.preis,
     details:
       v.calls > 0
-        ? `Einschließlich der vorausgegangenen Videokonsultation und ${v.calls} Video-Sitzungen à ca. 30 Minuten`
-        : "Einschließlich der vorausgegangenen Videokonsultation; laufende Betreuung per Chat",
+        ? `Einschließlich der ausführlichen Erstbefundung und ${v.calls} Video-Sitzungen à ca. 30 Minuten`
+        : "Einschließlich der ausführlichen Erstbefundung; laufende Betreuung per Chat",
   }
 
   const calls: Leistung[] =
@@ -191,7 +235,7 @@ export function preisFuer(variante: ProgrammVariante): number {
  */
 export function buchungsUrl(abschnitt: string, variante?: ProgrammVariante): string {
   const params = new URLSearchParams({
-    service: "video-sprechstunde-praxis-os",
+    service: KENNENLERNEN.service,
     // Die utm_*-Werte sind der RUECKFALL fuer Besucher ohne Kampagne.
     // Kommt jemand ueber eine Anzeige, ersetzt `mitHerkunft()` sie durch
     // deren Werte — die Herkunft der Anzeige ist die wahre, unsere waere

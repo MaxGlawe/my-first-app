@@ -62,7 +62,7 @@ export function EignungSection() {
           </h2>
           <p className="mt-4 text-lg leading-relaxed" style={{ color: MUTED }}>
             Fernbetreuung ist nicht für jedes Beschwerdebild das Richtige. Genau deshalb steht am
-            Anfang die Konsultation — und nicht der Kauf.
+            Anfang das Kennenlernen — und nicht der Kauf.
           </p>
         </ScrollReveal>
 
@@ -124,7 +124,7 @@ export function EignungSection() {
               </ul>
 
               <p className="mt-6 text-[13px] leading-relaxed" style={{ color: MUTED }}>
-                In der Konsultation gehen wir diese Punkte ohnehin gemeinsam durch. Bei akuten
+                Im Kennenlernen gehen wir diese Punkte ohnehin gemeinsam durch. Bei akuten
                 Notfällen wende dich bitte an den ärztlichen Notdienst oder die 112.
               </p>
             </div>

@@ -47,7 +47,7 @@ const serif = { fontFamily: "var(--font-serif)", fontWeight: 600 } as const
 
 /** Was BEIDE Varianten enthalten — einmal genannt, nicht zweimal. */
 const GEMEINSAM: string[] = [
-  "Videokonsultation zu Beginn, 30 Minuten, mit ehrlicher Eignungsprüfung",
+  "Ausführliche Erstbefundung per Video zum Start",
   "Persönlicher Plan: tägliche Micro-Übungen und Trainingsplan für deine Trainingstage",
   "Tägliches Kurz-Check-in, das dein Therapeut mitliest",
   `Chat mit deinem Behandler — Antwort an Werktagen innerhalb von ${PROGRAMM.chatAntwortStunden} Stunden`,
@@ -62,7 +62,7 @@ const UNTERSCHIED: Record<ProgrammVariante, { zeile: string; detail: string }> =
   begleitet: {
     zeile: "Keine festen Video-Sitzungen",
     detail:
-      "Außer der Konsultation zu Beginn ist kein Videotermin vereinbart. Die Begleitung läuft über den Chat und deinen Verlauf in der App.",
+      "Außer der Erstbefundung zu Beginn ist kein Videotermin vereinbart. Die Begleitung läuft über den Chat und deinen Verlauf in der App.",
   },
   intensiv: {
     zeile: `${VARIANTEN.intensiv.calls} Video-Sitzungen, fest eingeplant`,
@@ -145,7 +145,7 @@ export function PricingSection() {
                     className="mt-2 text-[14px]"
                     style={{ color: hell ? MUTED : "rgba(248,245,240,0.66)" }}
                   >
-                    für {PROGRAMM.tage} Tage Betreuung · Konsultation inbegriffen
+                    für {PROGRAMM.tage} Tage Betreuung · Erstbefundung inbegriffen
                   </p>
 
                   {/* Der eine Unterschied */}
@@ -180,7 +180,7 @@ export function PricingSection() {
                           : { backgroundColor: PAPER, color: GREEN }
                       }
                     >
-                      Konsultation buchen
+                      Kostenloses Kennenlernen buchen
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Button>
                   </KonsultationLink>
@@ -232,8 +232,8 @@ export function PricingSection() {
               die Betreuung dahinter ist dieselbe.
             </p>
             <p className="mt-4 text-[15px] leading-relaxed" style={{ color: MUTED }}>
-              Du musst dich jetzt nicht festlegen. Wir entscheiden das gemeinsam am Ende der
-              Konsultation, wenn wir wissen, worum es bei dir geht.
+              Du musst dich jetzt nicht festlegen. Wir entscheiden das gemeinsam im
+              Kennenlernen, wenn wir wissen, worum es bei dir geht.
             </p>
           </div>
         </ScrollReveal>
@@ -246,11 +246,11 @@ export function PricingSection() {
           >
             <p>
               <strong className="block" style={{ color: INK }}>
-                Abgerechnet wird nach dem Gespräch
+                Das Kennenlernen ist kostenlos
               </strong>
               {formatEuro(VARIANTEN.begleitet.preis)} oder {formatEuro(VARIANTEN.intensiv.preis)}{" "}
-              für das Programm — oder {formatEuro(PROGRAMM.konsultation)} für die Konsultation
-              allein, wenn du dich dagegen entscheidest.
+              zahlst du erst, wenn du das Programm startest. Entscheidest du dich dagegen,
+              entstehen dir keine Kosten.
             </p>
             <p>
               <strong className="block" style={{ color: INK }}>

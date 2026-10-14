@@ -33,7 +33,7 @@ import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
 export const metadata: Metadata = {
   title: "Physiotherapie per Video – schon vor deinem Termin starten | Praxis OS",
   description:
-    "90 Tage Physiotherapie per Video und Chat mit Max Glawe, Heilpraktiker für Physiotherapie. Ohne Rezept, von zu Hause. Konsultation 69 €, wird angerechnet.",
+    "90 Tage Physiotherapie per Video und Chat mit Max Glawe, Heilpraktiker für Physiotherapie. Ohne Rezept, von zu Hause. Einstieg: kostenloses Kennenlernen, 20 Min. per Video.",
   robots: { index: false, follow: true },
   alternates: { canonical: "https://wwwpraxis-os.com/start/sabine" },
 }
@@ -71,10 +71,10 @@ export default function SabineLandingPage() {
           <p style={{ margin: "0", fontSize: "17px", color: "#D7E3DC" }}>Wie Sabine: 90 Tage Physiotherapie per Video und Chat – ohne Rezept, ohne Wartezimmer, von zu Hause.</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <KonsultationLink abschnitt="sabine-hero" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Konsultation buchen · 69 €
+            <KonsultationLink abschnitt="sabine-hero" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>
             </KonsultationLink>
-            <p style={{ margin: "0", textAlign: "center", fontSize: "13px", color: "#B9CEC2" }}>30 Min per Video · wird angerechnet · deutschlandweit</p>
+            <p style={{ margin: "0", textAlign: "center", fontSize: "13px", color: "#B9CEC2" }}>20 Min. per Video · unverbindlich · deutschlandweit</p>
           </div>
 
           {/* Stärke 1: persönliche Stimme */}
@@ -94,7 +94,7 @@ export default function SabineLandingPage() {
 
           <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
             <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "22px", fontWeight: "600", lineHeight: "1.2" }}>„Der nächste freie Termin ist in sechs Wochen.“</span>
-            <span style={{ fontSize: "15px", color: "#33433B" }}>Per Video können wir vorher starten – ohne Anfahrt, ohne Rezept. In der Konsultation klären wir auch, ob du dich erst ärztlich untersuchen lassen solltest.</span>
+            <span style={{ fontSize: "15px", color: "#33433B" }}>Per Video können wir vorher starten – ohne Anfahrt, ohne Rezept. Im Kennenlernen klären wir auch, ob du dich erst ärztlich untersuchen lassen solltest.</span>
           </div>
           <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
             <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "22px", fontWeight: "600", lineHeight: "1.2" }}>„Mein Rezept ist aufgebraucht.“</span>
@@ -136,9 +136,9 @@ export default function SabineLandingPage() {
           <div style={{ background: "#FFFFFF", borderRadius: "22px", padding: "22px", display: "flex", gap: "16px" }}>
             <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontStyle: "italic", fontSize: "40px", lineHeight: "1", color: "#2B6A4E", flex: "0 0 auto" }}>1</span>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Tag 1 · 30 Min.</span>
-              <span style={{ fontSize: "18px", fontWeight: "600" }}>Video-Konsultation</span>
-              <span style={{ fontSize: "15px", color: "#33433B" }}>Wir schauen uns deine Beschwerden an und prüfen ehrlich, ob Betreuung aus der Ferne für dich passt.</span>
+              <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Tag 1 · 20 Min.</span>
+              <span style={{ fontSize: "18px", fontWeight: "600" }}>Kostenloses Kennenlernen</span>
+              <span style={{ fontSize: "15px", color: "#33433B" }}>Wir sprechen über deine Beschwerden und dein Ziel und prüfen ehrlich, ob Betreuung aus der Ferne zu dir passt. Danach entscheidest du.</span>
               <span style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginTop: "4px", fontSize: "14px", fontWeight: "600", color: "#1F4A36" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg>Du brauchst nur dein Handy – keine Technik, kein Konto vorab.</span>
             </div>
@@ -146,9 +146,9 @@ export default function SabineLandingPage() {
           <div style={{ background: "#FFFFFF", borderRadius: "22px", padding: "22px", display: "flex", gap: "16px" }}>
             <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontStyle: "italic", fontSize: "40px", lineHeight: "1", color: "#2B6A4E", flex: "0 0 auto" }}>2</span>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Danach</span>
-              <span style={{ fontSize: "18px", fontWeight: "600" }}>Dein Plan steht</span>
-              <span style={{ fontSize: "15px", color: "#33433B" }}>Wenige Übungen, die zu dir passen. In der App, mit kurzen Check-ins im Alltag.</span>
+              <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Start</span>
+              <span style={{ fontSize: "18px", fontWeight: "600" }}>Erstbefundung und dein Plan</span>
+              <span style={{ fontSize: "15px", color: "#33433B" }}>Zum Start schauen wir uns alles ausführlich per Video an. Danach bekommst du deinen Plan in der App.</span>
             </div>
           </div>
           <div style={{ background: "#FFFFFF", borderRadius: "22px", padding: "22px", display: "flex", gap: "16px" }}>
@@ -209,27 +209,27 @@ export default function SabineLandingPage() {
         {/* PREIS */}
         <section id="preis" style={{ background: "#E9E2D5", padding: "44px 20px", display: "flex", flexDirection: "column", gap: "16px" }}>
           <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "30px", lineHeight: "1.12" }}>Was kostet Physiotherapie ohne Rezept?</h2>
-          <p style={{ margin: "0", fontSize: "15px", color: "#33433B" }}>Keine automatische Verlängerung. Du startest mit der Konsultation und entscheidest danach.</p>
+          <p style={{ margin: "0", fontSize: "15px", color: "#33433B" }}>Das Kennenlernen ist kostenlos und unverbindlich. Erst wenn du starten möchtest, wählst du ein Paket. Keine automatische Verlängerung.</p>
 
           <div style={{ background: "#0F2A1F", color: "#F5F1EA", borderRadius: "22px", padding: "22px", display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#A8DCC0" }}>Erster Schritt</span>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
-              <span style={{ fontSize: "18px", fontWeight: "600" }}>Konsultation, 30 Min.</span>
-              <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "32px", fontWeight: "600" }}>69 €</span>
+              <span style={{ fontSize: "18px", fontWeight: "600" }}>Kennenlernen, 20 Min.</span>
+              <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "32px", fontWeight: "600" }}>Kostenlos</span>
             </div>
-            <span style={{ fontSize: "14px", color: "#C9D8CF" }}>Wird bei Programmstart vollständig angerechnet.</span>
+            <span style={{ fontSize: "14px", color: "#C9D8CF" }}>Unverbindlich – du entscheidest danach.</span>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px" }}>
             <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "18px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "15px", fontWeight: "600" }}>Begleitet</span>
               <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "28px", fontWeight: "600", color: "#1F4A36" }}>299 €</span>
-              <span style={{ fontSize: "13px", lineHeight: "1.4", color: "#4A5A52" }}>90 Tage Plan + Chat-Begleitung</span>
+              <span style={{ fontSize: "13px", lineHeight: "1.4", color: "#4A5A52" }}>90 Tage inkl. Erstbefundung, Plan in der App und Chat-Begleitung</span>
             </div>
             <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "18px", display: "flex", flexDirection: "column", gap: "6px" }}>
               <span style={{ fontSize: "15px", fontWeight: "600" }}>Intensiv</span>
               <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "28px", fontWeight: "600", color: "#1F4A36" }}>499 €</span>
-              <span style={{ fontSize: "13px", lineHeight: "1.4", color: "#4A5A52" }}>zusätzlich 8 Video-Sitzungen</span>
+              <span style={{ fontSize: "13px", lineHeight: "1.4", color: "#4A5A52" }}>Alles aus Begleitet plus 8 Video-Calls</span>
             </div>
           </div>
 
@@ -243,26 +243,28 @@ export default function SabineLandingPage() {
               <span style={{ fontSize: "14px", lineHeight: "1.45", color: "#33433B" }}>Praxis OS ist eine Selbstzahlerleistung – die gesetzliche Krankenkasse zahlt nicht. Du bekommst eine Heilpraktiker-Rechnung. Ob deine private Versicherung, Beihilfe oder Zusatzversicherung etwas erstattet, hängt von deinem Tarif ab – das können wir nicht zusagen. Frag am besten vorher mit dem Kostenvoranschlag bei deiner Versicherung nach.</span>
             </div>
           </div>
-          <p style={{ margin: "0", fontSize: "13px", color: "#4A5A52", textAlign: "center" }}>Ratenzahlung über Klarna möglich</p>
+          <p style={{ margin: "0", fontSize: "13px", color: "#4A5A52", textAlign: "center" }}>Ratenzahlung über Klarna möglich.</p>
         </section>
 
         {/* FAQ */}
         <section id="faq" style={{ padding: "44px 20px 40px", display: "flex", flexDirection: "column", gap: "10px" }}>
           <h2 style={{ margin: "0 0 8px", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "32px", lineHeight: "1.1" }}>Kurz gefragt</h2>
-          <details className="faq" open><summary><span>Ersetzt das meinen Termin vor Ort?</span><span className="sign" aria-hidden="true"></span></summary><p>Nicht unbedingt. Du kannst die Wartezeit nutzen und schon vorher anfangen – deinen Termin kannst du trotzdem wahrnehmen. In der Konsultation klären wir, ob Betreuung aus der Ferne für dich passt oder ob du dich vorher ärztlich untersuchen lassen solltest.</p></details>
-          <details className="faq"><summary><span>Funktioniert Physiotherapie per Video überhaupt?</span><span className="sign" aria-hidden="true"></span></summary><p>Für viele Beschwerden ja – vor allem, wenn es um Übungen, Belastung und Alltag geht. Ob es für dich passt, prüfen wir in der Konsultation. Wenn nicht, sage ich dir das ehrlich.</p></details>
-          <details className="faq"><summary><span>Kann ich ohne Rezept zur Physiotherapie?</span><span className="sign" aria-hidden="true"></span></summary><p>Ja. Als Heilpraktiker für Physiotherapie darf ich dich ohne ärztliche Verordnung betreuen. Praxis OS ist eine Selbstzahlerleistung. In der Konsultation prüfen wir, ob die Betreuung per Video für dich passt.</p></details>
+          <details className="faq" open><summary><span>Was passiert im Kennenlernen?</span><span className="sign" aria-hidden="true"></span></summary><p>Wir sprechen 20 Minuten per Video über deine Beschwerden, deinen Alltag und dein Ziel. Ich sage dir ehrlich, ob Praxis OS zu dir passt – und wenn ja, welches Paket sinnvoll ist.</p></details>
+          <details className="faq"><summary><span>Muss ich danach etwas buchen?</span><span className="sign" aria-hidden="true"></span></summary><p>Nein. Das Kennenlernen ist kostenlos und unverbindlich. Du entscheidest in Ruhe.</p></details>
+          <details className="faq"><summary><span>Ersetzt das meinen Termin vor Ort?</span><span className="sign" aria-hidden="true"></span></summary><p>Nicht unbedingt. Du kannst die Wartezeit nutzen und schon vorher anfangen – deinen Termin kannst du trotzdem wahrnehmen. Im Kennenlernen klären wir, ob Betreuung aus der Ferne für dich passt oder ob du dich vorher ärztlich untersuchen lassen solltest.</p></details>
+          <details className="faq"><summary><span>Funktioniert Physiotherapie per Video überhaupt?</span><span className="sign" aria-hidden="true"></span></summary><p>Für viele Beschwerden ja – vor allem, wenn es um Übungen, Belastung und Alltag geht. Ob es für dich passt, prüfen wir im Kennenlernen. Wenn nicht, sage ich dir das ehrlich.</p></details>
+          <details className="faq"><summary><span>Kann ich ohne Rezept zur Physiotherapie?</span><span className="sign" aria-hidden="true"></span></summary><p>Ja. Als Heilpraktiker für Physiotherapie darf ich dich ohne ärztliche Verordnung betreuen. Praxis OS ist eine Selbstzahlerleistung. Im Kennenlernen prüfen wir, ob die Betreuung per Video für dich passt.</p></details>
           <details className="faq"><summary><span>Mein Arzt verschreibt keine Physio mehr – was jetzt?</span><span className="sign" aria-hidden="true"></span></summary><p>Verordnungen sind an feste Vorgaben gebunden. Das sagt nichts darüber, ob weiteres Training für dich sinnvoll ist. Bei mir kannst du ohne Verordnung weitermachen. Ändern sich deine Beschwerden, gehört das ärztlich abgeklärt – darauf achte ich.</p></details>
-          <details className="faq"><summary><span>Was, wenn Fernbetreuung für mich nicht passt?</span><span className="sign" aria-hidden="true"></span></summary><p>Dann sage ich dir das in der Konsultation ehrlich und empfehle dir, was stattdessen sinnvoll ist – zum Beispiel eine ärztliche Abklärung oder Behandlung vor Ort.</p></details>
+          <details className="faq"><summary><span>Was, wenn Fernbetreuung für mich nicht passt?</span><span className="sign" aria-hidden="true"></span></summary><p>Dann sage ich dir das im Kennenlernen ehrlich und empfehle dir, was stattdessen sinnvoll ist – zum Beispiel eine ärztliche Abklärung oder Behandlung vor Ort.</p></details>
           <details className="faq"><summary><span>Was passiert nach den 90 Tagen?</span><span className="sign" aria-hidden="true"></span></summary><p>Das Programm endet automatisch – es verlängert sich nichts. Du kannst mit deinem Plan selbstständig weitertrainieren. Möchtest du weiter begleitet werden, ist das möglich – das besprechen wir individuell.</p></details>
         </section>
 
         {/* ABSCHLUSS */}
         <section id="abschluss" style={{ background: "#0F2A1F", color: "#F5F1EA", padding: "48px 20px", display: "flex", flexDirection: "column", gap: "18px" }}>
           <AnzeigeBild name="max-klein" alt="Max Glawe" width={64} height={64} style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", objectPosition: "50% 20%", border: "2px solid #A8DCC0" }} />
-          <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "34px", lineHeight: "1.1" }}>Der erste Schritt dauert <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>30 Minuten.</span></h2>
+          <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "34px", lineHeight: "1.1" }}>Der erste Schritt dauert <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>20 Minuten. Und kostet nichts.</span></h2>
           <p style={{ margin: "0", fontSize: "16px", color: "#D7E3DC" }}>Per Video, von zu Hause. Passt es nicht, sage ich dir das ehrlich.</p>
-          <KonsultationLink abschnitt="sabine-abschluss" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Konsultation buchen · 69 €
+          <KonsultationLink abschnitt="sabine-abschluss" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>
           </KonsultationLink>
         </section>

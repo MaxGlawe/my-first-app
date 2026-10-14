@@ -22,7 +22,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { LandingHeader } from "@/components/landing/LandingHeader"
 import { LandingFooter } from "@/components/landing/LandingFooter"
-import { PROGRAMM, VARIANTEN } from "@/lib/programm"
+import { PROGRAMM, KENNENLERNEN, VARIANTEN } from "@/lib/programm"
 
 const INTENSIV = VARIANTEN.intensiv
 
@@ -172,7 +172,7 @@ export default function MaxGlawePage() {
             <p className="mt-7 text-[16.5px] leading-relaxed" style={{ color: BODY }}>
               Max Glawe führt die Praxis Physiotherapie Glawe in Wildau und betreut die
               Patientinnen und Patienten im {PROGRAMM.tage}-Tage-Programm von Praxis OS
-              persönlich — von der ersten Videokonsultation bis zum Abschlussgespräch. Alle
+              persönlich — vom ersten Gespräch bis zum Abschluss. Alle
               Inhalte dieser Website zu Behandlung, Ablauf und Beschwerdebildern stammen von ihm
               oder wurden von ihm geprüft.
             </p>
@@ -212,10 +212,10 @@ export default function MaxGlawePage() {
             Wie ich arbeite
           </h2>
           <p className="mt-5 text-[16px] leading-relaxed" style={{ color: BODY }}>
-            Am Anfang steht immer ein Gespräch, kein Verkauf. In der 30-minütigen
-            Videokonsultation klären wir, was los ist und ob sich das Beschwerdebild überhaupt
-            aus der Ferne betreuen lässt. Lässt es sich nicht, sage ich das — dann entstehen nur
-            die {PROGRAMM.konsultation} € für das Gespräch und kein Programm.
+            Am Anfang steht immer ein Gespräch, kein Verkauf. Im kostenlosen Kennenlernen —
+            {KENNENLERNEN.minuten} Minuten per Video, unverbindlich — klären wir, was los ist und
+            ob sich das Beschwerdebild überhaupt aus der Ferne betreuen lässt. Lässt es sich
+            nicht, sage ich das, und es entstehen dir keine Kosten.
           </p>
           <p className="mt-4 text-[16px] leading-relaxed" style={{ color: BODY }}>
             Passt es, schreibe ich den Plan selbst: tägliche Micro-Übungen und einen
@@ -258,7 +258,7 @@ export default function MaxGlawePage() {
 
           <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-[14.5px]">
             <KonsultationLink abschnitt={"autorenseite"} style={{ color: GREEN }}>
-              Konsultation buchen →
+              Kostenloses Kennenlernen buchen →
             </KonsultationLink>
             <Link href="/" style={{ color: GREEN }}>
               Zum {PROGRAMM.tage}-Tage-Programm →

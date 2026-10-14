@@ -70,7 +70,7 @@ export function CtaBand({ satz, zusatz, abschnitt, hell = false }: CtaBandProps)
               className="group h-12 rounded-xl px-7 text-[15px] font-semibold text-white hover:opacity-90"
               style={{ backgroundColor: GREEN }}
             >
-              Konsultation buchen
+              Kostenloses Kennenlernen buchen
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </KonsultationLink>

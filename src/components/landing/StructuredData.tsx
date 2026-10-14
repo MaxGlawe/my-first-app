@@ -2,7 +2,8 @@
  * PROJ-26: Strukturierte Daten der Startseite.
  *
  * Die alte Fassung warb hier noch mit dem abgeloesten Angebot — Video-Analyse
- * fuer 69 €, Mini-Reha, Chronik-Programm. Strukturierte Daten sind das, was
+ * (seit 15.10.2026 kostenloses Kennenlernen), Mini-Reha, Chronik-Programm.
+ * Strukturierte Daten sind das, was
  * Suchmaschinen und Sprachmodelle als Fakten uebernehmen; ein veralteter Preis
  * darin wirkt laenger nach als einer im Fliesstext.
  *
@@ -20,7 +21,7 @@
  * „Physiotherapie Glawe" und gehoeren damit der Praxis.
  */
 
-import { PROGRAMM, VARIANTEN, VARIANTEN_REIHENFOLGE } from "@/lib/programm"
+import { PROGRAMM, KENNENLERNEN, VARIANTEN, VARIANTEN_REIHENFOLGE } from "@/lib/programm"
 
 const BEGLEITET = VARIANTEN.begleitet
 const INTENSIV = VARIANTEN.intensiv
@@ -150,12 +151,12 @@ export function StructuredData() {
         availability: "https://schema.org/InStock",
         url: `${SITE}/#preis`,
         description:
-          `Einmalzahlung von ${v.preis} €. Die vorausgegangene Videokonsultation ist enthalten. ` +
+          `Einmalzahlung von ${v.preis} €. Die ausführliche Erstbefundung per Video ist enthalten. ` +
           (v.calls > 0
             ? `Enthält ${v.calls} feste Video-Sitzungen. `
             : "Die Begleitung läuft über den Chat; feste Video-Sitzungen sind nicht enthalten. ") +
-          `Wird das Programm nach dem Gespräch nicht begonnen, fallen nur ` +
-          `${PROGRAMM.konsultation} € für die Konsultation an. Heilkundliche Leistung, ` +
+          `Der Einstieg ist ein kostenloses Kennenlernen (${KENNENLERNEN.minuten} Min. per Video, ` +
+          "unverbindlich); Kosten entstehen erst mit dem Programmstart. Heilkundliche Leistung, " +
           "umsatzsteuerfrei nach § 4 Nr. 14a UStG.",
       }
     }),

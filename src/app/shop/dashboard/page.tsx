@@ -54,9 +54,9 @@ interface BuyerData {
 const UPSELL_FEATURES = [
   {
     icon: <Target className="h-5 w-5 text-emerald-600" />,
-    title: "Persönliche Video-Analyse",
+    title: "Persönliche Erstbefundung",
     description:
-      "Lass deine Bewegungsqualität von einem Physiotherapeuten analysieren — 30 Min., live per Video.",
+      "Zum Programmstart schaut sich ein Physiotherapeut deine Bewegungsqualität ausführlich an — live per Video.",
   },
   {
     icon: <ClipboardList className="h-5 w-5 text-emerald-600" />,
@@ -281,11 +281,11 @@ export default function BuyerDashboardPage() {
               onClick={() => (window.location.href = bookingUrl)}
               className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-semibold rounded-xl h-12"
             >
-              Jetzt Video-Analyse buchen (69 €)
+              Kostenloses Kennenlernen buchen
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             <p className="text-center text-xs text-slate-400 mt-2.5">
-              30-minütige Video-Analyse · Einmalig · Keine versteckten Kosten
+              20 Min. per Video · unverbindlich · keine Kosten
             </p>
           </div>
         </div>

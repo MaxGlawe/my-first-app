@@ -45,8 +45,8 @@ interface Etappe {
 const ETAPPEN: Etappe[] = [
   {
     marke: "Tag 0",
-    titel: "Die Videokonsultation",
-    text: "30 Minuten per Video. Wir gehen deine Beschwerden durch, schauen uns an, wo du stehst — und klären ehrlich, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir dir das, und du verlierst keine Zeit.",
+    titel: "Das kostenlose Kennenlernen",
+    text: "20 Minuten per Video, unverbindlich. Wir sprechen über deine Beschwerden, deinen Alltag und dein Ziel — und klären ehrlich, ob sich dein Beschwerdebild aus der Ferne betreuen lässt. Wenn nicht, sagen wir dir das, und du verlierst keine Zeit.",
     bild: "/images/journey/1-samen.webp",
     alt: "Ein Tontopf mit dunkler Erde, darauf ein einzelnes Samenkorn — noch ist nichts gepflanzt.",
   },

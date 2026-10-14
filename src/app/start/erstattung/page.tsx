@@ -33,7 +33,7 @@ import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
 export const metadata: Metadata = {
   title: "90 Tage Physiotherapie-Begleitung per Video | Praxis OS",
   description:
-    "Physiotherapie als 90-Tage-Programm: Plan in der App, Therapeut im Chat und per Video, Heilpraktiker-Rechnung. Konsultation 69 €, wird angerechnet.",
+    "Physiotherapie als 90-Tage-Programm: Plan in der App, Therapeut im Chat und per Video, Heilpraktiker-Rechnung. Einstieg: kostenloses Kennenlernen, 20 Min. per Video.",
   robots: { index: false, follow: true },
   alternates: { canonical: "https://wwwpraxis-os.com/start/erstattung" },
 }
@@ -71,10 +71,10 @@ export default function ErstattungLandingPage() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <KonsultationLink abschnitt="erstattung-hero" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Konsultation buchen · 69 €
+            <KonsultationLink abschnitt="erstattung-hero" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>
             </KonsultationLink>
-            <p style={{ margin: "0", textAlign: "center", fontSize: "13px", color: "#B9CEC2" }}>30 Min per Video · wird angerechnet · deutschlandweit</p>
+            <p style={{ margin: "0", textAlign: "center", fontSize: "13px", color: "#B9CEC2" }}>20 Min. per Video · unverbindlich · deutschlandweit</p>
           </div>
 
           <div style={{ display: "flex", gap: "14px", alignItems: "flex-start", background: "#17382A", borderRadius: "20px", padding: "16px" }}>
@@ -121,9 +121,9 @@ export default function ErstattungLandingPage() {
                 <span style={{ width: "2px", flex: "1 1 auto", background: "#CFC6B6" }}></span>
               </div>
               <div style={{ padding: "6px 0 26px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Tag 1 · 30 Min.</span>
-                <span style={{ fontSize: "18px", fontWeight: "600" }}>Video-Konsultation</span>
-                <span style={{ fontSize: "15px", color: "#33433B" }}>Wir schauen uns deine Beschwerden an, klären dein Ziel und prüfen ehrlich, ob Betreuung aus der Ferne für dich passt.</span>
+                <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Tag 1 · 20 Min.</span>
+                <span style={{ fontSize: "18px", fontWeight: "600" }}>Kostenloses Kennenlernen</span>
+                <span style={{ fontSize: "15px", color: "#33433B" }}>Wir sprechen über deine Beschwerden und dein Ziel und prüfen ehrlich, ob Betreuung aus der Ferne zu dir passt. Danach entscheidest du.</span>
               </div>
             </div>
             <div style={{ display: "flex", gap: "16px" }}>
@@ -132,9 +132,9 @@ export default function ErstattungLandingPage() {
                 <span style={{ width: "2px", flex: "1 1 auto", background: "#CFC6B6" }}></span>
               </div>
               <div style={{ padding: "6px 0 26px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Erste Woche</span>
-                <span style={{ fontSize: "18px", fontWeight: "600" }}>Dein Plan in der App</span>
-                <span style={{ fontSize: "15px", color: "#33433B" }}>Wenige Übungen, die zu dir und deinem Alltag passen – mit Anleitung, jederzeit auf dem Handy.</span>
+                <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#4A5A52" }}>Start</span>
+                <span style={{ fontSize: "18px", fontWeight: "600" }}>Erstbefundung und dein Plan</span>
+                <span style={{ fontSize: "15px", color: "#33433B" }}>Zum Start schauen wir uns alles ausführlich per Video an. Danach bekommst du deinen Plan in der App.</span>
               </div>
             </div>
             <div style={{ display: "flex", gap: "16px" }}>
@@ -211,15 +211,15 @@ export default function ErstattungLandingPage() {
         {/* PAKETE */}
         <section id="pakete" style={{ padding: "44px 20px", display: "flex", flexDirection: "column", gap: "16px" }}>
           <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "32px", lineHeight: "1.1" }}>So startest du</h2>
-          <p style={{ margin: "0", fontSize: "15px", color: "#33433B" }}>Keine automatische Verlängerung. Du startest mit der Konsultation und entscheidest danach.</p>
+          <p style={{ margin: "0", fontSize: "15px", color: "#33433B" }}>Das Kennenlernen ist kostenlos und unverbindlich. Erst wenn du starten möchtest, wählst du ein Paket. Keine automatische Verlängerung.</p>
 
           <div style={{ background: "#0F2A1F", color: "#F5F1EA", borderRadius: "22px", padding: "22px", display: "flex", flexDirection: "column", gap: "6px" }}>
             <span style={{ fontSize: "12px", fontWeight: "700", letterSpacing: "0.1em", textTransform: "uppercase", color: "#A8DCC0" }}>Erster Schritt</span>
             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
-              <span style={{ fontSize: "18px", fontWeight: "600" }}>Konsultation, 30 Min.</span>
-              <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "32px", fontWeight: "600" }}>69 €</span>
+              <span style={{ fontSize: "18px", fontWeight: "600" }}>Kennenlernen, 20 Min.</span>
+              <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "32px", fontWeight: "600" }}>Kostenlos</span>
             </div>
-            <span style={{ fontSize: "14px", color: "#C9D8CF" }}>Wird bei Programmstart vollständig angerechnet.</span>
+            <span style={{ fontSize: "14px", color: "#C9D8CF" }}>Unverbindlich – du entscheidest danach.</span>
           </div>
 
           <div style={{ background: "#FFFFFF", borderRadius: "22px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -228,7 +228,7 @@ export default function ErstattungLandingPage() {
               <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "28px", fontWeight: "600", color: "#1F4A36" }}>299 €</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14.5px", color: "#33433B" }}>
-              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>90 Tage persönliche Begleitung</span>
+              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>90 Tage inkl. Erstbefundung und persönlicher Begleitung</span>
               <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Dein individueller Plan in der App</span>
               <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Chat mit mir – Antwort innerhalb von 24 h</span>
               <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Anpassung des Plans, wenn nötig</span>
@@ -241,12 +241,12 @@ export default function ErstattungLandingPage() {
               <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "28px", fontWeight: "600", color: "#1F4A36" }}>499 €</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", fontSize: "14.5px", color: "#33433B" }}>
-              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Alles aus „Begleitet“</span>
-              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Zusätzlich 8 Video-Calls mit mir</span>
+              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Alles aus Begleitet</span>
+              <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>plus 8 Video-Calls mit mir</span>
               <span style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B6A4E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "0 0 auto", marginTop: "4px" }}><path d="M5 12l5 5 9-10" /></svg>Für alle, die regelmäßig gesehen werden möchten</span>
             </div>
           </div>
-          <p style={{ margin: "0", fontSize: "13px", color: "#4A5A52", textAlign: "center" }}>Welches Paket passt, besprechen wir in der Konsultation. Ratenzahlung über Klarna möglich.</p>
+          <p style={{ margin: "0", fontSize: "13px", color: "#4A5A52", textAlign: "center" }}>Welches Paket passt, besprechen wir im Kennenlernen. Ratenzahlung über Klarna möglich.</p>
         </section>
 
         {/* VERSICHERUNG */}
@@ -291,10 +291,12 @@ export default function ErstattungLandingPage() {
         {/* FAQ */}
         <section id="faq" style={{ padding: "8px 20px 40px", display: "flex", flexDirection: "column", gap: "10px" }}>
           <h2 style={{ margin: "0 0 8px", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "32px", lineHeight: "1.1" }}>Kurz gefragt</h2>
-          <details className="faq" open><summary><span>Zahlt meine Heilpraktiker-Zusatzversicherung?</span><span className="sign" aria-hidden="true"></span></summary><p>Das hängt von deinem Vertrag ab. Du bekommst eine Heilpraktiker-Rechnung und vorab einen Kostenvoranschlag – damit kannst du bei deiner Versicherung nachfragen, bevor du startest.</p></details>
+          <details className="faq" open><summary><span>Was passiert im Kennenlernen?</span><span className="sign" aria-hidden="true"></span></summary><p>Wir sprechen 20 Minuten per Video über deine Beschwerden, deinen Alltag und dein Ziel. Ich sage dir ehrlich, ob Praxis OS zu dir passt – und wenn ja, welches Paket sinnvoll ist.</p></details>
+          <details className="faq"><summary><span>Muss ich danach etwas buchen?</span><span className="sign" aria-hidden="true"></span></summary><p>Nein. Das Kennenlernen ist kostenlos und unverbindlich. Du entscheidest in Ruhe.</p></details>
+          <details className="faq"><summary><span>Zahlt meine Heilpraktiker-Zusatzversicherung?</span><span className="sign" aria-hidden="true"></span></summary><p>Das hängt von deinem Vertrag ab. Du bekommst eine Heilpraktiker-Rechnung und vorab einen Kostenvoranschlag – damit kannst du bei deiner Versicherung nachfragen, bevor du startest.</p></details>
           <details className="faq"><summary><span>Zahlt die Beihilfe?</span><span className="sign" aria-hidden="true"></span></summary><p>Auch das hängt von deinen Beihilfevorschriften und deinem Vertrag ab. Mit dem Kostenvoranschlag kannst du es vorher klären.</p></details>
-          <details className="faq"><summary><span>Wie läuft die Abrechnung ab?</span><span className="sign" aria-hidden="true"></span></summary><p>Du zahlst direkt an uns – auf Wunsch auch über Klarna. Du bekommst eine Heilpraktiker-Rechnung, die du selbst bei deiner Versicherung einreichst.</p></details>
-          <details className="faq"><summary><span>Funktioniert Physiotherapie per Video überhaupt?</span><span className="sign" aria-hidden="true"></span></summary><p>Für viele Beschwerden ja – vor allem, wenn es um Übungen, Belastung und Alltag geht. Ob es für dich passt, prüfen wir in der Konsultation. Wenn nicht, sage ich dir das ehrlich und empfehle dir, was stattdessen sinnvoll ist.</p></details>
+          <details className="faq"><summary><span>Wie läuft die Abrechnung ab?</span><span className="sign" aria-hidden="true"></span></summary><p>Du zahlst erst, wenn du das Programm startest – auf Wunsch über Klarna. Den Kostenvoranschlag für deine Versicherung bekommst du nach dem Kennenlernen. Du bekommst eine Heilpraktiker-Rechnung, die du selbst einreichst.</p></details>
+          <details className="faq"><summary><span>Funktioniert Physiotherapie per Video überhaupt?</span><span className="sign" aria-hidden="true"></span></summary><p>Für viele Beschwerden ja – vor allem, wenn es um Übungen, Belastung und Alltag geht. Ob es für dich passt, prüfen wir im Kennenlernen. Wenn nicht, sage ich dir das ehrlich und empfehle dir, was stattdessen sinnvoll ist.</p></details>
           <details className="faq"><summary><span>Brauche ich ein Rezept?</span><span className="sign" aria-hidden="true"></span></summary><p>Nein. Als Heilpraktiker für Physiotherapie darf ich dich ohne ärztliche Verordnung betreuen.</p></details>
           <details className="faq"><summary><span>Was passiert nach den 90 Tagen?</span><span className="sign" aria-hidden="true"></span></summary><p>Das Programm endet automatisch – es verlängert sich nichts. Du kannst mit deinem Plan selbstständig weitertrainieren. Möchtest du weiter begleitet werden, ist das möglich – das besprechen wir individuell.</p></details>
         </section>
@@ -302,9 +304,9 @@ export default function ErstattungLandingPage() {
         {/* ABSCHLUSS */}
         <section id="abschluss" style={{ background: "#0F2A1F", color: "#F5F1EA", padding: "48px 20px", display: "flex", flexDirection: "column", gap: "18px" }}>
           <AnzeigeBild name="max-klein" alt="Max Glawe" width={64} height={64} style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", objectPosition: "50% 20%", border: "2px solid #A8DCC0" }} />
-          <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "34px", lineHeight: "1.1" }}>Der erste Schritt dauert <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>30 Minuten.</span></h2>
+          <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "34px", lineHeight: "1.1" }}>Der erste Schritt dauert <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>20 Minuten. Und kostet nichts.</span></h2>
           <p style={{ margin: "0", fontSize: "16px", color: "#D7E3DC" }}>Per Video, von zu Hause. Passt es nicht, sage ich dir das ehrlich.</p>
-          <KonsultationLink abschnitt="erstattung-abschluss" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Konsultation buchen · 69 €
+          <KonsultationLink abschnitt="erstattung-abschluss" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>
           </KonsultationLink>
         </section>

@@ -303,7 +303,7 @@ export function ProgrammCard({ patientId }: { patientId: string }) {
                 className="mt-0.5 h-4 w-4 accent-[#2C3E2D]"
               />
               <span className="text-[12.5px] leading-relaxed text-slate-600">
-                Der Patient hat die Videokonsultation bereits einzeln bezahlt (
+                ALTFALL: Der Patient hat eine Videokonsultation bereits einzeln bezahlt (
                 {formatEuro(PROGRAMM.konsultation)}) — dann anrechnen, es sind noch{" "}
                 <strong>{formatEuro(restbetrag)}</strong> offen. Ohne Haken gilt der volle Preis
                 von <strong>{formatEuro(gewaehlt.preis)}</strong> für {gewaehlt.name}, die

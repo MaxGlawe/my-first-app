@@ -32,7 +32,7 @@ export function StickyBuchung({ abschnitt }: { abschnitt: string }) {
           neuerTab={false}
           className="js-book sticky-cta__btn"
         >
-          Konsultation buchen · 69 €
+          Kostenloses Kennenlernen buchen
           <svg
             width="18"
             height="18"
@@ -49,7 +49,7 @@ export function StickyBuchung({ abschnitt }: { abschnitt: string }) {
           </svg>
         </KonsultationLink>
       </div>
-      <span className="sticky-cta__note">30 Min per Video · wird angerechnet</span>
+      <span className="sticky-cta__note">20 Min. per Video · unverbindlich</span>
     </div>
   )
 }

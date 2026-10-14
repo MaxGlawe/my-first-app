@@ -141,7 +141,13 @@ export function KonsultationLink({
         // in den ersten dreissig Tagen hatte von 218 bezahlten Besuchern
         // niemand eine erteilt. Die eigene Messung laeuft cookiefrei ueber
         // eine Sitzungskennung und zaehlt deshalb jeden.
-        trackConversion("konsultation_klick", { abschnitt, variante: variante ?? null })
+        // Seit dem 15.10.2026 heisst der Einstieg „Kennenlernen" und ist
+        // kostenlos. Der Ereignisname zieht mit — sonst steht in der
+        // Auswertung jahrelang der Name eines Angebots, das es nicht mehr
+        // gibt. Die Auswertung nimmt BEIDE Namen fuer dieselbe Stufe, damit
+        // die Zeit davor vergleichbar bleibt; der Schnitt ist als Marke
+        // hinterlegt (UMSTELLUNG_KENNENLERNEN).
+        trackConversion("kennenlernen_klick", { abschnitt, variante: variante ?? null })
 
         // Und dann: Kommt er ueberhaupt dort an?
         //
