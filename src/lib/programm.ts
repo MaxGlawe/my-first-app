@@ -52,8 +52,26 @@ export const KENNENLERNEN = {
   zusatz: "20 Min. per Video · unverbindlich · deutschlandweit",
   /** Kurzform fuer die feste Leiste am unteren Bildschirmrand. */
   zusatzKurz: "20 Min. per Video · unverbindlich",
-  /** Der Dienst, den das Buchungstool anbieten soll. */
-  service: "kennenlernen-praxis-os",
+  /**
+   * Der Slug der Leistung IM BUCHUNGSTOOL — nicht unser Wunschname.
+   *
+   * Dort heisst sie weiterhin `video-sprechstunde-praxis-os`; nur Name,
+   * Dauer (20 Min.), Preis (0 €) und Beschreibung wurden auf das
+   * Kennenlernen umgestellt. Am 15.10.2026 stand hier kurzzeitig
+   * `kennenlernen-praxis-os` — der Slug existiert dort nicht, das Widget
+   * fand nichts, waehlte nichts aus und zeigte die volle Leistungsliste.
+   * Kein Sprung zum Kalender, kein Ueberspringen der Zusatzleistungen.
+   *
+   * Das Widget bringt bereits eine Umschlagtabelle mit
+   * (`video-sprechstunde-praxis-os` → `kennenlernen-praxis-os`). Sie zeigt
+   * in die ANDERE Richtung: Sie faengt den alten Namen ab, falls der Slug
+   * dort einmal umbenannt wird. Bis dahin ist der alte der richtige, und
+   * nach einer Umbenennung funktionieren beide.
+   *
+   * Regel: Dieser Wert ist eine Tatsache ueber ein fremdes System. Er
+   * wird geaendert, NACHDEM der Slug dort umbenannt wurde — nie vorher.
+   */
+  service: "video-sprechstunde-praxis-os",
 } as const
 
 /**
