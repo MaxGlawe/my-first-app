@@ -25,6 +25,46 @@ import { fireKonsultationKlick } from "@/components/analytics/MetaPixel"
 import { mitHerkunft } from "@/lib/kampagnen-herkunft"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 
+/**
+ * Misst, was nach dem Klick passiert — genau einmal je Seitenaufruf.
+ *
+ * `klick_verlassen` mit der Zeit in Millisekunden: Der Besucher hat die
+ * Seite verlassen, ist also unterwegs zur Buchung. Unter etwa einer
+ * Sekunde heisst das: die Weiterleitung hat gegriffen.
+ *
+ * `klick_geblieben`: Nach drei Sekunden ist er noch da. Entweder hat der
+ * Link nichts getan, oder er hat einen zweiten Tab geoeffnet und ist
+ * zurueckgewechselt. Beides muss man wissen.
+ */
+function verbleibMessen(
+  melden: (typ: string, daten?: Record<string, unknown>) => void,
+  abschnitt: string
+) {
+  if (typeof window === "undefined") return
+  const w = window as unknown as { __praxisKlickGemessen?: boolean }
+  if (w.__praxisKlickGemessen) return
+  w.__praxisKlickGemessen = true
+
+  const start = Date.now()
+  let fertig = false
+
+  const beenden = (typ: string) => {
+    if (fertig) return
+    fertig = true
+    window.clearTimeout(uhr)
+    window.removeEventListener("pagehide", beimVerlassen)
+    melden(typ, { abschnitt, ms: Date.now() - start })
+  }
+
+  // `pagehide` und nicht `beforeunload`: Auf iOS feuert `beforeunload`
+  // nicht, wenn die Seite in den Seiten-Cache wandert — und iOS ist der
+  // groesste Teil des Anzeigen-Verkehrs.
+  const beimVerlassen = () => beenden("klick_verlassen")
+  window.addEventListener("pagehide", beimVerlassen)
+
+  const uhr = window.setTimeout(() => beenden("klick_geblieben"), 3000)
+}
+
 interface KonsultationLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
   /** Welcher Abschnitt der Seite — landet in utm_content und im Ereignis. */
   abschnitt: string
@@ -41,6 +81,19 @@ interface KonsultationLinkProps extends Omit<AnchorHTMLAttributes<HTMLAnchorElem
    * verlaesst das Haus nicht.
    */
   metaMelden?: boolean
+  /**
+   * Oeffnet der Link einen neuen Tab?
+   *
+   * Auf der Website ja — dort soll die gelesene Seite stehen bleiben.
+   * Auf den Anzeigen-Seiten NEIN: Neun von zehn Besuchern kommen dort im
+   * Browser INNERHALB der Facebook- oder Instagram-App an, und was `_blank`
+   * dort tut, haengt von App-Version und Einstellung ab — mal ein zweites
+   * Fenster, aus dem man schwer zurueckfindet, mal gar nichts. Ein
+   * Buchungsknopf, der bei einem Teil der Besucher nichts tut, ist der
+   * teuerste denkbare Fehler: Die Anzeige ist bezahlt, der Klick gezaehlt,
+   * und der Termin kommt nie zustande.
+   */
+  neuerTab?: boolean
   children: ReactNode
 }
 
@@ -48,6 +101,7 @@ export function KonsultationLink({
   abschnitt,
   variante,
   metaMelden = true,
+  neuerTab = true,
   children,
   onClick,
   ...rest
@@ -68,13 +122,14 @@ export function KonsultationLink({
   return (
     <a
       href={ziel}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...(neuerTab ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       onClick={(e) => {
-        // Das Ereignis darf den Klick niemals aufhalten: `target="_blank"`
-        // oeffnet ohnehin einen neuen Tab, diese Seite bleibt stehen, und
-        // selbst wenn fbq fehlt oder geblockt ist, passiert hier nichts
-        // ausser dass nichts gezaehlt wird.
+        // KEIN preventDefault, nirgends. Der Browser folgt dem `href`, und
+        // alles hier drin ist nur Beiwerk. Faellt es aus — Pixel geblockt,
+        // Beacon abgelehnt, JavaScript-Fehler —, geht der Besucher trotzdem
+        // zur Buchungsseite. Ein Tracking, das den Weg verstellen kann,
+        // waere die Messung nicht wert.
+        if (metaMelden) fireKonsultationKlick(abschnitt)
         if (metaMelden) fireKonsultationKlick(abschnitt)
 
         // Und in die EIGENE Messung. Bis zum 10.10.2026 wurde dieser Klick
@@ -87,6 +142,15 @@ export function KonsultationLink({
         // niemand eine erteilt. Die eigene Messung laeuft cookiefrei ueber
         // eine Sitzungskennung und zaehlt deshalb jeden.
         trackConversion("konsultation_klick", { abschnitt, variante: variante ?? null })
+
+        // Und dann: Kommt er ueberhaupt dort an?
+        //
+        // Der Klick allein sagt das nicht. Verlaesst er die Seite gleich
+        // danach, ist er unterwegs; ist er nach drei Sekunden noch hier,
+        // hat die Weiterleitung nicht stattgefunden. Ohne diese beiden
+        // Ereignisse laesst sich „niemand klickt" nicht von „der Knopf tut
+        // nichts" unterscheiden — und das sind entgegengesetzte Probleme.
+        verbleibMessen(trackConversion, abschnitt)
 
         onClick?.(e)
       }}

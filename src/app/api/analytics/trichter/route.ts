@@ -43,8 +43,11 @@ const RECHTLICH = new Set(["/impressum", "/datenschutz", "/agb", "/widerruf"])
  *
  * `utm_content=test` wird schon beim Senden unterdrueckt (lib/intern), die
  * hier sind nachtraeglich entstanden: Links, die zum Pruefen verschickt
- * oder am Handy aufgerufen wurden. Sie stehen mal in `utm_source`, mal in
- * `utm_content` — geprueft wird deshalb beides.
+ * oder am Handy aufgerufen wurden. Sie landen mal in `utm_source`, mal in
+ * `utm_campaign`, mal in `utm_content` — geprueft werden deshalb ALLE
+ * DREI. Am 14.10.2026 fielen genau deshalb Testbesuche durch: Sie trugen
+ * `utm_campaign=handytest` bei `utm_content=erstattung`, und der Filter
+ * sah nur Quelle und Inhalt.
  */
 const TESTKENNUNGEN = new Set([
   "test",
@@ -56,11 +59,24 @@ const TESTKENNUNGEN = new Set([
   "abnahme",
 ])
 
-function istTest(quelle?: string | null, inhalt?: string | null): boolean {
-  return (
-    TESTKENNUNGEN.has((quelle ?? "").trim().toLowerCase()) ||
-    TESTKENNUNGEN.has((inhalt ?? "").trim().toLowerCase())
-  )
+function istTest(
+  quelle?: string | null,
+  kampagne?: string | null,
+  inhalt?: string | null,
+  landingUrl?: string | null
+): boolean {
+  // `praxis_test=1` in der Adresse ist die zuverlaessigste Markierung:
+  // Sie kollidiert mit keiner utm-Angabe, die eine Pruefung vielleicht
+  // gerade behaupten will, und sie ueberlebt in `landing_url`.
+  //
+  // Anlass: Am 13.10.2026 liefen die Abnahmeskripte gegen die Live-Seite
+  // und erzeugten zwoelf Sitzungen mit Buchungsklick — mit
+  // `utm_content=trailer` und ohne Kampagne, also von keinem Filter
+  // erfasst. Im Dashboard sah das aus wie zwoelf Interessenten, von denen
+  // elf nie am Buchungstool ankamen. Einen halben Tag Fehlersuche spaeter
+  // war klar: Es gab sie nie.
+  if ((landingUrl ?? "").includes("praxis_test=1")) return true
+  return [quelle, kampagne, inhalt].some((v) => TESTKENNUNGEN.has((v ?? "").trim().toLowerCase()))
 }
 
 const LESEMARKEN = [25, 50, 75, 100] as const
@@ -83,6 +99,9 @@ interface Sitzung {
   /** Einwilligungsbanner: gezeigt? und wie entschieden? */
   bannerGezeigt: boolean
   bannerEntscheidung: "akzeptiert" | "abgelehnt" | null
+  /** Nach dem Buchungsklick: Seite verlassen (ms) oder geblieben? */
+  klickVerlassenMs: number | null
+  klickGeblieben: boolean
 }
 
 export async function GET(request: NextRequest) {
@@ -130,6 +149,7 @@ export async function GET(request: NextRequest) {
     utm_source: string | null
     utm_campaign: string | null
     utm_content: string | null
+    landing_url: string | null
     referrer: string | null
     device_type: string | null
     browser: string | null
@@ -139,7 +159,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await svc
       .from("page_views")
       .select(
-        "session_id, path, created_at, utm_source, utm_campaign, utm_content, referrer, device_type, browser"
+        "session_id, path, created_at, utm_source, utm_campaign, utm_content, landing_url, referrer, device_type, browser"
       )
       .gte("created_at", seit)
       .order("created_at", { ascending: true })
@@ -155,7 +175,7 @@ export async function GET(request: NextRequest) {
 
   const { data: ereignisse } = await svc
     .from("conversion_events")
-    .select("session_id, event_type, path, created_at")
+    .select("session_id, event_type, path, created_at, metadata")
     .gte("created_at", seit)
     .limit(20000)
 
@@ -168,7 +188,7 @@ export async function GET(request: NextRequest) {
   // verschiebt das die Klickrate sichtbar.
   const intern = new Set(
     aufrufe
-      .filter((a) => (testsZeigen ? a.utm_content === "test" : istTest(a.utm_source, a.utm_content)))
+      .filter((a) => (testsZeigen ? a.utm_content === "test" : istTest(a.utm_source, a.utm_campaign, a.utm_content, a.landing_url)))
       .map((a) => a.session_id)
   )
 
@@ -198,6 +218,8 @@ export async function GET(request: NextRequest) {
         klick: false,
         bannerGezeigt: false,
         bannerEntscheidung: null,
+        klickVerlassenMs: null,
+        klickGeblieben: false,
       })
     } else {
       vorhanden.letzte = a.path
@@ -218,6 +240,12 @@ export async function GET(request: NextRequest) {
 
     const abschnitt = /^abschnitt_(.+)$/.exec(e.event_type)
     if (abschnitt) s.abschnitte.add(abschnitt[1])
+
+    if (e.event_type === "klick_verlassen") {
+      const ms = Number((e.metadata as Record<string, unknown> | null)?.ms)
+      if (Number.isFinite(ms)) s.klickVerlassenMs = ms
+    }
+    if (e.event_type === "klick_geblieben") s.klickGeblieben = true
 
     if (e.event_type === "consent_gezeigt") s.bannerGezeigt = true
     if (e.event_type === "consent_akzeptiert") s.bannerEntscheidung = "akzeptiert"
@@ -452,6 +480,29 @@ export async function GET(request: NextRequest) {
   }))
   const aktivzeitGemessen = alle.some((s) => s.aktiv > 0)
 
+  // ── Was nach dem Buchungsklick passiert ────────────────────────────────
+  //
+  // Ein gezaehlter Klick ist noch kein Besucher auf der Buchungsseite. Wer
+  // die Seite gleich danach verlaesst, ist unterwegs; wer nach drei
+  // Sekunden noch hier steht, dem hat der Knopf nichts gebracht. Ohne
+  // diese Unterscheidung sieht „niemand bucht" genauso aus wie „der Knopf
+  // ist kaputt" — und das sind entgegengesetzte Probleme.
+  const mitKlick = alle.filter((s) => s.klick)
+  const zeiten = mitKlick
+    .map((s) => s.klickVerlassenMs)
+    .filter((m): m is number => m !== null)
+    .sort((a, b) => a - b)
+  const nachKlick = {
+    klicks: mitKlick.length,
+    verlassen: zeiten.length,
+    geblieben: mitKlick.filter((s) => s.klickGeblieben).length,
+    unbekannt: mitKlick.filter((s) => s.klickVerlassenMs === null && !s.klickGeblieben).length,
+    // Median, nicht Mittelwert: Ein einzelner Wert von 20 Sekunden (Tab
+    // gewechselt und zurueck) wuerde den Schnitt sonst unbrauchbar machen.
+    median_ms: zeiten.length > 0 ? zeiten[Math.floor(zeiten.length / 2)] : null,
+    schnell: zeiten.filter((m) => m <= 1500).length,
+  }
+
   // ── Das Einwilligungsbanner ────────────────────────────────────────────
   //
   // Drei Ausgaenge, und der dritte ist der interessante: Wer gefragt wurde
@@ -555,6 +606,7 @@ export async function GET(request: NextRequest) {
     buchungen_nach_quelle,
     buchungen_nach_anzeige,
     buchungen_nach_cta,
+    nach_klick: nachKlick,
     banner,
     banner_nach_seite,
     banner_nach_anzeige,

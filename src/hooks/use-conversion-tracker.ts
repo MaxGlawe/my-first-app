@@ -33,16 +33,38 @@ export function useConversionTracker() {
       if (lastEvent.current.type === eventType && now - lastEvent.current.time < 2000) return
       lastEvent.current = { type: eventType, time: now }
 
-      fetch("/api/analytics/conversion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionId,
-          event_type: eventType,
-          path: window.location.pathname,
-          metadata,
-        }),
-      }).catch(() => {})
+      const rumpf = JSON.stringify({
+        session_id: sessionId,
+        event_type: eventType,
+        path: window.location.pathname,
+        metadata,
+      })
+
+      // `sendBeacon`, nicht `fetch`.
+      //
+      // Der wichtigste Fall ist genau der, bei dem die Seite gleich
+      // verschwindet: der Klick auf „Konsultation buchen". Ein laufendes
+      // `fetch` bricht der Browser beim Verlassen der Seite ab — das
+      // Ereignis waere unterwegs verloren, und ausgerechnet der Schritt,
+      // auf den es ankommt, fehlte in der Messung. `sendBeacon` uebergibt
+      // die Daten dem Browser, der sie auch nach dem Entladen noch
+      // zustellt.
+      //
+      // Rueckfall auf `fetch` mit `keepalive` fuer Browser ohne Beacon —
+      // und weil manche In-App-Ansichten `sendBeacon` zwar kennen, aber
+      // `false` zurueckgeben (Warteschlange voll).
+      const gesendet =
+        typeof navigator.sendBeacon === "function" &&
+        navigator.sendBeacon("/api/analytics/conversion", new Blob([rumpf], { type: "application/json" }))
+
+      if (!gesendet) {
+        fetch("/api/analytics/conversion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: rumpf,
+          keepalive: true,
+        }).catch(() => {})
+      }
     },
     []
   )

@@ -36,6 +36,7 @@ import {
   Smartphone,
   CalendarCheck,
   ShieldQuestion,
+  MoveRight,
 } from "lucide-react"
 
 interface Stufe {
@@ -94,6 +95,14 @@ interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
   verworfene_sitzungen: number
   banner: { gezeigt: number; akzeptiert: number; abgelehnt: number; ohne_auswahl: number }
+  nach_klick: {
+    klicks: number
+    verlassen: number
+    geblieben: number
+    unbekannt: number
+    median_ms: number | null
+    schnell: number
+  }
   banner_nach_seite: BannerZeile[]
   banner_nach_anzeige: BannerZeile[]
   buchungen_nach_anzeige: { anzeige: string; anzahl: number }[]
@@ -430,6 +439,52 @@ export function TrichterPanel() {
           {daten.seitenProSitzung.fuenfPlus} fünf oder mehr.
         </p>
       </div>
+
+      {/* ── Nach dem Buchungsklick ──────────────────────────────── */}
+      {daten.nach_klick?.klicks > 0 && (
+        <Karte
+          titel="Kommt der Besucher nach dem Klick auch an?"
+          hinweis="Gemessen wird, ob die Landingpage nach dem Klick verlassen wird. Unter 1,5 Sekunden heisst: Die Weiterleitung zur Buchungsseite hat gegriffen. „Geblieben“ heisst: Nach drei Sekunden war er noch hier — der Knopf hat ihn nicht weitergebracht."
+          symbol={<MoveRight className="h-4 w-4 text-slate-400" />}
+        >
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              ["Klicks", daten.nach_klick.klicks, "#64748b"],
+              ["weitergegangen", daten.nach_klick.verlassen, "#10b981"],
+              ["geblieben", daten.nach_klick.geblieben, "#ef4444"],
+              ["unklar", daten.nach_klick.unbekannt, "#cbd5e1"],
+            ].map(([titel, wert, farbe]) => (
+              <div key={titel as string}>
+                <p className="text-[11px] text-slate-500">{titel as string}</p>
+                <p className="text-xl font-bold tabular-nums text-slate-900">{wert as number}</p>
+                <div className="mt-1">
+                  <Balken
+                    anteil={
+                      daten.nach_klick.klicks > 0
+                        ? ((wert as number) / daten.nach_klick.klicks) * 100
+                        : 0
+                    }
+                    farbe={farbe as string}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {daten.nach_klick.median_ms !== null && (
+            <p className="mt-3 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
+              Median bis zum Verlassen: <strong className="text-slate-700">{daten.nach_klick.median_ms} ms</strong>
+              {" · "}
+              {daten.nach_klick.schnell} von {daten.nach_klick.verlassen} unter 1,5 Sekunden
+            </p>
+          )}
+          {daten.nach_klick.unbekannt > 0 && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              „Unklar“ sind Klicks aus der Zeit vor dem 14.10.2026 — damals wurde noch nicht
+              gemessen, was danach passierte.
+            </p>
+          )}
+        </Karte>
+      )}
 
       {/* ── Einwilligungsbanner ─────────────────────────────────── */}
       <Karte

@@ -29,6 +29,7 @@ export function StickyBuchung({ abschnitt }: { abschnitt: string }) {
         <KonsultationLink
           abschnitt={abschnitt}
           metaMelden={false}
+          neuerTab={false}
           className="js-book sticky-cta__btn"
         >
           Konsultation buchen · 69 €
