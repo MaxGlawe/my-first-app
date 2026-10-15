@@ -37,6 +37,7 @@ import {
   CalendarCheck,
   ShieldQuestion,
   MoveRight,
+  GitCompareArrows,
   ClipboardCheck,
   ClipboardCopy,
   Download,
@@ -44,7 +45,7 @@ import {
 // Die Zaehlregeln stehen in der Bibliothek, nicht hier: Ansicht und
 // Textbericht muessen denselben Satz zeigen. Zwei Fassungen wuerden
 // auseinanderlaufen — und dann widerspricht der Export dem Bildschirm.
-import { ZAEHLREGEL } from "@/lib/analytics-bericht"
+import { ZAEHLREGEL, type VergleichBlock } from "@/lib/analytics-bericht"
 
 interface Stufe {
   stufe: string
@@ -100,6 +101,7 @@ interface BannerZeile {
 }
 interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  vergleich?: VergleichBlock | null
   umstellung_kennenlernen: string
   verworfene_sitzungen: number
   banner: { gezeigt: number; akzeptiert: number; abgelehnt: number; ohne_auswahl: number }
@@ -251,10 +253,147 @@ function Treppe({
   )
 }
 
+/**
+ * Vor und nach einer Änderung.
+ *
+ * Erscheint nur, wenn ein Zeitpunkt genannt wurde. Die Spalte „Vortag" ist
+ * die Gegenprobe: Zeigt sie denselben Sprung, war es die Tageszeit und
+ * nicht die Änderung.
+ *
+ * Das Urteil steht als Wort da, nicht nur als Zahl. „3,4 statt 1,7 Prozent"
+ * liest jeder als Verdopplung — auch wenn zwei Menschen mehr geklickt haben
+ * und die Spannen sich zu drei Vierteln überlappen.
+ */
+function VergleichKarte({ v }: { v: VergleichBlock }) {
+  const u = new Date(v.umstellung)
+  const uhr = (dt: Date) => dt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+  const bis = new Date(u.getTime() + v.dauer_minuten * 60_000)
+  const dauer =
+    v.dauer_minuten < 60
+      ? `${v.dauer_minuten} Min.`
+      : `${Math.floor(v.dauer_minuten / 60)} Std.${v.dauer_minuten % 60 ? ` ${v.dauer_minuten % 60} Min.` : ""}`
+
+  return (
+    <div className="rounded-2xl border border-slate-900/10 bg-slate-50/60 p-5">
+      <div className="mb-1 flex items-center gap-2">
+        <GitCompareArrows className="h-4 w-4 text-slate-500" />
+        <h4 className="text-sm font-semibold text-slate-800">
+          Vor und nach der Änderung um {uhr(u)}
+        </h4>
+      </div>
+      <p className="mb-4 text-[11px] leading-relaxed text-slate-500">
+        Drei gleich lange Fenster à {dauer}: danach ({uhr(u)}–{uhr(bis)},{" "}
+        {v.sitzungen.danach} Sitzungen), davor ({v.sitzungen.davor}) und zur selben Uhrzeit am
+        Vortag ({v.sitzungen.vortag}) als Gegenprobe. Verglichen werden Quoten je Sitzung — mehr
+        Klicks bei mehr Besuchern ist keine Verbesserung.
+      </p>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="text-left text-[11px] text-slate-400">
+              <th className="pb-2 font-medium">Stufe</th>
+              <th className="pb-2 text-right font-medium">davor</th>
+              <th className="pb-2 text-right font-medium">danach</th>
+              <th className="pb-2 text-right font-medium">Vortag</th>
+              <th className="pb-2 text-right font-medium">Unterschied</th>
+              <th className="pb-2 pl-3 font-medium">Urteil</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200/70">
+            {v.stufen.map((s) => (
+              <tr key={s.stufe}>
+                <td className="py-2 pr-2 font-medium text-slate-700">{s.stufe}</td>
+                <td className="py-2 text-right tabular-nums text-slate-600">
+                  {s.davor}
+                  {s.quote?.davor && (
+                    <span className="text-slate-400"> · {s.quote.davor.anteil} %</span>
+                  )}
+                </td>
+                <td className="py-2 text-right tabular-nums text-slate-800">
+                  <strong>{s.danach}</strong>
+                  {s.quote?.danach && (
+                    <span className="text-slate-400"> · {s.quote.danach.anteil} %</span>
+                  )}
+                </td>
+                <td className="py-2 text-right tabular-nums text-slate-500">
+                  {s.vortag}
+                  {s.quote_vortag?.davor && (
+                    <span className="text-slate-400"> · {s.quote_vortag.davor.anteil} %</span>
+                  )}
+                </td>
+                <td className="py-2 text-right tabular-nums">
+                  {s.quote?.unterschied === null || s.quote === null ? (
+                    <span className="text-slate-300">—</span>
+                  ) : (
+                    <span
+                      className={s.quote.erkennbar ? "font-semibold text-slate-800" : "text-slate-500"}
+                      title={`95-%-Spanne des Unterschieds: ${s.quote.unterschied_unten} bis ${s.quote.unterschied_oben} Prozentpunkte`}
+                    >
+                      {s.quote.unterschied > 0 ? "+" : ""}
+                      {s.quote.unterschied} pp
+                    </span>
+                  )}
+                </td>
+                <td className="py-2 pl-3">
+                  {s.quote === null ? (
+                    <span className="text-[11px] text-slate-400">Grundgesamtheit</span>
+                  ) : (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                        s.quote.erkennbar
+                          ? s.quote.unterschied && s.quote.unterschied > 0
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-700"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                      title={s.quote.urteil}
+                    >
+                      {s.quote.erkennbar ? "messbar" : "nicht zu erkennen"}
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ul className="mt-4 space-y-1 text-[11px] leading-relaxed text-slate-500">
+        {v.verdopplung.sitzungen_je_fenster !== null && (
+          <li>
+            Die Klickquote liegt bei {v.verdopplung.quote} %
+            {v.verdopplung.gemessen ? "" : " (angenommen — im Fenster hat niemand geklickt)"}. Um
+            eine <strong>Verdopplung</strong> zu belegen, bräuchte jedes Fenster etwa{" "}
+            <strong>{v.verdopplung.sitzungen_je_fenster} Sitzungen</strong> — dann sieht man den
+            Unterschied in vier von fünf Fällen auch. Kleinere Verbesserungen brauchen ein
+            Vielfaches.
+          </li>
+        )}
+        <li>
+          Buchungen laufen verzögert ein: Wer um {uhr(u)} klickt, bucht vielleicht abends. Die
+          letzte Stufe ist in einem kurzen Fenster systematisch zu niedrig.
+        </li>
+        <li>
+          Zeigt die Vortagsspalte denselben Sprung, war es die Tageszeit — nicht die Änderung.
+        </li>
+      </ul>
+    </div>
+  )
+}
+
 export function TrichterPanel() {
   const [tage, setTage] = useState(30)
   /** Freier Startzeitpunkt; leer = „letzte N Tage". */
   const [von, setVon] = useState("")
+  /**
+   * Zeitpunkt einer Änderung — schaltet den Vorher/Nachher-Vergleich ein.
+   *
+   * Hat Vorrang über Zeitraum und „ab": Wer eine Änderung vergleicht, will
+   * das Fenster seit der Änderung sehen, nicht dreissig Tage, in denen sie
+   * untergeht.
+   */
+  const [umstellung, setUmstellung] = useState("")
   const [testsZeigen, setTestsZeigen] = useState(false)
   const [daten, setDaten] = useState<Daten | null>(null)
   const [laedt, setLaedt] = useState(true)
@@ -276,11 +415,16 @@ export function TrichterPanel() {
   /** Der gewaehlte Zeitraum als Abfrage — Ansicht und Bericht teilen sie. */
   const abfrage = useCallback(() => {
     const p = new URLSearchParams()
+    // Zeitraum immer mitschicken, auch im Vergleich: Liegt der genannte
+    // Zeitpunkt in der Zukunft, verwirft die Auswertung ihn — dann greift
+    // der Zeitraum und die Ansicht bleibt bei etwas Sinnvollem, statt leer
+    // zu sein.
     if (von) p.set("von", new Date(von).toISOString())
     else p.set("tage", String(tage))
+    if (umstellung) p.set("umstellung", new Date(umstellung).toISOString())
     if (testsZeigen) p.set("tests", "ein")
     return p
-  }, [tage, von, testsZeigen])
+  }, [tage, von, umstellung, testsZeigen])
 
   const laden = useCallback(() => {
     setLaedt(true)
@@ -442,6 +586,33 @@ export function TrichterPanel() {
               </button>
             )}
           </label>
+          {/* „Um 16 Uhr habe ich etwas geaendert — sieht man das?" Der
+              Zeitpunkt schaltet den Vergleich ein: Fenster danach gegen das
+              gleich lange davor, plus die Uhrzeit am Vortag als Gegenprobe. */}
+          <label
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs ${
+              umstellung ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-500"
+            }`}
+            title="Zeitpunkt einer Änderung — zeigt vorher/nachher statt eines Zeitraums"
+          >
+            Änderung um
+            <input
+              type="datetime-local"
+              value={umstellung}
+              onChange={(e) => setUmstellung(e.target.value)}
+              className={`bg-transparent text-xs outline-none ${umstellung ? "text-white" : "text-slate-800"}`}
+            />
+            {umstellung && (
+              <button
+                type="button"
+                onClick={() => setUmstellung("")}
+                className="text-slate-300 hover:text-white"
+                aria-label="Vergleich beenden"
+              >
+                ×
+              </button>
+            )}
+          </label>
           <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-500">
             <input
               type="checkbox"
@@ -518,6 +689,10 @@ export function TrichterPanel() {
           />
         </div>
       )}
+
+      {/* Vorher/Nachher steht VOR dem Trichter: Wer einen Zeitpunkt
+          eingibt, hat genau eine Frage, und die wird oben beantwortet. */}
+      {daten.vergleich && <VergleichKarte v={daten.vergleich} />}
 
       {/* ── Der Trichter ───────────────────────────────────────── */}
       <div className="rounded-2xl border border-slate-200/60 bg-white p-5">

@@ -26,6 +26,8 @@
  *      falsche Schlüsse — am ehesten den, die Startseite sei eingebrochen.
  */
 
+import type { Vergleich } from "./anteil-vergleich"
+
 /**
  * Was unter einer Trichterstufe wirklich gezählt wird.
  *
@@ -49,6 +51,28 @@ export const ZAEHLREGEL: Record<string, string> = {
   "Termin gebucht": "Termine aus dem Buchungskalender, nicht aus der Website-Messung.",
 }
 
+/**
+ * Der Vergleich zweier Zeitfenster um eine Änderung herum.
+ *
+ * Optional, weil er nur entsteht, wenn jemand einen Zeitpunkt nennt. Fehlt
+ * er, ist der Bericht der gewohnte Zeitraumbericht.
+ */
+export interface VergleichBlock {
+  umstellung: string
+  dauer_minuten: number
+  sitzungen: { danach: number; davor: number; vortag: number }
+  stufen: {
+    stufe: string
+    hinweis: string
+    danach: number
+    davor: number
+    vortag: number
+    quote: Vergleich | null
+    quote_vortag: Vergleich | null
+  }[]
+  verdopplung: { quote: number; sitzungen_je_fenster: number | null; gemessen: boolean }
+}
+
 interface Zeile {
   name: string
   sitzungen: number
@@ -70,6 +94,7 @@ interface BannerZeile {
 
 export interface BerichtDaten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  vergleich?: VergleichBlock | null
   umstellung_kennenlernen: string
   verworfene_sitzungen: number
   gesamt: number
@@ -154,6 +179,114 @@ const bannerZeilen = (zeilen: BannerZeile[]) =>
     `${r.zustimmungsrate} %`,
   ])
 
+/** „135 Min." liest sich schlechter als „2 Std. 15 Min.". */
+function dauer(minuten: number): string {
+  if (minuten < 60) return `${minuten} Min.`
+  const std = Math.floor(minuten / 60)
+  const rest = minuten % 60
+  return rest === 0 ? `${std} Std.` : `${std} Std. ${rest} Min.`
+}
+
+const spanneText = (s: { anteil: number; unten: number; oben: number } | null) =>
+  s ? `${s.anteil} % (Spanne ${s.unten}–${s.oben} %)` : "—"
+
+/**
+ * Vor und nach einer Änderung.
+ *
+ * Steht ganz oben und ohne Nummer: Wer diesen Bericht wegen einer Änderung
+ * zieht, liest zuerst hier — und der Rest des Berichts beschreibt ohnehin
+ * nur das Fenster danach.
+ *
+ * Jede Stufe bekommt drei Zahlen und ein Urteil. Das Urteil ist der Punkt:
+ * Zwei Quoten unterscheiden sich immer, und ohne die Spanne liest jeder in
+ * „3,4 statt 1,7 Prozent" eine Verdopplung hinein, wo zwei Menschen mehr
+ * geklickt haben.
+ */
+function vergleichsAbschnitt(v: VergleichBlock): string[] {
+  const z: string[] = []
+  const u = new Date(v.umstellung)
+  const bis = new Date(u.getTime() + v.dauer_minuten * 60_000)
+  const uhr = (dt: Date) => dt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })
+
+  z.push(
+    `## Vor und nach der Änderung am ${u.toLocaleDateString("de-DE")} um ${uhr(u)}`
+  )
+  z.push("")
+  z.push("Drei Fenster, alle gleich lang:")
+  z.push("")
+  z.push(
+    `- **danach:** ${uhr(u)}–${uhr(bis)} (${dauer(v.dauer_minuten)}) — ${v.sitzungen.danach} Sitzungen`
+  )
+  z.push(
+    `- **davor:** die ${dauer(v.dauer_minuten)} direkt vor der Änderung — ${v.sitzungen.davor} Sitzungen`
+  )
+  z.push(
+    `- **Vortag, gleiche Uhrzeit:** ${v.sitzungen.vortag} Sitzungen — als Gegenprobe, ob es die Tageszeit ist und nicht die Änderung`
+  )
+  z.push("")
+
+  for (const s of v.stufen) {
+    z.push(`### ${s.stufe}`)
+    if (!s.quote) {
+      // Die erste Stufe ist die Grundgesamtheit. Mehr Besucher sind keine
+      // Verbesserung der Seite — sie sind mehr Werbebudget oder mehr Tag.
+      z.push(
+        `- danach ${s.danach} · davor ${s.davor} · Vortag ${s.vortag} — das ist die Grundgesamtheit, keine Quote. Mehr Besucher heisst nicht bessere Seite.`
+      )
+      z.push("")
+      continue
+    }
+    z.push(`- **danach:** ${s.danach} von ${v.sitzungen.danach} — ${spanneText(s.quote.danach)}`)
+    z.push(`- **davor:** ${s.davor} von ${v.sitzungen.davor} — ${spanneText(s.quote.davor)}`)
+    z.push(
+      `- **Vortag:** ${s.vortag} von ${v.sitzungen.vortag} — ${spanneText(s.quote_vortag?.davor ?? null)}`
+    )
+    if (s.quote.unterschied !== null) {
+      z.push(
+        `- **Unterschied zu davor:** ${s.quote.unterschied > 0 ? "+" : ""}${s.quote.unterschied} Prozentpunkte (Spanne ${s.quote.unterschied_unten} bis ${s.quote.unterschied_oben})`
+      )
+    }
+    z.push(`- **Urteil:** ${s.quote.urteil}`)
+    if (s.quote_vortag && s.quote_vortag.unterschied !== null) {
+      z.push(
+        `- Gegenprobe Vortag: ${s.quote_vortag.unterschied > 0 ? "+" : ""}${s.quote_vortag.unterschied} Prozentpunkte — ${
+          s.quote_vortag.erkennbar ? "auch hier ein Unterschied" : "auch hier nichts Erkennbares"
+        }`
+      )
+    }
+    z.push("")
+  }
+
+  z.push("### Was dieser Vergleich leisten kann")
+  z.push("")
+  if (v.verdopplung.sitzungen_je_fenster) {
+    z.push(
+      `- Die Klickquote liegt bei ${v.verdopplung.quote} %${v.verdopplung.gemessen ? "" : " (angenommen, weil im Fenster niemand geklickt hat)"}. Um eine **Verdopplung** zu belegen, bräuchte jedes der beiden Fenster etwa **${v.verdopplung.sitzungen_je_fenster} Sitzungen** — dann würde man den Unterschied in vier von fünf Fällen auch sehen. Kleinere Verbesserungen brauchen ein Vielfaches davon.`
+    )
+  }
+  z.push(
+    "- **Buchungen laufen verzögert ein.** Wer um 16:05 klickt, bucht vielleicht um 20 Uhr. In einem kurzen Fenster ist die letzte Stufe deshalb systematisch zu niedrig — nicht schlechter, nur noch nicht da."
+  )
+  z.push(
+    "- **Die Tageszeit wirkt mit.** 14–16 Uhr ist anderer Verkehr als 16–18 Uhr. Dafür steht die Vortagsspalte da: Zeigt sie denselben Sprung, war es nicht die Änderung."
+  )
+  z.push(
+    "- **Anzeigen lernen.** Nach jeder Änderung an einer Meta-Anzeige verteilt Meta die Auslieferung neu. Die ersten Stunden danach sind andere Menschen, nicht nur andere Zahlen."
+  )
+  z.push(
+    "- **Ein Fenster unter einer Stunde ist meist Rauschen.** Dann ist dieser Abschnitt nur eine Momentaufnahme, kein Vergleich."
+  )
+  z.push("")
+  z.push("---")
+  z.push("")
+  z.push(
+    "Alles Folgende beschreibt **nur das Fenster danach** — also den Zeitraum seit der Änderung."
+  )
+  z.push("")
+
+  return z
+}
+
 export function berichtAlsText(d: BerichtDaten): string {
   const z: string[] = []
   const spalten = ["Sitzungen", "geblieben", "Preis gesehen", "Buchung geklickt"]
@@ -176,6 +309,8 @@ export function berichtAlsText(d: BerichtDaten): string {
     "Dieser Bericht enthält nur Summen und Quoten — keine Sitzungskennungen, keine Namen, keine Adressen, keine einzelnen Termine. Er kann weitergegeben werden."
   )
   z.push("")
+
+  if (d.vergleich) z.push(...vergleichsAbschnitt(d.vergleich))
 
   // ── Trichter ───────────────────────────────────────────────────────────
   z.push("## 1. Der Trichter")

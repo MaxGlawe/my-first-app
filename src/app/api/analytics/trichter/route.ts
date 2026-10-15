@@ -27,6 +27,10 @@
  * ?von=<ISO>        fester Startzeitpunkt, hat Vorrang vor `tage`
  * ?tests=ein        eigene Testbesuche mitzaehlen
  * ?format=text      dieselbe Auswertung als Markdown-Bericht
+ * ?umstellung=<ISO> Vergleich: Fenster seit diesem Zeitpunkt gegen das
+ *                   gleich lange Fenster davor und gegen dieselbe Uhrzeit
+ *                   am Vortag. Die Auswertung selbst gilt dann fuer das
+ *                   Fenster DANACH.
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -34,7 +38,8 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { SEITEN_LISTE, seiteZuPfad } from "@/lib/gemessene-seiten"
 import { UMSTELLUNG_KENNENLERNEN } from "@/lib/programm"
-import { berichtAlsText } from "@/lib/analytics-bericht"
+import { berichtAlsText, type BerichtDaten } from "@/lib/analytics-bericht"
+import { noetigeSitzungen, vergleicheAnteile } from "@/lib/anteil-vergleich"
 
 export const dynamic = "force-dynamic"
 
@@ -109,41 +114,30 @@ interface Sitzung {
   klickGeblieben: boolean
 }
 
-export async function GET(request: NextRequest) {
-  const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
+/** Ein Zeitfenster. `bis: null` heisst „bis jetzt". */
+export interface Fenster {
+  seit: string
+  bis: string | null
+}
 
-  const svc = createSupabaseServiceClient()
-  const { data: profil } = await svc
-    .from("user_profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle()
-  if (!profil || !STAFF.includes(profil.role as string)) {
-    return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
-  }
-
-  const q = request.nextUrl.searchParams
-
-  // Zeitraum: entweder „letzte N Tage" oder ein fester Startzeitpunkt.
-  // `von` gewinnt — wer einen Zeitpunkt nennt, meint ihn. Praktisch fuer
-  // „ab dem Moment, in dem die Anzeige umgestellt wurde": Ein Tagesraster
-  // wuerde den halben Tag davor mitzaehlen.
-  const vonRoh = q.get("von")
-  const vonDatum = vonRoh ? new Date(vonRoh) : null
-  const gueltigesVon = vonDatum && !Number.isNaN(vonDatum.getTime()) ? vonDatum : null
-
-  const tage = Math.min(365, Math.max(1, Number(q.get("tage")) || 30))
-  const seit = (gueltigesVon ?? new Date(Date.now() - tage * 86_400_000)).toISOString()
-
-  // Testquellen ausblenden (Voreinstellung: ja). Das sind Besuche, die wir
-  // selbst erzeugt haben — sie zu zaehlen hiesse, die eigene Arbeit fuer
-  // Nachfrage zu halten.
-  const testsZeigen = q.get("tests") === "ein"
-
+/**
+ * Die komplette Auswertung fuer EIN Zeitfenster.
+ *
+ * Stand bis zum 15.10.2026 direkt in GET. Herausgeloest, weil sie seither
+ * mehrfach gebraucht wird: Wer wissen will, ob eine Aenderung um 16 Uhr
+ * etwas bewirkt hat, braucht dieselbe Rechnung dreimal — danach, davor und
+ * zur selben Uhrzeit am Vortag.
+ *
+ * Dreimal dieselbe Rechnung heisst: EINE Funktion. Haette der Vergleich
+ * seine eigene, schlankere Zaehlung bekommen, waeren seine Zahlen andere
+ * als die im Trichter darunter — und niemand koennte sagen, welche gilt.
+ */
+async function auswerten(
+  svc: ReturnType<typeof createSupabaseServiceClient>,
+  { seit, bis }: Fenster,
+  zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean },
+  testsZeigen: boolean
+) {
   // Seitenaufrufe seitenweise holen: PostgREST deckelt bei 1000, und ein
   // stillschweigend abgeschnittener Datensatz ergaebe eine Auswertung, die
   // falsch ist, ohne falsch auszusehen.
@@ -161,28 +155,32 @@ export async function GET(request: NextRequest) {
   }[] = []
 
   for (let seite = 0; seite < 20; seite++) {
-    const { data, error } = await svc
+    let abfrage = svc
       .from("page_views")
       .select(
         "session_id, path, created_at, utm_source, utm_campaign, utm_content, landing_url, referrer, device_type, browser"
       )
       .gte("created_at", seit)
+    // Obergrenze: Das Fenster „davor" endet am Umstellungszeitpunkt, nicht
+    // heute. Ohne `bis` waere jeder Vergleich ein Vergleich mit sich selbst.
+    if (bis) abfrage = abfrage.lt("created_at", bis)
+    const { data, error } = await abfrage
       .order("created_at", { ascending: true })
       .range(seite * 1000, seite * 1000 + 999)
 
-    if (error) {
-      console.error("[analytics/trichter] page_views:", error.message)
-      return NextResponse.json({ error: "Daten konnten nicht geladen werden." }, { status: 500 })
-    }
+    // Die Funktion weiss nichts von HTTP-Antworten. Sie wirft, GET macht
+    // daraus die 500.
+    if (error) throw new Error("page_views: " + error.message)
     aufrufe.push(...(data ?? []))
     if (!data || data.length < 1000) break
   }
 
-  const { data: ereignisse } = await svc
+  let ereignisAbfrage = svc
     .from("conversion_events")
     .select("session_id, event_type, path, created_at, metadata")
     .gte("created_at", seit)
-    .limit(20000)
+  if (bis) ereignisAbfrage = ereignisAbfrage.lt("created_at", bis)
+  const { data: ereignisse } = await ereignisAbfrage.limit(20000)
 
   // ── Eigene Besuche aussortieren ────────────────────────────────────────
   //
@@ -315,10 +313,12 @@ export async function GET(request: NextRequest) {
   // Vereinbarung wie auf der Website (siehe lib/intern). Bei einer Handvoll
   // echter Buchungen im Monat wuerde eine Testbuchung die letzte Stufe
   // verdoppeln.
-  const { data: termine } = await svc
+  let terminAbfrage = svc
     .from("appointments")
     .select("id, referrer_source, referrer_campaign, referrer_content, referrer_cta, service_name")
     .gte("created_at", seit)
+  if (bis) terminAbfrage = terminAbfrage.lt("created_at", bis)
+  const { data: termine } = await terminAbfrage
     .ilike("service_name", "%video%")
     .or("referrer_content.is.null,referrer_content.neq.test")
     .limit(2000)
@@ -599,7 +599,7 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.anzahl - a.anzahl)
 
   const ergebnis = {
-    zeitraum: { tage, seit, frei: gueltigesVon !== null, tests_sichtbar: testsZeigen },
+    zeitraum,
     // Der Schnitt zwischen zwei Angeboten. Steht im Dashboard als Marke,
     // damit niemand Klickraten von vorher und nachher vergleicht, ohne zu
     // wissen, dass dazwischen aus 69 Euro „kostenlos" wurde.
@@ -633,24 +633,184 @@ export async function GET(request: NextRequest) {
       fuenfPlus: alle.filter((s) => s.seiten >= 5).length,
     },
   }
+  return ergebnis
+}
 
-  // Dieselben Zahlen als Text — zum Weitergeben (siehe lib/analytics-bericht).
-  //
-  // Erzeugt wird der Bericht HIER, nicht im Browser aus den JSON-Daten: So
-  // steht in der Datei garantiert derselbe Stand, den die Auswertung
-  // gerechnet hat, und die Regel-Texte liegen nicht doppelt vor.
-  if (q.get("format") === "text") {
-    const dateiname = `praxis-os-auswertung-${new Date().toISOString().slice(0, 10)}.md`
-    return new NextResponse(berichtAlsText(ergebnis), {
-      headers: {
-        "Content-Type": "text/markdown; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${dateiname}"`,
-        "Cache-Control": "no-store",
-      },
-    })
+type Auswertung = Awaited<ReturnType<typeof auswerten>>
+
+/**
+ * Drei Fenster gegeneinander — der Kern der Frage „sieht man das?".
+ *
+ * Verglichen wird NICHT roh, sondern als Quote je Sitzung: Mehr Klicks bei
+ * mehr Besuchern ist keine Verbesserung. Und zu jeder Quote kommt die
+ * Spanne, in der ihr wahrer Wert plausibel liegt — bei zwei Stunden
+ * Datenerhebung ist die so breit, dass „10 % statt 5 %" meistens ein
+ * einzelner Mensch ist.
+ *
+ * Das dritte Fenster (gleiche Uhrzeit am Vortag) steht da, weil der
+ * Vorher-Vergleich eine Luecke hat, die man ihm nicht ansieht: Von 14 bis
+ * 16 Uhr ist anderer Verkehr unterwegs als von 16 bis 18 Uhr. Wer nur
+ * „davor" kennt, verwechselt die Tageszeit mit seiner Aenderung.
+ */
+function baueVergleich(
+  danach: Auswertung,
+  davor: Auswertung,
+  vortag: Auswertung,
+  umstellung: Date,
+  dauerMs: number
+) {
+  const basisD = danach.gesamt
+  const basisV = davor.gesamt
+  const basisT = vortag.gesamt
+
+  const stufen = danach.trichter.map((s, i) => {
+    const v = davor.trichter[i]
+    const t = vortag.trichter[i]
+    return {
+      stufe: s.stufe,
+      hinweis: s.hinweis,
+      danach: s.anzahl,
+      davor: v?.anzahl ?? 0,
+      vortag: t?.anzahl ?? 0,
+      // Die erste Stufe IST die Grundgesamtheit — eine Quote von sich
+      // selbst waere immer 100 % und wuerde nur Platz kosten.
+      quote: i === 0 ? null : vergleicheAnteile(v?.anzahl ?? 0, basisV, s.anzahl, basisD),
+      quote_vortag: i === 0 ? null : vergleicheAnteile(t?.anzahl ?? 0, basisT, s.anzahl, basisD),
+    }
+  })
+
+  // Wie viele Sitzungen JE FENSTER es braeuchte, um eine Verdopplung der
+  // Klickquote zu sehen. Die Antwort auf die Frage, die nach jedem „nicht
+  // zu erkennen" kommt: „Wie lange muss ich warten?"
+  const klick = danach.trichter.find((s) => s.stufe.includes("angeklickt"))
+  const klickquote = basisD > 0 && klick ? klick.anzahl / basisD : 0
+  const bezug = klickquote > 0 ? klickquote : 0.01
+  const noetig = noetigeSitzungen(bezug, bezug * 100)
+
+  return {
+    umstellung: umstellung.toISOString(),
+    dauer_minuten: Math.round(dauerMs / 60000),
+    sitzungen: { danach: basisD, davor: basisV, vortag: basisT },
+    stufen,
+    verdopplung: {
+      quote: Math.round(bezug * 1000) / 10,
+      sitzungen_je_fenster: Number.isFinite(noetig) ? noetig : null,
+      gemessen: klickquote > 0,
+    },
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const supabase = await createSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: "Nicht autorisiert." }, { status: 401 })
+
+  const svc = createSupabaseServiceClient()
+  const { data: profil } = await svc
+    .from("user_profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle()
+  if (!profil || !STAFF.includes(profil.role as string)) {
+    return NextResponse.json({ error: "Keine Berechtigung." }, { status: 403 })
   }
 
-  return NextResponse.json(ergebnis)
+  const q = request.nextUrl.searchParams
+
+  // Zeitraum: entweder „letzte N Tage" oder ein fester Startzeitpunkt.
+  // `von` gewinnt — wer einen Zeitpunkt nennt, meint ihn. Praktisch fuer
+  // „ab dem Moment, in dem die Anzeige umgestellt wurde": Ein Tagesraster
+  // wuerde den halben Tag davor mitzaehlen.
+  const vonRoh = q.get("von")
+  const vonDatum = vonRoh ? new Date(vonRoh) : null
+  const gueltigesVon = vonDatum && !Number.isNaN(vonDatum.getTime()) ? vonDatum : null
+
+  const tage = Math.min(365, Math.max(1, Number(q.get("tage")) || 30))
+  const seit = (gueltigesVon ?? new Date(Date.now() - tage * 86_400_000)).toISOString()
+
+  // Testquellen ausblenden (Voreinstellung: ja). Das sind Besuche, die wir
+  // selbst erzeugt haben — sie zu zaehlen hiesse, die eigene Arbeit fuer
+  // Nachfrage zu halten.
+  const testsZeigen = q.get("tests") === "ein"
+
+  // „Um 16 Uhr habe ich etwas geaendert — sieht man das an den Zahlen?"
+  //
+  // `umstellung` schaltet den Vergleich ein. Das Fenster danach reicht vom
+  // genannten Zeitpunkt bis jetzt; das Fenster davor ist GENAU SO LANG und
+  // endet am Zeitpunkt. Gleich lang, weil alles andere der haeufigste
+  // Trugschluss waere: Zwei Stunden gegen dreissig Tage zu stellen heisst,
+  // eine Stichprobe von zwanzig gegen eine von zweitausend zu stellen.
+  const umstellungRoh = q.get("umstellung")
+  const umstellungDatum = umstellungRoh ? new Date(umstellungRoh) : null
+  const umstellung =
+    umstellungDatum && !Number.isNaN(umstellungDatum.getTime()) && umstellungDatum.getTime() < Date.now()
+      ? umstellungDatum
+      : null
+
+  try {
+    if (umstellung) {
+      const jetzt = Date.now()
+      const dauer = jetzt - umstellung.getTime()
+      const fensterDanach: Fenster = { seit: umstellung.toISOString(), bis: null }
+      const fensterDavor: Fenster = {
+        seit: new Date(umstellung.getTime() - dauer).toISOString(),
+        bis: umstellung.toISOString(),
+      }
+      // Gleiche Uhrzeit, ein Tag zurueck — gegen die Verwechslung von
+      // Tageszeit mit Wirkung.
+      const fensterVortag: Fenster = {
+        seit: new Date(umstellung.getTime() - 86_400_000).toISOString(),
+        bis: new Date(jetzt - 86_400_000).toISOString(),
+      }
+
+      const zeitraumDanach = {
+        tage,
+        seit: fensterDanach.seit,
+        frei: true,
+        tests_sichtbar: testsZeigen,
+      }
+
+      const [danach, davor, vortag] = await Promise.all([
+        auswerten(svc, fensterDanach, zeitraumDanach, testsZeigen),
+        auswerten(svc, fensterDavor, { ...zeitraumDanach, seit: fensterDavor.seit }, testsZeigen),
+        auswerten(svc, fensterVortag, { ...zeitraumDanach, seit: fensterVortag.seit }, testsZeigen),
+      ])
+
+      const antwort = {
+        ...danach,
+        vergleich: baueVergleich(danach, davor, vortag, umstellung, dauer),
+      }
+      return antworten(antwort, q.get("format"))
+    }
+
+    const zeitraum = { tage, seit, frei: gueltigesVon !== null, tests_sichtbar: testsZeigen }
+    const ergebnis = await auswerten(svc, { seit, bis: null }, zeitraum, testsZeigen)
+    return antworten(ergebnis, q.get("format"))
+  } catch (e) {
+    console.error("[analytics/trichter]", e instanceof Error ? e.message : e)
+    return NextResponse.json({ error: "Daten konnten nicht geladen werden." }, { status: 500 })
+  }
+}
+
+/**
+ * Dieselben Zahlen als JSON oder als Text.
+ *
+ * Erzeugt wird der Bericht HIER, nicht im Browser aus den JSON-Daten: So
+ * steht in der Datei garantiert derselbe Stand, den die Auswertung
+ * gerechnet hat, und die Regel-Texte liegen nicht doppelt vor.
+ */
+function antworten(daten: BerichtDaten, format: string | null) {
+  if (format !== "text") return NextResponse.json(daten)
+  const dateiname = `praxis-os-auswertung-${new Date().toISOString().slice(0, 10)}.md`
+  return new NextResponse(berichtAlsText(daten), {
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${dateiname}"`,
+      "Cache-Control": "no-store",
+    },
+  })
 }
 
 /** „google.com" statt „https://www.google.com/search?q=…". */
