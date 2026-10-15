@@ -63,6 +63,21 @@ export const GEMESSENE_SEITEN = {
       { id: "abschluss", titel: "Abschluss" },
     ],
   },
+  "start-alltag": {
+    pfad: "/start/alltag",
+    titel: "Anzeige · Alltag",
+    preis: "preis",
+    abschnitte: [
+      { id: "einstieg", titel: "Einstieg" },
+      { id: "wo-stehst-du", titel: "Wo stehst du" },
+      { id: "was-ist-praxis-os", titel: "Was ist Praxis OS" },
+      { id: "deine-90-tage", titel: "Deine 90 Tage" },
+      { id: "wer-betreut-dich", titel: "Wer betreut dich" },
+      { id: "preis", titel: "Preis" },
+      { id: "faq", titel: "Häufige Fragen" },
+      { id: "abschluss", titel: "Abschluss" },
+    ],
+  },
   "start-erstattung": {
     pfad: "/start/erstattung",
     titel: "Anzeige · Erstattung",

@@ -8,8 +8,10 @@ import { StickyBuchung } from "@/components/anzeigen/StickyBuchung"
 import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
 
 /**
- * Anzeigen-Landingpage „Sabines Weg" — Ziel der Meta-Anzeigen Trailer und
- * Teil 1 (`utm_content=trailer` bzw. `teil1`).
+ * Anzeigen-Landingpage „Warteliste" — Ziel der Meta-Anzeigen Trailer und
+ * Teil 1 (`utm_content=trailer` bzw. `teil1`). Der Pfad heisst weiterhin
+ * /start/sabine: Die Adresse steht in laufenden Anzeigen, und eine
+ * Umbenennung wuerde jede davon ins Leere laufen lassen.
  *
  * Markup, Texte, Reihenfolge und Farben sind aus der abgestimmten Vorlage
  * uebernommen. Die Texte sind heilmittelwerberechtlich abgestimmt — wer hier
@@ -60,15 +62,16 @@ export default function SabineLandingPage() {
             </div>
           </div>
 
-          <div style={{ position: "relative", borderRadius: "24px", overflow: "hidden", height: "200px", background: "#1C3A2D" }}>
-            <AnzeigeBild name="sabine" vorrang alt="Illustration: Sabine, nachdenklich in der Küche" sofort style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "30% 40%", display: "block" }} />
-            <span style={{ position: "absolute", left: "14px", bottom: "14px", background: "rgba(15,42,31,0.82)", color: "#F5F1EA", borderRadius: "999px", padding: "6px 12px", fontSize: "12px", fontWeight: "600", letterSpacing: "0.02em" }}>Aus der Serie · Sabines Weg</span>
-            <span style={{ position: "absolute", right: "12px", top: "12px", background: "rgba(15,42,31,0.7)", color: "#DDE8E1", borderRadius: "6px", padding: "3px 8px", fontSize: "11px" }}>Illustration · KI</span>
+          {/* 16:9 statt fester Hoehe: Das Motiv traegt seine Beschriftung
+              („Bild: KI-generiert") selbst, und die sitzt am oberen Rand.
+              Bei fester Hoehe und `cover` waere sie weggeschnitten. */}
+          <div style={{ position: "relative", borderRadius: "24px", overflow: "hidden", aspectRatio: "16 / 9", background: "#1C3A2D" }}>
+            <AnzeigeBild name="warteliste" vorrang alt="Frau am Telefon, dazu die Einblendung: „Der nächste freie Termin wäre im Januar.“" sofort style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
           </div>
 
-          <h1 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "38px", lineHeight: "1.06", letterSpacing: "-0.015em" }}>Sechs Wochen auf einen Termin warten? <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>Du kannst schon vorher starten.</span></h1>
+          <h1 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "38px", lineHeight: "1.06", letterSpacing: "-0.015em" }}>Wochenlang auf einen Termin warten? <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>Du kannst schon vorher starten.</span></h1>
 
-          <p style={{ margin: "0", fontSize: "17px", color: "#D7E3DC" }}>Wie Sabine: 90 Tage Physiotherapie per Video und Chat – ohne Rezept, ohne Wartezimmer, von zu Hause.</p>
+          <p style={{ margin: "0", fontSize: "17px", color: "#D7E3DC" }}>90 Tage Physiotherapie per Video und Chat – ohne Rezept, ohne Wartezimmer, von zu Hause.</p>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             <KonsultationLink abschnitt="sabine-hero" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
@@ -93,7 +96,7 @@ export default function SabineLandingPage() {
           <h2 style={{ margin: "0 0 6px", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "30px", lineHeight: "1.12" }}>Drei Situationen, die ich jede Woche höre.</h2>
 
           <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "22px", fontWeight: "600", lineHeight: "1.2" }}>„Der nächste freie Termin ist in sechs Wochen.“</span>
+            <span style={{ fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontSize: "22px", fontWeight: "600", lineHeight: "1.2" }}>„Der nächste freie Termin ist erst im neuen Jahr.“</span>
             <span style={{ fontSize: "15px", color: "#33433B" }}>Per Video können wir vorher starten – ohne Anfahrt, ohne Rezept. Im Kennenlernen klären wir auch, ob du dich erst ärztlich untersuchen lassen solltest.</span>
           </div>
           <div style={{ background: "#FFFFFF", borderRadius: "20px", padding: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -271,7 +274,7 @@ export default function SabineLandingPage() {
 
         {/* FOOTER */}
         <footer style={{ padding: "24px 20px 40px", display: "flex", flexDirection: "column", gap: "10px", fontSize: "13px", color: "#4A5A52" }}>
-          <p style={{ margin: "0" }}>Sabine ist eine fiktive Figur, die Illustrationen sind mit KI erstellt. Der Chatverlauf ist ein Beispiel. Jeder Verlauf ist individuell.</p>
+          <p style={{ margin: "0" }}>Die Fotos sind mit KI erstellt. Der Chatverlauf ist ein Beispiel. Jeder Verlauf ist individuell.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
             <a href="/impressum" style={{ color: "#33433B" }}>Impressum</a>
             <a href="/datenschutz" style={{ color: "#33433B" }}>Datenschutz</a>

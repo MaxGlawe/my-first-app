@@ -29,13 +29,14 @@
  */
 
 /** Dateiname ohne Endung in `public/anzeigen/`. */
-export type AnzeigeBildName = "logo" | "max" | "max-klein" | "sabine"
+export type AnzeigeBildName = "logo" | "max" | "max-klein" | "warteliste" | "alltag"
 
 const RUECKFALL: Record<AnzeigeBildName, string> = {
   logo: "/anzeigen/logo.png",
   max: "/anzeigen/max.jpg",
   "max-klein": "/anzeigen/max-klein.jpg",
-  sabine: "/anzeigen/sabine.jpg",
+  warteliste: "/anzeigen/warteliste.jpg",
+  alltag: "/anzeigen/alltag.jpg",
 }
 
 export function AnzeigeBild({
