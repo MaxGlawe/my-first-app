@@ -23,7 +23,10 @@
  * „Preis gesehen": der Abschnitt #preis stand im Fenster. Das ist der
  * Moment, an dem die Seite ihre Arbeit getan hat.
  *
- * ?tage=7|30|90   (Voreinstellung 30)
+ * ?tage=7|30|90     (Voreinstellung 30)
+ * ?von=<ISO>        fester Startzeitpunkt, hat Vorrang vor `tage`
+ * ?tests=ein        eigene Testbesuche mitzaehlen
+ * ?format=text      dieselbe Auswertung als Markdown-Bericht
  */
 
 import { NextRequest, NextResponse } from "next/server"
@@ -31,6 +34,7 @@ import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { SEITEN_LISTE, seiteZuPfad } from "@/lib/gemessene-seiten"
 import { UMSTELLUNG_KENNENLERNEN } from "@/lib/programm"
+import { berichtAlsText } from "@/lib/analytics-bericht"
 
 export const dynamic = "force-dynamic"
 
@@ -594,7 +598,7 @@ export async function GET(request: NextRequest) {
     .map(([cta, anzahl]) => ({ cta, anzahl }))
     .sort((a, b) => b.anzahl - a.anzahl)
 
-  return NextResponse.json({
+  const ergebnis = {
     zeitraum: { tage, seit, frei: gueltigesVon !== null, tests_sichtbar: testsZeigen },
     // Der Schnitt zwischen zwei Angeboten. Steht im Dashboard als Marke,
     // damit niemand Klickraten von vorher und nachher vergleicht, ohne zu
@@ -628,7 +632,25 @@ export async function GET(request: NextRequest) {
       zweiBisVier: alle.filter((s) => s.seiten >= 2 && s.seiten <= 4).length,
       fuenfPlus: alle.filter((s) => s.seiten >= 5).length,
     },
-  })
+  }
+
+  // Dieselben Zahlen als Text — zum Weitergeben (siehe lib/analytics-bericht).
+  //
+  // Erzeugt wird der Bericht HIER, nicht im Browser aus den JSON-Daten: So
+  // steht in der Datei garantiert derselbe Stand, den die Auswertung
+  // gerechnet hat, und die Regel-Texte liegen nicht doppelt vor.
+  if (q.get("format") === "text") {
+    const dateiname = `praxis-os-auswertung-${new Date().toISOString().slice(0, 10)}.md`
+    return new NextResponse(berichtAlsText(ergebnis), {
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${dateiname}"`,
+        "Cache-Control": "no-store",
+      },
+    })
+  }
+
+  return NextResponse.json(ergebnis)
 }
 
 /** „google.com" statt „https://www.google.com/search?q=…". */

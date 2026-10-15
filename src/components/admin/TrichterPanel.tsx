@@ -37,7 +37,14 @@ import {
   CalendarCheck,
   ShieldQuestion,
   MoveRight,
+  ClipboardCheck,
+  ClipboardCopy,
+  Download,
 } from "lucide-react"
+// Die Zaehlregeln stehen in der Bibliothek, nicht hier: Ansicht und
+// Textbericht muessen denselben Satz zeigen. Zwei Fassungen wuerden
+// auseinanderlaufen — und dann widerspricht der Export dem Bildschirm.
+import { ZAEHLREGEL } from "@/lib/analytics-bericht"
 
 interface Stufe {
   stufe: string
@@ -128,25 +135,6 @@ interface Daten {
 }
 
 const ZEITRAEUME = [7, 30, 90]
-
-/**
- * Was unter einer Stufe wirklich gezaehlt wird — Satz fuer Satz im
- * Dashboard sichtbar.
- *
- * Anlass (13.10.2026): Nach einer Korrektur sanken 30-Tage-Werte, obwohl
- * sie nur steigen koennen. Der Grund war eine Zaehlung je SITZUNG statt je
- * Klick — richtig, aber nicht erkennbar. Eine Kennzahl, deren Definition
- * man nicht ablesen kann, ist keine Kennzahl, sondern eine Behauptung.
- */
-const ZAEHLREGEL: Record<string, string> = {
-  Besucher: "Je Sitzung einmal. Eine Sitzung endet, wenn der Browser-Tab geschlossen wird.",
-  Geblieben: "Je Sitzung einmal, auch bei mehrfachem Scrollen.",
-  "Preis gesehen":
-    "Je Sitzung einmal — nicht je Aufruf des Preisabschnitts. Wer dreimal hoch- und runterscrollt, zählt einmal.",
-  "Kennenlernen angeklickt":
-    "Je Sitzung einmal — nicht je Klick. Wer zweimal auf „buchen“ tippt, zählt einmal. Enthält auch die Klicks von vor dem 15.10.2026, als der Einstieg noch „Konsultation“ hiess und 69 € kostete.",
-  "Termin gebucht": "Termine aus dem Buchungskalender, nicht aus der Website-Messung.",
-}
 
 function Balken({ anteil, farbe }: { anteil: number; farbe: string }) {
   return (
@@ -271,15 +259,33 @@ export function TrichterPanel() {
   const [daten, setDaten] = useState<Daten | null>(null)
   const [laedt, setLaedt] = useState(true)
   const [fehler, setFehler] = useState<string | null>(null)
+  /** Zustand des Berichts-Knopfs: „kopiert" verschwindet nach zwei Sekunden. */
+  const [bericht, setBericht] = useState<"ruht" | "holt" | "kopiert" | "fehler">("ruht")
+  /**
+   * Der Bericht im Klartext — nur dann gesetzt, wenn das Kopieren NICHT
+   * geklappt hat.
+   *
+   * `navigator.clipboard` braucht HTTPS und eine Erlaubnis; in manchen
+   * Browsern bricht es ohne Vorwarnung ab. Dann waere ein „Konnte nicht
+   * kopiert werden" ein Rueckschritt gegenueber dem Screenshot. Deshalb
+   * erscheint der Text stattdessen in einem Feld, aus dem man ihn selbst
+   * herausholt.
+   */
+  const [berichtText, setBerichtText] = useState<string | null>(null)
+
+  /** Der gewaehlte Zeitraum als Abfrage — Ansicht und Bericht teilen sie. */
+  const abfrage = useCallback(() => {
+    const p = new URLSearchParams()
+    if (von) p.set("von", new Date(von).toISOString())
+    else p.set("tage", String(tage))
+    if (testsZeigen) p.set("tests", "ein")
+    return p
+  }, [tage, von, testsZeigen])
 
   const laden = useCallback(() => {
     setLaedt(true)
     setFehler(null)
-    const abfrage = new URLSearchParams()
-    if (von) abfrage.set("von", new Date(von).toISOString())
-    else abfrage.set("tage", String(tage))
-    if (testsZeigen) abfrage.set("tests", "ein")
-    fetch(`/api/analytics/trichter?${abfrage.toString()}`)
+    fetch(`/api/analytics/trichter?${abfrage().toString()}`)
       .then(async (r) => {
         const j = await r.json()
         if (!r.ok) throw new Error(j.error ?? "Konnte nicht geladen werden.")
@@ -288,9 +294,45 @@ export function TrichterPanel() {
       .then(setDaten)
       .catch((e) => setFehler(e.message))
       .finally(() => setLaedt(false))
-  }, [tage, von, testsZeigen])
+  }, [abfrage])
 
   useEffect(() => laden(), [laden])
+
+  /** Bericht holen — und in die Zwischenablage legen. */
+  const berichtKopieren = useCallback(async () => {
+    setBericht("holt")
+    setBerichtText(null)
+    try {
+      const p = abfrage()
+      p.set("format", "text")
+      const r = await fetch(`/api/analytics/trichter?${p.toString()}`)
+      if (!r.ok) throw new Error("Bericht konnte nicht erstellt werden.")
+      const text = await r.text()
+      try {
+        await navigator.clipboard.writeText(text)
+        setBericht("kopiert")
+        setTimeout(() => setBericht("ruht"), 2500)
+      } catch {
+        // Zwischenablage verweigert (kein HTTPS, keine Erlaubnis, In-App-
+        // Browser): Dann den Text zeigen, nicht den Fehler.
+        setBerichtText(text)
+        setBericht("ruht")
+      }
+    } catch {
+      setBericht("fehler")
+      setTimeout(() => setBericht("ruht"), 3000)
+    }
+  }, [abfrage])
+
+  /** Bericht als .md-Datei — zum Anhängen statt Einfügen. */
+  const berichtLaden = useCallback(() => {
+    const p = abfrage()
+    p.set("format", "text")
+    // Ueber einen echten Seitenaufruf, nicht ueber einen Blob: Die Antwort
+    // traegt schon `Content-Disposition` mit Dateinamen, und der Aufruf
+    // nimmt die Anmelde-Cookies mit.
+    window.location.href = `/api/analytics/trichter?${p.toString()}`
+  }, [abfrage])
 
   if (laedt) {
     return (
@@ -409,8 +451,73 @@ export function TrichterPanel() {
             />
             eigene Tests mitzählen
           </label>
+          {/* Die Auswertung zum Mitnehmen — mit Zaehlregeln und Grenzen im
+              Text, damit die Zahlen auch ausserhalb dieses Bildschirms
+              lesbar bleiben. Enthaelt nur Summen, keine Personendaten. */}
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+            <button
+              type="button"
+              onClick={berichtKopieren}
+              disabled={bericht === "holt"}
+              title="Gesamte Auswertung als Text in die Zwischenablage — zum Einfügen in einen Claude-Chat"
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                bericht === "kopiert"
+                  ? "bg-emerald-600 text-white"
+                  : bericht === "fehler"
+                    ? "bg-red-50 text-red-600"
+                    : "text-slate-600 hover:bg-slate-900 hover:text-white"
+              }`}
+            >
+              {bericht === "kopiert" ? (
+                <ClipboardCheck className="h-3.5 w-3.5" />
+              ) : (
+                <ClipboardCopy className="h-3.5 w-3.5" />
+              )}
+              {bericht === "holt"
+                ? "wird erstellt …"
+                : bericht === "kopiert"
+                  ? "kopiert"
+                  : bericht === "fehler"
+                    ? "fehlgeschlagen"
+                    : "Bericht kopieren"}
+            </button>
+            <button
+              type="button"
+              onClick={berichtLaden}
+              title="Dieselbe Auswertung als Markdown-Datei herunterladen"
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            >
+              <Download className="h-3.5 w-3.5" />
+              .md
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Nur sichtbar, wenn die Zwischenablage nicht wollte. */}
+      {berichtText && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-amber-800">
+              Dieser Browser hat die Zwischenablage abgelehnt. Text markieren und mit Strg&nbsp;+&nbsp;C
+              kopieren:
+            </p>
+            <button
+              type="button"
+              onClick={() => setBerichtText(null)}
+              className="text-xs text-amber-700 underline hover:text-amber-900"
+            >
+              schliessen
+            </button>
+          </div>
+          <textarea
+            readOnly
+            value={berichtText}
+            onFocus={(e) => e.currentTarget.select()}
+            className="h-48 w-full rounded-lg border border-amber-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-slate-700"
+          />
+        </div>
+      )}
 
       {/* ── Der Trichter ───────────────────────────────────────── */}
       <div className="rounded-2xl border border-slate-200/60 bg-white p-5">
