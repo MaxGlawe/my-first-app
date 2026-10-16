@@ -4,6 +4,7 @@ import { AufmerksamkeitMessen } from "@/components/analytics/AufmerksamkeitMesse
 import { ConsentEinstellungenLink } from "@/components/analytics/ConsentBanner"
 import { KonsultationLink } from "@/components/landing/KonsultationLink"
 import { AnzeigeBild } from "@/components/anzeigen/AnzeigeBild"
+import { BewertungsKarte, Bewertungen } from "@/components/anzeigen/Bewertungen"
 import { StickyBuchung } from "@/components/anzeigen/StickyBuchung"
 import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
 
@@ -91,6 +92,16 @@ export default function AlltagLandingPage() {
             </div>
           </div>
         </section>
+
+        {/*
+          Eine Bewertung frueh im Scrollweg — nur am Handy (siehe
+          `.nur-handy` in anzeigen.css). Am Telefon liegen zwischen Hero
+          und Abschluss mehrere Bildschirme; wer vorher aussteigt, haette
+          sonst keine einzige fremde Stimme gelesen.
+        */}
+        <div className="nur-handy" style={{ padding: "20px 20px 0" }}>
+          <BewertungsKarte wer="sarah" ton="hell" />
+        </div>
 
         {/* Stärke 2: Wo stehst du gerade */}
         <section id="wo-stehst-du" style={{ padding: "44px 20px 40px", display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -270,6 +281,10 @@ export default function AlltagLandingPage() {
           <AnzeigeBild name="max-klein" alt="Max Glawe" width={64} height={64} style={{ width: "64px", height: "64px", borderRadius: "50%", objectFit: "cover", objectPosition: "50% 20%", border: "2px solid #A8DCC0" }} />
           <h2 style={{ margin: "0", fontFamily: "var(--font-anzeige-serif), Georgia, serif", fontWeight: "600", fontSize: "34px", lineHeight: "1.1" }}>Der erste Schritt dauert <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>20 Minuten. Und kostet nichts.</span></h2>
           <p style={{ margin: "0", fontSize: "16px", color: "#D7E3DC" }}>Per Video, von zu Hause. Passt es nicht, sage ich dir das ehrlich.</p>
+          {/* Direkt ueber dem letzten Knopf: der Satz eines anderen,
+              unmittelbar vor der Entscheidung. */}
+          <Bewertungen reihenfolge={["sarah", "scarlett"]} />
+
           <KonsultationLink abschnitt="alltag-abschluss" metaMelden={false} neuerTab={false} className="js-book" style={{ minHeight: "56px", borderRadius: "16px", background: "#A8DCC0", color: "#0F2A1F", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontWeight: "700", fontSize: "17px" }}>Kostenloses Kennenlernen buchen
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>
           </KonsultationLink>

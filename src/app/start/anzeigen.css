@@ -249,3 +249,25 @@ body {
     overflow: hidden;
   }
 }
+
+/*
+ * Nur am Handy sichtbar.
+ *
+ * Gedacht fuer die eine Bewertung kurz nach dem Hero: Am Telefon liegt
+ * zwischen Hero und Abschluss viel Scrollweg, und wer dort aussteigt, hat
+ * den Abschnitt „Was andere sagen" nie gesehen. Auf dem groesseren
+ * Bildschirm ist derselbe Weg kuerzer, und die Karte waere eine
+ * Wiederholung im Blickfeld.
+ *
+ * Die Grenze liegt bei 640 px, weil die Seite eine Spalte von 520 px ist:
+ * Darunter fuellt sie den Bildschirm (Telefon), darueber steht sie frei.
+ */
+.nur-handy {
+  display: block;
+}
+
+@media (min-width: 641px) {
+  .nur-handy {
+    display: none;
+  }
+}
