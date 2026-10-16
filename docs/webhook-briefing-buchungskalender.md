@@ -77,13 +77,20 @@ vorangegangene Ereignis können wir einen neuen Bucher niemandem zuordnen.
 `booking_patient_id` ist eure ID — sie ist der Schlüssel, über den wir
 Termine und Patienten zusammenbringen. Sie muss stabil bleiben.
 
-**Leere Felder sind erlaubt (seit 16.10.2026).** Bei Praxis-OS-Buchungen
-fragt der Kalender den Nachnamen nicht mehr ab und sendet `"nachname": ""`.
-Das nehmen wir an: Ein leerer Text heißt „keine Angabe“, nicht „Fehler“.
-Dasselbe gilt für `vorname`, `telefon`, `geburtsdatum` und `geschlecht` —
-leer, `null` oder ganz weggelassen ist gleichwertig. In der Akte steht
-dafür `Unbekannt`, bis der Name im Kennenlernen nachgetragen wird; in
-Mails an den Patienten erscheint der Platzhalter nie.
+**Der Nachname wird weiter abgefragt.** Am 16.10.2026 war kurz geplant, ihn
+bei Praxis-OS-Buchungen weglassen und `"nachname": ""` senden zu lassen; das
+ist zurückgenommen — er bleibt im Formular. Gut so: Mit echtem Namen steht
+in der Akte ein Patient, den man wiedererkennt, und auf Rechnung und
+Vertrag der Name, der dort hingehört.
+
+**Leere Felder werfen uns trotzdem nicht um.** Seit dem 16.10.2026 nimmt die
+Prüfung einen leeren Text als „keine Angabe“ an, nicht als „Fehler“ — für
+`vorname`, `nachname`, `telefon`, `geburtsdatum` und `geschlecht`; leer,
+`null` oder ganz weggelassen ist gleichwertig. Das ist Absicherung, keine
+Einladung: Fällt ein Feld künftig doch weg, geht die Buchung durch, statt
+still zu verschwinden (in der Akte steht dann `Unbekannt`, in Mails an den
+Patienten erscheint der Platzhalter nie). Fehlende Namen bitte vorher
+absprechen — ohne Nachnamen ist der Datensatz nur halb brauchbar.
 
 **Pflicht bleiben nur zwei Angaben:** eine Patienten-ID (`id` oder
 `booking_patient_id`) und eine gültige `email`. Fehlt eine davon, können
