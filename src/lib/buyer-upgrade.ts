@@ -1,4 +1,5 @@
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { akteNamen, GEBURTSDATUM_FEHLT } from "@/lib/buchung/stammdaten"
 
 export interface UpgradeBuyerParams {
   /** Login (auth user id) of the externer_kaeufer to upgrade */
@@ -79,10 +80,17 @@ export async function upgradeBuyerToPatient(
     .from("patients")
     .insert({
       user_id: userId,
-      vorname: params.vorname ?? profile.first_name ?? "Unbekannt",
-      nachname: params.nachname ?? profile.last_name ?? "Unbekannt",
+      // `akteNamen`/`||` statt `??`: Der Webhook reicht seit dem 16.10.2026
+      // einen LEEREN Nachnamen weiter (das Buchungstool fragt ihn nicht mehr
+      // ab), und der leere Text ist nicht nullish. Mit `??` landete er in
+      // der Spalte und verstiess gegen deren Prüfbedingung — das Upgrade des
+      // Käufers zum Patienten waere gescheitert.
+      ...akteNamen({
+        vorname: params.vorname ?? profile.first_name,
+        nachname: params.nachname ?? profile.last_name,
+      }),
       email,
-      geburtsdatum: params.geburtsdatum ?? "1900-01-01",
+      geburtsdatum: params.geburtsdatum?.trim() || GEBURTSDATUM_FEHLT,
       telefon: params.telefon ?? null,
       geschlecht: "unbekannt",
       therapeut_id: therapeutId,

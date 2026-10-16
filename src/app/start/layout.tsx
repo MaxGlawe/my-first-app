@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { LandingAnalytics } from "@/components/landing/LandingAnalytics"
+import { BuchungVorladen } from "@/components/anzeigen/BuchungVorladen"
 import "./anzeigen.css"
 
 /**
@@ -72,6 +73,36 @@ export default function AnzeigenLayout({ children }: { children: React.ReactNode
       <Suspense fallback={null}>
         <LandingAnalytics />
       </Suspense>
+
+      {/*
+        Verbindung zum Buchungskalender vorab aufbauen.
+        ZWEI Adressen, und das ist der Punkt: Die Seite
+        `termin-buchen.html` liegt auf physiotherapie-glawe.de, der
+        Kalender selbst wird von dort als Widget von
+        my-first-app-psi-seven.vercel.app nachgeladen. Wer nur die erste
+        Domain vorbereitet, spart den ersten Handschlag und wartet dann auf
+        den zweiten — sichtbar wird der Kalender erst nach beiden.
+
+        `preconnect` ueberträgt nichts: Namensauflösung, TCP, TLS. Kein
+        Datenschutzgewicht wie ein Abruf, aber auf dem Handy im Mobilfunk
+        sind es die 200 bis 600 Millisekunden, die zwischen „buchen"
+        gedrückt und „Kalender da" liegen.
+
+        Kein `crossOrigin` an diesen Links: Die Verbindung soll für eine
+        NAVIGATION dienen. Mit dem Attribut öffnet der Browser eine
+        zweite, getrennte Verbindung für Abrufe mit Berechtigungsnachweis —
+        und die hilft beim Klick auf einen Link nicht.
+      */}
+      <link rel="preconnect" href="https://physiotherapie-glawe.de" />
+      <link rel="preconnect" href="https://my-first-app-psi-seven.vercel.app" />
+      {/* Für Browser, die preconnect nicht beachten, bleibt wenigstens die
+          Namensauflösung vorbereitet. */}
+      <link rel="dns-prefetch" href="https://physiotherapie-glawe.de" />
+      <link rel="dns-prefetch" href="https://my-first-app-psi-seven.vercel.app" />
+
+      {/* Die Seite selbst — erst wenn der Knopf im Bild steht. */}
+      <BuchungVorladen />
+
       {children}
     </div>
   )

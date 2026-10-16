@@ -19,6 +19,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { createHmac, timingSafeEqual } from "crypto"
 import { z } from "zod"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+// Stammdaten-Pruefung und Platzhalter an EINER Stelle — sie laeuft hier
+// zweimal (patient.created und die Vormerkung beim Termin).
+import {
+  akteNamen,
+  GEBURTSDATUM_FEHLT,
+  normalisiereStammdaten,
+  stammdatenSchema,
+} from "@/lib/buchung/stammdaten"
 import { upgradeBuyerToPatient } from "@/lib/buyer-upgrade"
 import { stopSchmerzcheckDrip } from "@/lib/schmerzcheck/check-store"
 import { sendMetaEvent } from "@/lib/meta-capi"
@@ -148,45 +156,6 @@ async function verifySignature(
 // ----------------------------------------------------------------
 // Zod schemas for incoming webhook payloads
 // ----------------------------------------------------------------
-
-// Accept both English (from booking tool) and German field names
-const patientCreatedRawSchema = z.object({
-  // Patient ID: booking tool sends "id", we also accept "booking_patient_id"
-  id: z.string().min(1).optional(),
-  booking_patient_id: z.string().min(1).optional(),
-  email: z.string().email(),
-  // Name fields: accept both English and German
-  first_name: z.string().min(1).max(100).optional(),
-  vorname: z.string().min(1).max(100).optional(),
-  last_name: z.string().min(1).max(100).optional(),
-  nachname: z.string().min(1).max(100).optional(),
-  // Phone: accept both
-  phone: z.string().max(30).optional().nullable(),
-  telefon: z.string().max(30).optional().nullable(),
-  // Date of birth: accept both
-  date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  geburtsdatum: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  geschlecht: z
-    .enum(["maennlich", "weiblich", "divers", "unbekannt"])
-    .optional()
-    .default("unbekannt"),
-}).refine(
-  (d) => d.id || d.booking_patient_id,
-  { message: "Either 'id' or 'booking_patient_id' is required", path: ["booking_patient_id"] }
-)
-
-// Normalize to internal German field names
-function normalizePatientPayload(raw: z.infer<typeof patientCreatedRawSchema>) {
-  return {
-    booking_patient_id: raw.booking_patient_id ?? raw.id!,
-    email: raw.email,
-    vorname: raw.vorname ?? raw.first_name,
-    nachname: raw.nachname ?? raw.last_name,
-    telefon: raw.telefon ?? raw.phone,
-    geburtsdatum: raw.geburtsdatum ?? raw.date_of_birth,
-    geschlecht: raw.geschlecht,
-  }
-}
 
 // Accept both English (from booking tool) and internal field names
 const appointmentRawSchema = z.object({
@@ -325,10 +294,15 @@ async function erstellePatientAusBuchung(
     return { id: null, hinweis: "Kein Admin als Standard-Behandler gefunden." }
   }
 
+  // `akteNamen` statt `??`: Seit dem 16.10.2026 schickt das Buchungstool
+  // `nachname: ""`, und der leere Text ist nicht nullish — `??` haette ihn
+  // durchgelassen. Die Spalte verlangt aber mindestens ein Zeichen
+  // (CHECK char_length BETWEEN 1 AND 100), die Anlage waere also mit
+  // „violates check constraint" gescheitert: kein Patient, kein Termin in
+  // der Akte, keine Einladung.
   const newPatient = {
-    vorname: data.vorname ?? "Unbekannt",
-    nachname: data.nachname ?? "Unbekannt",
-    geburtsdatum: data.geburtsdatum ?? "1900-01-01",
+    ...akteNamen(data),
+    geburtsdatum: data.geburtsdatum?.trim() || GEBURTSDATUM_FEHLT,
     geschlecht: data.geschlecht,
     telefon: data.telefon ?? null,
     email: data.email,
@@ -392,7 +366,7 @@ async function handlePatientCreated(
    */
   backfill = false
 ): Promise<{ status: "success" | "error" | "duplicate"; errorMessage?: string }> {
-  const parsed = patientCreatedRawSchema.safeParse(rawPayload)
+  const parsed = stammdatenSchema.safeParse(rawPayload)
   if (!parsed.success) {
     return {
       status: "error",
@@ -400,7 +374,7 @@ async function handlePatientCreated(
     }
   }
 
-  const data = normalizePatientPayload(parsed.data)
+  const data = normalisiereStammdaten(parsed.data)
 
   // PROJ-23: Schmerzcheck-Lead bucht (Konversion) → Drip stoppen + Meta-Purchase
   convertSchmerzcheckLead(supabase, data.email)
@@ -593,7 +567,7 @@ async function handleAppointmentEvent(
       .maybeSingle()
 
     const roh = vormerkung?.payload as Record<string, unknown> | undefined
-    const stamm = roh ? patientCreatedRawSchema.safeParse(roh) : null
+    const stamm = roh ? stammdatenSchema.safeParse(roh) : null
 
     if (!stamm?.success) {
       return {
@@ -602,7 +576,7 @@ async function handleAppointmentEvent(
       }
     }
 
-    const angelegt = await erstellePatientAusBuchung(supabase, normalizePatientPayload(stamm.data))
+    const angelegt = await erstellePatientAusBuchung(supabase, normalisiereStammdaten(stamm.data))
     if (!angelegt.id) {
       return { status: "error", errorMessage: angelegt.hinweis }
     }

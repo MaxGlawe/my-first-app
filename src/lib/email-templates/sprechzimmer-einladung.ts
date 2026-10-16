@@ -80,7 +80,21 @@ function escapeHtml(s: string): string {
 }
 
 export function sprechzimmerEinladung(props: EinladungProps): Mail {
-  const name = escapeHtml(props.vorname || "")
+  /**
+   * Anrede OHNE Namen, wenn keiner vorliegt.
+   *
+   * Vorher stand bei fehlendem Vornamen „Hallo ," in der Mail — mit
+   * Leerzeichen vor dem Komma. Das Buchungstool fragt seit dem 16.10.2026
+   * den Nachnamen nicht mehr ab; dass es morgen auch den Vornamen weglaesst,
+   * ist dann nur noch eine Einstellung. Eine Einladung mit „Hallo ," sieht
+   * nach einem Fehler aus, und bei der ersten Mail an einen neuen Patienten
+   * ist genau das der falsche Eindruck.
+   */
+  const vorname = props.vorname?.trim() ?? ""
+  // Zwei Fassungen: Im HTML-Teil muss der Name maskiert sein, im Textteil
+  // darf er es NICHT — sonst steht dort „Hallo Mei&amp;er,".
+  const anredeHtml = vorname ? `Hallo ${escapeHtml(vorname)},` : "Hallo,"
+  const anredeText = vorname ? `Hallo ${vorname},` : "Hallo,"
   const datum = formatDatum(props.geplantAt)
   const uhrzeit = formatUhrzeit(props.geplantAt)
 
@@ -119,7 +133,7 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
       </div>
 
       <div style="padding:18px 32px 0;">
-        <p style="font-size:15px;line-height:1.65;color:${BODY};margin:0 0 6px;">Hallo ${name},</p>
+        <p style="font-size:15px;line-height:1.65;color:${BODY};margin:0 0 6px;">${anredeHtml}</p>
         <p style="font-size:15px;line-height:1.65;color:${BODY};margin:0 0 20px;">${einstieg}</p>
 
         <table cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;background:${PAPER};border-radius:12px;padding:0;">
@@ -223,7 +237,7 @@ export function sprechzimmerEinladung(props: EinladungProps): Mail {
 </body></html>`
 
   const text = [
-    `Hallo ${props.vorname},`,
+    anredeText,
     "",
     einstieg.replace(/<[^>]+>/g, ""),
     "",

@@ -77,6 +77,19 @@ vorangegangene Ereignis können wir einen neuen Bucher niemandem zuordnen.
 `booking_patient_id` ist eure ID — sie ist der Schlüssel, über den wir
 Termine und Patienten zusammenbringen. Sie muss stabil bleiben.
 
+**Leere Felder sind erlaubt (seit 16.10.2026).** Bei Praxis-OS-Buchungen
+fragt der Kalender den Nachnamen nicht mehr ab und sendet `"nachname": ""`.
+Das nehmen wir an: Ein leerer Text heißt „keine Angabe“, nicht „Fehler“.
+Dasselbe gilt für `vorname`, `telefon`, `geburtsdatum` und `geschlecht` —
+leer, `null` oder ganz weggelassen ist gleichwertig. In der Akte steht
+dafür `Unbekannt`, bis der Name im Kennenlernen nachgetragen wird; in
+Mails an den Patienten erscheint der Platzhalter nie.
+
+**Pflicht bleiben nur zwei Angaben:** eine Patienten-ID (`id` oder
+`booking_patient_id`) und eine gültige `email`. Fehlt eine davon, können
+wir die Buchung niemandem zuordnen und weisen sie ab (sichtbar im
+Ereignisprotokoll).
+
 ### 2.2 Termin
 
 ```json

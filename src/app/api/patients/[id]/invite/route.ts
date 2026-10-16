@@ -11,6 +11,7 @@ import { generateToken } from "@/lib/tokens"
 import { sendEmail } from "@/lib/email"
 import { escapeHtml } from "@/lib/html-escape"
 import { getOrCreateCustomer, createSubscription, getSubscriptionPriceId, createCouponForPromo, SUBSCRIPTION_PRICES } from "@/lib/stripe"
+import { anzeigeName } from "@/lib/buchung/stammdaten"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -165,7 +166,11 @@ export async function POST(
 
       stripeCustomerId = await getOrCreateCustomer({
         email: patient.email,
-        name: `${patient.vorname} ${patient.nachname}`,
+        // Nicht `${vorname} ${nachname}`: Fehlt der Nachname, stand hier
+        // „Sabine Unbekannt" — und dieser Name landet bei Stripe und von
+        // dort auf Belegen und Zahlungsbestaetigungen. `anzeigeName` laesst
+        // den Platzhalter weg.
+        name: anzeigeName(patient),
         patientId: patient.id,
         existingCustomerId: existingSub?.stripe_customer_id,
       })
