@@ -35,6 +35,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { isRateLimited } from "@/lib/rate-limit"
 
+/** Das Buchungstool — dieselbe Adresse wie in lib/booking-coordination. */
+const BUCHUNGSTOOL = "https://my-first-app-psi-seven.vercel.app"
+
 export const dynamic = "force-dynamic"
 
 /**
@@ -67,9 +70,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ token: null }, { status: 400 })
   }
 
-  const ziel = process.env.CHECK_UEBERGABE_URL
-  if (!ziel) {
-    // Noch nicht eingerichtet. Kein Fehler — nur kein Code.
+  // Derselbe Dienst und derselbe Schluessel wie die Koordinations-API
+  // (lib/booking-coordination): Das Buchungstool stellt den Kurz-Code unter
+  // /api/check-notiz aus. Beides laesst sich per Env ueberschreiben, muss
+  // aber nicht — eine Konfiguration, die man setzen MUSS, ist eine, die
+  // beim naechsten Server fehlt.
+  const basis = (process.env.BOOKING_COORDINATION_BASE_URL || BUCHUNGSTOOL).replace(/\/$/, "")
+  const ziel = process.env.CHECK_UEBERGABE_URL || `${basis}/api/check-notiz`
+  const schluessel = process.env.CHECK_UEBERGABE_SCHLUESSEL || process.env.PRAXIS_OS_API_KEY
+
+  if (!schluessel) {
+    // Ohne Schluessel weist die Gegenseite die Anfrage ohnehin ab (401).
+    // Dann gar nicht erst fragen — und trotzdem kein Fehler: nur kein Code.
     return NextResponse.json({ token: null })
   }
 
@@ -80,9 +92,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(process.env.CHECK_UEBERGABE_SCHLUESSEL
-          ? { "X-Api-Key": process.env.CHECK_UEBERGABE_SCHLUESSEL }
-          : {}),
+        "X-Api-Key": schluessel,
       },
       body: JSON.stringify({ note: text, source: "praxis-os-check" }),
       signal: abbruch.signal,
