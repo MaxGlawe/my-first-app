@@ -94,6 +94,18 @@ interface BannerZeile {
 
 export interface BerichtDaten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  check_trichter?: { stufe: string; anzahl: number; anteil: number; hinweis: string }[]
+  check_stopp?: number
+  check_nach_anzeige?: {
+    name: string
+    sitzungen: number
+    gestartet: number
+    ergebnis: number
+    klicks: number
+    stopp: number
+    startrate: number
+    klickrate: number
+  }[]
   vergleich?: VergleichBlock | null
   umstellung_kennenlernen: string
   verworfene_sitzungen: number
@@ -533,6 +545,43 @@ export function berichtAlsText(d: BerichtDaten): string {
     `Buchungen ohne Herkunftsangabe: ${d.buchungen_ohne_herkunft}. Sie als „direkt“ zu zählen wäre eine Erfindung — das Buchungstool sendet die Herkunft erst seit Oktober 2026 mit.`
   )
   z.push("")
+
+  // ── Der Schmerzcheck ───────────────────────────────────────────────────
+  if (d.check_trichter && d.check_trichter[0] && d.check_trichter[0].anzahl > 0) {
+    z.push("## 9a. Schmerzcheck auf /check")
+    z.push("")
+    z.push(
+      "Eigener Weg mit eigenen Stufen: Hier wird getippt, nicht gescrollt. Gemessen wird nur der erreichte Schritt — keine Antwort verlässt das Gerät des Besuchers."
+    )
+    z.push("")
+    z.push(
+      tabelle(
+        ["Stufe", "Sitzungen", "Anteil", "Bedingung"],
+        d.check_trichter.map((s) => [s.stufe, s.anzahl, `${s.anteil} %`, s.hinweis])
+      )
+    )
+    z.push("")
+    z.push(
+      `Sicherheits-Stopp: ${d.check_stopp ?? 0} Sitzungen. Sie bekommen bewusst kein Buchungsangebot und fehlen deshalb in den Stufen darunter — der gewollte Ausgang, kein Abbruch.`
+    )
+    z.push("")
+    if (d.check_nach_anzeige && d.check_nach_anzeige.length > 0) {
+      z.push(
+        tabelle(
+          ["Anzeige", "Sitzungen", "gestartet", "Ergebnis", "geklickt", "Stopp"],
+          d.check_nach_anzeige.map((r) => [
+            r.name,
+            r.sitzungen,
+            `${r.gestartet} (${r.startrate} %)`,
+            r.ergebnis,
+            `${r.klicks} (${r.klickrate} %)`,
+            r.stopp,
+          ])
+        )
+      )
+      z.push("")
+    }
+  }
 
   // ── Grenzen ────────────────────────────────────────────────────────────
   z.push("## 10. Was diese Zahlen nicht sagen")

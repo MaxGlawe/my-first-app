@@ -271,3 +271,88 @@ body {
     display: none;
   }
 }
+
+/*
+ * Kurze Bildschirme: Der Startknopf des Checks muss ohne Scrollen sichtbar
+ * sein — auch mit der Einwilligungsleiste darunter.
+ *
+ * Gemessen am 19.10.2026 auf dem iPhone SE (375 x 667): Die Leiste nimmt
+ * 133 px, frei bleiben 534 px, der Knopf endete bei 675 px. Es fehlten
+ * 141 px, auf einem 360 x 640er sogar 168 px. Ein Knopf, den man erst
+ * suchen muss, ist auf einer Anzeigenseite kein Knopf.
+ *
+ * Gekuerzt wird NICHTS vom abgestimmten Text: Ueberschrift, Unterzeile und
+ * die drei Merkmale bleiben stehen, nur enger. Ausgeblendet wird allein die
+ * dreizeilige Aufzaehlung in der Karte — sie wiederholt die Unterzeile.
+ *
+ * `!important` ist hier kein Notnagel: Die Masse stehen als Inline-Stile in
+ * der Vorlage, und ein Inline-Stil schlaegt jede Regel aus einer Datei.
+ * Entweder hier so, oder die ganze Vorlage muesste auf Klassen umgebaut
+ * werden — mit dem Risiko, dabei ihr Aussehen zu veraendern.
+ */
+/*
+ * Die Grenze liegt bei 900 px und nicht bei 740: Auf einem 390 x 844er
+ * blieben sonst nur 36 px Luft, und die sind weg, sobald jemand am Telefon
+ * groessere Schrift eingestellt hat (Android skaliert auch Pixelangaben).
+ * Oberhalb von 900 px Hoehe sind wir ohnehin auf Tablet oder Schreibtisch,
+ * wo die volle Fassung hinpasst.
+ */
+@media (max-height: 900px) {
+  .check-hero {
+    padding-top: 12px !important;
+    padding-bottom: 20px !important;
+    gap: 12px !important;
+  }
+
+  .check-hero h1 {
+    font-size: 30px !important;
+  }
+
+  .check-lead {
+    font-size: 15.5px !important;
+  }
+
+  .check-chips li {
+    padding: 4px 10px !important;
+    font-size: 13px !important;
+  }
+
+  .check-karte {
+    padding: 18px 16px 16px !important;
+    gap: 12px !important;
+  }
+
+  .check-vorteile {
+    display: none !important;
+  }
+}
+
+/*
+ * Noch kuerzer (iPhone SE, 360 x 640 und aehnliche): Auf 640 px Hoehe
+ * blieben nach der ersten Stufe nur 31 px Luft. Das reicht nicht, sobald
+ * die Einwilligungsleiste eine Zeile mehr braucht oder jemand die Schrift
+ * seines Telefons vergroessert hat.
+ */
+@media (max-height: 680px) {
+  .check-hero h1 {
+    font-size: 26px !important;
+  }
+
+  .check-lead {
+    font-size: 14.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  .check-chips li {
+    padding: 3px 9px !important;
+    font-size: 12px !important;
+  }
+
+  .check-karte {
+    padding: 16px 14px 14px !important;
+  }
+
+  .check-karte h2 {
+    font-size: 21px !important;
+  }
+}

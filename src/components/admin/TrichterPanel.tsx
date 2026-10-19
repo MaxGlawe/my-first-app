@@ -99,8 +99,21 @@ interface BannerZeile {
   ohne_auswahl: number
   zustimmungsrate: number
 }
+interface CheckZeile {
+  name: string
+  sitzungen: number
+  gestartet: number
+  ergebnis: number
+  klicks: number
+  stopp: number
+  startrate: number
+  klickrate: number
+}
 interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  check_trichter: Stufe[]
+  check_stopp: number
+  check_nach_anzeige: CheckZeile[]
   vergleich?: VergleichBlock | null
   umstellung_kennenlernen: string
   verworfene_sitzungen: number
@@ -693,6 +706,84 @@ export function TrichterPanel() {
       {/* Vorher/Nachher steht VOR dem Trichter: Wer einen Zeitpunkt
           eingibt, hat genau eine Frage, und die wird oben beantwortet. */}
       {daten.vergleich && <VergleichKarte v={daten.vergleich} />}
+
+      {/* ── Der Schmerzcheck auf /check ────────────────────────── */}
+      {daten.check_trichter && daten.check_trichter[0]?.anzahl > 0 && (
+        <Karte
+          titel="Schmerzcheck auf /check"
+          hinweis="Eigener Weg mit eigenen Stufen: Hier wird getippt, nicht gescrollt. Gemessen wird nur der erreichte Schritt — keine Antwort verlässt das Gerät des Besuchers."
+          symbol={<ListOrdered className="h-4 w-4 text-slate-400" />}
+        >
+          <div className="space-y-3">
+            {daten.check_trichter.map((s, i) => {
+              const vorher = i > 0 ? daten.check_trichter[i - 1] : null
+              const verlust = vorher && vorher.anzahl > 0 ? vorher.anzahl - s.anzahl : 0
+              return (
+                <div key={s.stufe}>
+                  {vorher && verlust > 0 && (
+                    <div className="mb-1 flex items-center gap-1.5 pl-1 text-[11px] text-red-500">
+                      <TrendingDown className="h-3 w-3" />
+                      <span>
+                        −{verlust} ({Math.round((verlust / vorher.anzahl) * 100)} %)
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline justify-between text-xs">
+                    <span className="font-medium text-slate-700">{s.stufe}</span>
+                    <span className="tabular-nums text-slate-500">
+                      <strong className="text-slate-800">{s.anzahl}</strong> · {s.anteil} %
+                    </span>
+                  </div>
+                  <p className="mb-1 text-[10px] text-slate-400">{s.hinweis}</p>
+                  <Balken anteil={s.anteil} farbe="#2F6B4F" />
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Kein Abbruch, sondern ein eigener Ausgang. */}
+          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">
+            <strong>{daten.check_stopp}</strong> Sitzungen endeten im Sicherheits-Stopp (Warnzeichen
+            angegeben). Sie bekommen bewusst kein Buchungsangebot und fehlen deshalb in den Stufen
+            darunter — das ist der gewollte Ausgang, kein Abbruch.
+          </div>
+
+          {daten.check_nach_anzeige.length > 0 && (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-[11px] text-slate-400">
+                    <th className="pb-2 font-medium">Anzeige</th>
+                    <th className="pb-2 text-right font-medium">Sitzungen</th>
+                    <th className="pb-2 text-right font-medium">gestartet</th>
+                    <th className="pb-2 text-right font-medium">Ergebnis</th>
+                    <th className="pb-2 text-right font-medium">geklickt</th>
+                    <th className="pb-2 text-right font-medium">Stopp</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {daten.check_nach_anzeige.map((z) => (
+                    <tr key={z.name}>
+                      <td className="max-w-[10rem] truncate py-2 font-medium text-slate-700">{z.name}</td>
+                      <td className="py-2 text-right tabular-nums text-slate-600">{z.sitzungen}</td>
+                      <td className="py-2 text-right tabular-nums">
+                        <span className="text-slate-600">{z.gestartet}</span>{" "}
+                        <span className="text-slate-400">({z.startrate} %)</span>
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-slate-600">{z.ergebnis}</td>
+                      <td className="py-2 text-right tabular-nums">
+                        <span className="text-slate-600">{z.klicks}</span>{" "}
+                        <span className="text-slate-400">({z.klickrate} %)</span>
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-amber-600">{z.stopp}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Karte>
+      )}
 
       {/* ── Der Trichter ───────────────────────────────────────── */}
       <div className="rounded-2xl border border-slate-200/60 bg-white p-5">

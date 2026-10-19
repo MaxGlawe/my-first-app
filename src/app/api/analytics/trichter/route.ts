@@ -112,6 +112,16 @@ interface Sitzung {
   /** Nach dem Buchungsklick: Seite verlassen (ms) oder geblieben? */
   klickVerlassenMs: number | null
   klickGeblieben: boolean
+  /**
+   * Der Schmerzcheck auf /check. Nur erreichte SCHRITTE, nie Antworten —
+   * was jemand angetippt hat, verlaesst sein Geraet erst bei der Buchung
+   * und steht in keiner Messung.
+   */
+  checkGestartet: boolean
+  checkFrage6: boolean
+  checkErgebnis: boolean
+  checkKlick: boolean
+  checkStopp: boolean
 }
 
 /** Ein Zeitfenster. `bis: null` heisst „bis jetzt". */
@@ -223,6 +233,11 @@ async function auswerten(
         bannerEntscheidung: null,
         klickVerlassenMs: null,
         klickGeblieben: false,
+        checkGestartet: false,
+        checkFrage6: false,
+        checkErgebnis: false,
+        checkKlick: false,
+        checkStopp: false,
       })
     } else {
       vorhanden.letzte = a.path
@@ -256,6 +271,13 @@ async function auswerten(
       if (Number.isFinite(ms)) s.klickVerlassenMs = ms
     }
     if (e.event_type === "klick_geblieben") s.klickGeblieben = true
+
+    // ── Schmerzcheck ───────────────────────────────────────────────────
+    if (e.event_type === "check_gestartet") s.checkGestartet = true
+    if (e.event_type === "check_frage_6") s.checkFrage6 = true
+    if (e.event_type === "check_ergebnis") s.checkErgebnis = true
+    if (e.event_type === "check_kennenlernen_klick") s.checkKlick = true
+    if (e.event_type === "check_sicherheitsstopp") s.checkStopp = true
 
     if (e.event_type === "consent_gezeigt") s.bannerGezeigt = true
     if (e.event_type === "consent_akzeptiert") s.bannerEntscheidung = "akzeptiert"
@@ -598,6 +620,92 @@ async function auswerten(
     .map(([cta, anzahl]) => ({ cta, anzahl }))
     .sort((a, b) => b.anzahl - a.anzahl)
 
+  // ── Der Schmerzcheck auf /check ────────────────────────────────────────
+  //
+  // Ein EIGENER Trichter, nicht eine weitere Leiter: Die Stufen sind hier
+  // keine Abschnitte, die jemand ueberscrollt, sondern Schritte, die er
+  // antippt. In die Leseleiter gemischt saehe ein abgebrochener Check aus
+  // wie ein Leser, der nicht weit genug gescrollt hat — zwei verschiedene
+  // Dinge mit derselben Zahl.
+  //
+  // Die letzte Stufe kommt aus dem Kalender: Buchungen tragen `cta` aus dem
+  // Knopf am Ergebnis (`check-ergebnis`). Ohne diesen Umweg endete der
+  // Trichter beim Klick, und ob daraus ein Termin wurde, stuende nirgends.
+  const checkSitzungen = alle.filter((s) => s.erste === "/check")
+  const checkBuchungen = (termine ?? []).filter(
+    (t) => (t.referrer_cta as string | null)?.trim() === "check-ergebnis"
+  ).length
+  const checkAnteil = (n: number) =>
+    checkSitzungen.length > 0 ? Math.round((n / checkSitzungen.length) * 1000) / 10 : 0
+
+  const check_trichter = [
+    {
+      stufe: "Besucher",
+      anzahl: checkSitzungen.length,
+      anteil: 100,
+      hinweis: "Sitzungen, die auf /check begonnen haben",
+    },
+    {
+      stufe: "Check gestartet",
+      anzahl: checkSitzungen.filter((s) => s.checkGestartet).length,
+      anteil: checkAnteil(checkSitzungen.filter((s) => s.checkGestartet).length),
+      hinweis: "Klick auf „Check starten“",
+    },
+    {
+      stufe: "Frage 6 erreicht",
+      anzahl: checkSitzungen.filter((s) => s.checkFrage6).length,
+      anteil: checkAnteil(checkSitzungen.filter((s) => s.checkFrage6).length),
+      hinweis: "die Sicherheitsfrage stand auf dem Bildschirm",
+    },
+    {
+      stufe: "Ergebnis gesehen",
+      anzahl: checkSitzungen.filter((s) => s.checkErgebnis).length,
+      anteil: checkAnteil(checkSitzungen.filter((s) => s.checkErgebnis).length),
+      hinweis: "Einschätzung erschienen (ohne Sicherheits-Stopp)",
+    },
+    {
+      stufe: "Kennenlernen angeklickt",
+      anzahl: checkSitzungen.filter((s) => s.checkKlick).length,
+      anteil: checkAnteil(checkSitzungen.filter((s) => s.checkKlick).length),
+      hinweis: "Klick auf den Knopf unter der Einschätzung",
+    },
+    {
+      stufe: "Termin gebucht",
+      anzahl: checkBuchungen,
+      anteil: checkAnteil(checkBuchungen),
+      hinweis: "Videotermine mit cta=check-ergebnis",
+    },
+  ]
+
+  // Der Sicherheits-Stopp ist KEINE Trichterstufe, sondern ein eigener
+  // Ausgang: Diese Menschen sollen nicht buchen. Als Abbruch gezaehlt
+  // saehe die Seite schlechter aus, je besser sie ihre Aufgabe erfuellt.
+  const check_stopp = checkSitzungen.filter((s) => s.checkStopp).length
+
+  const checkNachAnzeige = new Map<
+    string,
+    { sitzungen: number; gestartet: number; ergebnis: number; klicks: number; stopp: number }
+  >()
+  for (const s of checkSitzungen) {
+    const k = s.anzeige ?? "(ohne Kennung)"
+    const e = checkNachAnzeige.get(k) ?? { sitzungen: 0, gestartet: 0, ergebnis: 0, klicks: 0, stopp: 0 }
+    e.sitzungen++
+    if (s.checkGestartet) e.gestartet++
+    if (s.checkErgebnis) e.ergebnis++
+    if (s.checkKlick) e.klicks++
+    if (s.checkStopp) e.stopp++
+    checkNachAnzeige.set(k, e)
+  }
+  const check_nach_anzeige = [...checkNachAnzeige.entries()]
+    .map(([name, e]) => ({
+      name,
+      ...e,
+      startrate: e.sitzungen > 0 ? Math.round((e.gestartet / e.sitzungen) * 1000) / 10 : 0,
+      klickrate: e.sitzungen > 0 ? Math.round((e.klicks / e.sitzungen) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.sitzungen - a.sitzungen)
+    .slice(0, 12)
+
   const ergebnis = {
     zeitraum,
     // Der Schnitt zwischen zwei Angeboten. Steht im Dashboard als Marke,
@@ -605,6 +713,9 @@ async function auswerten(
     // wissen, dass dazwischen aus 69 Euro „kostenlos" wurde.
     umstellung_kennenlernen: UMSTELLUNG_KENNENLERNEN,
     verworfene_sitzungen: verworfen.size,
+    check_trichter,
+    check_stopp,
+    check_nach_anzeige,
     gesamt,
     intern_ausgeschlossen: intern.size,
     trichter,
