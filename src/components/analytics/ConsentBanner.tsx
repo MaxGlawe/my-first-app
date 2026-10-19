@@ -94,21 +94,50 @@ export function ConsentBanner() {
   // der Systemschrift und mit dem Sicherheitsabstand am unteren Rand des
   // iPhones. Ein fester Wert wäre auf dem einen Gerät zu klein (die Leisten
   // überlappen) und auf dem anderen zu gross (eine Lücke dazwischen).
+  //
+  // Die Leiste kann AUCH SPÄTER erscheinen. Auf /check gibt es sie erst,
+  // wenn die Einschätzung steht — vorher wäre ein Buchungsangebot falsch,
+  // weil die Sicherheitsfrage noch nicht beantwortet ist. Die erste
+  // Fassung suchte nur beim Einblenden des Banners nach ihr, fand nichts
+  // und setzte den Sockel auf 0: Das Banner lag dann über dem
+  // Buchungsknopf, und der wichtigste Knopf der Seite war nicht
+  // anklickbar. Gefunden am 19.10.2026 beim Durchklicken am Telefon.
+  //
+  // Deshalb zusätzlich ein Beobachter auf dem Dokument — er hört auf, sobald
+  // die Leiste da ist.
   useEffect(() => {
     if (!sichtbar) return
-    const leiste = document.querySelector<HTMLElement>(".sticky-cta")
-    if (!leiste) {
-      setSockel(0)
-      return
+
+    let beobachter: ResizeObserver | null = null
+    let aufraeumen: (() => void) | null = null
+
+    const anhaengen = (leiste: HTMLElement) => {
+      const messen = () => setSockel(leiste.getBoundingClientRect().height)
+      messen()
+      beobachter = new ResizeObserver(messen)
+      beobachter.observe(leiste)
+      window.addEventListener("resize", messen)
+      aufraeumen = () => window.removeEventListener("resize", messen)
     }
-    const messen = () => setSockel(leiste.getBoundingClientRect().height)
-    messen()
-    const beobachter = new ResizeObserver(messen)
-    beobachter.observe(leiste)
-    window.addEventListener("resize", messen)
+
+    const vorhanden = document.querySelector<HTMLElement>(".sticky-cta")
+    if (vorhanden) {
+      anhaengen(vorhanden)
+    } else {
+      setSockel(0)
+    }
+
+    const aufpasser = new MutationObserver(() => {
+      if (beobachter) return
+      const spaeter = document.querySelector<HTMLElement>(".sticky-cta")
+      if (spaeter) anhaengen(spaeter)
+    })
+    aufpasser.observe(document.body, { childList: true, subtree: true })
+
     return () => {
-      beobachter.disconnect()
-      window.removeEventListener("resize", messen)
+      aufpasser.disconnect()
+      beobachter?.disconnect()
+      aufraeumen?.()
     }
   }, [sichtbar])
 

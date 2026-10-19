@@ -350,8 +350,39 @@ export function SchmerzcheckKarte() {
   const e = ergebnis!
   const ziel = mitHerkunft(buchungsUrl("check-ergebnis"))
 
+  /**
+   * Die feste Leiste — NUR im Ergebnis, und nur ohne Warnzeichen.
+   *
+   * Angemerkt am 19.10.2026 beim Durchklicken am Telefon: Im längsten Fall
+   * (lange bestehende Beschwerden, starke Einschränkung) stehen fünf
+   * Absätze zwischen Überschrift und Buchungsknopf. Wer nicht weiter
+   * scrollt, sieht das Angebot nie — und das Lesen ist freiwillig, das
+   * Buchen soll es auch sein.
+   *
+   * Während der Fragen gibt es sie bewusst nicht: Erst Frage 6 klärt, ob
+   * eine Betreuung von zu Hause überhaupt sicher ist. Eine Leiste, die
+   * vorher schon „buchen" anbietet, würde genau diese Frage entwerten —
+   * und bei einem Warnzeichen bleibt sie deshalb auch danach weg.
+   *
+   * Klassen aus `anzeigen.css`: Das Einwilligungsbanner misst die Höhe von
+   * `.sticky-cta` und legt sich darüber, statt sie zu verdecken; `.page`
+   * hält unten 110 px frei, damit die Fußzeile nicht darunter liegt.
+   */
+  const leiste = e.stopp ? null : (
+    <div className="sticky-cta" role="region" aria-label="Termin buchen">
+      <div className="sticky-cta__inner">
+        <AnzeigeBild name="max-klein" alt="" className="sticky-cta__avatar" sofort width={44} height={44} />
+        <a href={ziel} onClick={zumKalender} className="js-book sticky-cta__btn">
+          {laedt ? "Kalender wird geöffnet …" : "Kostenloses Kennenlernen buchen"}
+        </a>
+      </div>
+      <span className="sticky-cta__note">20 Min. per Video · unverbindlich</span>
+    </div>
+  )
+
   return (
-    <div style={karte} aria-live="polite">
+    <>
+    <div className="check-karte" style={karte} aria-live="polite">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "14px", color: LEISE }}>
         <button
           type="button"
@@ -462,5 +493,7 @@ export function SchmerzcheckKarte() {
         Check neu starten
       </button>
     </div>
+    {leiste}
+    </>
   )
 }
