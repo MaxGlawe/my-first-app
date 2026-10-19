@@ -68,8 +68,15 @@ export const KENNENLERNEN = {
    * dort einmal umbenannt wird. Bis dahin ist der alte der richtige, und
    * nach einer Umbenennung funktionieren beide.
    *
-   * Regel: Dieser Wert ist eine Tatsache ueber ein fremdes System. Er
-   * wird geaendert, NACHDEM der Slug dort umbenannt wurde — nie vorher.
+   * ER BLEIBT SO. Entschieden am 19.10.2026: kein Umbenennen, auch nicht
+   * „passend zum Kennenlernen". Am 14.10.2026 stand hier schon einmal ein
+   * Wunschname (`kennenlernen-praxis-os`), den es dort nie gab — alle
+   * Buchungsknoepfe landeten in der vollen Leistungsliste statt im
+   * richtigen Termin.
+   *
+   * Regel: Dieser Wert ist eine Tatsache ueber ein fremdes System. Wer ihn
+   * doch einmal aendern will, benennt ZUERST dort um und prueft unter
+   * https://my-first-app-psi-seven.vercel.app/api/treatments?active=true
    */
   service: "video-sprechstunde-praxis-os",
 } as const
