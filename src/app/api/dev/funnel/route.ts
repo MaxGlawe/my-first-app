@@ -20,7 +20,11 @@ import { createHash } from "crypto"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
 import { createLeadToken } from "@/lib/lead-jwt"
 
-export const DEV_LEAD_SOURCE = "dev_walkthrough"
+// Nicht exportiert: Eine Routen-Datei darf nur Routen-Felder ausfuehren
+// (GET, POST, dynamic …). Mit `export` scheiterte der Build — allerdings
+// nur unter webpack; Turbopack prueft das nicht. Gebraucht wird der Wert
+// ohnehin nur hier.
+const DEV_LEAD_SOURCE = "dev_walkthrough"
 
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {

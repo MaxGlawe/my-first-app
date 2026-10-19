@@ -68,6 +68,29 @@ for versuch in $(seq 1 $BUILD_VERSUCHE); do
   rm -rf .next
 done
 
+# Letzter Versuch mit dem alten Bundler.
+#
+# Turbopack steigt sporadisch mit „next/font/google queries have exactly one
+# entry" aus — ein Aussetzer beim Einlesen der Google-Schriften, der beim
+# naechsten identischen Lauf meist verschwindet. Am 19.10.2026 verschwand er
+# NICHT: Beide Versuche scheiterten, und der Deploy fiel zurueck, obwohl am
+# Code nichts falsch war. Google Fonts war vom Server aus erreichbar (72 ms),
+# Speicher war reichlich frei.
+#
+# webpack baut dieselben Quellen ohne diesen Aussetzer, nur langsamer. Als
+# dritter Versuch kostet er nichts: Er laeuft nur, wenn es sonst ohnehin
+# keinen neuen Stand gaebe.
+if [ $ERFOLG -ne 0 ]; then
+  echo "── Letzter Versuch mit webpack ─────────────────────────────"
+  rm -rf .next
+  if PUPPETEER_SKIP_DOWNLOAD=true npx next build --webpack; then
+    ERFOLG=0
+  else
+    echo "Auch webpack ist gescheitert."
+    rm -rf .next
+  fi
+fi
+
 if [ $ERFOLG -ne 0 ]; then
   echo "── Build endgueltig fehlgeschlagen ─────────────────────────"
   if [ -d .next.bak ]; then
