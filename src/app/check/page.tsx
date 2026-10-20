@@ -36,7 +36,7 @@ import "../start/anzeigen.css"
  */
 
 export const metadata: Metadata = {
-  title: "Passt Physio per App zu dir? | Praxis OS",
+  title: "Passt Physio von zu Hause zu dir? | Praxis OS",
   description:
     "Sechs kurze Fragen zu deiner Situation. Danach weißt du, ob eine begleitete Betreuung von zu Hause für dich in Frage kommt. Ohne Anmeldung, ohne E-Mail.",
   robots: { index: false, follow: true },
@@ -93,7 +93,7 @@ export default function CheckPage() {
           </div>
 
           <h1 style={{ margin: "0", fontFamily: serif, fontWeight: "600", fontSize: "36px", lineHeight: "1.06", letterSpacing: "-0.015em" }}>
-            Passt Physio per App zu dir?{" "}
+            Passt Physio von zu Hause zu dir?{" "}
             <span style={{ fontStyle: "italic", color: "#A8DCC0" }}>Finde es in einer Minute heraus.</span>
           </h1>
 

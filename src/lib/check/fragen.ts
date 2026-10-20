@@ -79,17 +79,32 @@ export const FRAGEN = [
     schluessel: "flags",
     etikett: "Sicherheitsfrage",
     frage: "Trifft eines davon auf dich zu?",
-    hinweis: "Diese Frage ist wichtig, damit eine Betreuung von zu Hause sicher ist.",
+    hinweis:
+      "Diese Frage ist wichtig, damit eine Betreuung von zu Hause sicher ist. Gemeint sind seltene Warnzeichen — bei den meisten trifft nichts davon zu.",
     /**
      * Die Liste steht vollständig VOR den Antwortknöpfen — niemand soll mit
      * „Nein" antworten, ohne gelesen zu haben, wozu.
+     *
+     * ── Geschärft am 20.10.2026 ──────────────────────────────────────────
+     *
+     * Die erste Fassung fing zu breit: 13 von 26 Menschen, die bis hierher
+     * kamen, gaben ein Warnzeichen an — die Hälfte. „Beschwerden nach einem
+     * Sturz oder Unfall" trifft auf jeden zu, der einmal ausgerutscht ist,
+     * und „Probleme beim Wasserlassen" auch auf eine Blasenschwäche, die
+     * mit dem Rücken nichts zu tun hat.
+     *
+     * Ein Stopp, der die Hälfte trifft, schützt niemanden mehr — er wird
+     * zur Formalität, über die man hinwegliest. Deshalb jetzt enger
+     * formuliert: NEU aufgetreten, ZUSAMMEN mit den Beschwerden, SCHWER.
+     * Die fünf Warnzeichen selbst bleiben dieselben; nur wer sie wirklich
+     * hat, soll „ja" antworten.
      */
     liste: [
-      "Taubheit oder Lähmung in Armen oder Beinen",
-      "Probleme beim Wasserlassen oder Stuhlgang",
-      "Fieber oder starkes Krankheitsgefühl",
-      "Beschwerden nach einem Sturz oder Unfall",
-      "Ständige, starke Schmerzen auch in Ruhe und nachts",
+      "Neu aufgetretene Taubheit oder Lähmung in Armen oder Beinen",
+      "Neu aufgetretene Probleme beim Wasserlassen oder Stuhlgang — bis hin zu verlorener Kontrolle",
+      "Fieber oder starkes Krankheitsgefühl zusammen mit den Beschwerden",
+      "Ein schwerer Sturz oder Unfall in den letzten Wochen (zum Beispiel Treppensturz oder Autounfall)",
+      "Starke Schmerzen, die auch nachts in Ruhe nicht nachlassen",
     ],
     antworten: ["Nein, nichts davon", "Ja, mindestens eins"],
   },
