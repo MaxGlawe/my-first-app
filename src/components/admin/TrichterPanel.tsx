@@ -111,6 +111,7 @@ interface CheckZeile {
 }
 interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  daten_abgeschnitten?: boolean
   check_trichter: Stufe[]
   check_stopp: number
   check_nach_anzeige: CheckZeile[]
@@ -548,6 +549,15 @@ export function TrichterPanel() {
                 </span>
               )
             })()}
+            {daten.daten_abgeschnitten && (
+              <span
+                className="font-semibold text-red-600"
+                title="Es wurden mehr Zeilen gefunden, als geholt werden konnten. Alle Zahlen darunter beruhen auf einem Ausschnitt."
+              >
+                {" "}
+                · Daten unvollständig
+              </span>
+            )}
             {daten.verworfene_sitzungen > 0 && (
               <span
                 className="text-amber-600"

@@ -40,6 +40,7 @@ import { SEITEN_LISTE, seiteZuPfad } from "@/lib/gemessene-seiten"
 import { UMSTELLUNG_KENNENLERNEN } from "@/lib/programm"
 import { berichtAlsText, type BerichtDaten } from "@/lib/analytics-bericht"
 import { noetigeSitzungen, vergleicheAnteile } from "@/lib/anteil-vergleich"
+import { alleZeilen } from "@/lib/supabase-alle-zeilen"
 
 export const dynamic = "force-dynamic"
 
@@ -164,33 +165,49 @@ async function auswerten(
     browser: string | null
   }[] = []
 
-  for (let seite = 0; seite < 20; seite++) {
-    let abfrage = svc
-      .from("page_views")
-      .select(
-        "session_id, path, created_at, utm_source, utm_campaign, utm_content, landing_url, referrer, device_type, browser"
-      )
-      .gte("created_at", seit)
-    // Obergrenze: Das Fenster „davor" endet am Umstellungszeitpunkt, nicht
-    // heute. Ohne `bis` waere jeder Vergleich ein Vergleich mit sich selbst.
-    if (bis) abfrage = abfrage.lt("created_at", bis)
-    const { data, error } = await abfrage
-      .order("created_at", { ascending: true })
-      .range(seite * 1000, seite * 1000 + 999)
+  const seiten = await alleZeilen<(typeof aufrufe)[number]>(
+    (von, nach) => {
+      let abfrage = svc
+        .from("page_views")
+        .select(
+          "session_id, path, created_at, utm_source, utm_campaign, utm_content, landing_url, referrer, device_type, browser"
+        )
+        .gte("created_at", seit)
+      // Obergrenze: Das Fenster „davor" endet am Umstellungszeitpunkt, nicht
+      // heute. Ohne `bis` waere jeder Vergleich ein Vergleich mit sich selbst.
+      if (bis) abfrage = abfrage.lt("created_at", bis)
+      return abfrage.order("created_at", { ascending: true }).range(von, nach)
+    },
+    { hoechstens: 60_000, name: "page_views" }
+  )
+  aufrufe.push(...seiten.zeilen)
 
-    // Die Funktion weiss nichts von HTTP-Antworten. Sie wirft, GET macht
-    // daraus die 500.
-    if (error) throw new Error("page_views: " + error.message)
-    aufrufe.push(...(data ?? []))
-    if (!data || data.length < 1000) break
-  }
-
-  let ereignisAbfrage = svc
-    .from("conversion_events")
-    .select("session_id, event_type, path, created_at, metadata")
-    .gte("created_at", seit)
-  if (bis) ereignisAbfrage = ereignisAbfrage.lt("created_at", bis)
-  const { data: ereignisse } = await ereignisAbfrage.limit(20000)
+  // ── Ereignisse: seitenweise, und das ist kein Detail ───────────────────
+  //
+  // Hier stand `.limit(20000)`. Supabase deckelt trotzdem bei 1000 Zeilen,
+  // ohne Fehler und ohne Hinweis — und ohne `order()` sind es die
+  // AELTESTEN tausend. Das Dashboard rechnete deshalb seit dem 13.10.2026
+  // mit Ereignissen aus der Vergangenheit: 135 Besucher auf /check, null
+  // gestartete Checks, waehrend in der Datenbank 68 begonnene Checks
+  // standen. Jede ereignisbasierte Zahl war betroffen.
+  const ereignisSeiten = await alleZeilen<{
+    session_id: string
+    event_type: string
+    path: string
+    created_at: string
+    metadata: unknown
+  }>(
+    (von, nach) => {
+      let abfrage = svc
+        .from("conversion_events")
+        .select("session_id, event_type, path, created_at, metadata")
+        .gte("created_at", seit)
+      if (bis) abfrage = abfrage.lt("created_at", bis)
+      return abfrage.order("created_at", { ascending: true }).range(von, nach)
+    },
+    { hoechstens: 60_000, name: "conversion_events" }
+  )
+  const ereignisse = ereignisSeiten.zeilen
 
   // ── Eigene Besuche aussortieren ────────────────────────────────────────
   //
@@ -245,7 +262,7 @@ async function auswerten(
     }
   }
 
-  for (const e of ereignisse ?? []) {
+  for (const e of ereignisse) {
     const s = sitzungen.get(e.session_id)
     if (!s) continue
     // Beide Namen zaehlen auf dieselbe Stufe: Bis zum 15.10.2026 hiess der
@@ -299,7 +316,7 @@ async function auswerten(
   // zu finden, weil jemand nachgerechnet hat. Steht die Zahl im Dashboard,
   // faellt der naechste Fall am selben Tag auf.
   const verworfen = new Set(
-    (ereignisse ?? []).filter((e) => !sitzungen.has(e.session_id)).map((e) => e.session_id)
+    (ereignisse).filter((e) => !sitzungen.has(e.session_id)).map((e) => e.session_id)
   )
 
   // ── Der Trichter ───────────────────────────────────────────────────────
@@ -335,15 +352,30 @@ async function auswerten(
   // Vereinbarung wie auf der Website (siehe lib/intern). Bei einer Handvoll
   // echter Buchungen im Monat wuerde eine Testbuchung die letzte Stufe
   // verdoppeln.
-  let terminAbfrage = svc
-    .from("appointments")
-    .select("id, referrer_source, referrer_campaign, referrer_content, referrer_cta, service_name")
-    .gte("created_at", seit)
-  if (bis) terminAbfrage = terminAbfrage.lt("created_at", bis)
-  const { data: termine } = await terminAbfrage
-    .ilike("service_name", "%video%")
-    .or("referrer_content.is.null,referrer_content.neq.test")
-    .limit(2000)
+  // Auch hier: `.limit(2000)` haette bei 1000 Zeilen stillschweigend geendet.
+  const terminSeiten = await alleZeilen<{
+    id: string
+    referrer_source: string | null
+    referrer_campaign: string | null
+    referrer_content: string | null
+    referrer_cta: string | null
+    service_name: string | null
+  }>(
+    (von, nach) => {
+      let abfrage = svc
+        .from("appointments")
+        .select("id, referrer_source, referrer_campaign, referrer_content, referrer_cta, service_name")
+        .gte("created_at", seit)
+      if (bis) abfrage = abfrage.lt("created_at", bis)
+      return abfrage
+        .ilike("service_name", "%video%")
+        .or("referrer_content.is.null,referrer_content.neq.test")
+        .order("created_at", { ascending: true })
+        .range(von, nach)
+    },
+    { hoechstens: 20_000, name: "appointments" }
+  )
+  const termine = terminSeiten.zeilen
 
   const buchungen = termine?.length ?? 0
 
@@ -585,7 +617,7 @@ async function auswerten(
   // deshalb stehen sie getrennt als „ohne Angabe".
   const buchungProQuelle = new Map<string, number>()
   let buchungOhneHerkunft = 0
-  for (const t of termine ?? []) {
+  for (const t of termine) {
     const q = (t.referrer_source as string | null)?.trim()
     if (!q) buchungOhneHerkunft++
     else buchungProQuelle.set(q, (buchungProQuelle.get(q) ?? 0) + 1)
@@ -603,7 +635,7 @@ async function auswerten(
   // Nach Anzeige, nicht nur nach Quelle: „meta" sagt nur, dass bezahlt
   // wurde — welche Anzeige gebucht hat, steht in utm_content.
   const buchungProAnzeige = new Map<string, number>()
-  for (const t of termine ?? []) {
+  for (const t of termine) {
     const c = (t.referrer_content as string | null)?.trim()
     if (c) buchungProAnzeige.set(c, (buchungProAnzeige.get(c) ?? 0) + 1)
   }
@@ -612,7 +644,7 @@ async function auswerten(
     .sort((a, b) => b.anzahl - a.anzahl)
 
   const buchungProCta = new Map<string, number>()
-  for (const t of termine ?? []) {
+  for (const t of termine) {
     const c = (t.referrer_cta as string | null)?.trim()
     if (c) buchungProCta.set(c, (buchungProCta.get(c) ?? 0) + 1)
   }
@@ -632,7 +664,7 @@ async function auswerten(
   // Knopf am Ergebnis (`check-ergebnis`). Ohne diesen Umweg endete der
   // Trichter beim Klick, und ob daraus ein Termin wurde, stuende nirgends.
   const checkSitzungen = alle.filter((s) => s.erste === "/check")
-  const checkBuchungen = (termine ?? []).filter(
+  const checkBuchungen = (termine).filter(
     (t) => (t.referrer_cta as string | null)?.trim() === "check-ergebnis"
   ).length
   const checkAnteil = (n: number) =>
@@ -713,6 +745,10 @@ async function auswerten(
     // wissen, dass dazwischen aus 69 Euro „kostenlos" wurde.
     umstellung_kennenlernen: UMSTELLUNG_KENNENLERNEN,
     verworfene_sitzungen: verworfen.size,
+    // Wenn eine der Obergrenzen gegriffen hat, beruht alles darunter auf
+    // einem Ausschnitt. Das gehoert ins Dashboard, nicht ins Protokoll.
+    daten_abgeschnitten:
+      seiten.abgeschnitten || ereignisSeiten.abgeschnitten || terminSeiten.abgeschnitten,
     check_trichter,
     check_stopp,
     check_nach_anzeige,

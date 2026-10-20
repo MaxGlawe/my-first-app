@@ -94,6 +94,7 @@ interface BannerZeile {
 
 export interface BerichtDaten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
+  daten_abgeschnitten?: boolean
   check_trichter?: { stufe: string; anzahl: number; anteil: number; hinweis: string }[]
   check_stopp?: number
   check_nach_anzeige?: {
@@ -317,6 +318,12 @@ export function berichtAlsText(d: BerichtDaten): string {
     }`
   )
   z.push("")
+  if (d.daten_abgeschnitten) {
+    z.push(
+      "> **Achtung: Die Daten sind unvollständig.** Es lagen mehr Zeilen vor, als geholt werden konnten — alle Zahlen hier beruhen auf einem Ausschnitt und sind zu niedrig."
+    )
+    z.push("")
+  }
   z.push(
     "Dieser Bericht enthält nur Summen und Quoten — keine Sitzungskennungen, keine Namen, keine Adressen, keine einzelnen Termine. Er kann weitergegeben werden."
   )

@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { alleZeilen } from "@/lib/supabase-alle-zeilen"
 
 const STAFF = ["admin", "heilpraktiker", "physiotherapeut"]
 
@@ -38,16 +39,29 @@ export async function GET() {
     .from("schmerzcheck_email_events")
     .select("email_code, event_type")
     .limit(50000)
-  const { data: pageViews } = await service
-    .from("page_views")
-    .select("session_id, device_type")
-    .eq("path", "/schmerzcheck")
-    .limit(50000)
-  const { data: convEvents } = await service
-    .from("conversion_events")
-    .select("event_type")
-    .eq("event_type", "schmerzcheck_pdf_download")
-    .limit(50000)
+  // Seitenweise: Supabase deckelt jede Antwort bei 1000 Zeilen, `.limit()`
+  // aendert daran nichts. Siehe lib/supabase-alle-zeilen — am 20.10.2026
+  // zeigte das Dashboard deswegen null gestartete Checks bei 68 echten.
+  const { zeilen: pageViews } = await alleZeilen<{ session_id: string; device_type: string | null }>(
+    (von, nach) =>
+      service
+        .from("page_views")
+        .select("session_id, device_type")
+        .eq("path", "/schmerzcheck")
+        .order("created_at", { ascending: true })
+        .range(von, nach),
+    { hoechstens: 60_000, name: "page_views" }
+  )
+  const { zeilen: convEvents } = await alleZeilen<{ event_type: string }>(
+    (von, nach) =>
+      service
+        .from("conversion_events")
+        .select("event_type")
+        .eq("event_type", "schmerzcheck_pdf_download")
+        .order("created_at", { ascending: true })
+        .range(von, nach),
+    { hoechstens: 60_000, name: "conversion_events" }
+  )
   const { data: recent } = await service
     .from("schmerzcheck_leads")
     .select("id, first_name, email, status, consent_status, utm_source, booked_at, created_at")

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase-server"
 import { createSupabaseServiceClient } from "@/lib/supabase-service"
+import { alleZeilen } from "@/lib/supabase-alle-zeilen"
 
 export async function GET() {
   const supabase = await createSupabaseServerClient()
@@ -30,24 +31,36 @@ export async function GET() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const since = thirtyDaysAgo.toISOString()
 
-  // Fetch page views and conversions in parallel
+  // Seitenweise: Supabase deckelt jede Antwort bei 1000 Zeilen, `.limit()`
+  // aendert daran nichts. Siehe lib/supabase-alle-zeilen — am 20.10.2026
+  // zeigte das Dashboard deswegen null gestartete Checks bei 68 echten.
   const [pvResult, cvResult] = await Promise.all([
-    serviceClient
-      .from("page_views")
-      .select("path, referrer, utm_source, utm_medium, utm_campaign, device_type, browser, session_id, duration_seconds, created_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(10000),
-    serviceClient
-      .from("conversion_events")
-      .select("session_id, event_type, path, metadata, created_at")
-      .gte("created_at", since)
-      .order("created_at", { ascending: false })
-      .limit(5000),
+    alleZeilen<Record<string, unknown>>(
+      (von, nach) =>
+        serviceClient
+          .from("page_views")
+          .select(
+            "path, referrer, utm_source, utm_medium, utm_campaign, device_type, browser, session_id, duration_seconds, created_at"
+          )
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(von, nach),
+      { hoechstens: 60_000, name: "page_views" }
+    ),
+    alleZeilen<Record<string, unknown>>(
+      (von, nach) =>
+        serviceClient
+          .from("conversion_events")
+          .select("session_id, event_type, path, metadata, created_at")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .range(von, nach),
+      { hoechstens: 60_000, name: "conversion_events" }
+    ),
   ])
 
-  const pageViews = pvResult.data ?? []
-  const conversions = cvResult.data ?? []
+  const pageViews = pvResult.zeilen as any[]
+  const conversions = cvResult.zeilen as any[]
 
   // --- Aggregate KPIs ---
   const uniqueSessions = new Set(pageViews.map((pv) => pv.session_id))
