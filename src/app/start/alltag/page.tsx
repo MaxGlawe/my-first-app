@@ -36,7 +36,7 @@ import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
  */
 
 export const metadata: Metadata = {
-  title: "Physio, die in deinen Kalender passt | Praxis OS",
+  title: "Physio, die in deinen Kalender passt",
   description:
     "90 Tage Physiotherapie per Video und Chat – Check-in am Morgen, Übungen in der Mittagspause, Video-Termin am Abend. Einstieg: kostenloses Kennenlernen, 20 Min. per Video.",
   robots: { index: false, follow: true },

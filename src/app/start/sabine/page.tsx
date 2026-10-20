@@ -34,7 +34,7 @@ import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
  */
 
 export const metadata: Metadata = {
-  title: "Physiotherapie per Video – schon vor deinem Termin starten | Praxis OS",
+  title: "Physiotherapie per Video – schon vor deinem Termin starten",
   description:
     "90 Tage Physiotherapie per Video und Chat mit Max Glawe, Heilpraktiker für Physiotherapie. Ohne Rezept, von zu Hause. Einstieg: kostenloses Kennenlernen, 20 Min. per Video.",
   robots: { index: false, follow: true },

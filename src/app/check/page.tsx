@@ -36,7 +36,7 @@ import "../start/anzeigen.css"
  */
 
 export const metadata: Metadata = {
-  title: "Passt Physio von zu Hause zu dir? | Praxis OS",
+  title: "Passt Physio von zu Hause zu dir?",
   description:
     "Sechs kurze Fragen zu deiner Situation. Danach weißt du, ob eine begleitete Betreuung von zu Hause für dich in Frage kommt. Ohne Anmeldung, ohne E-Mail.",
   robots: { index: false, follow: true },

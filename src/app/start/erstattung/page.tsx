@@ -32,7 +32,7 @@ import { GEMESSENE_SEITEN } from "@/lib/gemessene-seiten"
  */
 
 export const metadata: Metadata = {
-  title: "90 Tage Physiotherapie-Begleitung per Video | Praxis OS",
+  title: "90 Tage Physiotherapie-Begleitung per Video",
   description:
     "Physiotherapie als 90-Tage-Programm: Plan in der App, Therapeut im Chat und per Video, Heilpraktiker-Rechnung. Einstieg: kostenloses Kennenlernen, 20 Min. per Video.",
   robots: { index: false, follow: true },
