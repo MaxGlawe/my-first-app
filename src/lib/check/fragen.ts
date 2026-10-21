@@ -98,13 +98,22 @@ export const FRAGEN = [
      * formuliert: NEU aufgetreten, ZUSAMMEN mit den Beschwerden, SCHWER.
      * Die fünf Warnzeichen selbst bleiben dieselben; nur wer sie wirklich
      * hat, soll „ja" antworten.
+     *
+     * ── Nachtschmerz gestrichen am 21.10.2026 ────────────────────────────
+     *
+     * Auch geschärft blieb die Quote bei einem Drittel (15 von 44). Der
+     * wahrscheinliche Auslöser: „Starke Schmerzen, die auch nachts in Ruhe
+     * nicht nachlassen" trifft auf viele mit länger anhaltenden Beschwerden
+     * zu — meist steckt eine gut behandelbare Schulter oder ein Rücken
+     * dahinter, kein Tumor. Allein ist es das schwächste Warnzeichen
+     * (die Leitlinie wertet es nur zusammen mit Krebs in der Vorgeschichte
+     * oder Gewichtsverlust). Fachlich von Max entschieden.
      */
     liste: [
       "Neu aufgetretene Taubheit oder Lähmung in Armen oder Beinen",
       "Neu aufgetretene Probleme beim Wasserlassen oder Stuhlgang — bis hin zu verlorener Kontrolle",
       "Fieber oder starkes Krankheitsgefühl zusammen mit den Beschwerden",
       "Ein schwerer Sturz oder Unfall in den letzten Wochen (zum Beispiel Treppensturz oder Autounfall)",
-      "Starke Schmerzen, die auch nachts in Ruhe nicht nachlassen",
     ],
     antworten: ["Nein, nichts davon", "Ja, mindestens eins"],
   },
