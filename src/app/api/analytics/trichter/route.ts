@@ -123,6 +123,8 @@ interface Sitzung {
   checkErgebnis: boolean
   checkKlick: boolean
   checkStopp: boolean
+  /** Aus welchen Abschnitten der Buchungsknopf gedrückt wurde (`abschnitt`). */
+  klickAbschnitte: Set<string>
 }
 
 /** Ein Zeitfenster. `bis: null` heisst „bis jetzt". */
@@ -255,6 +257,7 @@ async function auswerten(
         checkErgebnis: false,
         checkKlick: false,
         checkStopp: false,
+        klickAbschnitte: new Set<string>(),
       })
     } else {
       vorhanden.letzte = a.path
@@ -272,6 +275,8 @@ async function auswerten(
     // verschiedener Angebote. Deshalb: eine Stufe, und die Marke daneben.
     if (e.event_type === "konsultation_klick" || e.event_type === "kennenlernen_klick") {
       s.klick = true
+      const ab = (e.metadata as Record<string, unknown> | null)?.abschnitt
+      if (typeof ab === "string") s.klickAbschnitte.add(ab)
     }
 
     const tiefe = /^lesetiefe_(\d+)$/.exec(e.event_type)
@@ -709,6 +714,49 @@ async function auswerten(
     },
   ]
 
+  // ── Der direkte Weg auf /check (seit 24.10.2026) ─────────────────────
+  //
+  // Seit dem Umbau stehen Produkt und Preise auf derselben Seite, und wer
+  // schon überzeugt ist, bucht ohne Check — über den Link in der Karte
+  // (`check-hero`), unter den Preisen (`check-preise`) oder am Ende
+  // (`check-abschluss`). Ohne diesen zweiten Weg sähe jede Direktbuchung
+  // wie ein Verlust im Check-Trichter aus.
+  const DIREKT = ["check-hero", "check-preise", "check-abschluss"]
+  const direktGeklickt = (s: Sitzung) => DIREKT.some((d) => s.klickAbschnitte.has(d))
+  const direktBuchungen = termine.filter((t) =>
+    DIREKT.includes(((t.referrer_cta as string | null) ?? "").trim())
+  ).length
+  const check_direkt = [
+    {
+      stufe: "Besucher",
+      anzahl: checkSitzungen.length,
+      anteil: 100,
+      hinweis: "Sitzungen, die auf /check begonnen haben",
+    },
+    {
+      stufe: "Preise gesehen",
+      anzahl: checkSitzungen.filter((s) => s.abschnitte.has("preise")).length,
+      anteil: checkAnteil(checkSitzungen.filter((s) => s.abschnitte.has("preise")).length),
+      hinweis: "Abschnitt „Preise“ ins obere Dreiviertel des Bildschirms gescrollt",
+    },
+    {
+      stufe: "Kennenlernen direkt angeklickt",
+      anzahl: checkSitzungen.filter(direktGeklickt).length,
+      anteil: checkAnteil(checkSitzungen.filter(direktGeklickt).length),
+      hinweis: "Knopf in der Karte, unter den Preisen oder am Ende — ohne Check",
+    },
+    {
+      stufe: "Termin gebucht",
+      anzahl: direktBuchungen,
+      anteil: checkAnteil(direktBuchungen),
+      hinweis: "Videotermine mit cta=check-hero/-preise/-abschluss",
+    },
+  ]
+  const check_direkt_nach_knopf = DIREKT.map((d) => ({
+    knopf: d,
+    klicks: checkSitzungen.filter((s) => s.klickAbschnitte.has(d)).length,
+  }))
+
   // Der Sicherheits-Stopp ist KEINE Trichterstufe, sondern ein eigener
   // Ausgang: Diese Menschen sollen nicht buchen. Als Abbruch gezaehlt
   // saehe die Seite schlechter aus, je besser sie ihre Aufgabe erfuellt.
@@ -750,6 +798,8 @@ async function auswerten(
     daten_abgeschnitten:
       seiten.abgeschnitten || ereignisSeiten.abgeschnitten || terminSeiten.abgeschnitten,
     check_trichter,
+    check_direkt,
+    check_direkt_nach_knopf,
     check_stopp,
     check_nach_anzeige,
     gesamt,

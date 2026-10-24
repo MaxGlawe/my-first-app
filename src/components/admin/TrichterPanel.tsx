@@ -113,6 +113,9 @@ interface Daten {
   zeitraum: { tage: number; seit: string; frei: boolean; tests_sichtbar: boolean }
   daten_abgeschnitten?: boolean
   check_trichter: Stufe[]
+  /** Der direkte Weg auf /check: Buchung ohne Check (seit 24.10.2026). */
+  check_direkt?: Stufe[]
+  check_direkt_nach_knopf?: { knopf: string; klicks: number }[]
   check_stopp: number
   check_nach_anzeige: CheckZeile[]
   vergleich?: VergleichBlock | null
@@ -750,6 +753,35 @@ export function TrichterPanel() {
               )
             })}
           </div>
+
+          {/* Der zweite Weg: Wer die Preise liest und ohne Check bucht.
+              Nebeneinander statt verrechnet — sonst saehe jede
+              Direktbuchung wie ein Abbruch im Check aus. */}
+          {daten.check_direkt && (
+            <div className="mt-6 border-t border-slate-100 pt-4">
+              <p className="mb-3 text-xs font-semibold text-slate-700">Direktweg (ohne Check)</p>
+              <div className="space-y-3">
+                {daten.check_direkt.slice(1).map((s) => (
+                  <div key={s.stufe}>
+                    <div className="flex items-baseline justify-between text-xs">
+                      <span className="font-medium text-slate-700">{s.stufe}</span>
+                      <span className="tabular-nums text-slate-500">
+                        <strong className="text-slate-800">{s.anzahl}</strong> · {s.anteil} %
+                      </span>
+                    </div>
+                    <p className="mb-1 text-[10px] text-slate-400">{s.hinweis}</p>
+                    <Balken anteil={s.anteil} farbe="#A8DCC0" />
+                  </div>
+                ))}
+              </div>
+              {daten.check_direkt_nach_knopf && (
+                <p className="mt-2 text-[11px] text-slate-500">
+                  Klicks je Knopf:{" "}
+                  {daten.check_direkt_nach_knopf.map((k) => `${k.knopf.replace("check-", "")} ${k.klicks}`).join(" · ")}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Kein Abbruch, sondern ein eigener Ausgang. */}
           <div className="mt-4 rounded-xl bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">

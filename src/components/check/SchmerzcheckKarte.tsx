@@ -37,6 +37,8 @@ import { buchungsUrl } from "@/lib/programm"
 import { mitHerkunft } from "@/lib/kampagnen-herkunft"
 import { useConversionTracker } from "@/hooks/use-conversion-tracker"
 import { AnzeigeBild } from "@/components/anzeigen/AnzeigeBild"
+import { KonsultationLink } from "@/components/landing/KonsultationLink"
+import { PAKETE, LEISTUNGEN, TAGE, ZAHLUNG, ERST_NACH_KENNENLERNEN } from "@/lib/check/produkt"
 
 /** Wie lange die Antwort markiert bleibt, bevor es weitergeht. */
 const WEITER_MS = 250
@@ -216,9 +218,14 @@ export function SchmerzcheckKarte() {
     return (
       <div className="check-karte" style={karte} aria-live="polite">
         <div style={{ display: "grid", gap: "14px" }}>
-          <h2 style={{ margin: "0", fontFamily: serif, fontWeight: 600, fontSize: "24px", lineHeight: "1.2" }}>
-            Dein kurzer Check
-          </h2>
+          <div style={{ display: "grid", gap: "4px" }}>
+            <h2 style={{ margin: "0", fontFamily: serif, fontWeight: 600, fontSize: "24px", lineHeight: "1.2" }}>
+              Passt das zu dir?
+            </h2>
+            <p style={{ margin: "0", fontSize: "15px", color: LEISE }}>
+              Mach den kurzen Check: 6 Fragen, unter 1 Minute, ohne Anmeldung.
+            </p>
+          </div>
           {/* Auf kurzen Bildschirmen ausgeblendet (siehe `.check-vorteile`
               in anzeigen.css): Die drei Zeilen sagen dasselbe wie die
               Unterzeile darueber, und der Startknopf muss ins Bild. */}
@@ -239,6 +246,24 @@ export function SchmerzcheckKarte() {
               Deine Antworten bleiben auf deinem Gerät. Erst wenn du ein Kennenlernen buchst, siehst
               du sie im Formular und entscheidest selbst, ob du sie mitschickst.
             </span>
+          </p>
+          {/*
+            Der direkte Weg, für alle, die schon wissen, dass sie sprechen
+            wollen. NUR im Einstieg: Während der Fragen gibt es bewusst kein
+            Buchungsangebot, weil Frage 6 erst die Sicherheit klärt — und
+            nach einem Warnzeichen erst recht nicht.
+          */}
+          <p style={{ margin: "0", fontSize: "14.5px", textAlign: "center", color: LEISE }}>
+            Lieber direkt sprechen?{" "}
+            <KonsultationLink
+              abschnitt="check-hero"
+              metaMelden={false}
+              neuerTab={false}
+              className="js-book"
+              style={{ color: MITTEL, fontWeight: 600 }}
+            >
+              Kostenloses Kennenlernen buchen
+            </KonsultationLink>
           </p>
         </div>
       </div>
@@ -457,6 +482,53 @@ export function SchmerzcheckKarte() {
               Deine Antworten übernehmen wir auf Wunsch ins Buchungsformular. Dort kannst du sie
               ändern oder löschen.
             </p>
+
+            {/*
+              Was danach kommt — direkt über dem Knopf. Ohne diesen Block
+              fragten die Leute in den Anzeigen-Kommentaren nach den Kosten,
+              und am Ergebnis klickten 2 von 100 weiter (24.10.2026).
+              Aufklappen statt Sprung zu #preise: Die Einschätzung bleibt
+              stehen, und ein Zurück gäbe es aus dem Sprung nicht.
+            */}
+            <div style={{ background: "#17382A", borderRadius: "14px", padding: "14px", display: "grid", gap: "8px" }}>
+              <b style={{ fontSize: "15.5px" }}>
+                Praxis OS{" "}
+                <span style={{ fontWeight: 400, color: "#D5E2DA" }}>
+                  – Physiotherapie von zu Hause, {TAGE} Tage begleitet
+                </span>
+              </b>
+              {PAKETE.map((p) => (
+                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: "12px", fontSize: "15px" }}>
+                  <span>{p.calls > 0 ? `${p.name} mit ${p.calls} Videoterminen` : p.name}</span>
+                  <b style={{ fontFamily: serif, fontSize: "18px", whiteSpace: "nowrap" }}>{p.preis} €</b>
+                </div>
+              ))}
+              <p style={{ margin: "0", fontSize: "13.5px", color: "#B9CCC1" }}>
+                {ZAHLUNG} {ERST_NACH_KENNENLERNEN}
+              </p>
+              <details
+                className="check-drin"
+                onToggle={(ev) => {
+                  if ((ev.currentTarget as HTMLDetailsElement).open) melden("check_preise_aufgeklappt")
+                }}
+              >
+                <summary style={{ cursor: "pointer", fontSize: "14.5px", fontWeight: 600, color: MINT }}>
+                  Was genau ist drin?
+                </summary>
+                <div style={{ display: "grid", gap: "10px", marginTop: "10px", fontSize: "14px", color: "#D5E2DA" }}>
+                  {LEISTUNGEN.map((l) => (
+                    <div key={l.titel}>
+                      <b style={{ color: CREME }}>{l.titel}</b>
+                      <div>{l.text}</div>
+                    </div>
+                  ))}
+                  <div>
+                    <b style={{ color: CREME }}>Nur bei Intensiv</b>
+                    <div>{PAKETE[1].punkte[1]}</div>
+                  </div>
+                </div>
+              </details>
+            </div>
             <a
               href={ziel}
               onClick={zumKalender}

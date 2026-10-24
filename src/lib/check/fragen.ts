@@ -30,6 +30,7 @@ export const FRAGEN = [
       "Knie",
       "Hüfte",
       "Schulter oder Arm",
+      "Mehrere Stellen",
       "Woanders",
     ],
     /** Zwei Spalten: kurze Antworten, sonst steht die Liste ewig. */

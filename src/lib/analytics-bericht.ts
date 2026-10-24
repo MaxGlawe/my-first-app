@@ -97,6 +97,7 @@ export interface BerichtDaten {
   daten_abgeschnitten?: boolean
   check_trichter?: { stufe: string; anzahl: number; anteil: number; hinweis: string }[]
   check_stopp?: number
+  check_direkt?: { stufe: string; anzahl: number; anteil: number; hinweis: string }[]
   check_nach_anzeige?: {
     name: string
     sitzungen: number
@@ -568,6 +569,17 @@ export function berichtAlsText(d: BerichtDaten): string {
       )
     )
     z.push("")
+    if (d.check_direkt && d.check_direkt.length > 0) {
+      z.push("Direktweg (Buchung ohne Check, seit 24.10.2026):")
+      z.push("")
+      z.push(
+        tabelle(
+          ["Stufe", "Sitzungen", "Anteil", "Bedingung"],
+          d.check_direkt.map((s) => [s.stufe, s.anzahl, `${s.anteil} %`, s.hinweis])
+        )
+      )
+      z.push("")
+    }
     z.push(
       `Sicherheits-Stopp: ${d.check_stopp ?? 0} Sitzungen. Sie bekommen bewusst kein Buchungsangebot und fehlen deshalb in den Stufen darunter — der gewollte Ausgang, kein Abbruch.`
     )

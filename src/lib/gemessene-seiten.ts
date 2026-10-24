@@ -94,6 +94,26 @@ export const GEMESSENE_SEITEN = {
       { id: "abschluss", titel: "Abschluss" },
     ],
   },
+  /**
+   * Der Schmerzcheck, seit dem 24.10.2026 mit Produkt, Preis und Max auf
+   * derselben Seite. Die Schritte IM Check stehen nicht hier — sie haben
+   * einen eigenen Trichter (siehe `/api/analytics/trichter`).
+   */
+  check: {
+    pfad: "/check",
+    titel: "Anzeige · Schmerzcheck",
+    preis: "preise",
+    abschnitte: [
+      { id: "einstieg", titel: "Einstieg mit Check" },
+      { id: "leistungen", titel: "Was du bekommst" },
+      { id: "ablauf", titel: "So läuft es ab" },
+      { id: "preise", titel: "Preise" },
+      { id: "max", titel: "Wer dich betreut" },
+      { id: "stimmen", titel: "Bewertungen" },
+      { id: "faq", titel: "Häufige Fragen" },
+      { id: "abschluss", titel: "Abschluss" },
+    ],
+  },
 } as const satisfies Record<string, GemesseneSeite>
 
 export type SeitenSchluessel = keyof typeof GEMESSENE_SEITEN

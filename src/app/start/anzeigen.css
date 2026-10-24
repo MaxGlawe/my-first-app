@@ -356,3 +356,21 @@ body {
     font-size: 21px !important;
   }
 }
+
+/*
+ * Seit dem Umbau am 24.10.2026 steht im Hero mehr: Produkt-Unterzeile,
+ * Preis-Chips und die Zeile mit Max. Gemessen auf dem iPhone SE (375 x 667)
+ * mit Einwilligungsleiste: Der Startknopf endete bei 553 px, frei waren
+ * rund 530. Unterhalb von 760 px Hoehe faellt deshalb die Unterzeile weg —
+ * Ueberschrift und Chips sagen schon, was es ist und was es kostet, und
+ * Leistungen und Ablauf stehen direkt unter dem Check ausfuehrlich.
+ */
+@media (max-height: 760px) {
+  .check-lead {
+    display: none !important;
+  }
+
+  .check-vertrauen span {
+    font-size: 12.5px !important;
+  }
+}
