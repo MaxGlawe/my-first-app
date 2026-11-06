@@ -35,7 +35,7 @@ const steps = [
     icon: Smartphone,
     title: "Installation bestätigen",
     description:
-      'Tippe auf "Installieren" — Praxis OS erscheint als App auf deinem Homescreen.',
+      'Tippe auf "Installieren" — Praxis OS erscheint als App auf deinem Homescreen. Bietet Chrome "Verknüpfung erstellen" an, geht das genauso.',
     iconColor: "text-violet-500",
     bgColor: "bg-violet-50",
   },
@@ -80,7 +80,7 @@ export function AndroidAnleitung({ open, onClose }: AndroidAnleitungProps) {
 
         <div className="mt-6 p-3 rounded-xl bg-amber-50 border border-amber-200">
           <p className="text-xs text-amber-700 font-medium">
-            Hinweis: Verwende Google Chrome für die beste Erfahrung. Samsung Internet und andere Browser unterstützen die Installation ebenfalls.
+            Wichtig: Bitte nur über Google Chrome installieren. Samsung Internet und die Browser in Mail-Apps bauen eine App, die Android als „unsicher“ blockiert.
           </p>
         </div>
       </SheetContent>

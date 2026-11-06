@@ -16,6 +16,8 @@ export interface UsePwaInstallReturn {
   platform: PlatformType
   isIos: boolean
   isAndroid: boolean
+  /** Android, aber nicht Chrome — dort NICHT installieren lassen (s. u.). */
+  androidOhneChrome: boolean
   showIosGuide: boolean
   showAndroidGuide: boolean
   triggerInstall: () => Promise<void>
@@ -28,6 +30,28 @@ function detectPlatform(): PlatformType {
   if (/iPad|iPhone|iPod/.test(ua)) return "ios"
   if (/Android/.test(ua)) return "android"
   return "desktop"
+}
+
+/**
+ * Läuft die Seite auf Android in einem anderen Browser als Chrome?
+ *
+ * Samsung Internet, der Browser in Mail-Apps (WEB.DE, GMX …) und andere
+ * bauen die App-Hülle selbst — für eine alte Android-Version. Neuere Geräte
+ * blockieren sie mit „Unsichere App blockiert" (Play Protect), und die
+ * gesperrte Hülle fängt danach sogar Links auf unsere Seite ab. Nur Chrome
+ * lässt die Hülle von Google bauen; die geht durch (06.11.2026, erste
+ * Programm-Patientin mit Samsung-Handy).
+ *
+ * Brave u. Ä. geben sich als Chrome aus — die erkennen wir nicht, das ist ok.
+ */
+function istAndroidOhneChrome(): boolean {
+  if (typeof navigator === "undefined") return false
+  const ua = navigator.userAgent
+  if (!/Android/.test(ua)) return false
+  if (!/Chrome\/\d+/.test(ua)) return true
+  // `; wv)` = eingebettete WebView (Mail-Apps, Facebook, Instagram …),
+  // `Version/x` = ältere WebViews.
+  return /SamsungBrowser|EdgA|OPR|YaBrowser|MiuiBrowser|HuaweiBrowser|UCBrowser|; wv\)|Version\/\d/.test(ua)
 }
 
 function isRunningStandalone(): boolean {
@@ -45,10 +69,14 @@ export function usePwaInstall(): UsePwaInstallReturn {
   const [showIosGuide, setShowIosGuide] = useState(false)
   const [showAndroidGuide, setShowAndroidGuide] = useState(false)
   const [platform] = useState<PlatformType>(detectPlatform)
+  // Erst nach dem Laden bestimmen: Auf dem Server gibt es keinen Browser,
+  // ein Startwert aus `navigator` wiche beim Hydrieren ab.
+  const [androidOhneChrome, setAndroidOhneChrome] = useState(false)
 
   useEffect(() => {
     // Check if already installed
     setIsInstalled(isRunningStandalone())
+    setAndroidOhneChrome(istAndroidOhneChrome())
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
@@ -74,6 +102,11 @@ export function usePwaInstall(): UsePwaInstallReturn {
       setShowIosGuide(true)
       return
     }
+
+    // Außerhalb von Chrome nie den Browser-eigenen Dialog auslösen — der
+    // baut die Hülle, die Play Protect blockiert. Die Oberfläche zeigt dort
+    // stattdessen „In Chrome öffnen".
+    if (androidOhneChrome) return
 
     // On Android, try native prompt first; show guide as fallback
     if (platform === "android" && !deferredPrompt) {
@@ -106,6 +139,7 @@ export function usePwaInstall(): UsePwaInstallReturn {
     platform,
     isIos: platform === "ios",
     isAndroid: platform === "android",
+    androidOhneChrome,
     showIosGuide,
     showAndroidGuide,
     triggerInstall,
