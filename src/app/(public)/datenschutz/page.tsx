@@ -202,12 +202,54 @@ export default async function DatenschutzPage() {
 
               <div className="p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
                 <p className="font-medium" style={{ color: INK }}>Anthropic (Claude API)</p>
-                <p className="text-xs mb-2" style={{ color: MUTED }}>KI-gestützte Wissens-Lektionen</p>
+                <p className="text-xs mb-2" style={{ color: MUTED }}>KI-gestützte Texterstellung (Anthropic PBC, USA)</p>
+                <p>Wir nutzen die KI von Anthropic für folgende Zwecke:</p>
+                <ul className="list-disc list-inside space-y-1 mt-2">
+                  <li>
+                    <span className="font-medium">Wissens-Lektionen:</span> Übermittelt wird nur das Beschwerdebild
+                    (z. B. „Rückenschmerzen“), ohne Bezug zu einer Person.
+                  </li>
+                  <li>
+                    <span className="font-medium">Persönlicher Tagestipp in der App:</span> Übermittelt werden
+                    Beschwerdebild, durchschnittlicher Schmerzwert der letzten Einträge und Trainingsserie —
+                    ohne Namen. Der Vorname wird erst auf unserem Server eingesetzt.
+                  </li>
+                  <li>
+                    <span className="font-medium">Entwürfe für Arzt- und Verlaufsberichte:</span> Übermittelt werden
+                    pseudonymisierte Behandlungsdaten (Beschwerden, Befunde, Diagnosen, Behandlungsverlauf) sowie
+                    Alter und Geschlecht. Name, Geburtsdatum, Krankenkasse und Versichertennummer werden{" "}
+                    <span className="font-medium">nicht</span> übermittelt; sie werden erst auf unserem Server in den
+                    Entwurf eingesetzt. Jeder Entwurf wird von der Therapeutin bzw. dem Therapeuten geprüft und
+                    freigegeben.
+                  </li>
+                  <li>
+                    <span className="font-medium">Berichte und Übungsroutinen für Firmenkunden (BGF):</span>{" "}
+                    Übermittelt werden Firmenname und zusammengefasste, nicht personenbezogene Kennzahlen.
+                  </li>
+                </ul>
+                <p className="mt-2">
+                  Freitextfelder der Behandlungsdokumentation werden so übernommen, wie sie erfasst wurden. Wir
+                  achten darauf, dort keine Namen oder Kontaktdaten zu notieren.
+                </p>
+              </div>
+
+              <div className="p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
+                <p className="font-medium" style={{ color: INK }}>ElevenLabs</p>
+                <p className="text-xs mb-2" style={{ color: MUTED }}>Sprachausgabe (Vorlesen von Übungsanleitungen)</p>
                 <p>
-                  Für die Generierung von Wissens-Lektionen zu Beschwerdebildern nutzen wir die KI von Anthropic.
-                  Dabei werden <span className="font-medium">keine personenbezogenen Patientendaten</span> übermittelt —
-                  lediglich der Name des Beschwerdebilds. Es findet keine Zuordnung zu einzelnen Patienten statt.
-                  Die generierten Inhalte dienen ausschließlich der Patientenedukation.
+                  Zum Vorlesen von Übungsanleitungen wird der jeweilige Anleitungstext an ElevenLabs übermittelt und
+                  als Audio zurückgegeben. Es werden keine personenbezogenen Daten übermittelt.
+                </p>
+              </div>
+
+              <div className="p-4 bg-white rounded-xl border" style={{ borderColor: LINE }}>
+                <p className="font-medium" style={{ color: INK }}>SiteGround</p>
+                <p className="text-xs mb-2" style={{ color: MUTED }}>E-Mail-Versand (Absender info@physiotherapie-glawe.de)</p>
+                <p>
+                  Für E-Mails an Patientinnen, Patienten und Kundinnen und Kunden (z. B. Zugangsdaten,
+                  Kaufbestätigungen, Ergebnisse des Schmerzchecks) nutzen wir den E-Mail-Server unseres
+                  Webhosters SiteGround. Dabei werden Name, E-Mail-Adresse und der Inhalt der jeweiligen E-Mail
+                  verarbeitet.
                 </p>
               </div>
 
@@ -628,7 +670,7 @@ export default async function DatenschutzPage() {
           </section>
 
           <div className="pt-6 border-t text-xs" style={{ borderColor: LINE, color: MUTED }}>
-            <p>Stand: März 2026</p>
+            <p>Stand: November 2026</p>
           </div>
         </div>
       </div>

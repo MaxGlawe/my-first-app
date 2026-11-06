@@ -269,9 +269,14 @@ export async function POST(
 
   // ── Daten für KI laden ─────────────────────────────────────────────────────
 
-  // Pseudonymisierung: echter Name → "Patient A"
+  // Pseudonymisierung: echter Name → "Patient A", Geburtsdatum → Platzhalter.
+  // An die KI gehen nur Alter und Geschlecht; Geburtsdatum, Krankenkasse und
+  // Versichertennummer bleiben auf unserem Server (06.11.2026 — vorher gingen
+  // sie mit, entgegen der Datenschutzerklärung). Eingesetzt wird nach der
+  // Antwort, siehe „Re-Personalisierung" unten.
   const realName = `${patient.vorname} ${patient.nachname}`
   const pseudonym = "Patient A"
+  const GEBURTSDATUM_PLATZHALTER = "[GEBURTSDATUM]"
 
   // Behandlungen laden (nur abgeschlossene — Entwürfe enthalten ungeprüfte Daten)
   const { data: treatments } = await supabase
@@ -477,17 +482,25 @@ export async function POST(
   // Geschlecht für korrekte Anrede
   const geschlecht = patient.geschlecht as string | null
   const patientAnrede = geschlecht === "weiblich" ? "die Patientin" : geschlecht === "maennlich" ? "der Patient" : "der Patient/die Patientin"
-  const geburtsdatumFormatted = new Date(patient.geburtsdatum as string).toLocaleDateString("de-DE")
+  const geburtsdatumEcht = new Date(patient.geburtsdatum as string).toLocaleDateString("de-DE")
+  const geburtsdatumFormatted = GEBURTSDATUM_PLATZHALTER
+  const alter = (() => {
+    const geb = new Date(patient.geburtsdatum as string)
+    if (Number.isNaN(geb.getTime())) return null
+    const heute = new Date()
+    let jahre = heute.getFullYear() - geb.getFullYear()
+    const m = heute.getMonth() - geb.getMonth()
+    if (m < 0 || (m === 0 && heute.getDate() < geb.getDate())) jahre--
+    return jahre
+  })()
 
   const dateFromFormatted = new Date(date_from).toLocaleDateString("de-DE")
   const dateToFormatted = new Date(date_to).toLocaleDateString("de-DE")
 
   const patientInfo = [
     `Patient: ${pseudonym} (${patientAnrede})`,
-    `Geburtsdatum: ${geburtsdatumFormatted}`,
+    alter !== null ? `Alter: ${alter} Jahre` : "",
     geschlecht ? `Geschlecht: ${geschlecht === "maennlich" ? "männlich" : geschlecht === "weiblich" ? "weiblich" : geschlecht}` : "",
-    patient.krankenkasse ? `Krankenkasse: ${patient.krankenkasse}` : "",
-    patient.versichertennummer ? `Versichertennummer: ${patient.versichertennummer}` : "",
     `Berichtszeitraum: ${dateFromFormatted} – ${dateToFormatted}`,
   ]
     .filter(Boolean)
@@ -508,7 +521,8 @@ FORMATIERUNG:
 - KEINE <h1>-Tags verwenden (Briefkopf wird extern gerendert)
 - KEINE Anrede/Empfänger-Block (wird extern gerendert)
 - Beginne direkt mit dem Betreff als <h2>
-- Ersetze den Pseudonym "${pseudonym}" NICHT durch einen echten Namen — das System übernimmt die Re-Personalisierung.`
+- Ersetze den Pseudonym "${pseudonym}" NICHT durch einen echten Namen — das System übernimmt die Re-Personalisierung.
+- Übernimm den Platzhalter "${GEBURTSDATUM_PLATZHALTER}" im Betreff unverändert; das echte Datum setzt das System ein.`
 
   if (reportType === "arztbericht") {
     systemPrompt = `Du bist ein erfahrener Heilpraktiker für Physiotherapie und verfasst professionelle Arztberichte (Befundberichte) für mitbehandelnde Ärzte oder Überweisungsärzte.
@@ -817,11 +831,11 @@ ${extra_instructions ? `ZUSÄTZLICHE HINWEISE DES TRAINERS:\n${extra_instruction
     )
   }
 
-  // Pseudonym durch echten Namen ersetzen für final_content
-  const finalContent = draftContentPseudonymized.replace(
-    new RegExp(pseudonym, "g"),
-    realName
-  )
+  // Re-Personalisierung: Pseudonym → echter Name, Platzhalter → Geburtsdatum
+  const finalContent = draftContentPseudonymized
+    .replace(new RegExp(pseudonym, "g"), realName)
+    .split(GEBURTSDATUM_PLATZHALTER)
+    .join(geburtsdatumEcht)
 
   // ── In DB speichern ────────────────────────────────────────────────────────
 

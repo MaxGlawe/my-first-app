@@ -121,8 +121,10 @@ export async function GET() {
   try {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+    // Der Vorname geht NICHT an die KI (06.11.2026): Sie schreibt den
+    // Platzhalter, eingesetzt wird erst hier auf dem Server.
+    const NAME_PLATZHALTER = "[VORNAME]"
     const contextParts: string[] = []
-    if (patient.vorname) contextParts.push(`Patient: ${patient.vorname}`)
     if (hauptprobleme.length > 0) contextParts.push(`Hauptprobleme: ${hauptprobleme.join(", ")}`)
     contextParts.push(`Aktuelle Trainingsserie: ${streak} Tage`)
     if (avgPain !== null) contextParts.push(`Durchschnittlicher Schmerz (letzte 7 Einträge): ${avgPain}/10`)
@@ -133,7 +135,7 @@ export async function GET() {
       max_tokens: 200,
       system: `Du bist ein persönlicher Physiotherapie-Assistent. Erstelle einen kurzen täglichen Tipp (1-3 Sätze) auf Deutsch.
 REGELN:
-- Schreibe motivierend und freundlich (Du-Form), nutze den Vornamen des Patienten
+- Schreibe motivierend und freundlich (Du-Form). ${patient.vorname ? `Sprich die Person mit dem Platzhalter ${NAME_PLATZHALTER} an, genau so geschrieben — nie mit einem erfundenen Namen` : "Verwende keinen Namen"}
 - Der Tipp MUSS sich konkret auf die Beschwerden/Hauptprobleme des Patienten beziehen (z.B. Knieschmerzen, Rückenbeschwerden, Schulterproblem)
 - Gib einen konkreten, praktischen Tipp passend zum jeweiligen Beschwerdebild (z.B. eine Dehnübung, Haltungstipp, Alltagsbewegung)
 - Berücksichtige den Trainingsfortschritt: lobe bei guter Serie, motiviere bei Pause
@@ -152,7 +154,10 @@ REGELN:
       return NextResponse.json({ insight: null })
     }
 
-    const insightText = content.text.trim()
+    const insightText = content.text
+      .trim()
+      .split(NAME_PLATZHALTER)
+      .join(patient.vorname ?? "")
 
     // Cache the insight
     const { data: saved } = await supabase
