@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import QRCode from "qrcode"
 import type { InvoiceWithItems, PraxisSettings } from "@/types/billing"
+import { belegVermerke } from "@/lib/billing/beleg-vermerke"
 
 function fmtDate(dateStr: string) {
   if (!dateStr) return ""
@@ -26,8 +27,17 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
   const items = invoice.line_items || []
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
+  // Dieselbe Unterscheidung wie im PDF (lib/pdf/invoice-pdf.ts). Ohne sie
+  // zeigte die Vorschau jeden Leistungsnachweis als offene „RECHNUNG“ mit
+  // Bankdaten und GiroCode, obwohl das PDF an den Patienten stimmte.
+  const istNachweis = invoice.beleg_art === "leistungsnachweis"
+  const istVoranschlag = invoice.beleg_art === "kostenvoranschlag"
+  const beglichen = istNachweis || invoice.status === "bezahlt"
+  const zahlungsteil = !beglichen && !istVoranschlag
+  const vermerke = belegVermerke(invoice)
+
   useEffect(() => {
-    if (!praxis.iban) return
+    if (!praxis.iban || !zahlungsteil) return
 
     const cleanIban = praxis.iban.replace(/\s/g, "")
     const cleanBic = (praxis.bic || "").replace(/\s/g, "")
@@ -56,7 +66,7 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
       width: 200,
       color: { dark: "#000000", light: "#FFFFFF" },
     }).then(setQrDataUrl).catch(() => setQrDataUrl(null))
-  }, [praxis.iban, praxis.bic, praxis.praxis_name, invoice.total, invoice.invoice_number])
+  }, [praxis.iban, praxis.bic, praxis.praxis_name, invoice.total, invoice.invoice_number, zahlungsteil])
 
   return (
     <div className="flex justify-center">
@@ -112,10 +122,16 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
               style={{ fontSize: "0.82em" }}
             >
               {[
-                ["Rechnungsnr.", invoice.invoice_number],
-                ["Rechnungsdatum", fmtDate(invoice.invoice_date)],
+                [
+                  istVoranschlag ? "Voranschlag-Nr." : istNachweis ? "Nachweis-Nr." : "Rechnungsnr.",
+                  invoice.invoice_number,
+                ],
+                [
+                  istVoranschlag || istNachweis ? "Ausstellungsdatum" : "Rechnungsdatum",
+                  fmtDate(invoice.invoice_date),
+                ],
                 ["Behandlungsdatum", fmtDate(invoice.treatment_date)],
-                ["Fällig bis", fmtDate(invoice.due_date)],
+                ...(zahlungsteil ? [["Fällig bis", fmtDate(invoice.due_date)]] : []),
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 py-[3px]">
                   <span className="text-slate-500">{label}</span>
@@ -125,10 +141,10 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
             </div>
           </div>
 
-          {/* ── RECHNUNG Titel ── */}
+          {/* ── Titel ── */}
           <div className="mb-[2%]">
             <h2 className="font-bold text-slate-900 tracking-tight" style={{ fontSize: "2em" }}>
-              RECHNUNG
+              {istVoranschlag ? "KOSTENVORANSCHLAG" : istNachweis ? "LEISTUNGSNACHWEIS" : "RECHNUNG"}
             </h2>
             <div className="w-[15%] h-[3px] bg-emerald-500 mt-[3px] rounded-full" />
           </div>
@@ -208,7 +224,41 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
             </div>
           </div>
 
+          {/* ── Vermerke: Analog-Fußnote, „Bereits beglichen durch …“ ── */}
+          {vermerke.length > 0 && (
+            <div className="text-slate-500 mb-[2%] space-y-[3px]" style={{ fontSize: "0.72em" }}>
+              {vermerke.map((z, i) => (
+                <p key={i}>{z}</p>
+              ))}
+            </div>
+          )}
+
+          {istVoranschlag && (
+            <div className="rounded-md border border-slate-300 bg-slate-50 px-[2.5%] py-[1.5%] mb-[2%]">
+              <p className="font-bold text-slate-900" style={{ fontSize: "0.95em" }}>
+                Kostenvoranschlag — keine Rechnung
+              </p>
+              <p className="text-slate-500 mt-[2px]" style={{ fontSize: "0.78em" }}>
+                Die aufgeführten Leistungen sind geplant und noch nicht erbracht. Es ist keine Zahlung fällig.
+              </p>
+            </div>
+          )}
+
+          {beglichen && !istVoranschlag && (
+            <div className="rounded-md border border-emerald-500 bg-emerald-50 px-[2.5%] py-[1.5%] mb-[2%]">
+              <p className="font-bold text-emerald-600" style={{ fontSize: "0.95em" }}>
+                Betrag bereits beglichen
+              </p>
+              <p className="text-slate-500 mt-[2px]" style={{ fontSize: "0.78em" }}>
+                {istNachweis
+                  ? "Dieser Nachweis dient Ihren Unterlagen und der Einreichung bei Ihrer Versicherung. Bitte nicht überweisen."
+                  : "Bitte nicht überweisen."}
+              </p>
+            </div>
+          )}
+
           {/* ── Zahlungsinformationen ── */}
+          {zahlungsteil && (
           <div className="mb-[2%]">
             {/* Section Header */}
             <div className="flex items-center gap-2 mb-[6px]">
@@ -265,10 +315,17 @@ export function InvoicePreview({ invoice, praxis }: InvoicePreviewProps) {
               </div>
             </div>
           </div>
+          )}
 
           {/* ── Hinweistext ── */}
           <div className="text-slate-400 mb-[2%]" style={{ fontSize: "0.7em" }}>
-            <p>Diese Rechnung ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) erstellt.</p>
+            <p>
+              {istVoranschlag
+                ? "Dieser Kostenvoranschlag ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) kalkuliert."
+                : istNachweis
+                ? "Dieser Nachweis ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) erstellt."
+                : "Diese Rechnung ist nach dem Gebührenverzeichnis für Heilpraktiker (GebüH) erstellt."}
+            </p>
             <p>Bitte beachten Sie, dass die Erstattung durch Ihre Versicherung von Ihrem Tarif abhängt.</p>
           </div>
 
