@@ -36,6 +36,9 @@ export function LoginForm({ errorParam }: LoginFormProps) {
   const getErrorMessage = (code?: string): string | null => {
     if (code === "account_disabled")
       return "Dein Konto wurde deaktiviert. Bitte wende dich an deinen Administrator."
+    // Aus /auth/bestaetigen: Mail-Link abgelaufen oder schon benutzt.
+    if (code === "link_ungueltig")
+      return "Dein Anmeldelink ist abgelaufen oder wurde schon benutzt. Über „Passwort vergessen“ bekommst du einen neuen – oder melde dich kurz bei uns."
     return null
   }
 

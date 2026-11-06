@@ -134,10 +134,20 @@ export async function createMagicLink(
     email,
     options: { redirectTo },
   })
-  if (error || !data?.properties?.action_link) {
-    throw new Error(error?.message ?? "generateLink lieferte keinen action_link")
+  if (error || !data?.properties?.hashed_token) {
+    throw new Error(error?.message ?? "generateLink lieferte keinen Token")
   }
-  return data.properties.action_link
+
+  // NICHT `action_link` verschicken: Der fuehrt ueber Supabases /verify und
+  // landet mit den Schluesseln hinter `#` — die der Server nie sieht. Bis
+  // zum 06.11.2026 kam so niemand ueber einen Mail-Link in die App. Der
+  // Token wird stattdessen in /auth/bestaetigen eingeloest (siehe dort).
+  const ziel = new URL(redirectTo)
+  const link = new URL("/auth/bestaetigen", ziel.origin)
+  link.searchParams.set("token_hash", data.properties.hashed_token)
+  link.searchParams.set("type", "magiclink")
+  link.searchParams.set("next", ziel.pathname + ziel.search)
+  return link.toString()
 }
 
 /**

@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = url.pathname
 
   // Public routes — no auth required
-  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/widerruf', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass', '/max-glawe', '/start']
+  const publicRoutes = ['/login', '/login/reset-password', '/datenschutz', '/agb', '/impressum', '/widerruf', '/anfrage', '/danke', '/beschwerden', '/online-physiotherapie', '/unternehmen', '/kurse', '/decks', '/karten', '/schmerzcheck', '/check', '/masterclass', '/max-glawe', '/start', '/auth/bestaetigen']
   const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + '/'))
   const isInviteRoute = pathname.startsWith('/invite/') || pathname.startsWith('/hr-invite/') || pathname.startsWith('/bgf-invite/')
   const isInviteApi = pathname.startsWith('/api/patients/invite/') || pathname.startsWith('/api/bgf/hr-invite/') || pathname.startsWith('/api/bgf/ma-invite/')
