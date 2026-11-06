@@ -35,7 +35,10 @@ function sichererPfad(roh: string | null): string {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl
+  const { searchParams } = request.nextUrl
+  // NICHT `request.nextUrl.origin`: Hinter Nginx ist das `localhost:3000`,
+  // und die Weiterleitung schickte live jeden dorthin (06.11.2026).
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin
   const tokenHash = searchParams.get("token_hash")
   const typ = searchParams.get("type") as EmailOtpType | null
   const ziel = sichererPfad(searchParams.get("next"))
