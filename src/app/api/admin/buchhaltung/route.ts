@@ -10,6 +10,12 @@
  *      Käufe wird nur der Zugang (content_entitlements) gespeichert, nie der
  *      Betrag. Die Zahlungen kommen deshalb direkt aus der Stripe-API.
  *
+ *      ABER: Über Stripe laufen auch Zahlungen, die oben schon als Beleg
+ *      stehen — das 90-Tage-Programm (steuerfreie Patientenrechnung) und
+ *      SEPA-Einzüge von BGF-Rechnungen. Bis 07.11.2026 landeten die hier ein
+ *      zweites Mal, als „Shop" und mit herausgerechneten 19 % USt. Die werden
+ *      jetzt übersprungen (siehe `istSchonGebucht`).
+ *
  * Admin-only.
  */
 
@@ -152,6 +158,39 @@ export async function GET(request: NextRequest) {
     const vonTs = Math.floor(new Date(von + "T00:00:00").getTime() / 1000)
     const bisTs = Math.floor(new Date(bis + "T23:59:59").getTime() / 1000)
 
+    // Checkout-Metadaten hängen an der Session, nicht an der Zahlung. Deshalb
+    // erst die Sessions des Zeitraums holen (zwei Tage Vorlauf: eine Session
+    // ist bis zu 24 h offen, bevor bezahlt wird).
+    const sessionArt = new Map<string, string>()
+    {
+      let nach: string | undefined
+      for (let i = 0; i < 10; i++) {
+        const sessions = await stripe.checkout.sessions.list({
+          created: { gte: vonTs - 2 * 86400, lte: bisTs },
+          status: "complete",
+          limit: 100,
+          ...(nach ? { starting_after: nach } : {}),
+        })
+        for (const sess of sessions.data) {
+          const pi = typeof sess.payment_intent === "string" ? sess.payment_intent : sess.payment_intent?.id
+          if (pi && sess.metadata?.kind) sessionArt.set(pi, sess.metadata.kind)
+        }
+        if (!sessions.has_more) break
+        nach = sessions.data[sessions.data.length - 1]?.id
+      }
+    }
+
+    const istSchonGebucht = (c: { payment_intent: unknown; metadata: Record<string, string> | null }) => {
+      const pi = c.payment_intent as { id?: string; metadata?: Record<string, string> } | string | null
+      const piId = typeof pi === "string" ? pi : pi?.id
+      const piMeta = typeof pi === "object" && pi ? pi.metadata ?? {} : {}
+      // Programm: steht als Patientenrechnung (Quelle „Patient", steuerfrei)
+      if (piId && sessionArt.get(piId) === "praxis_os_programm") return true
+      // BGF-SEPA-Einzug: steht als BGF-Rechnung (Quelle „BGF")
+      if (piMeta.bgf_invoice_id || c.metadata?.bgf_invoice_id) return true
+      return false
+    }
+
     let startingAfter: string | undefined
     let seiten = 0
 
@@ -159,11 +198,13 @@ export async function GET(request: NextRequest) {
       const charges = await stripe.charges.list({
         created: { gte: vonTs, lte: bisTs },
         limit: 100,
+        expand: ["data.payment_intent"],
         ...(startingAfter ? { starting_after: startingAfter } : {}),
       })
 
       for (const c of charges.data) {
         if (c.status !== "succeeded" || c.refunded) continue
+        if (istSchonGebucht(c)) continue
         const brutto = r2(c.amount / 100)
         // Digitale Produkte an Privatkunden: 19 % im Bruttopreis enthalten
         const netto = r2(brutto / 1.19)
